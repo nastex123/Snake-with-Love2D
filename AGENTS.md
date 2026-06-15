@@ -3,7 +3,7 @@
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (14 modulos)
+## Arquitectura (17 modulos)
 | Archivo | Rol |
 |---------|-----|
 | `main.lua` | Loop, maquina de estados (7 estados), integracion |
@@ -18,8 +18,12 @@
 | `obstacles.lua` | Obstaculos cada 50pts |
 | `particles.lua` | ParticleSystem con textura 4x4 procedural |
 | `shaders.lua` | Pipeline 7-canvas: bloom+CRT+sombra+heat. Balatro BG con pixelado+espiral |
-| `persistence.lua` | High score via `love.filesystem` |
+| `persistence.lua` | Persistencia settings + perfiles (max 3) via `love.filesystem` |
 | `sound.lua` | Sonidos procedurales (sine/sweep/noise) |
+| `settings.lua` | Panel config mouse-only (Audio/Graphics/Accessibility) |
+| `profiles.lua` | Gestor de perfiles UI (crear/renombrar/borrar/restablecer, max 3) |
+| `achievements.lua` | Registry de 11 logros, check en eventos de juego |
+| `helpers.lua` | Utilidades (deep_copy) |
 
 Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`.
 
@@ -59,11 +63,37 @@ Click en `love.mousepressed()`. `debugButtons` rebuild cada frame.
 `shaders.composite()`: sceneCanvas → (glow → blurH → blurV) bloom additive → shadow blur → CRT sobre canvasFinal.
 Menu usa heat distortion. Debug menu se dibuja DESPUES del composite.
 
+## Perfiles (`profiles.lua` + `persistence.lua`)
+- Max 3 perfiles, almacenados en `config/profiles.dat` (formato Lua nativo).
+- Cada perfil guarda: `name`, `monedas`, `highScore`, `achievements`, `unlocks`, `stats`.
+- `persistence.initProfiles()` en `love.load`. Si no hay perfil activo, se abre `profilesMod.open()`.
+- Boton PERFILES en el menu principal abre el gestor.
+- `profilesMod` tiene tres estados: `select` (tarjetas), `input` (nombre), `confirm` (confirmacion).
+- `love.textinput` y `love.keypressed` se enrutan a `profilesMod.textinput()` para la entrada de nombre.
+
+## Sincronizacion de perfil
+- `persistence.syncActiveProfile()` persiste monedas/highScore del perfil activo.
+- `persistence.syncUnlocks(unlocks)` persiste desbloqueos pasivos.
+- `applyActiveProfile()` (global en main.lua) aplica datos del perfil al juego: monedas, highScore y unlocks pasivos a `shop.inventory`.
+- Puntos de sync: muerte (highScore), compras en tienda (monedas+unlocks), transiciones SHOP->MENU/PLAYING, `love.quit()`.
+
+## Achievements (`achievements.lua`)
+- 11 logros: first_kill, enemy_25, enemy_100, combo_5, combo_10, coins_100, coins_500, stage_3, boss_kill, score_1000, score_5000.
+- `achievements.check(event, params)` se llama en:
+  - `enemyKilled` (mata enemigo)
+  - `comboAchieved` (racha >= 5 o 10)
+  - `bossDefeated` (mata jefe)
+  - `stageChanged` (llega a etapa 3)
+  - `scoreReached` (puntuacion record >= 1000/5000)
+  - `coinsChanged` (monedas acumuladas)
+- Stats acumulativos: `profile.stats.kills`, `profile.stats.bossesKilled`, `profile.stats.highestStage`, `profile.stats.highestScore`, `profile.stats.totalCoins`.
+
 ## Love2D gotchas
 - `ParticleSystem:getCount()` NO `count()`
 - `ParticleSystem:setParticleLifetime(min,max)` NO `setLifetime()`
 - `dt` no existe en `love.draw()` — timers en `love.update()`
-- `love.mousepressed()` solo maneja SHOP clicks y debug menu
+- `love.mousepressed()` maneja SHOP, debug menu, settings y profiles
+- `love.textinput()` se enruta a profilesMod.textinput para entrada de nombre
 - Font `PressStart2P-Regular.ttf` via `pcall` con fallback. Sizes: 28/16/11/8
 
 ## Estilo

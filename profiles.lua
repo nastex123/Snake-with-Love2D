@@ -2,6 +2,7 @@ local profilesMod = {}
 local persistence = require('persistence')
 local constants = require('constants')
 local ui = require('ui')
+local achMod = require('achievements')
 
 profilesMod.visible = false
 
@@ -600,8 +601,6 @@ function profilesMod.drawAchievements(w, h)
         end
     end
 
-    -- Import achievements registry
-    local achMod = require('achievements')
     local registry = achMod and achMod.registry or {}
 
     local yOff = my + 50

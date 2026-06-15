@@ -165,7 +165,8 @@ function persistence.createProfile(name)
                 monedas = 0,
                 highScore = 0,
                 achievements = {},
-                unlocks = {}
+                unlocks = {},
+                stats = {}
             }
             persistence.profilesData.activeProfileIndex = i
             persistence.saveProfiles()
@@ -229,7 +230,8 @@ function persistence.resetProfile(index)
         monedas = 0,
         highScore = 0,
         achievements = {},
-        unlocks = {}
+        unlocks = {},
+        stats = {}
     }
     persistence.saveProfiles()
     return true
