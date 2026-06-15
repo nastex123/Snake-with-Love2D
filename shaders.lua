@@ -150,89 +150,51 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
 ]]
 
 -- ============================================================
--- Balatro background: domain warping fluid
+-- Balatro background: domain warping + spiral (original style)
 -- ============================================================
--- -------------------------------------------------------------
--- Balatro background shader – VORTEX FAN version
--- -------------------------------------------------------------
--- Vortex with "fan blades" (aletas de abanico): the rotation is
--- modulated by a sine that creates N discrete arms, producing
--- separated lobes instead of a smooth continuous swirl.
--- Hard‑coded uniforms: vortexAngle, vortexStrength, numArms.
--- Edit the values in `shaders.drawBalatroBG` to tweak the look.
-
 
 local SRC_BALATRO_BG = [[
-extern vec2 resolution;
 extern float time;
-extern float comboIntensity;
-// Vortex specific uniforms (hard‑coded in Lua)
-extern float vortexAngle;
-extern float vortexStrength;
-extern float numArms;
+extern float spin_time;
+extern vec4 colour_1;
+extern vec4 colour_2;
+extern vec4 colour_3;
+extern float contrast;
+extern float spin_amount;
 
-vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
-    // Normalised screen coordinates ([-1,1] range with aspect correction)
-    vec2 p = gl_FragCoord.xy / resolution.xy;
-    vec2 q = p * 3.0 - 1.5;
-    q.x *= resolution.x / resolution.y;
-    float ci = comboIntensity;
-    float t = time * 0.2 + ci * 1.2;
+#define PIXEL_SIZE_FAC 700.
+#define SPIN_EASE 0.5
 
-    // -----------------------------------------------------
-    // VORTEX FAN DISTORTION (aletas de abanico)
-    // -----------------------------------------------------
-    // sin(numArms * angle) creates N discrete lobes.
-    // pow(...) sharpens them so blades look separated.
-    // vortexAngle rotates the whole pattern over time.
-    // vortexStrength controls the pull intensity.
-    // numArms = number of fan blades (6 = hexagonal fan).
-    vec2 uvc = q;
-    float dist = length(uvc);
-    float angle = atan(uvc.y, uvc.x);
+vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords )
+{
+    float pixel_size = length(love_ScreenSize.xy)/PIXEL_SIZE_FAC;
+    vec2 uv = (floor(screen_coords.xy*(1./pixel_size))*pixel_size - 0.5*love_ScreenSize.xy)/length(love_ScreenSize.xy);
+    float uv_len = length(uv);
 
-    float blade = sin(numArms * angle + vortexAngle);
-    blade = pow(abs(blade), 0.6) * sign(blade);
+    float speed = (spin_time*SPIN_EASE*0.2) + 302.2;
+    float new_pixel_angle = (atan(uv.y, uv.x)) + speed - SPIN_EASE*20.*(1.*spin_amount*uv_len + (1. - 1.*spin_amount));
+    vec2 mid = (love_ScreenSize.xy/length(love_ScreenSize.xy))/2.;
+    uv = (vec2((uv_len * cos(new_pixel_angle) + mid.x), (uv_len * sin(new_pixel_angle) + mid.y)) - mid);
 
-    angle += blade * dist * vortexStrength;
-    q = vec2(cos(angle), sin(angle)) * dist;
-    // -----------------------------------------------------
+    uv *= 30.;
+    speed = time*(2.);
+    vec2 uv2 = vec2(uv.x+uv.y);
 
-    // Original fluid‑like perturbations (unchanged)
-    for (int i = 0; i < 6; i++) {
-        float fi = float(i);
-        float amp = 0.8 + ci * 0.2;
-        float amp2 = 0.4 + ci * 0.2;
-        q = vec2(
-            sin(q.x * 1.2 + q.y * 0.8 + t + fi * 0.5) * amp + cos(t * 0.3 + q.y * 0.5) * amp2,
-            cos(q.x * 0.7 + q.y * 1.3 + t * 0.7 + fi * 0.3) * amp + sin(t * 0.4 + q.x * 0.6) * amp2
-        );
-        q = q * 1.1 + p * 1.2 - 0.4;
+    for(int i=0; i < 5; i++) {
+        uv2 += sin(max(uv.x, uv.y)) + uv;
+        uv  += 0.5*vec2(cos(5.1123314 + 0.353*uv2.y + speed*0.131121), sin(uv2.x - 0.113*speed));
+        uv  -= 1.0*cos(uv.x + uv.y) - 1.0*sin(uv.x*0.711 - uv.y);
     }
 
-    float d = length(q);
+    float contrast_mod = (0.25*contrast + 0.5*spin_amount + 1.2);
+    float paint_res = min(2., max(0., length(uv)*(0.035)*contrast_mod));
+    float c1p = max(0.,1. - contrast_mod*abs(1.-paint_res));
+    float c2p = max(0.,1. - contrast_mod*abs(paint_res));
+    float c3p = 1. - min(1., c1p + c2p);
 
-    vec3 c1 = vec3(0.05, 0.05, 0.08);
-    vec3 c2 = vec3(0.8 + ci * 0.2, 0.08 - ci * 0.03, 0.1 - ci * 0.05);
-    vec3 c3 = vec3(ci * 0.1, 0.35 + ci * 0.15, 0.7 + ci * 0.3);
+    vec4 ret_col = (0.3/contrast)*colour_1 + (1. - 0.3/contrast)*(colour_1*c1p + colour_2*c2p + vec4(c3p*colour_3.rgb, c3p*colour_1.a));
 
-    float w1 = sin(d * 2.5 + t) * 0.5 + 0.5;
-    float w2 = sin(d * 3.5 - t * 1.5 + 1.2) * 0.5 + 0.5;
-    float w3 = sin(d * 1.8 + t * 0.6 + 2.5) * 0.5 + 0.5;
-
-    vec3 col = c1;
-    col = mix(col, c2, w1 * (0.6 + ci * 0.2));
-    col = mix(col, c3, w2 * (0.4 + ci * 0.2));
-    col = mix(col, c1, w3 * 0.25);
-
-    vec3 hot = vec3(1.0, 0.5, 0.05);
-    float hotFactor = ci * (sin(d * 6.0 + t * 3.0) * 0.3 + 0.5);
-    col = mix(col, hot, hotFactor);
-
-    vec3 glow = vec3(1.0, 0.6, 0.0);
-    col += glow * ci * (sin(d * 4.0 + t * 2.0) * 0.3 + 0.3) * 0.15;
-
-    return vec4(col, 1.0);
+    return ret_col;
 }
 ]]
 
@@ -274,6 +236,25 @@ function shaders.load()
     canvasFinal       = newC()
 end
 
+-- Recreate canvases and apply filter settings (filter: 'nearest' | 'linear')
+function shaders.recreateCanvases(pixelScale, filter)
+    W = love.graphics.getWidth()
+    H = love.graphics.getHeight()
+    local function newC()
+        local c = love.graphics.newCanvas(W, H)
+        local f = filter == 'nearest' and 'nearest' or 'linear'
+        c:setFilter(f, f)
+        return c
+    end
+    canvasScene       = newC()
+    canvasGlow        = newC()
+    canvasBlurH       = newC()
+    canvasBlurV       = newC()
+    canvasShadow      = newC()
+    canvasShadowBlur  = newC()
+    canvasFinal       = newC()
+end
+
 function shaders.beginScene(br, bg, bb)
     love.graphics.setCanvas(canvasScene)
     love.graphics.clear(
@@ -294,18 +275,26 @@ function shaders.beginShadow()
     love.graphics.clear(0, 0, 0, 0)
 end
 
-function shaders.drawBalatroBG(time, comboIntensity)
+function shaders.drawBalatroBG(time, intensity)
     if shBalatro then
-        shBalatro:send("resolution", {W, H})
         shBalatro:send("time", time)
-        shBalatro:send("comboIntensity", comboIntensity or 0)
-        -- Vortex fan uniforms (hard‑coded values). Adjust here to tweak the look.
-        local vortexAngle = time * 0.8          -- rotation speed (rad per second)
-        local vortexStrength = 0.9               -- pull strength (0‑1)
-        local numArms = 6.0                      -- number of fan blades
-        shBalatro:send("vortexAngle", vortexAngle)
-        shBalatro:send("vortexStrength", vortexStrength)
-        shBalatro:send("numArms", numArms)
+        shBalatro:send("spin_time", time)
+
+        local i = intensity or 0
+        shBalatro:send("colour_1", {0.07, 0.07, 0.12, 1})
+
+        local c2_r = 0.0 + i * 0.8
+        local c2_g = 0.85 - i * 0.55
+        local c2_b = 1.0 - i * 0.9
+        shBalatro:send("colour_2", {c2_r, c2_g, c2_b, 1})
+
+        local c3_r = 0.9 - i * 0.8
+        local c3_g = 0.2 + i * 0.6
+        local c3_b = 0.2 + i * 0.8
+        shBalatro:send("colour_3", {c3_r, c3_g, c3_b, 1})
+
+        shBalatro:send("contrast", 1.2)
+        shBalatro:send("spin_amount", i)
         love.graphics.setShader(shBalatro)
     end
     love.graphics.setColor(1, 1, 1, 1)

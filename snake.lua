@@ -63,7 +63,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     -- Verificación de colisiones con el cuerpo
     for _, segmento in ipairs(s.body) do
         if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
-            if s.ghost then
+            if s.ghost or debugImmune then
             elseif shop.shieldActive then
                 shop.shieldActive = false
                 return true, false
@@ -80,7 +80,8 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     if obstaclePos then
         for _, obs in ipairs(obstaclePos) do
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
-                if shop.shieldActive then
+                if debugImmune then
+                elseif shop.shieldActive then
                     shop.shieldActive = false
                     return true, false
                 elseif s.armor > 0 then
@@ -95,7 +96,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
 
     -- Colision con jefe
     if enemies.boss and enemies.boss.alive and nuevaCabezaX == enemies.boss.x and nuevaCabezaY == enemies.boss.y then
-        if not s.ghost then
+        if not s.ghost and not debugImmune then
             local bossResult = enemies.hitBoss()
             if bossResult then
                 if shop.shieldActive then
@@ -115,7 +116,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
         if e.alive and nuevaCabezaX == e.x and nuevaCabezaY == e.y then
-            if s.ghost then
+            if s.ghost or debugImmune then
             else
                 local result = enemies.killEnemy(i)
                 if result then
