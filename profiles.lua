@@ -68,6 +68,8 @@ function profilesMod.draw()
     elseif state == 'confirm' then
         profilesMod.drawSelect(w, h)
         profilesMod.drawConfirmModal(w, h)
+    elseif state == 'achievements' then
+        profilesMod.drawAchievements(w, h)
     end
 end
 
@@ -134,6 +136,20 @@ function profilesMod.drawSelect(w, h)
             end
             love.graphics.setColor(0.6, 0.6, 0.8, 0.5)
             love.graphics.print("Logros: " .. aCount .. "  Desbloqueos: " .. uCount, cardX + 60, cy + 64)
+
+            -- small "VER LOGROS" link
+            local achX = cardX + 60
+            local achY2 = cy + 72
+            local achW = 70
+            local achH = 14
+            if profilesMod.buttonHover(achX, achY2, achW, achH, mx, my) then
+                love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.7)
+            else
+                love.graphics.setColor(0.4, 0.4, 0.6, 0.4)
+            end
+            love.graphics.setFont(ui.fontSmall)
+            love.graphics.print("Ver Logros", achX, achY2)
+            buttonRects[#buttonRects + 1] = {x = achX, y = achY2, w = achW, h = achH, action = "achievements", index = i}
 
             -- buttons row
             local bx = cardX + CARD_W - 8
@@ -417,6 +433,18 @@ function profilesMod.mousepressed(x, y, button)
         return
     end
 
+    if state == 'achievements' then
+        for _, btn in ipairs(buttonRects) do
+            if profilesMod.buttonHover(btn.x, btn.y, btn.w, btn.h, x, y) then
+                if btn.action == "close_achievements" then
+                    state = 'select'
+                end
+                return
+            end
+        end
+        return
+    end
+
     -- check back button
     if backBtn and profilesMod.buttonHover(backBtn.x, backBtn.y, backBtn.w, backBtn.h, x, y) then
         profilesMod.close()
@@ -452,6 +480,9 @@ function profilesMod.mousepressed(x, y, button)
                 local profiles = persistence.getProfiles()
                 local pname = profiles[btn.index] and profiles[btn.index].name or "este perfil"
                 confirmMsg = "¿Restablecer " .. pname .. "?\nSe perderán monedas, puntuación y progreso."
+            elseif btn.action == "achievements" then
+                state = 'achievements'
+                confirmIndex = btn.index
             elseif btn.action == "delete" then
                 state = 'confirm'
                 confirmType = "delete"
@@ -526,11 +557,112 @@ function profilesMod.keypressed(key)
             textInputActive = false
             nameInput = ""
         end
+    elseif state == 'achievements' then
+        if key == "escape" then
+            state = 'select'
+        end
     elseif state == 'select' then
         if key == "escape" then
             profilesMod.close()
         end
     end
+end
+
+function profilesMod.drawAchievements(w, h)
+    local mw = 460
+    local mh = 400
+    local mx = (w - mw) / 2
+    local my = (h - mh) / 2
+
+    -- dim background
+    love.graphics.setColor(0, 0, 0, 0.5)
+    love.graphics.rectangle("fill", mx - 20, my - 20, mw + 40, mh + 40)
+
+    -- modal bg
+    love.graphics.setColor(0.12, 0.12, 0.22, 1)
+    love.graphics.rectangle("fill", mx, my, mw, mh, 6)
+    love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.5)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", mx, my, mw, mh, 6)
+
+    -- title
+    love.graphics.setFont(ui.fontLarge)
+    love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
+    love.graphics.printf("LOGROS", mx, my + 10, mw, "center")
+
+    -- Get profile's achievements
+    local profiles = persistence.getProfiles()
+    local profile = confirmIndex and profiles[confirmIndex]
+    local aDone = {}
+    if profile and profile.achievements then
+        for id, v in pairs(profile.achievements) do
+            if v.done then aDone[id] = true end
+        end
+    end
+
+    -- Import achievements registry
+    local achMod = require('achievements')
+    local registry = achMod and achMod.registry or {}
+
+    local yOff = my + 50
+    local itemH = 24
+    local count = 0
+
+    love.graphics.setFont(ui.fontSmall)
+    for id, def in pairs(registry) do
+        local isUnlocked = aDone[id]
+        local y2 = yOff + count * itemH
+
+        if y2 + itemH > my + mh - 40 then
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.5)
+            love.graphics.print("...", mx + 20, y2)
+            break
+        end
+
+        -- icon/color
+        if isUnlocked then
+            love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.9)
+            love.graphics.print("\238", mx + 16, y2) -- star symbol
+        else
+            love.graphics.setColor(0.4, 0.4, 0.4, 0.5)
+            love.graphics.print("?", mx + 16, y2)
+        end
+
+        -- title
+        if isUnlocked then
+            love.graphics.setColor(1, 1, 1, 0.9)
+        else
+            love.graphics.setColor(0.4, 0.4, 0.4, 0.6)
+        end
+        love.graphics.print(def.title or id, mx + 36, y2)
+
+        -- description
+        if isUnlocked then
+            love.graphics.setColor(0.7, 0.7, 0.7, 0.6)
+        else
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+        end
+        love.graphics.print(def.desc or "", mx + 160, y2)
+
+        count = count + 1
+    end
+
+    -- close button
+    local bx = mx + mw - 80
+    local by2 = my + mh - 32
+    local bw2 = 60
+    local bh2 = 22
+    local mouseX, mouseY = love.mouse.getPosition()
+    if profilesMod.buttonHover(bx, by2, bw2, bh2, mouseX, mouseY) then
+        love.graphics.setColor(0.3, 0.3, 0.5, 0.8)
+    else
+        love.graphics.setColor(0.2, 0.2, 0.3, 0.6)
+    end
+    love.graphics.rectangle("fill", bx, by2, bw2, bh2, 4)
+    love.graphics.setFont(ui.fontSmall)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf("CERRAR", bx, by2 + 4, bw2, "center")
+    buttonRects[#buttonRects + 1] = {x = bx, y = by2, w = bw2, h = bh2, action = "close_achievements"}
 end
 
 return profilesMod
