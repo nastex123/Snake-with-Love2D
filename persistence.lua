@@ -89,6 +89,151 @@ local function lua_decode(text)
 end
 
 local settingsPath = 'config/settings.dat'
+local profilesPath = 'config/profiles.dat'
+
+-- ============================================================
+-- Profiles system (max 3 profiles, per-profile data)
+-- ============================================================
+
+function persistence.initProfiles()
+    persistence.profilesData = nil
+    if love.filesystem.getInfo(profilesPath) then
+        local contents = love.filesystem.read(profilesPath)
+        if contents and #contents > 0 then
+            local decoded = lua_decode(contents)
+            if decoded and type(decoded) == 'table' then
+                persistence.profilesData = decoded
+                if not persistence.profilesData.profiles then
+                    persistence.profilesData.profiles = {nil, nil, nil}
+                end
+                for i = #persistence.profilesData.profiles + 1, 3 do
+                    persistence.profilesData.profiles[i] = nil
+                end
+                return
+            end
+        end
+    end
+    persistence.profilesData = {
+        version = 1,
+        activeProfileIndex = nil,
+        profiles = {nil, nil, nil}
+    }
+end
+
+function persistence.saveProfiles()
+    if not persistence.profilesData then return true end
+    local encoded = lua_encode(persistence.profilesData)
+    if type(encoded) ~= 'string' or #encoded == 0 then
+        return false, 'encode failed'
+    end
+    local written, err = love.filesystem.write(profilesPath, encoded)
+    if not written then
+        pcall(function() love.filesystem.createDirectory('config') end)
+        written, err = love.filesystem.write(profilesPath, encoded)
+        if not written then return false, err end
+    end
+    return true
+end
+
+function persistence.getProfiles()
+    return persistence.profilesData and persistence.profilesData.profiles or {nil, nil, nil}
+end
+
+function persistence.getActiveProfile()
+    local idx = persistence.getActiveProfileIndex()
+    if idx then
+        local p = persistence.profilesData.profiles[idx]
+        if p then return p end
+    end
+    return nil
+end
+
+function persistence.getActiveProfileIndex()
+    if not persistence.profilesData then return nil end
+    local idx = persistence.profilesData.activeProfileIndex
+    if idx and idx >= 1 and idx <= 3 then return idx end
+    return nil
+end
+
+function persistence.createProfile(name)
+    local profiles = persistence.profilesData.profiles
+    for i = 1, 3 do
+        if profiles[i] == nil then
+            profiles[i] = {
+                name = name or ("Jugador " .. i),
+                createdAt = os.time(),
+                monedas = 0,
+                highScore = 0,
+                achievements = {},
+                unlocks = {}
+            }
+            persistence.profilesData.activeProfileIndex = i
+            persistence.saveProfiles()
+            return true, nil, i
+        end
+    end
+    return false, "Máximo 3 perfiles alcanzado", nil
+end
+
+function persistence.selectProfile(index)
+    if index < 1 or index > 3 then
+        return false, "Índice inválido"
+    end
+    if not persistence.profilesData.profiles[index] then
+        return false, "Perfil vacío"
+    end
+    persistence.profilesData.activeProfileIndex = index
+    persistence.saveProfiles()
+    return true, nil, persistence.profilesData.profiles[index]
+end
+
+function persistence.renameProfile(index, newName)
+    if index < 1 or index > 3 then return false, "Índice inválido" end
+    local profile = persistence.profilesData.profiles[index]
+    if not profile then return false, "Perfil vacío" end
+    profile.name = newName
+    persistence.saveProfiles()
+    return true
+end
+
+function persistence.deleteProfile(index)
+    if index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData.profiles[index] then
+        return false, "Perfil vacío"
+    end
+    persistence.profilesData.profiles[index] = nil
+    if persistence.profilesData.activeProfileIndex == index then
+        local found = false
+        for i = 1, 3 do
+            if persistence.profilesData.profiles[i] ~= nil then
+                persistence.profilesData.activeProfileIndex = i
+                found = true
+                break
+            end
+        end
+        if not found then
+            persistence.profilesData.activeProfileIndex = nil
+        end
+    end
+    persistence.saveProfiles()
+    return true
+end
+
+function persistence.resetProfile(index)
+    if index < 1 or index > 3 then return false, "Índice inválido" end
+    local old = persistence.profilesData.profiles[index]
+    if not old then return false, "Perfil vacío" end
+    persistence.profilesData.profiles[index] = {
+        name = old.name,
+        createdAt = os.time(),
+        monedas = 0,
+        highScore = 0,
+        achievements = {},
+        unlocks = {}
+    }
+    persistence.saveProfiles()
+    return true
+end
 
 function persistence.loadSettings()
     if love.filesystem.getInfo(settingsPath) then
