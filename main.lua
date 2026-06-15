@@ -12,6 +12,7 @@ local itemsMod = require("items")
 local enemiesMod = require("enemies")
 local worldMod = require("world")
 local settingsMod = require('settings')
+local profilesMod = require('profiles')
 
 local function calculateCurrentSpeed(base, fruits)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
@@ -203,6 +204,8 @@ function love.load()
         highScore = activeProfile.highScore
     else
         highScore = persistenceMod.cargar()
+        -- Auto-open profile manager if no active profile
+        profilesMod.open()
     end
 
     uiMod.load()
@@ -582,6 +585,7 @@ function love.draw()
             uiMod.drawMenu(introTimer, time, highScore)
         end
         if settingsMod and settingsMod.draw then settingsMod.draw() end
+        if profilesMod and profilesMod.visible then profilesMod.draw() end
         love.graphics.setCanvas()
 
         -- glow: solo elementos luminosos de la intro
@@ -833,6 +837,12 @@ function love.mousepressed(x, y, button)
         end
     end
 
+    -- If profiles menu is open, route clicks there first
+    if profilesMod and profilesMod.visible then
+        if profilesMod.mousepressed then profilesMod.mousepressed(x,y,button) end
+        return
+    end
+
     -- If config menu is open, route clicks there first
     if settingsMod and settingsMod.visible then
         if settingsMod.mousepressed then settingsMod.mousepressed(x,y,button) end
@@ -849,6 +859,9 @@ function love.mousepressed(x, y, button)
             mundoCompletado = false
             iniciarSala(false)
             gameState = constants.GAME_STATE_PLAYING
+            return
+        elseif hit == 'profiles' then
+            profilesMod.open()
             return
         elseif hit == 'settings' then
             settingsMod.open()
@@ -955,9 +968,21 @@ function dibujarDebugMenu()
     love.graphics.print("Racha: " .. (comboCount or 0), px + pad + 100, y + 4)
 end
 
+function love.textinput(text)
+    if profilesMod and profilesMod.visible and profilesMod.textinput then
+        profilesMod.textinput(text)
+    end
+end
+
 function love.keypressed(tecla)
     if tecla == "tab" then
         debugMenuOpen = not debugMenuOpen
+        return
+    end
+
+    -- Route to profiles manager first
+    if profilesMod and profilesMod.visible then
+        if profilesMod.keypressed then profilesMod.keypressed(tecla) end
         return
     end
 

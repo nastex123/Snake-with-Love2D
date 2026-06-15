@@ -281,7 +281,7 @@ function ui.drawMenu(menuTime, globalTime, highScore)
         local bx = cx - bw/2
         local by = h/2 + 80
         local gap = 14
-        local labels = { {id='play', text='JUGAR'}, {id='settings', text='CONFIGURACIÓN'}, {id='exit', text='SALIR'} }
+            local labels = { {id='play', text='JUGAR'}, {id='profiles', text='PERFILES'}, {id='settings', text='CONFIGURACIÓN'}, {id='exit', text='SALIR'} }
         for i, btn in ipairs(labels) do
             local x = bx
             local y = by + (i-1) * (bh + gap)
