@@ -134,6 +134,22 @@ local function aplicarItem(itemId)
     end
 end
 
+function applyActiveProfile()
+    local profile = persistenceMod.getActiveProfile()
+    if not profile then return end
+    monedas = profile.monedas
+    highScore = profile.highScore
+    -- Apply persistent passive unlocks to shop inventory
+    for id, unlocked in pairs(profile.unlocks or {}) do
+        if unlocked and itemsMod.registry[id] then
+            local def = itemsMod.registry[id]
+            if def.itemType == "passive" then
+                shop.inventory[id] = true
+            end
+        end
+    end
+end
+
 local function resetGame(keepShopInventory)
     player = snakeMod.reset()
     cronometro = 0
@@ -197,14 +213,11 @@ function love.load()
     persistenceMod.init()
     persistenceMod.initProfiles()
 
-    -- Apply active profile data if exists
     local activeProfile = persistenceMod.getActiveProfile()
     if activeProfile then
-        monedas = activeProfile.monedas
-        highScore = activeProfile.highScore
+        applyActiveProfile()
     else
         highScore = persistenceMod.cargar()
-        -- Auto-open profile manager if no active profile
         profilesMod.open()
     end
 
@@ -521,6 +534,7 @@ function love.update(dt)
                     celebrationTimer = constants.HIGH_SCORE_CELEBRATION_DURATION
                     gameState = constants.GAME_STATE_HIGH_SCORE
                 else
+                    applyActiveProfile()
                     gameState = constants.GAME_STATE_SHOP
                     sound:playSegment("intro")
                     shop.abrir(monedas)
@@ -532,6 +546,7 @@ function love.update(dt)
         celebrationTimer = celebrationTimer - dt
         if celebrationTimer <= 0 then
             fadeDir = -1
+            applyActiveProfile()
             gameState = constants.GAME_STATE_SHOP
             sound:playSegment("intro")
             shop.abrir(monedas)
@@ -893,6 +908,18 @@ function love.mousepressed(x, y, button)
             gameState = constants.GAME_STATE_PLAYING
         elseif resultado then
             monedas = monedas - resultado.costo
+            -- Save unlock to profile if passive item
+            if resultado.item and itemsMod.registry[resultado.item] then
+                local def = itemsMod.registry[resultado.item]
+                if def.itemType == "passive" then
+                    local profile = persistenceMod.getActiveProfile()
+                    if profile then
+                        profile.unlocks = profile.unlocks or {}
+                        profile.unlocks[resultado.item] = true
+                        persistenceMod.syncUnlocks(profile.unlocks)
+                    end
+                end
+            end
             persistenceMod.syncActiveProfile()
             sound.play("buy")
             shop.abrir(monedas)
@@ -1083,6 +1110,18 @@ function love.keypressed(tecla)
             gameState = constants.GAME_STATE_PLAYING
         elseif resultado then
             monedas = monedas - resultado.costo
+            -- Save unlock to profile if passive item
+            if resultado.item and itemsMod.registry[resultado.item] then
+                local def = itemsMod.registry[resultado.item]
+                if def.itemType == "passive" then
+                    local profile = persistenceMod.getActiveProfile()
+                    if profile then
+                        profile.unlocks = profile.unlocks or {}
+                        profile.unlocks[resultado.item] = true
+                        persistenceMod.syncUnlocks(profile.unlocks)
+                    end
+                end
+            end
             persistenceMod.syncActiveProfile()
             sound.play("buy")
             shop.abrir(monedas)

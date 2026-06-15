@@ -468,9 +468,7 @@ end
 function profilesMod.handleSelect(index)
     local ok, msg, profile = persistence.selectProfile(index)
     if ok and profile then
-        -- apply profile data globally
-        monedas = profile.monedas
-        highScore = profile.highScore
+        applyActiveProfile()
     end
 end
 
@@ -482,11 +480,7 @@ function profilesMod.handleInputConfirm()
     if confirmType == "create" then
         local ok, msg = persistence.createProfile(text)
         if ok then
-            local p = persistence.getActiveProfile()
-            if p then
-                monedas = p.monedas
-                highScore = p.highScore
-            end
+            applyActiveProfile()
         end
     elseif confirmType == "rename" then
         persistence.renameProfile(inputIndex, text)
@@ -501,19 +495,12 @@ end
 function profilesMod.handleConfirmYes()
     if confirmType == "delete" then
         persistence.deleteProfile(confirmIndex)
-        -- if no active profile anymore, keep UI open
-        local newActive = persistence.getActiveProfile()
-        if newActive then
-            monedas = newActive.monedas
-            highScore = newActive.highScore
+        if persistence.getActiveProfile() then
+            applyActiveProfile()
         end
     elseif confirmType == "reset" then
         persistence.resetProfile(confirmIndex)
-        local p = persistence.getActiveProfile()
-        if p then
-            monedas = p.monedas
-            highScore = p.highScore
-        end
+        applyActiveProfile()
     end
     state = 'select'
     confirmIndex = nil
