@@ -11,6 +11,7 @@ local shadersMod = require("shaders")
 local itemsMod = require("items")
 local enemiesMod = require("enemies")
 local worldMod = require("world")
+local settingsMod = require('settings')
 
 local function calculateCurrentSpeed(base, fruits)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
@@ -201,6 +202,10 @@ function love.load()
     sound.load()
     shadersMod.load()
 
+    -- Cargar y aplicar configuración DESPUÉS de inicializar subsistemas (sound/shaders/ui)
+    persistenceMod.loadSettings()
+    persistenceMod.applySettings(persistenceMod.settings)
+
     menuPS = particles.menuFondo()
 
     activePS = {}
@@ -225,6 +230,8 @@ function love.load()
     transitionHoldTimer = 0
     bossHealthDisplay = nil
     mundoCompletado = false
+    debugMenuOpen = false
+    debugImmune = false
 end
 
 function love.update(dt)
@@ -270,6 +277,9 @@ function love.update(dt)
             fadeDir = 0
         end
     end
+
+    -- Menu subsystem update (UI toasts, etc.)
+    if settingsMod and settingsMod.update then settingsMod.update(dt) end
 
     for i = #activePS, 1, -1 do
         local entry = activePS[i]
@@ -499,6 +509,7 @@ function love.update(dt)
                     gameState = constants.GAME_STATE_HIGH_SCORE
                 else
                     gameState = constants.GAME_STATE_SHOP
+                    sound:playSegment("intro")
                     shop.abrir(monedas)
                 end
             end
@@ -509,6 +520,7 @@ function love.update(dt)
         if celebrationTimer <= 0 then
             fadeDir = -1
             gameState = constants.GAME_STATE_SHOP
+            sound:playSegment("intro")
             shop.abrir(monedas)
         end
 
@@ -548,12 +560,19 @@ function love.draw()
     if gameState == constants.GAME_STATE_MENU then
         -- Menu: capturar en canvasScene, aplicar heat distortion + CRT
         shadersMod.beginScene()
-        shadersMod.drawBalatroBG(time, 0)
+        local s = 0.8
+        if introTimer > 1.5 and introTimer < 3.0 then
+            s = 0.8 + 0.2 * math.min(1, (introTimer - 1.5) / 0.5)
+        elseif introTimer >= 3.0 and introTimer < 4.5 then
+            s = 0.8 + 0.2 * math.max(0, 1 - (introTimer - 3.0) / 1.5)
+        end
+        shadersMod.drawBalatroBG(time, s)
         uiMod.drawBalatroIntro(introTimer, time, false)
         love.graphics.draw(menuPS, 0, 0)
         if introTimer >= 3.0 then
             uiMod.drawMenu(introTimer, time, highScore)
         end
+        if settingsMod and settingsMod.draw then settingsMod.draw() end
         love.graphics.setCanvas()
 
         -- glow: solo elementos luminosos de la intro
@@ -596,7 +615,7 @@ function love.draw()
         love.graphics.line(0, constants.GRID_OFFSET_Y - 1, love.graphics.getWidth(), constants.GRID_OFFSET_Y - 1)
 
         -- fondo fluido Balatro procedural (antes del grid)
-        shadersMod.drawBalatroBG(time, comboIntensity)
+        shadersMod.drawBalatroBG(time, 0.8 + comboIntensity * 0.2)
 
         -- offset de grilla para que no quede bajo el HUD
         love.graphics.push()
@@ -750,10 +769,87 @@ function love.draw()
 
         -- ---- COMPOSITE final ----
         shadersMod.composite(time, crtIntensity, false)
+        if debugMenuOpen and (gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED) then
+            dibujarDebugMenu()
+        end
     end
 end
 
 function love.mousepressed(x, y, button)
+    -- Update menu button pressed state for visuals
+    if gameState == constants.GAME_STATE_MENU then
+        local hit = uiMod.menuMousePressed(x,y)
+        if hit then uiMod.setMenuPressed(hit) end
+    end
+    if debugMenuOpen and button == 1 then
+        for _, btn in ipairs(debugButtons) do
+            if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
+                if btn.action == "skip" then
+                    if not transitionTarget then
+                        if worldMod.esJefe() then
+                            transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
+                        else
+                            transitionTarget = "siguienteSala"
+                        end
+                        transitionPhase = 1
+                        fadeDir = 1
+                        gameState = constants.GAME_STATE_TRANSITION
+                        sound:playSegment("intro")
+                    end
+                elseif btn.action == "skipStage" then
+                    if not transitionTarget then
+                        transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
+                        transitionPhase = 1
+                        fadeDir = 1
+                        gameState = constants.GAME_STATE_TRANSITION
+                        sound:playSegment("intro")
+                    end
+                elseif btn.action == "coins" then
+                    monedas = monedas + 10
+                elseif btn.action == "immune" then
+                    debugImmune = not debugImmune
+                elseif btn.action == "speedUp" then
+                    baseSpeed = math.max(constants.MIN_BASE_SPEED, baseSpeed - constants.SPEED_ADJUST_INCREMENT)
+                    velocidadActual = calculateCurrentSpeed(baseSpeed, frutasContador)
+                elseif btn.action == "speedDown" then
+                    baseSpeed = math.min(constants.MAX_BASE_SPEED, baseSpeed + constants.SPEED_ADJUST_INCREMENT)
+                    velocidadActual = calculateCurrentSpeed(baseSpeed, frutasContador)
+                elseif btn.action == "comboUp" then
+                    comboCount = (comboCount or 0) + 1
+                elseif btn.action == "comboDown" then
+                    comboCount = math.max(0, (comboCount or 0) - 1)
+                end
+                return
+            end
+        end
+    end
+
+    -- If config menu is open, route clicks there first
+    if settingsMod and settingsMod.visible then
+        if settingsMod.mousepressed then settingsMod.mousepressed(x,y,button) end
+        return
+    end
+
+    -- Menu main buttons
+    if button == 1 and gameState == constants.GAME_STATE_MENU then
+        local hit = uiMod.menuMousePressed(x, y)
+        if hit == 'play' then
+            fadeAlpha = 1
+            fadeDir = -1
+            worldMod.init()
+            mundoCompletado = false
+            iniciarSala(false)
+            gameState = constants.GAME_STATE_PLAYING
+            return
+        elseif hit == 'settings' then
+            settingsMod.open()
+            return
+        elseif hit == 'exit' then
+            love.event.quit()
+            return
+        end
+    end
+
     if button == 1 and gameState == constants.GAME_STATE_SHOP then
         local resultado = shop.mousepressed(x, y, monedas)
         if resultado == "exit" then
@@ -777,7 +873,85 @@ function love.mousepressed(x, y, button)
     end
 end
 
+function love.mousereleased(x,y,button)
+    if settingsMod and settingsMod.mousereleased and settingsMod.visible then
+        settingsMod.mousereleased(x,y,button)
+    end
+end
+
+function love.mousemoved(x,y,dx,dy)
+    if settingsMod and settingsMod.mousemoved and settingsMod.visible then
+        settingsMod.mousemoved(x,y,dx,dy)
+    end
+    if gameState == constants.GAME_STATE_MENU then uiMod.updateMenuHover(x,y) end
+end
+
+debugButtons = {}
+
+function dibujarDebugMenu()
+    local px, py = 10, 50
+    local pw = 210
+    local bh = 26
+    local gap = 4
+    local pad = 8
+    local bw = pw - pad * 2
+    local halfW = (bw - gap) / 2
+
+    -- Background panel
+    love.graphics.setColor(0.08, 0.08, 0.15, 0.88)
+    love.graphics.rectangle("fill", px, py, pw, 250, 6)
+
+    -- Title
+    love.graphics.setColor(0, 0.85, 1, 1)
+    love.graphics.setFont(uiMod.fontSmall)
+    love.graphics.print("DEBUG", px + pad, py + 6)
+
+    local y = py + 26
+    debugButtons = {}
+
+    local function addBtn(label, action, x, w, color)
+        color = color or {0.2, 0.2, 0.35, 1}
+        love.graphics.setColor(color)
+        love.graphics.rectangle("fill", x, y, w, bh, 4)
+        table.insert(debugButtons, {x = x, y = y, w = w, h = bh, action = action})
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.setFont(uiMod.fontSmall)
+        love.graphics.print(label, x + 6, y + (bh - uiMod.fontSmall:getHeight()) / 2)
+    end
+
+    addBtn("[K] Skip Room", "skip", px + pad, bw)
+    y = y + bh + gap
+
+    addBtn("Skip Stage", "skipStage", px + pad, bw)
+    y = y + bh + gap
+
+    addBtn("[L] +10 Coins", "coins", px + pad, bw)
+    y = y + bh + gap
+
+    local immuneColor = debugImmune and {0.5, 0.1, 0.1, 1} or {0.2, 0.2, 0.35, 1}
+    addBtn("Inmune: " .. (debugImmune and "ON" or "OFF"), "immune", px + pad, bw, immuneColor)
+    y = y + bh + gap
+
+    addBtn("Speed +", "speedUp", px + pad, halfW)
+    addBtn("Speed -", "speedDown", px + pad + halfW + gap, halfW)
+    y = y + bh + gap
+
+    addBtn("Racha +", "comboUp", px + pad, halfW)
+    addBtn("Racha -", "comboDown", px + pad + halfW + gap, halfW)
+    y = y + bh + gap
+
+    love.graphics.setColor(0.6, 0.6, 0.6, 1)
+    love.graphics.setFont(uiMod.fontSmall)
+    love.graphics.print("Vel: " .. string.format("%.3f", baseSpeed), px + pad, y + 4)
+    love.graphics.print("Racha: " .. (comboCount or 0), px + pad + 100, y + 4)
+end
+
 function love.keypressed(tecla)
+    if tecla == "tab" then
+        debugMenuOpen = not debugMenuOpen
+        return
+    end
+
     if gameState == constants.GAME_STATE_MENU then
         if introTimer < 4.5 then return end
         if tecla == "return" or tecla == "kpenter" then

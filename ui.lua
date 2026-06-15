@@ -33,6 +33,24 @@ function ui.load()
     end
 end
 
+-- Ajustes de accesibilidad y escala aplicables en runtime
+ui.scale = 1.0
+ui.highContrast = false
+ui.colorblind = 'off'
+
+function ui.setScale(s)
+    ui.scale = s or 1.0
+    -- ajustar fuentes si se desea (se recarga en load en próximas iteraciones)
+end
+
+function ui.applyHighContrast(flag)
+    ui.highContrast = not not flag
+end
+
+function ui.applyColorblind(mode)
+    ui.colorblind = mode or 'off'
+end
+
 function ui.drawBalatroIntro(t, globalTime, glowPass)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
@@ -180,9 +198,14 @@ function ui.drawMenu(menuTime, globalTime, highScore)
         love.graphics.printf(titleText, 0, ty, w, "center")
         love.graphics.pop()
 
-        -- core text
+        -- core text (scaled bigger)
+        love.graphics.push()
+        love.graphics.translate(cx, ty + ui.fontTitle:getHeight() / 2)
+        love.graphics.scale(1.4, 1.4) -- increase title size
+        love.graphics.translate(-cx, -(ty + ui.fontTitle:getHeight() / 2))
         love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], titleAlpha)
         love.graphics.printf(titleText, 0, ty, w, "center")
+        love.graphics.pop()
 
         love.graphics.pop()
     end
@@ -246,13 +269,73 @@ function ui.drawMenu(menuTime, globalTime, highScore)
         end
     end
 
-    -- === ENTER PROMPT ===
+    -- (Removed the ENTER prompt - UI uses buttons and mouse now)
+
+    -- === MAIN MENU BUTTONS (Play / Settings / Exit) ===
+    -- Buttons are stored in ui.menuButtons for click handling
+    ui.menuButtons = ui.menuButtons or {}
+    ui.menuButtons = {}
     if enterAlpha > 0 then
-        local blink = math.sin(globalTime * 3) * 0.5 + 0.5
-        love.graphics.setFont(ui.fontNormal)
-        love.graphics.setColor(1, 1, 1, enterAlpha * (0.5 + blink * 0.5))
-        love.graphics.printf("PRESIONA ENTER PARA COMENZAR", 0, h / 2 + 78, w, "center")
+        local bw = 220
+        local bh = 44
+        local bx = cx - bw/2
+        local by = h/2 + 80
+        local gap = 14
+        local labels = { {id='play', text='JUGAR'}, {id='settings', text='CONFIGURACIÓN'}, {id='exit', text='SALIR'} }
+        for i, btn in ipairs(labels) do
+            local x = bx
+            local y = by + (i-1) * (bh + gap)
+            ui.menuButtons[#ui.menuButtons+1] = {id = btn.id, x=x, y=y, w=bw, h=bh}
+            local isHover = (ui.menuHoverId == btn.id)
+            local isPressed = (ui.menuPressedId == btn.id)
+            local alpha = enterAlpha * 0.95
+            local baseColor = {0.12, 0.12, 0.22}
+            if isPressed then
+                love.graphics.setColor(baseColor[1]*0.6, baseColor[2]*0.6, baseColor[3]*0.6, alpha)
+            elseif isHover then
+                love.graphics.setColor(baseColor[1]*0.8, baseColor[2]*0.8, baseColor[3]*0.8, alpha)
+            else
+                love.graphics.setColor(baseColor[1], baseColor[2], baseColor[3], alpha)
+            end
+            love.graphics.rectangle('fill', x, y, bw, bh, 8)
+            love.graphics.setColor(1,1,1, enterAlpha)
+            love.graphics.setFont(ui.fontNormal)
+            love.graphics.printf(btn.text, x, y + (bh - ui.fontNormal:getHeight())/2, bw, 'center')
+        end
     end
+end
+
+function ui.menuMousePressed(x, y)
+    if not ui.menuButtons then return nil end
+    for _, b in ipairs(ui.menuButtons) do
+        if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+            return b.id
+        end
+    end
+    return nil
+end
+
+-- Hover / pressed visual state helpers
+ui.menuHoverId = nil
+ui.menuPressedId = nil
+
+function ui.updateMenuHover(x,y)
+    ui.menuHoverId = nil
+    if not ui.menuButtons then return end
+    for _, b in ipairs(ui.menuButtons) do
+        if x >= b.x and x <= b.x + b.w and y >= b.y and y <= b.y + b.h then
+            ui.menuHoverId = b.id
+            return
+        end
+    end
+end
+
+function ui.setMenuPressed(id)
+    ui.menuPressedId = id
+end
+
+function ui.clearMenuPressed()
+    ui.menuPressedId = nil
 end
 
 function ui.drawGrid(anchoGrilla, altoGrilla, time, comboIntensity)

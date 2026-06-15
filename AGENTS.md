@@ -1,111 +1,72 @@
-# Perfil del Desarrollador
-
-* **Nombre:** Brandon Rangel | Estudiante IUB (1er semestre Ing. Sistemas)
-* **Sistemas:** Dual-boot Zorin OS (principal) + Windows 10 v1607
-* **Tecnologias:** HTML, CSS, JS, Python, Lua (Love2D), Godot (GDScript)
-* **Estetica:** Glassmorphism, fondos oscuros, UI translucida, cero emojis
-* **Respuesta:** Directa, sin preambulos, sin explicaciones condescendientes
-
-# Proyecto: Snake en Love2D — Dungeon Crawler
+# Snake Love2D — Dungeon Crawler
 
 ## Ejecucion
-`love <directorio-raiz>` — NUNCA apuntar a `main.lua` suelto. VS Code: abrir carpeta completa o task con `${fileDirname}`.
+`love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (100% modular)
+## Arquitectura (14 modulos)
 | Archivo | Rol |
 |---------|-----|
-| `main.lua` | Loop principal, maquina de estados, integracion de modulos |
-| `constants.lua` | Config global (bloque 20px, colores, precios, timers, particulas, enemies, bosses) |
-| `world.lua` | Mazmorra: etapa (1-5), sala (1-5), objetivoSala, modificadores por etapa |
-| `snake.lua` | Movimiento, colisiones (cabeza mata enemigos con trade), gradiente, ojos |
-| `enemies.lua` | Chaser, patroller, spawner, boss (teleporter). Patrollers se atraviesan entre si |
-| `food.lua` | Comida validando contra serpiente, obstaculos y enemigos. 3 tipos: Normal/Gold/Coin |
-| `items.lua` | Registry de 12 items. Activos van a slots (1-3), pasivos auto-aplican |
-| `shop.lua` | Tienda con cards, paginacion 4x3, slots inferiores para items activos |
-| `ui.lua` | Balatro intro (diamante+espiral+flash), grid lineas, HUD, popups |
-| `obstacles.lua` | Obstaculos cada 50pts, validacion antisolapamiento |
-| `particles.lua` | ParticleSystem nativo con textura 4x4 procedural (bursts) |
-| `shaders.lua` | Pipeline multi-paso + Balatro BG shader (domain warping + spiral) |
-| `persistence.lua` | High score en `love.filesystem` (identidad: `Snake_Brandon_IUB`) |
-| `sound.lua` | Sonidos procedurales (sine/sweep/noise via SoundData) |
+| `main.lua` | Loop, maquina de estados (7 estados), integracion |
+| `constants.lua` | Config global (bloque 20px, colores, precios, timers) |
+| `world.lua` | Mazmorra: etapa(1-5) x sala(1-5), objetivoSala, modificadores |
+| `snake.lua` | Movimiento, colisiones (trade kill), gradiente, ojos |
+| `enemies.lua` | Chaser/Patroller/Spawner/Boss. Patrollers se atraviesan entre si |
+| `food.lua` | 3 tipos (Normal/Gold/Coin), valida contra todo |
+| `items.lua` | Registry de 12 items. Activos van a slots (1-3) |
+| `shop.lua` | Cards paginacion 4x3, slots activos inferiores |
+| `ui.lua` | Intro Balatro, grid, HUD, popups |
+| `obstacles.lua` | Obstaculos cada 50pts |
+| `particles.lua` | ParticleSystem con textura 4x4 procedural |
+| `shaders.lua` | Pipeline 7-canvas: bloom+CRT+sombra+heat. Balatro BG con pixelado+espiral |
+| `persistence.lua` | High score via `love.filesystem` |
+| `sound.lua` | Sonidos procedurales (sine/sweep/noise) |
 
-## Estados del juego
-`GAME_STATE_MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`
+Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`.
 
-## Flujo de pantallas
-`MENU` (ENTER) → `PLAYING` → (`PAUSED` ESPACIO/ESC) → `DEATH_ANIMATION` → (`HIGH_SCORE` 1.3s si nuevo record) → `SHOP` (1/2/3 comprar o click, 4 salir, 5 continuar) → `MENU`
+## Estados (`constants.lua`)
+`MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`
 
-**Dungeon progression:** `PLAYING` → (`TRANSITION` fade-out 2s hold + fade-in) → `SHOP` → `PLAYING` (siguiente sala). Sala 5 = boss. Etapa 5-5 = victoria.
+## Flujo
+`MENU`(ENTER despues 4.5s) → `PLAYING` → `TRANSITION`(fade-out→hold2s→fade-in) → `SHOP` → `PLAYING`
+`PLAYING` → `PAUSED`(ESPACIO/ESC)
+`PLAYING` → `DEATH_ANIMATION` → `HIGH_SCORE`(1.3s si record) o `SHOP` → `MENU`
+Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 
-**Muerte:** Reinicia desde 1-1 pero conserva monedas e items. `world.init()` en `DEATH_ANIMATION` → `SHOP`.
+## Sound (`sound.lua`)
+Single .ogg, 4 segmentos: intro(1-9s), comboEnter(10-17s), comboLoop(13-17s), boss(18-24s)
+- `comboLoop` usa seamless crossfade con `nextLoopSource`
+- **Gotcha:** `nextLoopSource` debe ser `:stop()`'d antes de setear a `nil` al cambiar de segmento
+- `playSegment()` cancela crossfade activo antes de cambiar
+- `sound:update(dt)` se llama al inicio de `love.update()`, ANTES del movimiento
 
-## Pipeline de render
-`shaders.lua`: 7-canvas, 5-shaders. `shaders.composite()` aplica bloom (glow→blurH→blurV), sombra, CRT. Menu usa heat distortion. Balatro BG con spiral effect (`spiralIntensity` uniform).
+## Snake colisiones (`snake.mover()`)
+Retorna 4 valores: `vivo, comio, enemyKilled, bossResult`
+Orden colision: cuerpo → obstaculos → boss → enemigos
+- Trade kill: cabeza mata enemigo pero muere (a menos que shield/armor/ghost/immune)
+- `hitBoss()` retorna 2 formas: `{hit=true, vida, vidaMax}` (vivo) o `{px, py, ..., type="boss"}` (muerto)
+- `debugImmune` global: atraviesa todo sin morir (no consume shield/armor)
 
-## Mazmorra (world.lua)
-- 5 etapas × 5 salas = 25 habitaciones
-- Sala 5 de cada etapa = boss fight
-- `stageModifiers[etapa]`: spawnRate, enemySpeed, chaserWeight, patrollerWeight, spawnerWeight, targetMult, bossVida
-- `world.getModifier()` → pasa a `enemies.generar()` y `enemies.spawnBoss()`
-- Objetivo por sala: `floor((50 + sala*30) * targetMult)`
+## Debug menu (Tab)
+Toggle: `debugMenuOpen` (global). Dibujado post-composite en PLAYING/PAUSED.
+Panel 210x250 en x=10,y=50. Botones: Skip Room, Skip Stage, +10 Coins, Inmune, Speed +/-, Racha +/-.
+Click en `love.mousepressed()`. `debugButtons` rebuild cada frame.
 
-## Enemigos (enemies.lua)
-- **Chaser** (rojo, rombo): persigue cabeza de serpiente. Velocidad: 0.3
-- **Patroller** (azul, triangulo direccional): rebota en paredes. Velocidad: 0.2. **Se atraviesan entre si** (solo verifican contra snake)
-- **Spawner** (purpura, cuadrado): genera obstaculos cada 3s
-- **Boss** (teleporter): aparece en sala 5. Se teletransporta cada 2s, genera minions patroller cada 4s. Multi-golpe (vida depende de etapa)
+## Dungeon
+`world.objetivoSala = floor((50 + sala*30) * stageModifiers[etapa].targetMult)`
+`iniciarSala(keepInventory)`: `foodMod.generar()` ANTES de `enemiesMod.generar()` (evita foodPos stale).
 
-**Colision cabeza-enemigo:** Cabeza mata enemigo con trade. Shield/armor protegen. Ghost atraviesa. `snake.mover()` retorna 4to valor `bossResult`.
+## Pipeline render (`shaders.lua`)
+`shaders.composite()`: sceneCanvas → (glow → blurH → blurV) bloom additive → shadow blur → CRT sobre canvasFinal.
+Menu usa heat distortion. Debug menu se dibuja DESPUES del composite.
 
-## Intro Balatro (ui.drawBalatroIntro)
-| Tiempo | Efecto |
-|--------|--------|
-| 0-0.5s | Fade from black |
-| 0.5-1.5s | Diamante cyan sube al centro (easeOutBack) |
-| 1.5-2.5s | 35 formas espiralean hacia centro, background en espiral |
-| 2.5-3.0s | Flash blanco |
-| 3.0-4.5s | Titulo + menu aparecen, background se desenrosca |
-| 4.5s+ | ENTER habilitado |
+## Love2D gotchas
+- `ParticleSystem:getCount()` NO `count()`
+- `ParticleSystem:setParticleLifetime(min,max)` NO `setLifetime()`
+- `dt` no existe en `love.draw()` — timers en `love.update()`
+- `love.mousepressed()` solo maneja SHOP clicks y debug menu
+- Font `PressStart2P-Regular.ttf` via `pcall` con fallback. Sizes: 28/16/11/8
 
-Background shader tiene `spiralIntensity` uniform que controla rotacion polar del domain warping.
-
-## Transiciones (TRANSITION state)
-3 fases: `transitionPhase == 1` (fade-out) → `"hold"` (2s, texto visible) → `2` (fade-in → SHOP). Texto: "SALA COMPLETADA", "ETAPA COMPLETADA" o "MAZMORRA SUPERADA". Dibujado DESPUES del fade overlay.
-
-## Items (items.lua + shop.lua)
-- **Activos** → slots 1-3 (teclas 1/2/3 para usar): shield, armor, ghost, magnet, bomb, hunger, turbo, slow, doubler
-- **Pasivos** → auto-aplican al comprar: speedReducer (−0.02 permanente), extraCoin (+1 coin 10s)
-- Shop: `shop.slots[1-3]`, `shop.inventory` para pasivos. `shop.slotActivate(n)` retorna itemId.
-- `aplicarItem()` en main.lua maneja activacion. Colores via `itemColor()`.
-
-## Mecanicas clave
-- **Monedas:** 1 por fruta, 10 pts por fruta. Se conservan entre salas y al morir
-- **Combo:** comer dentro de 8s incrementa. Multiplicador `1 + comboCount * 0.5`
-- **Velocidad:** `baseSpeed - floor(frutas/5) * 0.01`, minimo 0.05. +/- en tiempo real
-- **Wall wrap:** serpiente atraviesa paredes, aparece del lado opuesto
-- **Screen shake:** al morir, 0.3s, intensidad 4px
-- **Fade transitions:** velocidad 3/s. `fadeDir=1` (a negro), `fadeDir=-1` (desde negro)
-
-## Gotchas Love2D
-- `ParticleSystem:getCount()` — NO `count()` (metodo no existe)
-- `ParticleSystem:setParticleLifetime(min, max)` — NO `setLifetime()` (no existe en 11.4)
-- Fuente retro: `PressStart2P-Regular.ttf`. `ui.load()` y `shop.loadFonts()` usan `pcall` con fallback
-- Font sizes: titulo 28, grande 16, normal 11, pequena 8
-- Particulas: `emit(N)` para bursts, solo `fondoPS` usa `setEmissionRate` + `start()` continuo
-- `dt` no existe en `love.draw()` — shockwave update en `love.update()`
-- `menuPS` se crea en `love.load()`, se actualiza siempre, solo se dibuja en MENU
-
-## Controles
-- `WASD/Flechas` — mover serpiente
-- `+/-` — ajustar velocidad base
-- `ENTER` — comenzar desde menu (tras 4.5s de intro)
-- `ESPACIO/ESC` — pausar/reanudar
-- `1/2/3` — usar item activo en slot
-- `L` — debug +10 monedas
-- `K` — debug saltar ronda (con manejo correcto de boss sala 5)
-
-## Estilo de codigo
-- Variables globales para estado de juego (`puntuacion`, `monedas`, `gameState`, etc.)
-- Modulos requereados con alias corto (`snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`)
-- Colores como tablas `{r, g, b}` o `{r, g, b, a}`
-- `iniciarSala(keepInventory)` llama `foodMod.generar` ANTES de `enemiesMod.generar` para evitar foodPos stale
+## Estilo
+- Variables globales (sin `local`): `puntuacion`, `monedas`, `comboCount`, `gameState`, `debugImmune`, etc.
+- Colores como `{r,g,b}` o `{r,g,b,a}`
+- Cero emojis

@@ -54,12 +54,21 @@ local function startSegment(name)
     activeSource:seek(seg.start)
     currentSegment = name
     segmentEnd = seg.finish
-    nextLoopSource = nil
+    if nextLoopSource then nextLoopSource:stop(); nextLoopSource = nil end
     nextLoopReady = false
 end
 
 function sound:playSegment(name)
-    if sound.fading then return end
+    if sound.fading then
+        if oldSource then
+            oldSource:stop()
+            oldSource = nil
+        end
+        sound.fading = false
+        sound.fadeTimer = 0
+        fadeSource = nil
+        targetSegment = nil
+    end
     if currentSegment == name then return end
     startSegment(name)
 end
@@ -87,7 +96,7 @@ function sound:crossfadeTo(name)
     activeSource = fadeSource
     currentSegment = name
     segmentEnd = seg.finish
-    nextLoopSource = nil
+    if nextLoopSource then nextLoopSource:stop(); nextLoopSource = nil end
     nextLoopReady = false
 end
 
@@ -272,6 +281,27 @@ function sound.play(name)
         sources[name]:stop()
         sources[name]:play()
     end
+end
+
+-- Control de volumen y toggles expuestos para settings
+function sound.setMasterVolume(v)
+    sound.baseVolume = math.max(0, math.min(1, v))
+    if activeSource then activeSource:setVolume(sound.baseVolume) end
+    if nextLoopSource then nextLoopSource:setVolume(sound.baseVolume) end
+end
+
+function sound.enableMusic(flag)
+    -- Si desactivamos la música paramos las fuentes; si activamos, arrancamos el segmento intro
+    if not flag then
+        sound:stop()
+    else
+        if not sound:isPlaying() then sound:playSegment('intro') end
+    end
+end
+
+function sound.enableSfx(flag)
+    -- Implementación simple: habilitar/deshabilitar reproducción de SFX en sound.play
+    sound.sfxEnabled = not not flag
 end
 
 return sound
