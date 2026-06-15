@@ -194,7 +194,16 @@ function love.load()
     gridOffsetY = constants.GRID_OFFSET_Y
 
     persistenceMod.init()
-    highScore = persistenceMod.cargar()
+    persistenceMod.initProfiles()
+
+    -- Apply active profile data if exists
+    local activeProfile = persistenceMod.getActiveProfile()
+    if activeProfile then
+        monedas = activeProfile.monedas
+        highScore = activeProfile.highScore
+    else
+        highScore = persistenceMod.cargar()
+    end
 
     uiMod.load()
     particles.load()
