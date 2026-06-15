@@ -13,6 +13,7 @@ local enemiesMod = require("enemies")
 local worldMod = require("world")
 local settingsMod = require('settings')
 local profilesMod = require('profiles')
+local achievementsMod = require('achievements')
 
 local function calculateCurrentSpeed(base, fruits)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
@@ -380,6 +381,8 @@ function love.update(dt)
                     })
                 end
                 sound.play("enemyKill")
+                achievementsMod.check("enemyKilled")
+                achievementsMod.check("coinsChanged", {totalCoins = monedas})
             end
 
             if bossResult then
@@ -393,6 +396,8 @@ function love.update(dt)
                         ps = particles.enemyKill(bossResult.px, bossResult.py, 1, 0.4, 0.6)
                     })
                     sound.play("enemyKill")
+                    achievementsMod.check("bossDefeated")
+                    achievementsMod.check("coinsChanged", {totalCoins = monedas})
                     bossHealthDisplay = nil
                     if worldMod.sala == 5 then
                         transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
@@ -412,6 +417,7 @@ function love.update(dt)
                 local oldHighScore = highScore
                 highScore = persistenceMod.guardar(puntuacion, highScore)
                 persistenceMod.syncActiveProfile()
+                achievementsMod.check("scoreReached", {score = highScore})
                 nuevoHighScore = highScore > oldHighScore
                 if nuevoHighScore then
                     local cx = love.graphics.getWidth() / 2
@@ -457,6 +463,9 @@ function love.update(dt)
                 if time - lastEatTime <= constants.COMBO_WINDOW then
                     comboCount = comboCount + 1
                     comboFlashTimer = 0.3
+                    if comboCount >= 4 then
+                        achievementsMod.check("comboAchieved", {count = comboCount + 1})
+                    end
                 else
                     comboCount = 0
                 end
@@ -559,6 +568,7 @@ function love.update(dt)
                 worldMod.avanzarSala()
             elseif transitionTarget == "siguienteEtapa" then
                 worldMod.avanzarEtapa()
+                achievementsMod.check("stageChanged", {stage = worldMod.etapa})
             elseif transitionTarget == "completado" then
                 mundoCompletado = true
             end
