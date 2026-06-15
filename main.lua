@@ -950,6 +950,12 @@ function love.mousemoved(x,y,dx,dy)
     if gameState == constants.GAME_STATE_MENU then uiMod.updateMenuHover(x,y) end
 end
 
+function love.wheelmoved(dx, dy)
+    if profilesMod and profilesMod.visible and profilesMod.wheelmoved then
+        profilesMod.wheelmoved(dx, dy)
+    end
+end
+
 debugButtons = {}
 
 function dibujarDebugMenu()
