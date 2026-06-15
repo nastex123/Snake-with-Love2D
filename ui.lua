@@ -1,0 +1,525 @@
+local ui = {}
+local constants = require("constants")
+
+ui.popups = {}
+
+local function hsv2rgb(h, s, v)
+    local i = math.floor(h * 6)
+    local f = h * 6 - i
+    local p = v * (1 - s)
+    local q = v * (1 - f * s)
+    local t = v * (1 - (1 - f) * s)
+    i = i % 6
+    if i == 0 then return v, t, p end
+    if i == 1 then return q, v, p end
+    if i == 2 then return p, v, t end
+    if i == 3 then return p, q, v end
+    if i == 4 then return t, p, v end
+    return v, p, q
+end
+
+function ui.load()
+    local ok, err = pcall(function()
+        ui.fontTitle = love.graphics.newFont(constants.FONT_FILE, constants.FONT_TITLE)
+        ui.fontLarge = love.graphics.newFont(constants.FONT_FILE, constants.FONT_LARGE)
+        ui.fontNormal = love.graphics.newFont(constants.FONT_FILE, constants.FONT_NORMAL)
+        ui.fontSmall = love.graphics.newFont(constants.FONT_FILE, constants.FONT_SMALL)
+    end)
+    if not ok then
+        ui.fontTitle = love.graphics.newFont(constants.FONT_TITLE)
+        ui.fontLarge = love.graphics.newFont(constants.FONT_LARGE)
+        ui.fontNormal = love.graphics.newFont(constants.FONT_NORMAL)
+        ui.fontSmall = love.graphics.newFont(constants.FONT_SMALL)
+    end
+end
+
+function ui.drawBalatroIntro(t, globalTime, glowPass)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local cx, cy = w / 2, h / 2
+
+    -- Fade from black (0-0.5s) — scene pass only
+    if not glowPass then
+        local fadeAlpha = math.max(0, math.min(1, 1 - t / 0.5))
+        if fadeAlpha > 0 then
+            love.graphics.setColor(0, 0, 0, fadeAlpha)
+            love.graphics.rectangle("fill", 0, 0, w, h)
+        end
+    end
+
+    -- Diamond rise (0.5-1.5s)
+    if t >= 0.5 then
+        local riseProgress = math.min(1, (t - 0.5) / 1.0)
+        local c1 = 1.70158
+        local c3 = c1 + 1
+        local eased = 1 + c3 * (riseProgress - 1)^3 + c1 * (riseProgress - 1)^2
+        local diamondY = cy + (1 - eased) * 150
+
+        -- Outer glow
+        local glowR = 40 + math.sin(t * 2) * 5
+        local glowA = math.sin(riseProgress * math.pi) * 0.35
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], glowA)
+        love.graphics.circle("fill", cx, diamondY, glowR)
+
+        -- Core diamond
+        local ds = 18 + (1 - riseProgress) * 5
+        love.graphics.push()
+        love.graphics.translate(cx, diamondY)
+        love.graphics.rotate(math.pi / 4 + math.sin(t * 2) * 0.05)
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 1)
+        love.graphics.rectangle("fill", -ds, -ds, ds * 2, ds * 2)
+        love.graphics.setColor(1, 1, 1, 0.7)
+        love.graphics.rectangle("fill", -ds * 0.4, -ds * 0.4, ds * 0.8, ds * 0.8)
+        love.graphics.pop()
+    end
+
+    -- Spiral build (1.5-2.5s)
+    if t >= 1.5 then
+        local sp = math.min(1, (t - 1.5) / 1.0)
+        local numShapes = 35
+        local maxRadius = math.min(w, h) * 0.55
+        local speedMult = 1 + sp * 3
+
+        for i = 0, numShapes - 1 do
+            local frac = i / numShapes
+            local angle = frac * 6.2832 + (t - 1.5) * speedMult * 2 + i * 0.1
+            local radius = (1 - sp) * maxRadius * (0.6 + frac * 0.4)
+            radius = radius + math.sin(angle * 2 + t * 3) * 4
+            local px = cx + math.cos(angle) * radius
+            local py = cy + math.sin(angle) * radius
+
+            if px >= -20 and px <= w + 20 and py >= -20 and py <= h + 20 then
+                local hue = (frac + (t - 1.5) * 0.05) % 1
+                local cr, cg, cb = hsv2rgb(hue, 0.65, 0.85 + math.sin(t * 2 + i) * 0.15)
+                local a = (1 - sp * 0.7) * 0.6 + 0.2
+
+                love.graphics.setColor(cr, cg, cb, a)
+
+                local size = 12 + math.sin(t * 4 + i * 1.7) * 4
+                if i % 3 == 0 then
+                    love.graphics.rectangle("fill", px - size / 2, py - size / 2, size, size)
+                elseif i % 3 == 1 then
+                    love.graphics.circle("fill", px, py, size / 2)
+                else
+                    local pts = {px, py - size / 2, px + size / 2, py, px, py + size / 2, px - size / 2, py}
+                    love.graphics.polygon("fill", pts)
+                end
+            end
+        end
+
+        -- Center glow intensifies
+        local centerGlow = 0.3 + sp * 0.7
+        love.graphics.setColor(1, 1, 1, centerGlow * 0.4)
+        love.graphics.circle("fill", cx, cy, 35 + sp * 20)
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], centerGlow * 0.3)
+        love.graphics.circle("fill", cx, cy, 50 + sp * 25)
+    end
+
+    -- Flash (2.5-3.0s) — scene pass only
+    if not glowPass then
+        if t >= 2.5 and t < 3.0 then
+            local fp = (t - 2.5) / 0.5
+            local flashAlpha = math.sin(fp * math.pi)
+            if flashAlpha > 0 then
+                love.graphics.setColor(1, 1, 1, flashAlpha)
+                love.graphics.rectangle("fill", 0, 0, w, h)
+            end
+        end
+    end
+end
+
+function ui.drawHighScoreCelebration(puntuacion, highScore)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    love.graphics.setFont(ui.fontLarge)
+    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
+    love.graphics.printf("NUEVO HIGH SCORE!", 0, h / 2 - 40, w, "center")
+    love.graphics.setFont(ui.fontNormal)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.printf(puntuacion .. " puntos", 0, h / 2, w, "center")
+end
+
+function ui.drawMenu(menuTime, globalTime, highScore)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local cx = w / 2
+
+    -- Timings shifted for Balatro intro (flash ends at 3.0s)
+    local titleAlpha = math.min(1, math.max(0, (menuTime - 3.0) / 0.5))
+    local cardAlpha = math.min(1, math.max(0, (menuTime - 3.3) / 0.5))
+    local pillAlpha = math.min(1, math.max(0, (menuTime - 3.5) / 0.5))
+    local enterAlpha = math.min(1, math.max(0, (menuTime - 4.0) / 0.3))
+
+    -- === TITLE ===
+    if titleAlpha > 0 then
+        local titleText = "S N A K E"
+        local ty = h / 2 - 70
+        local letterSpread = 1 + math.sin(globalTime * 0.6) * 0.04
+        local glowPulse = 0.5 + math.sin(globalTime * 1.5) * 0.3
+
+        love.graphics.push()
+        love.graphics.translate(cx, ty + ui.fontTitle:getHeight() / 2)
+        love.graphics.scale(letterSpread, 1)
+        love.graphics.translate(-cx, -(ty + ui.fontTitle:getHeight() / 2))
+
+        -- outer glow
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], titleAlpha * glowPulse * 0.2)
+        love.graphics.push()
+        love.graphics.translate(cx, ty + ui.fontTitle:getHeight() / 2)
+        love.graphics.scale(1.06, 1.06)
+        love.graphics.translate(-cx, -(ty + ui.fontTitle:getHeight() / 2))
+        love.graphics.printf(titleText, 0, ty, w, "center")
+        love.graphics.pop()
+
+        -- mid glow
+        love.graphics.setColor(1, 1, 1, titleAlpha * (0.2 + glowPulse * 0.2))
+        love.graphics.push()
+        love.graphics.translate(cx, ty + ui.fontTitle:getHeight() / 2)
+        love.graphics.scale(1.03, 1.03)
+        love.graphics.translate(-cx, -(ty + ui.fontTitle:getHeight() / 2))
+        love.graphics.printf(titleText, 0, ty, w, "center")
+        love.graphics.pop()
+
+        -- core text
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], titleAlpha)
+        love.graphics.printf(titleText, 0, ty, w, "center")
+
+        love.graphics.pop()
+    end
+
+    -- === HIGH SCORE CARD ===
+    if cardAlpha > 0 then
+        local cardW = 280
+        local cardH = 44
+        local cardX = (w - cardW) / 2
+        local cardY = h / 2 + 10
+        local shimmer = math.sin(globalTime * 2) * 0.3 + 0.7
+
+        -- bg glassmorphism
+        love.graphics.setColor(0.12, 0.12, 0.22, cardAlpha * 0.6)
+        love.graphics.rectangle("fill", cardX, cardY, cardW, cardH, 6)
+        -- border
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], cardAlpha * 0.3 * shimmer)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", cardX, cardY, cardW, cardH, 6)
+        -- star icon
+        love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], cardAlpha)
+        local starX = cardX + 14
+        local starY = cardY + cardH / 2
+        local pts = {}
+        for i = 0, 9 do
+            local angle = math.pi / 2 - i * math.pi * 2 / 10
+            local ri = i % 2 == 0 and 8 or 3
+            table.insert(pts, starX + math.cos(angle) * ri)
+            table.insert(pts, starY + math.sin(angle) * ri)
+        end
+        love.graphics.polygon("fill", pts)
+        -- text
+        love.graphics.setFont(ui.fontLarge)
+        love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], cardAlpha)
+        love.graphics.print("HIGH SCORE: " .. highScore, starX + 20, starY - ui.fontLarge:getHeight() / 2)
+        love.graphics.setLineWidth(1)
+    end
+
+    -- === CONTROL PILLS ===
+    if pillAlpha > 0 then
+        local pillY = h - 36
+        local pills = {
+            {text = "WASD / FLECHAS", x = cx - 120},
+            {text = "+ / - VELOCIDAD", x = cx + 20}
+        }
+
+        for _, pill in ipairs(pills) do
+            local pw = ui.fontSmall:getWidth(pill.text) + 16
+            local ph = 20
+            local px = pill.x
+            local py = pillY
+
+            love.graphics.setColor(0.12, 0.12, 0.22, pillAlpha * 0.5)
+            love.graphics.rectangle("fill", px, py, pw, ph, 10)
+            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pillAlpha * 0.25)
+            love.graphics.rectangle("line", px, py, pw, ph, 10)
+
+            love.graphics.setFont(ui.fontSmall)
+            love.graphics.setColor(1, 1, 1, pillAlpha * 0.7)
+            love.graphics.print(pill.text, px + 8, py + (ph - ui.fontSmall:getHeight()) / 2)
+        end
+    end
+
+    -- === ENTER PROMPT ===
+    if enterAlpha > 0 then
+        local blink = math.sin(globalTime * 3) * 0.5 + 0.5
+        love.graphics.setFont(ui.fontNormal)
+        love.graphics.setColor(1, 1, 1, enterAlpha * (0.5 + blink * 0.5))
+        love.graphics.printf("PRESIONA ENTER PARA COMENZAR", 0, h / 2 + 78, w, "center")
+    end
+end
+
+function ui.drawGrid(anchoGrilla, altoGrilla, time, comboIntensity)
+    local tam = constants.TAMANIO_BLOQUE
+    local w = anchoGrilla * tam
+    local h = altoGrilla * tam
+
+    local baseC = constants.COLOR_ACCENT
+    local hotC = constants.COLOR_GRID_HOT_A
+
+    local r = baseC[1] + (hotC[1] - baseC[1]) * comboIntensity
+    local g = baseC[2] + (hotC[2] - baseC[2]) * comboIntensity
+    local b = baseC[3] + (hotC[3] - baseC[3]) * comboIntensity
+    local alpha = 0.15 + comboIntensity * 0.35
+
+    love.graphics.setLineWidth(1)
+
+    -- vertical lines
+    for x = 0, anchoGrilla do
+        local px = x * tam
+        local wave = math.sin(time * constants.SHIMMER_SPEED + x * 0.5) * 0.02
+        love.graphics.setColor(
+            math.min(1, r + wave),
+            math.min(1, g + wave * 0.5),
+            math.min(1, b - wave * 0.3),
+            alpha
+        )
+        love.graphics.line(px, 0, px, h)
+    end
+
+    -- horizontal lines
+    for y = 0, altoGrilla do
+        local py = y * tam
+        local wave = math.sin(time * constants.SHIMMER_SPEED + y * 0.3) * 0.02
+        love.graphics.setColor(
+            math.min(1, r + wave),
+            math.min(1, g + wave * 0.5),
+            math.min(1, b - wave * 0.3),
+            alpha
+        )
+        love.graphics.line(0, py, w, py)
+    end
+
+    -- outer border
+    love.graphics.setColor(r, g, b, math.min(0.5, alpha + 0.2))
+    love.graphics.rectangle("line", 0, 0, w, h)
+end
+
+function ui.drawHUD(puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala)
+    love.graphics.setFont(ui.fontNormal)
+
+    local hh = constants.HUD_HEIGHT
+    local cy = math.floor((hh - ui.fontNormal:getHeight()) / 2)
+
+    love.graphics.setColor(0, 0, 0, 0.75)
+    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), hh)
+
+    local x = 8
+
+    -- Room indicator
+    if etapa and sala then
+        local roomText = etapa .. "-" .. sala
+        local isBoss = sala == 5
+        if isBoss then
+            love.graphics.setColor(1, 0.3, 0.5)
+        else
+            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
+        end
+        love.graphics.print(roomText, x, cy)
+        x = x + ui.fontNormal:getWidth(roomText) + 14
+    end
+
+    love.graphics.setColor(1, 0.84, 0.0)
+    love.graphics.print("$" .. monedas, x, cy)
+    x = x + ui.fontNormal:getWidth("$" .. monedas) + 14
+
+    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
+    love.graphics.print("" .. puntuacion, x, cy)
+    x = x + ui.fontNormal:getWidth("" .. puntuacion) + 14
+
+    -- Progress bar toward room objective
+    if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
+        local barW = 50
+        local barH = 6
+        local barY2 = math.floor(hh / 2) - 3
+        local frac = math.min(1, puntuacion / objetivoSala)
+        love.graphics.setColor(0.25, 0.25, 0.25)
+        love.graphics.rectangle("fill", x, barY2, barW, barH, 2, 2)
+        love.graphics.setColor(frac, 1 - frac, 0)
+        love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2, 2)
+        x = x + barW + 8
+    end
+
+    local barY = math.floor(hh / 2) - 3
+
+    if shieldActive then
+        local pulse = math.sin(love.timer.getTime() * 6) * 0.3 + 0.7
+        love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pulse)
+        love.graphics.print("S", x, cy)
+        x = x + ui.fontNormal:getWidth("S") + 6
+    end
+
+    if magnetTimer > 0 then
+        local frac = magnetTimer / magnetDuration
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.print("M", x, cy)
+        x = x + ui.fontNormal:getWidth("M") + 4
+        love.graphics.setColor(0.25, 0.25, 0.25)
+        love.graphics.rectangle("fill", x, barY, 30, 6, 2, 2)
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.rectangle("fill", x, barY, 30 * frac, 6, 2, 2)
+        x = x + 36
+    end
+
+    if baseSpeed then
+        local frac = (baseSpeed - constants.MIN_BASE_SPEED) / (constants.MAX_BASE_SPEED - constants.MIN_BASE_SPEED)
+        love.graphics.setColor(0.25, 0.25, 0.25)
+        love.graphics.rectangle("fill", x, barY, 40, 6, 2, 2)
+        love.graphics.setColor(frac, 1 - frac, 0)
+        love.graphics.rectangle("fill", x, barY, 40 * (1 - frac), 6, 2, 2)
+        x = x + 46
+    end
+
+    if comboCount and comboCount > 0 then
+        love.graphics.setColor(1, 0.5, 0)
+        love.graphics.print("x" .. (comboCount + 1), x, cy)
+        x = x + ui.fontNormal:getWidth("x" .. (comboCount + 1)) + 8
+    end
+
+    if activeTimers then
+        local labels = {
+            ghost = "G", turbo = "T", slow = "S",
+            doubler = "D", extraCoin = "C", star = "*"
+        }
+        local colors = {
+            ghost = {0.6, 0.4, 1}, turbo = {0, 1, 0.5},
+            slow = {0.5, 0.5, 1}, doubler = {1, 0.84, 0},
+            extraCoin = {1, 0.84, 0}, star = {1, 0.5, 0}
+        }
+        for i, t in ipairs(activeTimers) do
+            local label = labels[t.id]
+            if label then
+                local c = colors[t.id]
+                love.graphics.setColor(c[1], c[2], c[3])
+                love.graphics.print(label, x, cy)
+                x = x + ui.fontNormal:getWidth(label) + 2
+                love.graphics.setColor(0.25, 0.25, 0.25)
+                love.graphics.rectangle("fill", x, barY, 20, 6, 2, 2)
+                love.graphics.setColor(c[1], c[2], c[3])
+                love.graphics.rectangle("fill", x, barY, 20 * (t.remaining / 10), 6, 2, 2)
+                x = x + 26
+            end
+        end
+    end
+end
+
+function ui.drawSlots(slotDisplay)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local slotW = 120
+    local slotH = 26
+    local gap = 8
+    local totalW = slotW * 3 + gap * 2
+    local startX = (w - totalW) / 2
+    local y = h - slotH - 6
+
+    love.graphics.setFont(ui.fontSmall)
+
+    for i = 1, 3 do
+        local x = startX + (i - 1) * (slotW + gap)
+        local slot = slotDisplay[i]
+
+        if slot then
+            love.graphics.setColor(0.12, 0.12, 0.22, 0.85)
+            love.graphics.rectangle("fill", x, y, slotW, slotH, 3)
+            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.6)
+            love.graphics.rectangle("line", x, y, slotW, slotH, 3)
+            love.graphics.setColor(1, 1, 1, 0.4)
+            love.graphics.print(i .. ".", x + 4, y + (slotH - ui.fontSmall:getHeight()) / 2)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print(slot.name, x + 18, y + (slotH - ui.fontSmall:getHeight()) / 2)
+        else
+            love.graphics.setColor(0.12, 0.12, 0.22, 0.4)
+            love.graphics.rectangle("fill", x, y, slotW, slotH, 3)
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
+            love.graphics.rectangle("line", x, y, slotW, slotH, 3)
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
+            love.graphics.print(i .. ".", x + 4, y + (slotH - ui.fontSmall:getHeight()) / 2)
+        end
+    end
+end
+
+function ui.addPopup(text, gridX, gridY)
+    local tam = constants.TAMANIO_BLOQUE
+    table.insert(ui.popups, {
+        text = text,
+        x = gridX * tam + tam / 2,
+        y = gridY * tam,
+        alpha = 1,
+        timer = 0,
+        scale = 0
+    })
+end
+
+function ui.updatePopups(dt)
+    for i = #ui.popups, 1, -1 do
+        local p = ui.popups[i]
+        p.timer = p.timer + dt
+        p.y = p.y - constants.SCORE_POPUP_SPEED * dt
+        p.alpha = 1 - (p.timer / constants.SCORE_POPUP_LIFETIME)
+        -- scale-in rápido los primeros 0.1s
+        p.scale = math.min(1.0, p.timer / 0.10)
+        p.scale = p.scale * p.scale * (3 - 2 * p.scale)  -- smoothstep
+        if p.alpha <= 0 then
+            table.remove(ui.popups, i)
+        end
+    end
+end
+
+function ui.drawPopups()
+    love.graphics.setFont(ui.fontNormal)
+    for _, p in ipairs(ui.popups) do
+        love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], p.alpha)
+        local tw = ui.fontNormal:getWidth(p.text)
+        local th = ui.fontNormal:getHeight()
+        local cx = p.x
+        local cy = p.y
+        love.graphics.push()
+        love.graphics.translate(cx, cy + th / 2)
+        love.graphics.scale(p.scale, p.scale)
+        love.graphics.translate(-cx, -(cy + th / 2))
+        love.graphics.print(p.text, p.x - tw / 2, p.y)
+        love.graphics.pop()
+    end
+end
+
+function ui.drawComboFlash(time, comboCount, timer)
+    if timer <= 0 then return end
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local frac = timer / 0.3
+    local pulse = math.sin(time * 30) * 0.5 + 0.5
+
+    love.graphics.setColor(1, 0.5, 0, frac * 0.15)
+    love.graphics.rectangle("fill", 0, 0, w, h)
+
+    love.graphics.setFont(ui.fontLarge)
+    local r = 1
+    local g = 0.5 + pulse * 0.3
+    love.graphics.setColor(r, g, 0, frac * (0.6 + pulse * 0.4))
+    love.graphics.printf("x" .. (comboCount + 1) .. " COMBO!", 0, h / 2 - 30, w, "center")
+end
+
+function ui.drawPauseOverlay()
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+
+    love.graphics.setColor(0, 0, 0, 0.55)
+    love.graphics.rectangle("fill", 0, 0, w, h)
+
+    love.graphics.setFont(ui.fontTitle)
+    love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
+    love.graphics.printf("PAUSA", 0, h / 2 - 30, w, "center")
+
+    love.graphics.setFont(ui.fontNormal)
+    love.graphics.setColor(1, 1, 1, 0.7)
+    love.graphics.printf("ESPACIO / ESC PARA CONTINUAR", 0, h / 2 + 10, w, "center")
+end
+
+return ui
