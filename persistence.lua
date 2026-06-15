@@ -235,6 +235,15 @@ function persistence.resetProfile(index)
     return true
 end
 
+function persistence.syncActiveProfile()
+    local profile = persistence.getActiveProfile()
+    if not profile then return false end
+    profile.monedas = monedas or 0
+    profile.highScore = highScore or 0
+    persistence.saveProfiles()
+    return true
+end
+
 function persistence.loadSettings()
     if love.filesystem.getInfo(settingsPath) then
         local contents = love.filesystem.read(settingsPath)

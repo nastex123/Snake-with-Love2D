@@ -398,6 +398,7 @@ function love.update(dt)
                 gameState = constants.GAME_STATE_DEATH_ANIMATION
                 local oldHighScore = highScore
                 highScore = persistenceMod.guardar(puntuacion, highScore)
+                persistenceMod.syncActiveProfile()
                 nuevoHighScore = highScore > oldHighScore
                 if nuevoHighScore then
                     local cx = love.graphics.getWidth() / 2
@@ -875,20 +876,24 @@ function love.mousepressed(x, y, button)
     if button == 1 and gameState == constants.GAME_STATE_SHOP then
         local resultado = shop.mousepressed(x, y, monedas)
         if resultado == "exit" then
+            persistenceMod.syncActiveProfile()
             shop.reset()
             fadeDir = -1
             gameState = constants.GAME_STATE_MENU
             introTimer = 0
         elseif resultado == "continue" then
+            persistenceMod.syncActiveProfile()
             fadeAlpha = 1
             fadeDir = -1
             local monedasGuardadas = monedas
             iniciarSala(true)
             monedas = monedasGuardadas
+            persistenceMod.syncActiveProfile()
             bossHealthDisplay = nil
             gameState = constants.GAME_STATE_PLAYING
         elseif resultado then
             monedas = monedas - resultado.costo
+            persistenceMod.syncActiveProfile()
             sound.play("buy")
             shop.abrir(monedas)
         end
@@ -929,7 +934,13 @@ function dibujarDebugMenu()
     love.graphics.print("DEBUG", px + pad, py + 6)
 
     local y = py + 26
-    debugButtons = {}
+function love.quit()
+    if persistenceMod then
+        persistenceMod.syncActiveProfile()
+    end
+end
+
+debugButtons = {}
 
     local function addBtn(label, action, x, w, color)
         color = color or {0.2, 0.2, 0.35, 1}
@@ -1055,20 +1066,24 @@ function love.keypressed(tecla)
     elseif gameState == constants.GAME_STATE_SHOP then
         local resultado = shop.keypressed(tecla, monedas)
         if resultado == "exit" then
+            persistenceMod.syncActiveProfile()
             shop.reset()
             fadeDir = -1
             gameState = constants.GAME_STATE_MENU
             introTimer = 0
         elseif resultado == "continue" then
+            persistenceMod.syncActiveProfile()
             fadeAlpha = 1
             fadeDir = -1
             local monedasGuardadas = monedas
             iniciarSala(true)
             monedas = monedasGuardadas
+            persistenceMod.syncActiveProfile()
             bossHealthDisplay = nil
             gameState = constants.GAME_STATE_PLAYING
         elseif resultado then
             monedas = monedas - resultado.costo
+            persistenceMod.syncActiveProfile()
             sound.play("buy")
             shop.abrir(monedas)
         end
