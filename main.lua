@@ -15,6 +15,29 @@ local settingsMod = require('settings')
 local profilesMod = require('profiles')
 local achievementsMod = require('achievements')
 
+-- pending achievements queue (global) - populated by achievementsMod
+pendingAchievements = pendingAchievements or {}
+-- scheduled toast system: delayed, overlay-aware
+scheduledToasts = scheduledToasts or {}
+scheduledIndex = scheduledIndex or {}
+
+local function flushPendingAchievements()
+    if not pendingAchievements or #pendingAchievements == 0 then return end
+    for _, aid in ipairs(pendingAchievements) do
+        local reg = achievementsMod and achievementsMod.registry and achievementsMod.registry[aid]
+        if reg then
+            uiMod.showToast({id=aid, title=reg.title, subtitle=reg.desc, reward=reg.reward})
+        end
+    end
+    pendingAchievements = {}
+end
+
+function overlaysOpen()
+    return (profilesMod and profilesMod.visible)
+        or (settingsMod and settingsMod.visible)
+        or debugAchievementsOpen
+end
+
 local function calculateCurrentSpeed(base, fruits)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
     return math.max(constants.VELOCIDAD_MINIMA, base - speedReduction)
@@ -197,18 +220,27 @@ local function iniciarSala(keepInventory)
     resetGame(keepInventory)
     worldMod.puntajeSala = 0
     puntuacion = 0
-    local mod = worldMod.getModifier()
-    local etapa = worldMod.etapa
-    foodMod.generar(player.body, anchoGrilla, altoGrilla, obstaclesMod.pos)
-    enemiesMod.generar(player.body, foodMod.pos, obstaclesMod.pos, anchoGrilla, altoGrilla, mod)
-    if worldMod.esJefe() then
-        enemiesMod.spawnBoss(etapa, anchoGrilla, altoGrilla, mod.bossVida, 5 + etapa * 2)
+    worldMod.populateRoom(player.body, anchoGrilla, altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
+    if enemiesMod.boss and enemiesMod.boss.alive then
+        uiMod.addPopup("Derrota al jefe recogiendo " .. constants.BOSS_FOOD_TARGET .. " comidas", math.floor(anchoGrilla / 2), math.floor(altoGrilla / 2) - 2)
     end
 end
 
+local function recalcularGrilla()
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local rawCols = w / constants.TAMANIO_BLOQUE
+    local rawRows = math.floor((h - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
+    anchoGrilla = math.min(rawCols, constants.MAX_GRID_COLS)
+    altoGrilla  = math.min(rawRows, constants.MAX_GRID_ROWS)
+
+    local gameH = constants.GRID_OFFSET_Y + altoGrilla * constants.TAMANIO_BLOQUE
+    gridOffsetX = math.floor((w - anchoGrilla * constants.TAMANIO_BLOQUE) / 2)
+    gridOffsetY = constants.GRID_OFFSET_Y
+    gameOffsetY = math.floor(math.max(0, h - gameH) / 2)
+end
+
 function love.load()
-    anchoGrilla = love.graphics.getWidth() / constants.TAMANIO_BLOQUE
-    altoGrilla  = math.floor((love.graphics.getHeight() - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
     gridOffsetY = constants.GRID_OFFSET_Y
 
     persistenceMod.init()
@@ -231,6 +263,7 @@ function love.load()
     -- Cargar y aplicar configuración DESPUÉS de inicializar subsistemas (sound/shaders/ui)
     persistenceMod.loadSettings()
     persistenceMod.applySettings(persistenceMod.settings)
+    recalcularGrilla()
 
     menuPS = particles.menuFondo()
 
@@ -258,11 +291,41 @@ function love.load()
     mundoCompletado = false
     debugMenuOpen = false
     debugImmune = false
+    debugAchievementsOpen = false
+    debugDungeonOverlay = false
+    scheduledToasts = {}
+    scheduledIndex = {}
 end
 
 function love.update(dt)
     dt = dt * timeScale
     time = time + dt
+
+    -- Process queued achievement toasts (show after delay if no overlays)
+    if scheduledToasts and #scheduledToasts > 0 then
+        local i = 1
+        while i <= #scheduledToasts do
+            local st = scheduledToasts[i]
+            if time >= st.showAt then
+                if overlaysOpen() then
+                    i = i + 1  -- defer
+                else
+                    uiMod.showToast(st.payload)
+                    if scheduledIndex then scheduledIndex[st.id] = nil end
+                    if pendingAchievements then
+                        for j = #pendingAchievements, 1, -1 do
+                            if pendingAchievements[j] == st.id then
+                                table.remove(pendingAchievements, j)
+                            end
+                        end
+                    end
+                    table.remove(scheduledToasts, i)
+                end
+            else
+                i = i + 1
+            end
+        end
+    end
 
     -- Guardar estado previo de racha para detectar su finalización
     local wasCombo = (comboCount and comboCount > 0)
@@ -364,7 +427,11 @@ function love.update(dt)
         if cronometro >= velocidadActual then
             cronometro = 0
             local shieldBefore = shop.shieldActive
-            local vivo, comio, enemyKilled, bossResult = snakeMod.mover(player, foodMod.pos, anchoGrilla, altoGrilla, obstaclesMod.pos, magnetRange)
+            local vivo, comio, enemyKilled, bossResult, attackHit = snakeMod.mover(player, foodMod.pos, anchoGrilla, altoGrilla, obstaclesMod.pos, magnetRange)
+
+            if attackHit then
+                shakeTimer = 0.15
+            end
 
             if enemyKilled then
                 monedas = monedas + enemyKilled.coins
@@ -399,7 +466,7 @@ function love.update(dt)
                     achievementsMod.check("bossDefeated")
                     achievementsMod.check("coinsChanged", {totalCoins = monedas})
                     bossHealthDisplay = nil
-                    if worldMod.sala == 5 then
+                    if worldMod.isLastRoom() then
                         transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
                         transitionPhase = 1
                         fadeDir = 1
@@ -494,6 +561,40 @@ function love.update(dt)
                     uiMod.addPopup(textPopup, foodMod.pos.x, foodMod.pos.y)
                 end
 
+                -- Boss food counter
+                if enemiesMod.boss and enemiesMod.boss.alive and foodMod.tipo ~= constants.FOOD_COIN then
+                    enemiesMod.boss.foodCollected = enemiesMod.boss.foodCollected + 1
+                    local ratio = enemiesMod.boss.foodCollected / enemiesMod.boss.foodTarget
+                    enemiesMod.boss._uiBarTarget = math.max(0, 1 - ratio)
+                    sound.play("boss_food_tick")
+                    local tam2 = constants.TAMANIO_BLOQUE
+                    table.insert(activePS, {
+                        ps = particles.bossFoodTick(foodMod.pos.x * tam2 + tam2 / 2, foodMod.pos.y * tam2 + tam2 / 2)
+                    })
+                    if enemiesMod.boss.foodCollected >= enemiesMod.boss.foodTarget then
+                        local bossResult = enemiesMod.onBossDefeatedByFood()
+                        if bossResult then
+                            monedas = monedas + bossResult.coins
+                            uiMod.addPopup("+" .. bossResult.coins .. "$", bossResult.gx, bossResult.gy)
+                            table.insert(activePS, {
+                                ps = particles.bossDeath(bossResult.px, bossResult.py)
+                            })
+                            sound.play("boss_defeated")
+                            sound.play("enemyKill")
+                            achievementsMod.check("bossDefeated")
+                            achievementsMod.check("coinsChanged", {totalCoins = monedas})
+                            if worldMod.isLastRoom() then
+                                transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
+                                transitionPhase = 1
+                                fadeDir = 1
+                                gameState = constants.GAME_STATE_TRANSITION
+                                sound:playSegment("intro")
+                                return
+                            end
+                        end
+                    end
+                end
+
                 foodMod.generar(player.body, anchoGrilla, altoGrilla, obstaclesMod.pos)
 
                 if puntuacion >= lastObstacleScore + constants.OBSTACLE_SPAWN_INTERVAL then
@@ -516,6 +617,8 @@ function love.update(dt)
         end
 
         uiMod.updatePopups(dt)
+        -- update toast animations
+        if uiMod.updateToasts then uiMod.updateToasts(dt) end
 
         if comboFlashTimer > 0 then
             comboFlashTimer = comboFlashTimer - dt
@@ -543,6 +646,7 @@ function love.update(dt)
                     celebrationTimer = constants.HIGH_SCORE_CELEBRATION_DURATION
                     gameState = constants.GAME_STATE_HIGH_SCORE
                 else
+                    flushPendingAchievements()
                     applyActiveProfile()
                     gameState = constants.GAME_STATE_SHOP
                     sound:playSegment("intro")
@@ -555,6 +659,7 @@ function love.update(dt)
         celebrationTimer = celebrationTimer - dt
         if celebrationTimer <= 0 then
             fadeDir = -1
+            flushPendingAchievements()
             applyActiveProfile()
             gameState = constants.GAME_STATE_SHOP
             sound:playSegment("intro")
@@ -574,6 +679,8 @@ function love.update(dt)
             end
             transitionPhase = "hold"
             transitionHoldTimer = 0
+            -- Show pending achievement toasts now that the room has been completed
+            flushPendingAchievements()
         elseif transitionPhase == "hold" then
             transitionHoldTimer = transitionHoldTimer + dt
             if transitionHoldTimer >= 2.0 then
@@ -648,17 +755,62 @@ function love.draw()
             love.graphics.translate(sx, sy)
         end
 
+        -- fondo fluido Balatro procedural (siempre llena toda la pantalla)
+        shadersMod.drawBalatroBG(time, 0.8 + comboIntensity * 0.2)
+
+        -- HUD fijo en la parte superior de la pantalla (escala con resolución)
+        local hudScale = love.graphics.getHeight() / 600
+        uiMod.drawHUD(puntuacion, highScore, monedas, shop.shieldActive, shop.magnetTimer, constants.MAGNET_DURATION, baseSpeed, nil, comboCount, activeTimers, worldMod.etapa, worldMod.sala, worldMod.objetivoSala, hudScale)
+
+        -- Slots en la parte inferior (fijo, fuera del bloque centrado)
+        if gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED then
+            local slotDisplay = {}
+            for i = 1, 3 do
+                local id = shop.slots[i]
+                slotDisplay[i] = id and {name = itemsMod.registry[id].name} or nil
+            end
+            uiMod.drawSlots(slotDisplay)
+        end
+
+        -- Dungeon minimap (top-right, fijo)
+        if gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED then
+            uiMod.drawDungeonMap(worldMod.getDungeonMapData())
+        end
+
+        -- Debug dungeon overlay (fijo)
+        if debugDungeonOverlay and (gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED) then
+            uiMod.drawDebugDungeonOverlay(worldMod.getDungeonMapData())
+        end
+
+        -- centrar verticalmente el bloque de juego (grilla + separador + overlays internos)
+        love.graphics.push()
+        love.graphics.translate(0, gameOffsetY)
+
         -- separador visual HUD / gameplay
         love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.25)
         love.graphics.setLineWidth(1)
         love.graphics.line(0, constants.GRID_OFFSET_Y - 1, love.graphics.getWidth(), constants.GRID_OFFSET_Y - 1)
 
-        -- fondo fluido Balatro procedural (antes del grid)
-        shadersMod.drawBalatroBG(time, 0.8 + comboIntensity * 0.2)
+        -- Boss health bar (encima de la grilla, dentro del bloque de juego)
+        if bossHealthDisplay and gameState == constants.GAME_STATE_PLAYING then
+            local w = love.graphics.getWidth()
+            local barW = 160
+            local barH = 8
+            local bx = (w - barW) / 2
+            local by = 32
+            local frac = bossHealthDisplay.vida / bossHealthDisplay.vidaMax
+            love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
+            love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
+            love.graphics.setColor(1, 0.2 * frac + 0.6, 0.2 * frac + 0.2, 0.9)
+            love.graphics.rectangle("fill", bx, by, barW * frac, barH, 4, 4)
+            love.graphics.setColor(1, 1, 1, 0.4)
+            love.graphics.setLineWidth(1)
+            love.graphics.rectangle("line", bx, by, barW, barH, 4, 4)
+        end
 
-        -- offset de grilla para que no quede bajo el HUD
+        -- offset de grilla
         love.graphics.push()
-        love.graphics.translate(0, constants.GRID_OFFSET_Y)
+        love.graphics.translate(gridOffsetX, constants.GRID_OFFSET_Y)
 
         uiMod.drawGrid(anchoGrilla, altoGrilla, time, comboIntensity)
 
@@ -700,35 +852,10 @@ function love.draw()
 
         love.graphics.pop()  -- fin offset grilla
 
+        love.graphics.pop()  -- fin bloque vertical (gameOffsetY)
+
         if shakeTimer > 0 then
             love.graphics.pop()
-        end
-
-        uiMod.drawHUD(puntuacion, highScore, monedas, shop.shieldActive, shop.magnetTimer, constants.MAGNET_DURATION, baseSpeed, nil, comboCount, activeTimers, worldMod.etapa, worldMod.sala, worldMod.objetivoSala)
-        if gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED then
-            local slotDisplay = {}
-            for i = 1, 3 do
-                local id = shop.slots[i]
-                slotDisplay[i] = id and {name = itemsMod.registry[id].name} or nil
-            end
-            uiMod.drawSlots(slotDisplay)
-        end
-
-        -- Boss health bar
-        if bossHealthDisplay and gameState == constants.GAME_STATE_PLAYING then
-            local w = love.graphics.getWidth()
-            local barW = 160
-            local barH = 8
-            local bx = (w - barW) / 2
-            local by = 32
-            local frac = bossHealthDisplay.vida / bossHealthDisplay.vidaMax
-            love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
-            love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
-            love.graphics.setColor(1, 0.2 * frac + 0.6, 0.2 * frac + 0.2, 0.9)
-            love.graphics.rectangle("fill", bx, by, barW * frac, barH, 4, 4)
-            love.graphics.setColor(1, 1, 1, 0.4)
-            love.graphics.setLineWidth(1)
-            love.graphics.rectangle("line", bx, by, barW, barH, 4, 4)
         end
 
         uiMod.drawComboFlash(time, comboCount, comboFlashTimer)
@@ -783,7 +910,7 @@ function love.draw()
             local alpha = (gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_DEATH_ANIMATION)
                 and (cronometro / velocidadActual) or 1
             love.graphics.push()
-            love.graphics.translate(0, constants.GRID_OFFSET_Y)
+            love.graphics.translate(gridOffsetX, gridOffsetY + gameOffsetY)
             snakeMod.draw(player, alpha)
             foodMod.draw(time, dt)
             for _, entry in ipairs(activePS) do
@@ -799,7 +926,7 @@ function love.draw()
             local alpha = (gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_DEATH_ANIMATION)
                 and (cronometro / velocidadActual) or 1
             love.graphics.push()
-            love.graphics.translate(0, constants.GRID_OFFSET_Y)
+            love.graphics.translate(gridOffsetX, gridOffsetY + gameOffsetY)
             love.graphics.setColor(1, 1, 1, 1)
             snakeMod.draw(player, alpha)
             love.graphics.pop()
@@ -811,7 +938,16 @@ function love.draw()
         if debugMenuOpen and (gameState == constants.GAME_STATE_PLAYING or gameState == constants.GAME_STATE_PAUSED) then
             dibujarDebugMenu()
         end
+        if debugAchievementsOpen then
+            drawDebugAchievementsModal()
+        end
+        -- draw toasts on top of everything
+        if uiMod.drawToasts then uiMod.drawToasts() end
     end
+end
+
+function love.resize(w, h)
+    recalcularGrilla()
 end
 
 function love.mousepressed(x, y, button)
@@ -857,9 +993,32 @@ function love.mousepressed(x, y, button)
                     comboCount = (comboCount or 0) + 1
                 elseif btn.action == "comboDown" then
                     comboCount = math.max(0, (comboCount or 0) - 1)
+                elseif btn.action == "achievements" then
+                    debugAchievementsOpen = not debugAchievementsOpen
+                elseif btn.action == "dungeonMap" then
+                    debugDungeonOverlay = not debugDungeonOverlay
                 end
                 return
             end
+        end
+    end
+
+    -- Achievement debug modal clicks
+    if debugAchievementsOpen and button == 1 then
+        for _, abtn in ipairs(debugAchievementModalButtons) do
+            if x >= abtn.x and x <= abtn.x + abtn.w and y >= abtn.y and y <= abtn.y + abtn.h then
+                toggleDebugAchievement(abtn.id)
+                return
+            end
+        end
+        -- click outside → close modal
+        local w, h = love.graphics.getDimensions()
+        local mw, mh = 440, math.min(360, h - 80)
+        local mx = (w - mw) / 2
+        local my = 30
+        if x < mx or x > mx + mw or y < my or y > my + mh then
+            debugAchievementsOpen = false
+            return
         end
     end
 
@@ -906,6 +1065,7 @@ function love.mousepressed(x, y, button)
             fadeDir = -1
             gameState = constants.GAME_STATE_MENU
             introTimer = 0
+            pendingAchievements = {}
         elseif resultado == "continue" then
             persistenceMod.syncActiveProfile()
             fadeAlpha = 1
@@ -916,6 +1076,7 @@ function love.mousepressed(x, y, button)
             persistenceMod.syncActiveProfile()
             bossHealthDisplay = nil
             gameState = constants.GAME_STATE_PLAYING
+            pendingAchievements = {}
         elseif resultado then
             monedas = monedas - resultado.costo
             -- Save unlock to profile if passive item
@@ -969,7 +1130,7 @@ function dibujarDebugMenu()
 
     -- Background panel
     love.graphics.setColor(0.08, 0.08, 0.15, 0.88)
-    love.graphics.rectangle("fill", px, py, pw, 250, 6)
+    love.graphics.rectangle("fill", px, py, pw, 300, 6)
 
     -- Title
     love.graphics.setColor(0, 0.85, 1, 1)
@@ -1016,10 +1177,108 @@ debugButtons = {}
     addBtn("Racha -", "comboDown", px + pad + halfW + gap, halfW)
     y = y + bh + gap
 
+    addBtn("Logros", "achievements", px + pad, bw, debugAchievementsOpen and {0.5, 0.1, 0.1, 1} or nil)
+    y = y + bh + gap
+
+    addBtn("Mapa", "dungeonMap", px + pad, bw, debugDungeonOverlay and {0.5, 0.1, 0.5, 1} or nil)
+    y = y + bh + gap
+
     love.graphics.setColor(0.6, 0.6, 0.6, 1)
     love.graphics.setFont(uiMod.fontSmall)
     love.graphics.print("Vel: " .. string.format("%.3f", baseSpeed), px + pad, y + 4)
     love.graphics.print("Racha: " .. (comboCount or 0), px + pad + 100, y + 4)
+end
+
+debugAchievementModalButtons = {}
+
+function getAchievementState(id)
+    local profile = persistenceMod.getActiveProfile()
+    if not profile or not profile.achievements then return false end
+    local a = profile.achievements[id]
+    return a and a.done or false
+end
+
+function toggleDebugAchievement(id)
+    local profile = persistenceMod.getActiveProfile()
+    if not profile then return end
+    profile.achievements = profile.achievements or {}
+    local was = profile.achievements[id] and profile.achievements[id].done
+    if was then
+        profile.achievements[id] = nil
+    else
+        profile.achievements[id] = {done = true, at = os.time()}
+        -- enqueue toast directly (bypass pendingAchievements — this is debug)
+        local reg = achievementsMod.registry[id]
+        if reg then
+            if pendingAchievements then
+                local exists = false
+                for _, x in ipairs(pendingAchievements) do if x == id then exists = true break end end
+                if not exists then table.insert(pendingAchievements, id) end
+            else
+                if uiMod.showToast then
+                    uiMod.showToast({id=id, title=reg.title, subtitle=reg.desc})
+                end
+            end
+        end
+    end
+    persistenceMod.saveProfiles()
+end
+
+function drawDebugAchievementsModal()
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local mw, mh = 440, math.min(360, h - 80)
+    local mx = (w - mw) / 2
+    local my = 30
+
+    -- background
+    love.graphics.setColor(0.08, 0.08, 0.15, 0.95)
+    love.graphics.rectangle("fill", mx, my, mw, mh, 8)
+    love.graphics.setColor(0, 0.85, 1, 0.5)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", mx, my, mw, mh, 8)
+
+    -- title
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.setFont(uiMod.fontLarge)
+    love.graphics.printf("LOGROS (DEBUG)", mx, my + 8, mw, "center")
+
+    -- list achievements
+    love.graphics.setFont(uiMod.fontSmall)
+    local ry = my + 40
+    local rowH = 26
+    local pad = 8
+    local btnW = 100
+    local textX = mx + pad
+    local btnX = mx + mw - pad - btnW
+    local lineH = love.graphics.getFont():getHeight()
+
+    debugAchievementModalButtons = {}
+
+    local ordered = {"first_kill","enemy_25","enemy_100","combo_5","combo_10","coins_100","coins_500","stage_3","boss_kill","score_1000","score_5000"}
+    for _, id in ipairs(ordered) do
+        local reg = achievementsMod.registry[id]
+        if not reg then break end
+        if ry + rowH <= my + mh - 8 then
+            local unlocked = getAchievementState(id)
+
+            -- text
+            love.graphics.setColor(unlocked and constants.COLOR_GOLD[1] or 0.5, unlocked and constants.COLOR_GOLD[2] or 0.5, unlocked and constants.COLOR_GOLD[3] or 0.5, 1)
+            local txt = (unlocked and "[X] " or "[ ] ") .. reg.title .. " - " .. reg.desc
+            love.graphics.print(txt, textX, ry + (rowH - lineH) / 2)
+
+            -- toggle button
+            local btnColor = unlocked and {0.3, 0.3, 0.5, 1} or {0.5, 0.2, 0.1, 1}
+            local btnLabel = unlocked and "BLOQUEAR" or "DESBLOQUEAR"
+            love.graphics.setColor(btnColor)
+            love.graphics.rectangle("fill", btnX, ry + 2, btnW, rowH - 4, 4)
+            table.insert(debugAchievementModalButtons, {x = btnX, y = ry + 2, w = btnW, h = rowH - 4, id = id})
+            love.graphics.setColor(1, 1, 1, 1)
+            love.graphics.print(btnLabel, btnX + 4, ry + (rowH - lineH) / 2)
+
+            ry = ry + rowH
+        end
+    end
 end
 
 function love.textinput(text)
@@ -1114,6 +1373,7 @@ function love.keypressed(tecla)
             fadeDir = -1
             gameState = constants.GAME_STATE_MENU
             introTimer = 0
+            pendingAchievements = {}
         elseif resultado == "continue" then
             persistenceMod.syncActiveProfile()
             fadeAlpha = 1
@@ -1124,6 +1384,7 @@ function love.keypressed(tecla)
             persistenceMod.syncActiveProfile()
             bossHealthDisplay = nil
             gameState = constants.GAME_STATE_PLAYING
+            pendingAchievements = {}
         elseif resultado then
             monedas = monedas - resultado.costo
             -- Save unlock to profile if passive item

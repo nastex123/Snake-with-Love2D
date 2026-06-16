@@ -384,18 +384,128 @@ function ui.drawGrid(anchoGrilla, altoGrilla, time, comboIntensity)
     love.graphics.rectangle("line", 0, 0, w, h)
 end
 
-function ui.drawHUD(puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala)
-    love.graphics.setFont(ui.fontNormal)
+-- Toasts API
+ui.toasts = ui.toasts or {}
+ui._toastQueue = ui._toastQueue or {}
 
-    local hh = constants.HUD_HEIGHT
-    local cy = math.floor((hh - ui.fontNormal:getHeight()) / 2)
+-- Show a toast immediately (or enqueue). payload: {id, title, subtitle, reward}
+function ui.showToast(payload)
+    payload = payload or {}
+    local t = {
+        id = payload.id,
+        title = payload.title or "LOGRO",
+        subtitle = payload.subtitle or "",
+        reward = payload.reward or "",
+        t = 0,
+        state = 'in' -- in, hold, out
+    }
+    table.insert(ui._toastQueue, t)
+end
+
+function ui.updateToasts(dt)
+    if #ui._toastQueue == 0 then return end
+    local first = ui._toastQueue[1]
+    first.t = first.t + dt
+    local fade = constants.TOAST_FADE
+    local total = constants.TOAST_SHOW_DURATION + fade * 2
+    if first.t >= total then
+        table.remove(ui._toastQueue, 1)
+        -- continue; next toast will start from t=0
+    end
+end
+
+function ui.drawToasts()
+    if #ui._toastQueue == 0 then return end
+    local w = love.graphics.getWidth()
+    local x = w / 2
+    local y = 18
+    local toast = ui._toastQueue[1]
+    local fade = constants.TOAST_FADE
+    local show = constants.TOAST_SHOW_DURATION
+    local alpha = 1
+    if toast.t < fade then
+        alpha = toast.t / fade
+    elseif toast.t > fade + show then
+        alpha = math.max(0, 1 - (toast.t - (fade + show)) / fade)
+    end
+
+    love.graphics.setFont(ui.fontNormal)
+    local titleH = ui.fontNormal:getHeight()
+    local subtitleH = ui.fontSmall:getHeight()
+    local rewardH = ui.fontSmall:getHeight()
+
+    local contentW = math.max(ui.fontNormal:getWidth(toast.title), ui.fontSmall:getWidth(toast.subtitle), ui.fontSmall:getWidth(toast.reward))
+    local boxW = math.min(constants.TOAST_MAX_WIDTH, contentW + constants.TOAST_ICON_SIZE + constants.TOAST_PADDING * 3)
+    local boxH = constants.TOAST_PADDING + titleH + subtitleH + rewardH + constants.TOAST_PADDING/2
+    local bx = x - boxW / 2
+    -- slide animation: start slightly above and slide down by TOAST_SLIDE pixels
+    local slideAmt = constants.TOAST_SLIDE or 12
+    local by = y - slideAmt * (1 - alpha)
+
+    -- background
+    love.graphics.setColor(constants.TOAST_BG_COLOR[1], constants.TOAST_BG_COLOR[2], constants.TOAST_BG_COLOR[3], (constants.TOAST_BG_COLOR[4] or 0.95) * alpha)
+    love.graphics.rectangle('fill', bx, by, boxW, boxH, 8)
+    -- border (gold)
+    love.graphics.setLineWidth(1)
+    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.9 * alpha)
+    love.graphics.rectangle('line', bx, by, boxW, boxH, 8)
+
+    local ix = bx + constants.TOAST_PADDING
+    local iy = by + constants.TOAST_PADDING
+    -- placeholder icon (circle)
+    love.graphics.setColor(1,1,1,0.9 * alpha)
+    love.graphics.circle('fill', ix + constants.TOAST_ICON_SIZE/2, iy + constants.TOAST_ICON_SIZE/2, constants.TOAST_ICON_SIZE/2)
+
+    -- texts
+    local tx = ix + constants.TOAST_ICON_SIZE + constants.TOAST_PADDING
+    local ty = iy
+    love.graphics.setFont(ui.fontNormal)
+    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 1 * alpha)
+    love.graphics.print(toast.title or "", tx, ty)
+    ty = ty + titleH
+    love.graphics.setFont(ui.fontSmall)
+    love.graphics.setColor(1,1,1,0.9 * alpha)
+    love.graphics.print(toast.subtitle or "", tx, ty)
+    ty = ty + subtitleH
+    -- reward in light gray
+    love.graphics.setColor(0.85,0.85,0.9, 0.9 * alpha)
+    love.graphics.print(toast.reward or "", tx, ty)
+end
+
+function ui.drawHUD(puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
+    --[[
+    A J U S T E   D E   T A M A Ñ O
+    scale = altoPantalla / 600
+      - 600:  punto de referencia (la barra mide 28px a 600px de alto)
+      - >1:   la barra crece (1080/600=1.8x en 1080p)
+      - <1:   la barra se encoge (no ocurre porque 600 es el mínimo)
+
+    Para cambiar la agresividad del escalado:
+      - Cambia '600' por un número más bajo (ej: 400) → más grande
+      - Cambia '600' por un número más alto  (ej: 800) → más pequeño
+      - Pon scale=1 siempre → tamaño fijo sin importar resolución
+    --]]
+    local s = scale or 1
+
+    -- Fuente escalada para que el texto crezca con la barra
+    local fontSize = math.max(6, math.floor(constants.FONT_NORMAL * s))
+    local font
+    local ok = pcall(function() font = love.graphics.newFont(constants.FONT_FILE, fontSize) end)
+    if not ok then
+        font = love.graphics.newFont(fontSize)
+    end
+    love.graphics.setFont(font)
+
+    local hh = constants.HUD_HEIGHT * s          -- alto total de la barra
+    local fontH = font:getHeight()
+    local cy = math.floor((hh - fontH) / 2)       -- centrado vertical del texto
 
     love.graphics.setColor(0, 0, 0, 0.75)
     love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), hh)
 
-    local x = 8
+    local x = 8 * s                               -- margen izquierdo
 
-    -- Room indicator
+    -- Indicador de sala
     if etapa and sala then
         local roomText = etapa .. "-" .. sala
         local isBoss = sala == 5
@@ -405,64 +515,64 @@ function ui.drawHUD(puntuacion, highScore, monedas, shieldActive, magnetTimer, m
             love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
         end
         love.graphics.print(roomText, x, cy)
-        x = x + ui.fontNormal:getWidth(roomText) + 14
+        x = x + font:getWidth(roomText) + 14 * s
     end
 
     love.graphics.setColor(1, 0.84, 0.0)
     love.graphics.print("$" .. monedas, x, cy)
-    x = x + ui.fontNormal:getWidth("$" .. monedas) + 14
+    x = x + font:getWidth("$" .. monedas) + 14 * s
 
     love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
     love.graphics.print("" .. puntuacion, x, cy)
-    x = x + ui.fontNormal:getWidth("" .. puntuacion) + 14
+    x = x + font:getWidth("" .. puntuacion) + 14 * s
 
-    -- Progress bar toward room objective
+    -- Barra de progreso hacia el objetivo de la sala
     if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
-        local barW = 50
-        local barH = 6
-        local barY2 = math.floor(hh / 2) - 3
+        local barW = 50 * s
+        local barH = 6 * s
+        local barY2 = math.floor(hh / 2) - 3 * s
         local frac = math.min(1, puntuacion / objetivoSala)
         love.graphics.setColor(0.25, 0.25, 0.25)
-        love.graphics.rectangle("fill", x, barY2, barW, barH, 2, 2)
+        love.graphics.rectangle("fill", x, barY2, barW, barH, 2 * s, 2 * s)
         love.graphics.setColor(frac, 1 - frac, 0)
-        love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2, 2)
-        x = x + barW + 8
+        love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2 * s, 2 * s)
+        x = x + barW + 8 * s
     end
 
-    local barY = math.floor(hh / 2) - 3
+    local barY = math.floor(hh / 2) - 3 * s
 
     if shieldActive then
         local pulse = math.sin(love.timer.getTime() * 6) * 0.3 + 0.7
         love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pulse)
         love.graphics.print("S", x, cy)
-        x = x + ui.fontNormal:getWidth("S") + 6
+        x = x + font:getWidth("S") + 6 * s
     end
 
     if magnetTimer > 0 then
         local frac = magnetTimer / magnetDuration
         love.graphics.setColor(1, 0.5, 0)
         love.graphics.print("M", x, cy)
-        x = x + ui.fontNormal:getWidth("M") + 4
+        x = x + font:getWidth("M") + 4 * s
         love.graphics.setColor(0.25, 0.25, 0.25)
-        love.graphics.rectangle("fill", x, barY, 30, 6, 2, 2)
+        love.graphics.rectangle("fill", x, barY, 30 * s, 6 * s, 2 * s, 2 * s)
         love.graphics.setColor(1, 0.5, 0)
-        love.graphics.rectangle("fill", x, barY, 30 * frac, 6, 2, 2)
-        x = x + 36
+        love.graphics.rectangle("fill", x, barY, 30 * s * frac, 6 * s, 2 * s, 2 * s)
+        x = x + 36 * s
     end
 
     if baseSpeed then
         local frac = (baseSpeed - constants.MIN_BASE_SPEED) / (constants.MAX_BASE_SPEED - constants.MIN_BASE_SPEED)
         love.graphics.setColor(0.25, 0.25, 0.25)
-        love.graphics.rectangle("fill", x, barY, 40, 6, 2, 2)
+        love.graphics.rectangle("fill", x, barY, 40 * s, 6 * s, 2 * s, 2 * s)
         love.graphics.setColor(frac, 1 - frac, 0)
-        love.graphics.rectangle("fill", x, barY, 40 * (1 - frac), 6, 2, 2)
-        x = x + 46
+        love.graphics.rectangle("fill", x, barY, 40 * s * (1 - frac), 6 * s, 2 * s, 2 * s)
+        x = x + 46 * s
     end
 
     if comboCount and comboCount > 0 then
         love.graphics.setColor(1, 0.5, 0)
         love.graphics.print("x" .. (comboCount + 1), x, cy)
-        x = x + ui.fontNormal:getWidth("x" .. (comboCount + 1)) + 8
+        x = x + font:getWidth("x" .. (comboCount + 1)) + 8 * s
     end
 
     if activeTimers then
@@ -481,15 +591,18 @@ function ui.drawHUD(puntuacion, highScore, monedas, shieldActive, magnetTimer, m
                 local c = colors[t.id]
                 love.graphics.setColor(c[1], c[2], c[3])
                 love.graphics.print(label, x, cy)
-                x = x + ui.fontNormal:getWidth(label) + 2
+                x = x + font:getWidth(label) + 2 * s
                 love.graphics.setColor(0.25, 0.25, 0.25)
-                love.graphics.rectangle("fill", x, barY, 20, 6, 2, 2)
+                love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
-                love.graphics.rectangle("fill", x, barY, 20 * (t.remaining / 10), 6, 2, 2)
-                x = x + 26
+                love.graphics.rectangle("fill", x, barY, 20 * s * (t.remaining / 10), 6 * s, 2 * s, 2 * s)
+                x = x + 26 * s
             end
         end
     end
+
+    -- Restaurar fuente por defecto para el resto de la UI
+    love.graphics.setFont(ui.fontNormal)
 end
 
 function ui.drawSlots(slotDisplay)
@@ -603,6 +716,103 @@ function ui.drawPauseOverlay()
     love.graphics.setFont(ui.fontNormal)
     love.graphics.setColor(1, 1, 1, 0.7)
     love.graphics.printf("ESPACIO / ESC PARA CONTINUAR", 0, h / 2 + 10, w, "center")
+end
+
+-- Dungeon minimap (top-right corner)
+function ui.drawDungeonMap(dungeonData)
+    if not dungeonData then return end
+    local w = love.graphics.getWidth()
+    local mapW = 140
+    local mapH = 100
+    local mx = w - mapW - 8
+    local my = 34
+    local scaleX = mapW / dungeonData.virtualW
+    local scaleY = mapH / dungeonData.virtualH
+
+    -- Background
+    love.graphics.setColor(0.06, 0.06, 0.10, 0.75)
+    love.graphics.rectangle("fill", mx, my, mapW, mapH, 4)
+    love.graphics.setColor(0.2, 0.2, 0.3, 0.5)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", mx, my, mapW, mapH, 4)
+
+    -- Corridors
+    love.graphics.setColor(0.3, 0.3, 0.4, 0.4)
+    for _, c in ipairs(dungeonData.corridors) do
+        for _, pt in ipairs(c.path or {}) do
+            love.graphics.rectangle("fill", mx + pt.x * scaleX, my + pt.y * scaleY, pt.w * scaleX, pt.h * scaleY)
+        end
+    end
+
+    -- Rooms
+    for _, r in ipairs(dungeonData.rooms) do
+        local rx = mx + r.rect.x * scaleX
+        local ry = my + r.rect.y * scaleY
+        local rw = math.max(2, r.rect.w * scaleX)
+        local rh = math.max(2, r.rect.h * scaleY)
+
+        if r.current then
+            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.7)
+        elseif r.cleared then
+            love.graphics.setColor(0.3, 0.7, 0.3, 0.5)
+        elseif r.visited then
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.4)
+        else
+            love.graphics.setColor(0.2, 0.2, 0.25, 0.3)
+        end
+        love.graphics.rectangle("fill", rx, ry, rw, rh, 2)
+
+        if r.current then
+            love.graphics.setColor(1, 1, 1, 0.6)
+            love.graphics.setLineWidth(1)
+            love.graphics.rectangle("line", rx, ry, rw, rh, 2)
+        end
+    end
+end
+
+-- Debug dungeon overlay: draw full room rects and info
+function ui.drawDebugDungeonOverlay(dungeonData)
+    if not dungeonData then return end
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local scaleX = w / dungeonData.virtualW
+    local scaleY = h / dungeonData.virtualH
+    love.graphics.setFont(ui.fontSmall)
+
+    -- Corridors
+    love.graphics.setColor(0.6, 0.6, 0.3, 0.15)
+    for _, c in ipairs(dungeonData.corridors) do
+        for _, pt in ipairs(c.path or {}) do
+            love.graphics.rectangle("fill", pt.x * scaleX, pt.y * scaleY, pt.w * scaleX, pt.h * scaleY)
+        end
+    end
+
+    -- Rooms
+    for _, r in ipairs(dungeonData.rooms) do
+        local rx = r.rect.x * scaleX
+        local ry = r.rect.y * scaleY
+        local rw = math.max(4, r.rect.w * scaleX)
+        local rh = math.max(4, r.rect.h * scaleY)
+
+        local color = r.current and {0, 0.85, 1, 0.3} or {0.3, 0.3, 0.5, 0.2}
+        love.graphics.setColor(color)
+        love.graphics.rectangle("fill", rx, ry, rw, rh)
+        love.graphics.setColor(0.8, 0.8, 0.8, 0.6)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", rx, ry, rw, rh)
+        love.graphics.setColor(1, 1, 1, 0.8)
+        love.graphics.print(r.id .. ":" .. r.name, rx + 2, ry + 2)
+    end
+
+    -- Connections
+    love.graphics.setColor(0, 0.85, 1, 0.3)
+    for _, c in ipairs(dungeonData.corridors) do
+        local ra = dungeonData.rooms[c.from]
+        local rb = dungeonData.rooms[c.to]
+        if ra and rb then
+            love.graphics.line(ra.centerX * scaleX, ra.centerY * scaleY, rb.centerX * scaleX, rb.centerY * scaleY)
+        end
+    end
 end
 
 return ui

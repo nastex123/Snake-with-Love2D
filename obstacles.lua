@@ -45,6 +45,10 @@ function obstacles.generar(snake, foodPos, anchoGrilla, altoGrilla)
     table.insert(obstacles.flashTimers, 0.4)
 end
 
+function obstacles.spawnAt(gx, gy)
+    obstacles.agregar(gx, gy)
+end
+
 function obstacles.agregar(x, y)
     table.insert(obstacles.pos, {x = x, y = y})
     table.insert(obstacles.flashTimers, 0.4)
