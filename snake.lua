@@ -112,6 +112,32 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         end
     end
 
+    -- Colision con objetos de ataque (proyectiles, pulsos)
+    for _, ao in ipairs(enemies.getAttackObjects()) do
+        local hit = false
+        if ao.type == "projectile" then
+            if math.abs(nuevaCabezaX - ao.x) < 0.6 and math.abs(nuevaCabezaY - ao.y) < 0.6 then
+                hit = true
+            end
+        elseif ao.type == "radial_pulse" then
+            local dist = math.sqrt((nuevaCabezaX - ao.cx) ^ 2 + (nuevaCabezaY - ao.cy) ^ 2)
+            if dist >= ao.radius - 0.5 and dist <= ao.radius + 0.5 then
+                hit = true
+            end
+        end
+        if hit then
+            if s.ghost or debugImmune then
+                -- pass through
+            elseif shop.shieldActive then
+                shop.shieldActive = false
+            elseif s.armor > 0 then
+                s.armor = s.armor - 1
+            else
+                return false, false, nil, nil, {hit = true, damage = ao.damage or 1}
+            end
+        end
+    end
+
     -- Verificacion de colisiones con enemigos
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]

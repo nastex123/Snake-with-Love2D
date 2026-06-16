@@ -6,22 +6,20 @@ food.tipo = constants.FOOD_NORMAL
 food.spawnTimer = 0
 local SPAWN_DURATION = 0.18
 
-function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos)
+function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, gx, gy)
     local nuevaX, nuevaY
     local colisiona
 
-    repeat
-        nuevaX = love.math.random(0, anchoGrilla - 1)
-        nuevaY = love.math.random(0, altoGrilla - 1)
+    if gx ~= nil and gy ~= nil then
+        nuevaX = gx
+        nuevaY = gy
         colisiona = false
-
         for _, segmento in ipairs(snake) do
             if nuevaX == segmento.x and nuevaY == segmento.y then
                 colisiona = true
                 break
             end
         end
-
         if not colisiona and obstaclePos then
             for _, obs in ipairs(obstaclePos) do
                 if nuevaX == obs.x and nuevaY == obs.y then
@@ -30,19 +28,51 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos)
                 end
             end
         end
-    until not colisiona
+        if colisiona then
+            -- Fallback: random placement if chosen position is occupied
+            gx = nil
+        end
+    end
+
+    if gx == nil then
+        repeat
+            nuevaX = love.math.random(0, anchoGrilla - 1)
+            nuevaY = love.math.random(0, altoGrilla - 1)
+            colisiona = false
+
+            for _, segmento in ipairs(snake) do
+                if nuevaX == segmento.x and nuevaY == segmento.y then
+                    colisiona = true
+                    break
+                end
+            end
+
+            if not colisiona and obstaclePos then
+                for _, obs in ipairs(obstaclePos) do
+                    if nuevaX == obs.x and nuevaY == obs.y then
+                        colisiona = true
+                        break
+                    end
+                end
+            end
+        until not colisiona
+    end
 
     food.pos.x = nuevaX
     food.pos.y = nuevaY
     food.spawnTimer = SPAWN_DURATION
 
-    local r = love.math.random()
-    if r < 0.15 then
-        food.tipo = constants.FOOD_GOLD
-    elseif r < 0.30 then
-        food.tipo = constants.FOOD_COIN
+    if forcedType then
+        food.tipo = forcedType
     else
-        food.tipo = constants.FOOD_NORMAL
+        local r = love.math.random()
+        if r < 0.15 then
+            food.tipo = constants.FOOD_GOLD
+        elseif r < 0.30 then
+            food.tipo = constants.FOOD_COIN
+        else
+            food.tipo = constants.FOOD_NORMAL
+        end
     end
 end
 

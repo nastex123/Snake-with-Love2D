@@ -98,6 +98,37 @@ constants.PARTICLE_ENEMY_COUNT = 10
 
 constants.ENEMY_SPAWN_INTERVAL = 50
 
+-- Toast / notification defaults
+constants.TOAST_SHOW_DURATION = 1.5
+constants.TOAST_FADE = 0.25
+constants.TOAST_MAX_WIDTH = 600
+constants.TOAST_PADDING = 12
+constants.TOAST_ICON_SIZE = 28
+constants.TOAST_BG_COLOR = {0.06, 0.06, 0.10, 0.95}
+constants.TOAST_SLIDE = 14
+constants.TOAST_SCHEDULE_DELAY = 0.5
+
+-- Dungeon generation defaults
+constants.DUNGEON_TARGET_ROOMS = 5
+constants.DUNGEON_VIRTUAL_W = 800
+constants.DUNGEON_VIRTUAL_H = 600
+constants.DUNGEON_MIN_ROOM_W = 120
+constants.DUNGEON_MIN_ROOM_H = 90
+constants.DUNGEON_MAX_ROOM_W = 250
+constants.DUNGEON_MAX_ROOM_H = 200
+constants.DUNGEON_BSP_MIN_LEAF = 180
+constants.DUNGEON_CORRIDOR_WIDTH = 20
+constants.DUNGEON_ROOM_PADDING = 15
+
+-- Room template IDs for reference
+constants.ROOM_CORRIDOR = "corridor"
+constants.ROOM_ARENA = "arena"
+constants.ROOM_CHOKE = "choke"
+constants.ROOM_HUB = "hub"
+constants.ROOM_TREASURE = "treasure"
+constants.ROOM_SPAWNER = "spawner"
+constants.ROOM_BOSS = "boss"
+
 constants.TRANSITION_DURATION = 0.8
 
 constants.BOSS_TYPE_TELEPORTER = "teleporter"
@@ -118,5 +149,27 @@ constants.ENEMY_DROP_SPAWNER = 1
 constants.COLOR_ENEMY_CHASER = {0.9, 0.2, 0.2}
 constants.COLOR_ENEMY_PATROLLER = {0.2, 0.4, 0.9}
 constants.COLOR_ENEMY_SPAWNER = {0.6, 0.2, 0.8}
+
+-- Boss encounter caps
+constants.BOSS_MAX_RED = 3      -- max chasers (rojos) during boss
+constants.BOSS_MAX_BLUE = 4     -- max patrollers (azules) during boss
+constants.BOSS_ENEMY_LIFETIME = 15
+constants.BOSS_RESPAWN_DELAY = 5
+constants.BOSS_RESPAWN_RETRY = 40
+
+-- Boss food-based defeat
+constants.BOSS_FOOD_TARGET = 15
+constants.MAX_GRID_COLS = 40
+constants.MAX_GRID_ROWS = 28
+
+constants.BOSS_HEALTH_BAR = {
+    width = 96,
+    height = 8,
+    yOffset = -24,
+    bgColor = {0.12, 0.12, 0.12, 1},
+    fgColor = {0.88, 0.2, 0.2, 1},
+    borderColor = {0, 0, 0, 1},
+    lerpSpeed = 6.0,
+}
 
 return constants

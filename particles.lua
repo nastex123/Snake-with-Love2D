@@ -96,6 +96,34 @@ function particles.enemyKill(x, y, r, g, b)
     return ps
 end
 
+function particles.bossFoodTick(x, y)
+    local ps = love.graphics.newParticleSystem(texture, 6)
+    ps:setEmissionRate(0)
+    ps:setSpeed(20, 50)
+    ps:setLinearAcceleration(0, -20)
+    ps:setColors(0.2, 0.9, 0.3, 1,  1.0, 0.84, 0.0, 0)
+    ps:setSizes(0.8, 0.2)
+    ps:setParticleLifetime(0.2, 0.4)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(6)
+    return ps
+end
+
+function particles.bossDeath(x, y)
+    local ps = love.graphics.newParticleSystem(texture, 30)
+    ps:setEmissionRate(0)
+    ps:setSpeed(50, 120)
+    ps:setLinearAcceleration(0, -40)
+    ps:setColors(1.0, 0.2, 0.2, 1,  1.0, 0.84, 0.0, 0,  0.0, 0.85, 1.0, 0)
+    ps:setSizes(2, 0.3)
+    ps:setParticleLifetime(0.4, 0.8)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(30)
+    return ps
+end
+
 function particles.menuFondo()
     local ps = love.graphics.newParticleSystem(texture, 80)
     ps:setEmissionRate(4)

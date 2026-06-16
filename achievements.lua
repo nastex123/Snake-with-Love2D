@@ -141,6 +141,39 @@ function achievements.check(event, params)
 
     if changed then
         persistence.saveProfiles()
+        -- Enqueue visual notification for later (pending in current sala)
+        -- pendingAchievements is a global queue defined in main.lua; if absent, show immediately via ui
+        -- When marking a new achievement we set a temporary flag `queued` on the achievement entry
+        for aid, v in pairs(profile.achievements) do
+            if v.done and (v.queued ~= true) then
+                v.queued = true
+                if pendingAchievements then
+                    local exists = false
+                    for _, x in ipairs(pendingAchievements) do if x == aid then exists = true break end end
+                    if not exists then table.insert(pendingAchievements, aid) end
+                else
+                    if ui and ui.showToast then
+                        local reg = achievements.registry[aid]
+                        if reg then ui.showToast({id=aid, title=reg.title, subtitle=reg.desc}) end
+                    end
+                end
+                -- schedule delayed toast (overlay-aware)
+                local sreg = achievements.registry[aid]
+                if sreg and scheduledToasts and not scheduledIndex[aid] then
+                    scheduledIndex[aid] = true
+                    table.insert(scheduledToasts, {
+                        id = aid,
+                        showAt = (time or 0) + constants.TOAST_SCHEDULE_DELAY,
+                        payload = {
+                            id = aid,
+                            title = sreg.title,
+                            subtitle = sreg.desc,
+                            reward = sreg.reward
+                        }
+                    })
+                end
+            end
+        end
     end
 end
 

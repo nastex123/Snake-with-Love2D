@@ -274,6 +274,8 @@ function sound.load()
     sources.shieldBreak = love.audio.newSource(makeNoise(0.05, 0.2), "static")
     sources.highScore = love.audio.newSource(makeSweep(440, 880, 0.3, 0.3), "static")
     sources.enemyKill = love.audio.newSource(makeSweep(800, 400, 0.1, 0.25), "static")
+    sources.boss_food_tick = love.audio.newSource(makeSine(880, 0.08, 0.2), "static")
+    sources.boss_defeated = love.audio.newSource(makeSweep(440, 1320, 0.4, 0.3), "static")
 end
 
 function sound.play(name)
