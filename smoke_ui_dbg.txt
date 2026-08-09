@@ -1,0 +1,11 @@
+love.load start
+love.load done checks=26 fails=0
+frame 1 phase 0
+frame 2 phase 0
+frame 3 phase 0
+frame 4 phase 0
+frame 5 phase 0
+frame 6 phase 0
+frame 7 phase 0
+frame 8 phase 0
+frame 9 phase 0

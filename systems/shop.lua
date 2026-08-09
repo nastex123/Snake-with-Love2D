@@ -1,6 +1,6 @@
 local shop = {}
 local constants = require("constants")
-local items = require("items")
+local items = require("systems.items")
 
 shop.slots = {nil, nil, nil}
 

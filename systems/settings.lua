@@ -1,8 +1,8 @@
 local settings = {}
-local persistence = require('persistence')
-local helpers = require('helpers')
-local ui = require('ui')
-local shaders = require('shaders')
+local persistence = require('systems.persistence')
+local helpers = require('core.helpers')
+local ui = require('ui.ui')
+local shaders = require('render.shaders')
 
 -- State
 settings.visible = false

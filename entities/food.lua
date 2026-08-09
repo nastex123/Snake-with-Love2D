@@ -35,10 +35,12 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
     end
 
     if gx == nil then
+        local attempts = 0
         repeat
             nuevaX = love.math.random(0, anchoGrilla - 1)
             nuevaY = love.math.random(0, altoGrilla - 1)
             colisiona = false
+            attempts = attempts + 1
 
             for _, segmento in ipairs(snake) do
                 if nuevaX == segmento.x and nuevaY == segmento.y then
@@ -55,7 +57,10 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
                     end
                 end
             end
-        until not colisiona
+        until not colisiona or attempts > 500
+        if colisiona then
+            return
+        end
     end
 
     food.pos.x = nuevaX

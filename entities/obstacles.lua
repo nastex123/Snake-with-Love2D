@@ -12,11 +12,13 @@ end
 function obstacles.generar(snake, foodPos, anchoGrilla, altoGrilla)
     local nuevaX, nuevaY
     local colisiona
+    local attempts = 0
 
     repeat
         nuevaX = love.math.random(0, anchoGrilla - 1)
         nuevaY = love.math.random(0, altoGrilla - 1)
         colisiona = false
+        attempts = attempts + 1
 
         for _, segmento in ipairs(snake) do
             if nuevaX == segmento.x and nuevaY == segmento.y then
@@ -39,7 +41,11 @@ function obstacles.generar(snake, foodPos, anchoGrilla, altoGrilla)
                 end
             end
         end
-    until not colisiona
+    until not colisiona or attempts > 500
+
+    if colisiona then
+        return
+    end
 
     table.insert(obstacles.pos, {x = nuevaX, y = nuevaY})
     table.insert(obstacles.flashTimers, 0.4)
