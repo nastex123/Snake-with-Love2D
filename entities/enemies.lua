@@ -1,5 +1,15 @@
+-- =============================================================================
+-- MÃ“DULO DE ENEMIGOS
+-- Sistema de enemigos: chasers, patrollers, spawners y boss.
+-- La lógica de ataques del boss vive en entities/bossAttacks.lua,
+-- los helpers de posicionamiento en entities/enemyHelpers.lua y
+-- el dibujo en render/enemiesDraw.lua.
+-- =============================================================================
 local enemies = {}
 local constants = require("constants")
+local bossAttacks = require("entities.bossAttacks")
+local enemyHelpers = require("entities.enemyHelpers")
+local enemiesDraw = require("render.enemiesDraw")
 
 local telegraphs = {}
 local attackObjects = {}
@@ -7,85 +17,6 @@ local pendingRespawns = {}
 
 enemies.list = {}
 enemies.boss = nil
-
--- ============================================================
---  Attack definitions
--- ============================================================
-
-local BOSS_ATTACKS = {
-    projectile_spread = {
-        name = "projectile_spread",
-        telegraphTime = 0.8,
-        cooldown = 3.5,
-        minPhase = 1,
-    },
-    spawn_adds = {
-        name = "spawn_adds",
-        telegraphTime = 0.6,
-        cooldown = 6.0,
-        minPhase = 1,
-    },
-    radial_pulse = {
-        name = "radial_pulse",
-        telegraphTime = 1.0,
-        cooldown = 5.0,
-        minPhase = 2,
-    },
-    teleport = {
-        name = "teleport",
-        telegraphTime = 0.3,
-        cooldown = 4.0,
-        minPhase = 2,
-    },
-}
-
-local function getAvailableAttacks(phase)
-    local available = {}
-    for _, attack in pairs(BOSS_ATTACKS) do
-        if attack.minPhase <= phase then
-            table.insert(available, attack)
-        end
-    end
-    return available
-end
-
-local function computeTelegraphPositions(boss, attack, ctx)
-    local positions = {}
-    if attack.name == "projectile_spread" then
-        local dirs = {{1,0},{-1,0},{0,1},{0,-1},{1,1},{-1,1},{1,-1},{-1,-1}}
-        for _, d in ipairs(dirs) do
-            local tx = boss.x + d[1]
-            local ty = boss.y + d[2]
-            if tx >= 0 and tx < ctx.anchoGrilla and ty >= 0 and ty < ctx.altoGrilla then
-                table.insert(positions, {x = tx, y = ty})
-            end
-        end
-    elseif attack.name == "spawn_adds" then
-        local dirs = {{2,0},{-2,0},{0,2},{0,-2}}
-        for _, d in ipairs(dirs) do
-            local tx = boss.x + d[1]
-            local ty = boss.y + d[2]
-            if tx >= 0 and tx < ctx.anchoGrilla and ty >= 0 and ty < ctx.altoGrilla then
-                table.insert(positions, {x = tx, y = ty})
-            end
-        end
-    elseif attack.name == "radial_pulse" then
-        for dx = -2, 2 do
-            for dy = -2, 2 do
-                if math.abs(dx) + math.abs(dy) <= 2 then
-                    local tx = boss.x + dx
-                    local ty = boss.y + dy
-                    if tx >= 0 and tx < ctx.anchoGrilla and ty >= 0 and ty < ctx.altoGrilla then
-                        table.insert(positions, {x = tx, y = ty})
-                    end
-                end
-            end
-        end
-    elseif attack.name == "teleport" then
-        -- no telegraph tiles; instant flush
-    end
-    return positions
-end
 
 -- ============================================================
 --  Telegraph / attack object API
@@ -113,140 +44,20 @@ function enemies.clearAttackObjects()
 end
 
 -- ============================================================
---  Attack execution
--- ============================================================
-
-local function bossExecuteAttack(boss, attackName, dt, ctx)
-    if attackName == "projectile_spread" then
-        local n = 4 + math.max(0, boss.phase - 1) * 1
-        local speed = 40 + (boss.phase - 1) * 15
-        local angleStep = 2 * math.pi / n
-        for i = 0, n - 1 do
-            local angle = i * angleStep
-            enemies.addProjectile(boss.x, boss.y, math.cos(angle) * speed, math.sin(angle) * speed, 3.0, 1)
-        end
-    elseif attackName == "spawn_adds" then
-        local dirs = {{1,0},{-1,0},{0,1},{0,-1}}
-        local spawnCount = 0
-        -- Shuffle directions to avoid bias
-        for i = #dirs, 2, -1 do
-            local j = love.math.random(1, i)
-            dirs[i], dirs[j] = dirs[j], dirs[i]
-        end
-        for _, d in ipairs(dirs) do
-            if spawnCount >= 2 then break end
-            if not canSpawn("patroller") then break end
-            local nx, ny = boss.x + d[1]*2, boss.y + d[2]*2
-            if nx >= 0 and nx < ctx.anchoGrilla and ny >= 0 and ny < ctx.altoGrilla then
-                local occupied = false
-                for _, e in ipairs(enemies.list) do
-                    if e.alive and e.x == nx and e.y == ny then occupied = true; break end
-                end
-                if not occupied then
-                    local e = {
-                        x = nx, y = ny, type = "patroller", alive = true,
-                        dirX = d[1], dirY = d[2], moveTimer = 0, spawnTimer = 0,
-                        moveInterval = constants.ENEMY_PATROLLER_SPEED,
-                        dropCoins = 0, spawnTime = love.timer.getTime()
-                    }
-                    table.insert(enemies.list, e)
-                    spawnCount = spawnCount + 1
-                end
-            end
-        end
-    elseif attackName == "radial_pulse" then
-        enemies.addRadialPulse(boss.x, boss.y, 8, 3, 1)
-    elseif attackName == "teleport" then
-        local attempts = 0
-        local nx, ny
-        repeat
-            nx = love.math.random(2, ctx.anchoGrilla - 3)
-            ny = love.math.random(2, ctx.altoGrilla - 3)
-            attempts = attempts + 1
-        until attempts > 30 or (math.abs(nx - ctx.snakeHead.x) + math.abs(ny - ctx.snakeHead.y) > 5)
-        if attempts <= 30 then
-            for dx = -1, 1 do
-                for dy = -1, 1 do
-                    local tx = boss.x + dx
-                    local ty = boss.y + dy
-                    if tx >= 0 and tx < ctx.anchoGrilla and ty >= 0 and ty < ctx.altoGrilla then
-                        enemies.addTelegraph(tx, ty, 0.3, "teleport")
-                    end
-                end
-            end
-            boss.x = nx
-            boss.y = ny
-        end
-    end
-end
-
--- ============================================================
 --  Standard helpers
 -- ============================================================
 
-local function validarPos(x, y, snake, foodPos, obstacles, anchoGrilla, altoGrilla)
-    if x < 0 or x >= anchoGrilla or y < 0 or y >= altoGrilla then return false end
-    for _, s in ipairs(snake) do
-        if x == s.x and y == s.y then return false end
-    end
-    if foodPos and x == foodPos.x and y == foodPos.y then return false end
-    for _, o in ipairs(obstacles) do
-        if x == o.x and y == o.y then return false end
-    end
-    for _, e in ipairs(enemies.list) do
-        if e.alive and x == e.x and y == e.y then return false end
-    end
-    return true
-end
-
-local function countEnemiesByType()
-    local counts = {}
-    for _, e in ipairs(enemies.list) do
-        if e.alive then
-            counts[e.type] = (counts[e.type] or 0) + 1
-        end
-    end
-    return counts
-end
-
-function canSpawn(type)
+function enemies.canSpawn(type)
     if not enemies.boss or not enemies.boss.alive then return true end
-    local counts = countEnemiesByType()
+    local counts = enemyHelpers.countEnemiesByType(enemies.list)
     if type == "chaser" and (counts.chaser or 0) >= constants.BOSS_MAX_RED then return false end
     if type == "patroller" and (counts.patroller or 0) >= constants.BOSS_MAX_BLUE then return false end
     return true
 end
 
-local function sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, minDist, attempts)
-    minDist = minDist or 6
-    attempts = attempts or constants.BOSS_RESPAWN_RETRY
-    local head = snakeBody and snakeBody[1]
-    for _ = 1, attempts do
-        local gx = love.math.random(1, anchoGrilla - 2)
-        local gy = love.math.random(1, altoGrilla - 2)
-        local valid = true
-        if head then
-            if math.abs(gx - head.x) + math.abs(gy - head.y) < minDist then valid = false end
-        end
-        if valid then
-            for _, s in ipairs(snakeBody) do
-                if gx == s.x and gy == s.y then valid = false; break end
-            end
-        end
-        if valid and obstaclesMod then
-            for _, o in ipairs(obstaclesMod.pos) do
-                if gx == o.x and gy == o.y then valid = false; break end
-            end
-        end
-        if valid then
-            for _, e in ipairs(enemies.list) do
-                if e.alive and gx == e.x and gy == e.y then valid = false; break end
-            end
-        end
-        if valid then return gx, gy end
-    end
-    return nil, nil
-end
+-- ============================================================
+--  Init
+-- ============================================================
 
 function enemies.init()
     enemies.list = {}
@@ -308,7 +119,7 @@ function enemies.generar(snake, foodPos, obstacles, anchoGrilla, altoGrilla, sta
         x = love.math.random(0, anchoGrilla - 1)
         y = love.math.random(0, altoGrilla - 1)
         attempts = attempts + 1
-    until (validarPos(x, y, snake, foodPos, obstacles, anchoGrilla, altoGrilla) or attempts > 100)
+    until (enemyHelpers.validarPos(x, y, snake, foodPos, obstacles, anchoGrilla, altoGrilla, enemies.list) or attempts > 100)
     if attempts > 100 then return end
 
     enemies.spawnAt(eType, x, y, {
@@ -546,16 +357,18 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
             snakeHead = snakeBody[1],
             anchoGrilla = anchoGrilla,
             altoGrilla = altoGrilla,
+            canSpawn = enemies.canSpawn,
+            enemies = enemies,
         }
 
         if boss.state == "idle" then
             boss.attackCooldown = boss.attackCooldown - dt
             if boss.attackCooldown <= 0 then
-                local attacks = getAvailableAttacks(boss.phase)
+                local attacks = bossAttacks.getAvailable(boss.phase)
                 if #attacks > 0 then
                     local chosen = attacks[love.math.random(1, #attacks)]
                     boss.currentAttack = chosen
-                    boss.telegraphPositions = computeTelegraphPositions(boss, chosen, ctx)
+                    boss.telegraphPositions = bossAttacks.computePositions(boss, chosen, ctx)
                     -- Add telegraph markers
                     for _, pos in ipairs(boss.telegraphPositions) do
                         enemies.addTelegraph(pos.x, pos.y, chosen.telegraphTime, chosen.name)
@@ -568,7 +381,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
         elseif boss.state == "telegraph" then
             boss.stateTimer = boss.stateTimer - dt
             if boss.stateTimer <= 0 then
-                bossExecuteAttack(boss, boss.currentAttack.name, dt, ctx)
+                bossAttacks.execute(boss, boss.currentAttack.name, dt, ctx)
                 telegraphs = {}
                 boss.state = "cooldown"
                 boss.stateTimer = boss.currentAttack.cooldown * (boss.phase == 3 and 0.7 or 1.0)
@@ -594,8 +407,8 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
     for i = #pendingRespawns, 1, -1 do
         local p = pendingRespawns[i]
         if p.respawnAt <= nowRespawn then
-            if canSpawn("chaser") then
-                local gx, gy = sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, 6, p.attempts)
+            if enemies.canSpawn("chaser") then
+                local gx, gy = enemyHelpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, enemies.list, 6, p.attempts)
                 if gx then
                     enemies.spawnAt("chaser", gx, gy, {moveInterval = constants.ENEMY_CHASER_SPEED})
                     table.remove(pendingRespawns, i)
@@ -666,148 +479,7 @@ end
 -- ============================================================
 
 function enemies.draw()
-    local tam = constants.TAMANIO_BLOQUE
-    local time = love.timer.getTime()
-
-    -- Draw telegraph markers (under enemies)
-    for _, t in ipairs(telegraphs) do
-        local frac = 1 - t.timer / t.maxTimer
-        local alpha = 0.3 + frac * 0.5
-        local pulse = math.sin(time * 10 + frac * math.pi * 2) * 0.2 + 0.8
-        love.graphics.setColor(1, 0.2 + frac * 0.8, 0.1, alpha * pulse)
-        love.graphics.rectangle("fill", t.gx * tam + 1, t.gy * tam + 1, tam - 2, tam - 2, 2, 2)
-        love.graphics.setColor(1, 1, 0.3, alpha * pulse * 0.5)
-        love.graphics.setLineWidth(2)
-        love.graphics.rectangle("line", t.gx * tam + 1, t.gy * tam + 1, tam - 2, tam - 2, 2, 2)
-        love.graphics.setLineWidth(1)
-    end
-
-    -- Draw normal enemies
-    for _, e in ipairs(enemies.list) do
-        if e.alive then
-            local cx = e.x * tam + tam / 2
-            local cy = e.y * tam + tam / 2
-
-            if e.type == "chaser" then
-                love.graphics.setColor(constants.COLOR_ENEMY_CHASER[1], constants.COLOR_ENEMY_CHASER[2], constants.COLOR_ENEMY_CHASER[3])
-                local pts = {cx, cy - tam/3, cx + tam/3, cy, cx, cy + tam/3, cx - tam/3, cy}
-                love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.3)
-                love.graphics.setLineWidth(1)
-                love.graphics.polygon("line", pts)
-
-            elseif e.type == "patroller" then
-                love.graphics.setColor(constants.COLOR_ENEMY_PATROLLER[1], constants.COLOR_ENEMY_PATROLLER[2], constants.COLOR_ENEMY_PATROLLER[3])
-                local dx, dy = e.dirX, e.dirY
-                if dx == 0 and dy == 0 then dx = 1 end
-                local angle = math.atan2(dy, dx)
-                local r = tam * 0.4
-                local pts = {
-                    cx + math.cos(angle) * r, cy + math.sin(angle) * r,
-                    cx + math.cos(angle + 2.5) * r, cy + math.sin(angle + 2.5) * r,
-                    cx + math.cos(angle - 2.5) * r, cy + math.sin(angle - 2.5) * r
-                }
-                love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.3)
-                love.graphics.setLineWidth(1)
-                love.graphics.polygon("line", pts)
-
-            elseif e.type == "spawner" then
-                local pulse = math.sin(time * 2) * 0.2 + 0.8
-                love.graphics.setColor(
-                    constants.COLOR_ENEMY_SPAWNER[1] * pulse,
-                    constants.COLOR_ENEMY_SPAWNER[2] * pulse,
-                    constants.COLOR_ENEMY_SPAWNER[3] * pulse
-                )
-                love.graphics.rectangle("fill", e.x * tam + 2, e.y * tam + 2, tam - 4, tam - 4, 3, 3)
-                love.graphics.setColor(1, 1, 1, 0.3 + math.sin(time * 3) * 0.15)
-                love.graphics.setLineWidth(2)
-                love.graphics.rectangle("line", e.x * tam + 1, e.y * tam + 1, tam - 2, tam - 2, 3, 3)
-                love.graphics.setLineWidth(1)
-            end
-        end
-    end
-
-    -- Draw attack objects
-    for _, ao in ipairs(attackObjects) do
-        if ao.type == "projectile" then
-            love.graphics.setColor(1, 0.8, 0.2, 1)
-            love.graphics.circle("fill", ao.x * tam + tam/2, ao.y * tam + tam/2, 3)
-            love.graphics.setColor(1, 1, 0.5, 0.4)
-            love.graphics.circle("fill", ao.x * tam + tam/2, ao.y * tam + tam/2, 5)
-        elseif ao.type == "radial_pulse" then
-            local px = ao.cx * tam + tam / 2
-            local py = ao.cy * tam + tam / 2
-            local r = ao.radius * tam
-            local alpha = 0.5 * (1 - ao.radius / ao.maxRadius)
-            love.graphics.setColor(1, 0.3, 0.1, alpha)
-            love.graphics.circle("line", px, py, r)
-            love.graphics.setColor(1, 0.6, 0.2, alpha * 0.3)
-            love.graphics.circle("fill", px, py, r * 0.8)
-        end
-    end
-
-    -- Boss draw
-    if enemies.boss and enemies.boss.alive then
-        local cx = enemies.boss.x * tam + tam / 2
-        local cy = enemies.boss.y * tam + tam / 2
-        local vidaFrac = enemies.boss.vida / enemies.boss.vidaMax
-        local pulse = math.sin(time * 3) * 0.2 + 0.8
-
-        local r, g, b
-        if enemies.boss.state == "telegraph" then
-            -- Brillo durante telegraph
-            local flash = math.sin(time * 15) * 0.3 + 0.7
-            r = 1.0 * pulse * flash
-            g = 0.2 * vidaFrac * pulse
-            b = 0.6 * pulse
-        else
-            r = 1.0 * pulse
-            g = 0.2 * vidaFrac * pulse
-            b = 0.6 * pulse
-        end
-
-        love.graphics.setColor(r, g, b)
-        local size = tam * 1.5
-        local pts = {
-            cx, cy - size/2,
-            cx + size/2, cy,
-            cx, cy + size/2,
-            cx - size/2, cy
-        }
-        love.graphics.polygon("fill", pts)
-        love.graphics.setColor(1, 1, 1, 0.4)
-        love.graphics.setLineWidth(2)
-        love.graphics.polygon("line", pts)
-        love.graphics.setLineWidth(1)
-
-        -- Ojo del boss
-        love.graphics.setColor(1, 1, 1, 0.8)
-        love.graphics.circle("fill", cx, cy, 3)
-        love.graphics.setColor(0, 0, 0)
-        love.graphics.circle("fill", cx, cy, 1.5)
-
-        -- Health bar (mapped to food collected)
-        local cfg = constants.BOSS_HEALTH_BAR
-        local bx = cx - cfg.width / 2
-        local by = cy + cfg.yOffset
-        -- Background
-        love.graphics.setColor(cfg.bgColor)
-        love.graphics.rectangle("fill", bx, by, cfg.width, cfg.height)
-        -- Border
-        love.graphics.setColor(cfg.borderColor)
-        love.graphics.setLineWidth(1)
-        love.graphics.rectangle("line", bx - 1, by - 1, cfg.width + 2, cfg.height + 2)
-        -- Foreground fill
-        local fillW = math.floor(math.max(0, math.min(1, enemies.boss._uiBarFill)) * cfg.width)
-        love.graphics.setColor(cfg.fgColor)
-        love.graphics.rectangle("fill", bx, by, fillW, cfg.height)
-        -- Counter text
-        local txt = string.format("%d / %d", enemies.boss.foodCollected or 0, enemies.boss.foodTarget or constants.BOSS_FOOD_TARGET)
-        local txtW = love.graphics.getFont():getWidth(txt)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(txt, cx - txtW / 2, by - 14)
-    end
+    enemiesDraw.draw(enemies.list, enemies.boss, telegraphs, attackObjects)
 end
 
 return enemies

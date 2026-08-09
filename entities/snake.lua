@@ -1,11 +1,17 @@
--- =============================================================================
--- MÓDULO DE LA SERPIENTE
--- Contiene la lógica de movimiento, colisiones y dibujo del cuerpo.
+﻿-- =============================================================================
+-- MÃ“DULO DE LA SERPIENTE
+-- Contiene la lÃ³gica de movimiento, colisiones y dibujo del cuerpo.
 -- =============================================================================
 local snake = {}
 local constants = require("constants")
-local shop = require("shop")
-local enemies = require("enemies")
+local shop = require("systems.shop")
+local enemies = require("entities.enemies")
+local world = require("core.world")
+
+-- lectura del estado debug (legacy global debugImmune -> world.state.debugImmune)
+local function immune()
+    return world.get("debugImmune") or false
+end
 
 local function hsv2rgb(h, s, v)
     local i = math.floor(h * 6)
@@ -60,10 +66,10 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     elseif nuevaCabezaY >= altoGrilla then nuevaCabezaY = 0
     end
 
-    -- Verificación de colisiones con el cuerpo
+    -- VerificaciÃ³n de colisiones con el cuerpo
     for _, segmento in ipairs(s.body) do
         if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
-            if s.ghost or debugImmune then
+            if s.ghost or immune() then
             elseif shop.shieldActive then
                 shop.shieldActive = false
                 return true, false
@@ -76,11 +82,11 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         end
     end
 
-    -- Verificación de colisiones con obstáculos
+    -- VerificaciÃ³n de colisiones con obstÃ¡culos
     if obstaclePos then
         for _, obs in ipairs(obstaclePos) do
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
-                if debugImmune then
+                if immune() then
                 elseif shop.shieldActive then
                     shop.shieldActive = false
                     return true, false
@@ -96,7 +102,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
 
     -- Colision con jefe
     if enemies.boss and enemies.boss.alive and nuevaCabezaX == enemies.boss.x and nuevaCabezaY == enemies.boss.y then
-        if not s.ghost and not debugImmune then
+        if not s.ghost and not immune() then
             local bossResult = enemies.hitBoss()
             if bossResult then
                 if shop.shieldActive then
@@ -126,7 +132,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
             end
         end
         if hit then
-            if s.ghost or debugImmune then
+            if s.ghost or immune() then
                 -- pass through
             elseif shop.shieldActive then
                 shop.shieldActive = false
@@ -142,7 +148,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
         if e.alive and nuevaCabezaX == e.x and nuevaCabezaY == e.y then
-            if s.ghost or debugImmune then
+            if s.ghost or immune() then
             else
                 local result = enemies.killEnemy(i)
                 if result then
@@ -162,7 +168,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
 
     table.insert(s.body, 1, {x = nuevaCabezaX, y = nuevaCabezaY})
 
-    -- Verificar si come con rango normal o de imán
+    -- Verificar si come con rango normal o de imÃ¡n
     local comio = false
     if magnetRange and magnetRange > 0 then
         for dy = -magnetRange, magnetRange do
@@ -198,7 +204,7 @@ function snake.draw(s, alpha)
     local tam = constants.TAMANIO_BLOQUE
     local size = tam
 
-    -- Easing cúbico: suaviza arranque y frenado de cada paso
+    -- Easing cÃºbico: suaviza arranque y frenado de cada paso
     local easedAlpha = alpha * alpha * (3 - 2 * alpha)
 
     local positions = {}
@@ -231,7 +237,7 @@ function snake.draw(s, alpha)
 
     for i = 1, numSegments - 1 do
         local p1, p2 = positions[i], positions[i + 1]
-        -- Si los segmentos están separados más de 1 celda es un wrap: no dibujar conector
+        -- Si los segmentos estÃ¡n separados mÃ¡s de 1 celda es un wrap: no dibujar conector
         if math.abs(p1.x - p2.x) <= 1 and math.abs(p1.y - p2.y) <= 1 then
             local c1, c2 = colors[i], colors[i + 1]
             love.graphics.setColor(

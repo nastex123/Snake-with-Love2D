@@ -1,6 +1,6 @@
 local world = {}
 local constants = require("constants")
-local helpers = require("helpers")
+local helpers = require("core.helpers")
 
 -- Tracked state
 world.etapa = 1

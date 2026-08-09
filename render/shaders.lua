@@ -1,5 +1,6 @@
 local shaders = {}
 local constants = require("constants")
+local Log = require("core.logger")
 
 -- ============================================================
 -- CRT: scanlines + vignette + chromatic aberration + grain
@@ -205,7 +206,7 @@ local W, H
 local function tryShader(src)
     local ok, s = pcall(love.graphics.newShader, src)
     if not ok then
-        -- print("Shader error: " .. tostring(s))
+        Log.warn("shaders.tryShader failed: " .. tostring(s))
     end
     return ok and s or nil
 end

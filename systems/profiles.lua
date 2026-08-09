@@ -1,8 +1,9 @@
 local profilesMod = {}
-local persistence = require('persistence')
+local persistence = require('systems.persistence')
 local constants = require('constants')
-local ui = require('ui')
-local achMod = require('achievements')
+local ui = require('ui.ui')
+local achMod = require('systems.achievements')
+local gameflow = require('systems.gameflow')
 
 profilesMod.visible = false
 
@@ -551,7 +552,7 @@ end
 function profilesMod.handleSelect(index)
     local ok, msg, profile = persistence.selectProfile(index)
     if ok and profile then
-        applyActiveProfile()
+        gameflow.applyActiveProfile()
     end
 end
 
@@ -563,7 +564,7 @@ function profilesMod.handleInputConfirm()
     if confirmType == "create" then
         local ok, msg = persistence.createProfile(text)
         if ok then
-            applyActiveProfile()
+            gameflow.applyActiveProfile()
         end
     elseif confirmType == "rename" then
         persistence.renameProfile(inputIndex, text)
@@ -579,11 +580,11 @@ function profilesMod.handleConfirmYes()
     if confirmType == "delete" then
         persistence.deleteProfile(confirmIndex)
         if persistence.getActiveProfile() then
-            applyActiveProfile()
+            gameflow.applyActiveProfile()
         end
     elseif confirmType == "reset" then
         persistence.resetProfile(confirmIndex)
-        applyActiveProfile()
+        gameflow.applyActiveProfile()
     end
     state = 'select'
     confirmIndex = nil

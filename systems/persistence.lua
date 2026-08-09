@@ -1,8 +1,9 @@
 local persistence = {}
-local sound = require('sound')
-local ui = require('ui')
-local shaders = require('shaders')
-local helpers = require('helpers')
+local sound = require('audio.sound')
+local ui = require('ui.ui')
+local shaders = require('render.shaders')
+local helpers = require('core.helpers')
+local world = require('core.world')
 
 function persistence.init()
     love.filesystem.setIdentity("Snake_Brandon_IUB")
@@ -240,8 +241,8 @@ end
 function persistence.syncActiveProfile()
     local profile = persistence.getActiveProfile()
     if not profile then return false end
-    profile.monedas = monedas or 0
-    profile.highScore = highScore or 0
+    profile.monedas = world.get("monedas") or 0
+    profile.highScore = world.get("highScore") or 0
     persistence.saveProfiles()
     return true
 end
