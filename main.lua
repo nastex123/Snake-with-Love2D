@@ -20,6 +20,7 @@ local playerMod = require('systems.player')
 local states = require('systems.gamestates')
 local debugTools = require('systems.debugTools')
 local renderMain = require('render.renderMain')
+local touch = require('core.touch')
 
 -- pending achievements queue (global) - populated by achievementsMod
 world.state.pendingAchievements = world.state.pendingAchievements or {}
@@ -212,6 +213,18 @@ function love.mousepressed(x, y, button)
             shop.abrir(world.state.monedas)
         end
     end
+end
+
+function love.touchpressed(id, x, y, dx, dy, pressure)
+    touch.touchpressed(id, x, y)
+end
+
+function love.touchmoved(id, x, y, dx, dy, pressure)
+    touch.touchmoved(id, x, y)
+end
+
+function love.touchreleased(id, x, y, dx, dy, pressure)
+    touch.touchreleased(id, x, y)
 end
 
 function love.mousereleased(x,y,button)
