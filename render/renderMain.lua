@@ -14,6 +14,7 @@ local shadersMod = require("render.shaders")
 local debugTools = require("systems.debugTools")
 local settingsMod = require("systems.settings")
 local profilesMod = require("systems.profiles")
+local touchMod = require("core.touch")
 
 local function isGameState(g)
     return g == constants.GAME_STATE_PLAYING or g == constants.GAME_STATE_PAUSED or g == constants.GAME_STATE_DEATH_ANIMATION or g == constants.GAME_STATE_HIGH_SCORE or g == constants.GAME_STATE_SHOP or g == constants.GAME_STATE_TRANSITION
@@ -97,6 +98,11 @@ function renderMain.drawGame(dt)
             slotDisplay[i] = id and {name = itemsMod.registry[id].name} or nil
         end
         uiMod.drawSlots(slotDisplay)
+    end
+
+    -- Botón de pausa táctil (esquina inferior derecha)
+    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
+        touchMod.draw()
     end
 
     -- Dungeon minimap (top-right, fijo)
