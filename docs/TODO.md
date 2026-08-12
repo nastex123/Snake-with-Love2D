@@ -4,6 +4,18 @@
 - [ ] Split files >500 lines (profiles.lua 793, world.lua 644, settings.lua 581)
 - [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
 
+## Chaser AI (design done, pending implementation)
+- [ ] Implement `entities/chaserAI.lua` (buildPack + update, 4 estados: IDLE/CHASE/FLANK/ENCIRCLE)
+- [ ] Implement social modes: SOLO (predictor), DUPLA (hunter+flankers), MANADA (anillo + cierre 60%)
+- [ ] Navigation: evasión suave (obstáculos/cuerpo), tie-break shuffle, spread penalty, stuck counter
+- [ ] Escalado por etapa (1.10^etapa, clamp 0.15s) + paso de ctx a enemies.update
+- [ ] Boss: flank respawn en pendingRespawns (lados alternados) + cap fuerza DUPLA
+- [ ] Visual: diferenciación de estados en enemiesDraw.lua (IDLE atenuado, FLANK outline, MANADA tint, cierre flash)
+- [ ] Config keys CHASER_* en core/config.lua
+
+## Docs pendientes
+- [ ] GDD sección 3: subsecciones Patroller, Spawner y Boss (mismo formato que Chaser)
+
 ## Completed
 - [x] Split ui/ui.lua (818 -> 119 lines facade) into ui/introUI.lua, ui/menuUI.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua; facade mantiene estado/fuentes + resetPopups(); API publica intacta; smoke test 26 checks PASS (08:08:2026)
 - [x] Split main.lua (1407 -> 359 lines) into systems/player.lua, systems/gameflow.lua, systems/debugTools.lua, systems/gamestates.lua, render/renderMain.lua (08:08:2026)
@@ -46,4 +58,4 @@
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 08:08:2026 (split ui.lua, split enemies.lua, split main.lua, fix timers.lua)*
+*Last updated: 12:08:2026 (GDD seccion 3: doc Chaser + diseno IA social)*
