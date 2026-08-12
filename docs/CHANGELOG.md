@@ -8,6 +8,10 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 12:08:2026
+
+- **docs** (created - 16:30): GDD.md seccion 3 expandida con subseccion `### Chaser (Red)`: config keys, spawn, IA greedy actual con limitaciones (ignora obstaculos/cuerpo, sesgo de orden fijo), colision, comportamiento durante boss, derrota, y diseno propuesto de IA social (SOLO predictor / DUPLA hunter+flankers / MANADA anillo+cierre 60%) con arquitectura del modulo `entities/chaserAI.lua` (buildPack + update, 4 estados), navegacion mejorada (evasion suave, tie-break shuffle, spread penalty, stuck counter), geometria de flanqueo, balance (slowdown 1.15, cap boss fuerza DUPLA) y contra-juego del jugador. TODO.md: nueva seccion "Chaser AI (design done, pending implementation)" con 7 tareas. Sin cambio de codigo.
+
 ## 08:08:2026
 
 - **fix** (completed - 23:15): Pantalla negra al pulsar JUGAR. `render/renderMain.lua` `drawScene()` llamaba `isGameState(st)` pasando la tabla completa `world.state` en vez de `st.gameState`, por lo que en PLAYING/PAUSED/SHOP/TRANSITION ni `drawGame` ni `drawMenu` se ejecutaban y solo se pintaba el color de fondo. Correcto: `isGameState(st.gameState)`. Ademas, `love.draw()` ahora pasa `love.timer.getDelta()` a `drawScene()` (antes `dt` llegaba `nil`). Verificado: captura de pixeles del clicktest muestra la grilla renderizada en PLAYING; juego real ALIVE 9s sin error.log.
