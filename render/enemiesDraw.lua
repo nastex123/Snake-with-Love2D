@@ -2,7 +2,133 @@
 local draw = {}
 local constants = require("constants")
 
-function draw.draw(list, boss, telegraphs, attackObjects)
+local TAU = math.pi * 2
+
+-- Chaser "Estrella de espinas" (propuesta 6): estrella de 4 puntas con ojo
+-- central que rastrea a la serpiente. Estados: idle/chase/flank/encircle/close.
+local AMBER = {0.95, 0.64, 0.24}
+local EYE_DARK = {0.09, 0.04, 0.05}
+local WARM_WHITE = {1, 0.91, 0.69}
+
+local function starPoints(cx, cy, rot, rOut, rIn)
+    local pts = {}
+    for i = 0, 7 do
+        local r = (i % 2 == 0) and rOut or rIn
+        local a = rot + i * math.pi / 4 - math.pi / 2
+        pts[#pts + 1] = cx + math.cos(a) * r
+        pts[#pts + 1] = cy + math.sin(a) * r
+    end
+    return pts
+end
+
+local function drawChaser(e, tam, time, head)
+    local cx = e.x * tam + tam / 2
+    local cy = e.y * tam + tam / 2
+    local st = e.aiState or "chase"
+    local k = tam / 15
+    local seed = e.seed or 0
+    local col = constants.COLOR_ENEMY_CHASER
+
+    local on = math.floor(time * 14) % 2 == 0
+    local blink = st == "close" and on
+    local pul = 0.5 + 0.5 * math.sin(time * 7 + seed)
+    local th = 0.5 + 0.5 * math.sin(time * 4 + seed)
+    local alpha = 1
+    if st == "idle" then
+        alpha = 0.38 + 0.14 * math.sin(time * 2 + seed)
+    end
+
+    -- Aura (encircle ámbar pulsante, close cálido)
+    if st == "encircle" then
+        love.graphics.setColor(AMBER[1], AMBER[2], AMBER[3], alpha * (0.14 + 0.26 * th))
+        love.graphics.circle("fill", cx, cy, 7.6 * k)
+    elseif st == "close" then
+        love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha * 0.45)
+        love.graphics.circle("fill", cx, cy, 7.6 * k)
+    end
+
+    -- Cuerpo: estrella de 4 puntas (elongadas en encircle)
+    local rOut
+    if st == "encircle" then
+        rOut = (6.6 + 1.3 * th) * k
+    elseif st == "idle" then
+        rOut = 5.2 * k
+    else
+        rOut = 6.4 * k
+    end
+    local rot = e.visRot or 0
+
+    if blink then
+        love.graphics.setColor(1, 1, 1, alpha)
+    else
+        love.graphics.setColor(col[1], col[2], col[3], alpha)
+    end
+    love.graphics.polygon("fill", starPoints(cx, cy, rot, rOut, 2.5 * k))
+
+    -- FLANK: contorno blanco pulsante
+    if st == "flank" then
+        love.graphics.setColor(1, 1, 1, alpha * (0.3 + 0.7 * pul))
+        love.graphics.setLineWidth(1)
+        love.graphics.polygon("line", starPoints(cx, cy, rot, rOut + 1.2 * k, 3.2 * k))
+    end
+
+    -- Ojo central: pupila que rastrea a la cabeza de la serpiente
+    local ux, uy = 0, 0
+    if head then
+        local dx = head.x * tam + tam / 2 - cx
+        local dy = head.y * tam + tam / 2 - cy
+        local d = math.sqrt(dx * dx + dy * dy)
+        if d > 0.001 then ux, uy = dx / d, dy / d end
+    end
+    local po = (st == "idle" and 0.2 or 1.4) * k
+
+    if blink then
+        love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha)
+    else
+        love.graphics.setColor(1, 1, 1, alpha)
+    end
+    love.graphics.circle("fill", cx, cy, 2.4 * k)
+
+    love.graphics.setColor(EYE_DARK[1], EYE_DARK[2], EYE_DARK[3], alpha)
+    if e.role == "flanker" then
+        -- Rol flanker: pupila de rendija orientada al objetivo
+        love.graphics.push()
+        love.graphics.translate(cx + ux * po, cy + uy * po)
+        love.graphics.rotate(math.atan2(uy, ux))
+        love.graphics.rectangle("fill", -0.5 * k, -1.6 * k, 1.0 * k, 3.2 * k)
+        love.graphics.pop()
+    else
+        love.graphics.circle("fill", cx + ux * po, cy + uy * po, 1.1 * k)
+    end
+
+    -- Brillo especular
+    love.graphics.setColor(1, 1, 1, alpha * 0.9)
+    love.graphics.rectangle("fill", cx + ux * po - 1.2 * k, cy + uy * po - 1.2 * k, 0.8 * k, 0.8 * k)
+
+    -- IDLE: párpado cerrado (media luna superior)
+    if st == "idle" then
+        if blink then
+            love.graphics.setColor(1, 1, 1, alpha)
+        else
+            love.graphics.setColor(col[1], col[2], col[3], alpha)
+        end
+        love.graphics.arc("fill", cx, cy, 2.6 * k, math.pi, TAU)
+    end
+
+    -- CIERRE: signo de advertencia parpadeante
+    if st == "close" then
+        if on then
+            love.graphics.setColor(1, 1, 1, alpha)
+        else
+            love.graphics.setColor(1, 1, 1, alpha * 0.25)
+        end
+        local y0 = cy - 12.5 * k
+        love.graphics.rectangle("fill", cx - 0.7 * k, y0, 1.4 * k, 3.4 * k)
+        love.graphics.rectangle("fill", cx - 0.7 * k, y0 + 4.2 * k, 1.4 * k, 1.4 * k)
+    end
+end
+
+function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
     local tam = constants.TAMANIO_BLOQUE
     local time = love.timer.getTime()
 
@@ -26,12 +152,7 @@ function draw.draw(list, boss, telegraphs, attackObjects)
             local cy = e.y * tam + tam / 2
 
             if e.type == "chaser" then
-                love.graphics.setColor(constants.COLOR_ENEMY_CHASER[1], constants.COLOR_ENEMY_CHASER[2], constants.COLOR_ENEMY_CHASER[3])
-                local pts = {cx, cy - tam/3, cx + tam/3, cy, cx, cy + tam/3, cx - tam/3, cy}
-                love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.3)
-                love.graphics.setLineWidth(1)
-                love.graphics.polygon("line", pts)
+                drawChaser(e, tam, time, snakeHead)
 
             elseif e.type == "patroller" then
                 love.graphics.setColor(constants.COLOR_ENEMY_PATROLLER[1], constants.COLOR_ENEMY_PATROLLER[2], constants.COLOR_ENEMY_PATROLLER[3])

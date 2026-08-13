@@ -67,7 +67,21 @@ El cazador. Persigue directamente la cabeza del jugador. Se dibuja como un rombo
 #### Derrota
 - `enemies.killEnemy()` retorna `{px, py, gx, gy, coins = 3, type = "chaser"}` → alimenta combos, puntuación, logros (`enemy_25`, `enemy_100`, `combo_5`, `combo_10`) y stats de perfil (`kills`).
 
-#### Diseño propuesto: comportamiento social (pendiente de implementación)
+#### Diseño visual elegido: Estrella de espinas (propuesta 6)
+- Cuerpo procedural de cuatro puntas con radios alternos, sin spritesheet.
+- Ojo central: la pupila rastrea la cabeza de la serpiente en cada frame.
+- `IDLE`: alpha atenuada, rotación lenta y párpado cerrado.
+- `CHASE`: una punta se orienta hacia el movimiento mediante interpolación angular y el ojo se abre.
+- `FLANK`: contorno blanco pulsante y pupila vertical para distinguir el rol flanker.
+- `ENCIRCLE`: puntas elongadas con pulso ámbar.
+- `CIERRE`: giro rápido, destello blanco y signo de advertencia antes de la embestida.
+- La implementación está en `render/enemiesDraw.lua`; los estados y roles los administra `entities/chaserAI.lua`.
+
+#### Comportamiento social (implementación base)
+
+La implementación base vive en `entities/chaserAI.lua` y cubre los modos SOLO, DUPLA y MANADA,
+la navegación con penalizaciones y el ciclo visual de cierre. Quedan pendientes el escalado exacto
+por etapa, el umbral de ocupación del 60% y el respawn lateral específico durante boss.
 
 Mejora de IA en 3 fases por **modo de manada**, clasificado por chasers vivos en la sala:
 

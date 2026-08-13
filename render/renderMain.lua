@@ -149,7 +149,7 @@ function renderMain.drawGame(dt)
 
     if st.gameState ~= constants.GAME_STATE_SHOP then
         obstaclesMod.draw()
-        enemiesMod.draw()
+        enemiesMod.draw(st.player and st.player.body and st.player.body[1])
         foodMod.draw(st.time, dt)
         local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
             and (st.cronometro / st.velocidadActual) or 1

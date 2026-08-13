@@ -9,6 +9,7 @@ local enemies = {}
 local constants = require("constants")
 local bossAttacks = require("entities.bossAttacks")
 local enemyHelpers = require("entities.enemyHelpers")
+local chaserAI = require("entities.chaserAI")
 local enemiesDraw = require("render.enemiesDraw")
 
 local telegraphs = {}
@@ -65,6 +66,7 @@ function enemies.init()
     telegraphs = {}
     attackObjects = {}
     pendingRespawns = {}
+    chaserAI.reset()
 end
 
 -- ============================================================
@@ -84,6 +86,17 @@ function enemies.spawnAt(type, gx, gy, params)
     }
     if type == "chaser" then
         e.moveInterval = params.moveInterval or constants.ENEMY_CHASER_SPEED
+        -- Estado de IA social + animación visual (Estrella de espinas)
+        e.aiState = "idle"
+        e.role = "hunter"
+        e.side = love.math.random() < 0.5 and 1 or -1
+        e.seed = love.math.random() * math.pi * 2
+        e.visRot = love.math.random() * math.pi * 2
+        e.moveAng = e.visRot
+        e.ringIndex = 0
+        e.ringSize = 1
+        e.ringTighten = false
+        e.wanderWait = love.math.random(2, 5)
     elseif type == "patroller" then
         e.moveInterval = params.moveInterval or constants.ENEMY_PATROLLER_SPEED
         local dirs = {{1,0}, {-1,0}, {0,1}, {0,-1}}
@@ -208,8 +221,20 @@ end
 -- ============================================================
 
 function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
-    -- Update regular enemies
     local now = love.timer.getTime()
+
+    -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
+    local ctx = {
+        list = enemies.list,
+        body = snakeBody,
+        head = snakeBody[1],
+        anchoGrilla = anchoGrilla,
+        altoGrilla = altoGrilla,
+        obstaclePos = obstaclesMod and obstaclesMod.pos or {},
+    }
+    chaserAI.updatePack(ctx, dt)
+
+    -- Update regular enemies
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
 
@@ -234,36 +259,9 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
             e.moveTimer = e.moveTimer + dt
 
             if e.type == "chaser" then
-                if e.moveTimer >= e.moveInterval then
+                if e.moveTimer >= e.moveInterval * chaserAI.speedFactor(e) then
                     e.moveTimer = 0
-                    if not snakeBody[1] then break end
-                    local hx, hy = snakeBody[1].x, snakeBody[1].y
-                    local bestDir = nil
-                    local bestDist = 9999
-                    local dirs = {{0,-1}, {0,1}, {-1,0}, {1,0}}
-                    for _, d in ipairs(dirs) do
-                        local nx = e.x + d[1]
-                        local ny = e.y + d[2]
-                        if nx >= 0 and nx < anchoGrilla and ny >= 0 and ny < altoGrilla then
-                            local occupied = false
-                            for _, oe in ipairs(enemies.list) do
-                                if oe ~= e and oe.alive and oe.x == nx and oe.y == ny then
-                                    occupied = true; break
-                                end
-                            end
-                            if not occupied then
-                                local dist = math.abs(nx - hx) + math.abs(ny - hy)
-                                if dist < bestDist then
-                                    bestDist = dist
-                                    bestDir = d
-                                end
-                            end
-                        end
-                    end
-                    if bestDir then
-                        e.x = e.x + bestDir[1]
-                        e.y = e.y + bestDir[2]
-                    end
+                    chaserAI.step(e, ctx)
                 end
 
             elseif e.type == "patroller" then
@@ -478,8 +476,8 @@ end
 --  Draw
 -- ============================================================
 
-function enemies.draw()
-    enemiesDraw.draw(enemies.list, enemies.boss, telegraphs, attackObjects)
+function enemies.draw(snakeHead)
+    enemiesDraw.draw(enemies.list, enemies.boss, telegraphs, attackObjects, snakeHead)
 end
 
 return enemies
