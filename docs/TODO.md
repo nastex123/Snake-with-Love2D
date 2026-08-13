@@ -5,13 +5,13 @@
 - [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
 
 ## Chaser AI (design done, pending implementation)
-- [ ] Implement `entities/chaserAI.lua` (buildPack + update, 4 estados: IDLE/CHASE/FLANK/ENCIRCLE)
-- [ ] Implement social modes: SOLO (predictor), DUPLA (hunter+flankers), MANADA (anillo + cierre 60%)
-- [ ] Navigation: evasión suave (obstáculos/cuerpo), tie-break shuffle, spread penalty, stuck counter
+- [x] Implement `entities/chaserAI.lua` (updatePack + step, estados IDLE/CHASE/FLANK/ENCIRCLE/CIERRE)
+- [x] Implement social modes: SOLO, DUPLA y MANADA (anillo + ciclo de cierre)
+- [x] Navigation: evasión de obstáculos/cuerpo, tie-break shuffle y spread penalty
 - [ ] Escalado por etapa (1.10^etapa, clamp 0.15s) + paso de ctx a enemies.update
 - [ ] Boss: flank respawn en pendingRespawns (lados alternados) + cap fuerza DUPLA
-- [ ] Visual: diferenciación de estados en enemiesDraw.lua (IDLE atenuado, FLANK outline, MANADA tint, cierre flash)
-- [ ] Config keys CHASER_* en core/config.lua
+- [x] Visual: Estrella de espinas con IDLE/CHASE/FLANK/ENCIRCLE/CIERRE en `enemiesDraw.lua`
+- [x] Config keys CHASER_* en core/config.lua
 
 ## Docs pendientes
 - [ ] GDD sección 3: subsecciones Patroller, Spawner y Boss (mismo formato que Chaser)

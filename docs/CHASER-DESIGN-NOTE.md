@@ -11,18 +11,20 @@ Rama: `feat/ai-behavior` (basada en `origin/feat/refactor-architecture`)
 2. Los flankers **pueden golpear** a la serpiente si se cruza (sin distancia mínima a la cabeza).
 3. Slowdown de manada confirmado: `CHASER_PACK_SLOWDOWN = 1.15`.
 
-## Diseño visual — pendiente de revisar en PC
-- Existe un **HTML de previsualización con 6 propuestas de diseño animadas** (generado con otra IA) que debe revisarse desde el PC.
-- Próximo paso: elegir una propuesta, documentarla en GDD sección 3 y anotar los cambios visuales a implementar en `render/enemiesDraw.lua`.
+## Diseño visual — elegido
+- Propuesta elegida: **06 — Estrella de espinas**.
+- Ojo central con pupila rastreadora, estrella de cuatro puntas, párpado IDLE, contorno FLANK,
+  pulso ámbar ENCIRCLE y destello de cierre.
+- Documentado en GDD sección 3 e implementado en `render/enemiesDraw.lua`.
 
 ## Checklist de continuación (en PC)
-- [ ] Revisar el HTML de propuestas visuales y elegir una
-- [ ] Implementar `entities/chaserAI.lua` (buildPack + update, 4 estados: IDLE/CHASE/FLANK/ENCIRCLE)
-- [ ] Modos sociales: SOLO (predictor), DUPLA (hunter+flankers), MANADA (anillo + cierre 60%)
-- [ ] Navegación: evasión suave (obstáculos/cuerpo), tie-break shuffle, spread penalty, stuck counter
+- [x] Revisar el HTML de propuestas visuales y elegir una: propuesta 06
+- [x] Implementar `entities/chaserAI.lua` con estados IDLE/CHASE/FLANK/ENCIRCLE/CIERRE
+- [x] Modos sociales: SOLO, DUPLA y MANADA con ciclo de anillo y cierre
+- [x] Navegación: evasión de obstáculos, penalización de cuerpo/apilamiento y tie-break shuffle
 - [ ] Escalado por etapa (1.10^etapa, clamp 0.15s) + paso de ctx a `enemies.update` (`gamestates.lua:189`)
 - [ ] Boss: flank respawn en `pendingRespawns` (lados alternados) + cap fuerza DUPLA
-- [ ] Visual: diferenciación de estados en `enemiesDraw.lua` (IDLE atenuado, FLANK outline, MANADA tint, cierre flash)
-- [ ] Config keys `CHASER_*` en `core/config.lua` (valores propuestos en GDD sección 3)
+- [x] Visual: diferenciación de estados en `enemiesDraw.lua` (IDLE atenuado, FLANK outline, MANADA tint, cierre flash)
+- [x] Config keys `CHASER_*` en `core/config.lua`
 - [ ] Verificar `love .` sin errores y log limpio
 - [ ] Documentar Patroller, Spawner y Boss en GDD sección 3 (mismo formato)

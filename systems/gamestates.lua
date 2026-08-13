@@ -12,6 +12,7 @@ local enemiesMod = require("entities.enemies")
 local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local particles = require("render.particles")
+local shadersMod = require("render.shaders")
 local achievementsMod = require("systems.achievements")
 local persistence = require("systems.persistence")
 local gameflow = require("systems.gameflow")
@@ -102,6 +103,7 @@ function states.updateCommon(dt)
     st.time = st.time + dt
 
     timers.update(dt)
+    shadersMod.update(dt)
     processToasts()
 
     -- Guardar estado previo de racha para detectar su finalización
@@ -209,6 +211,7 @@ function states.updatePlaying(dt)
 
         if attackHit then
             st.shakeTimer = 0.15
+            shadersMod.triggerDamage(0.7, 0.5)
         end
 
         if enemyKilled then
@@ -257,6 +260,7 @@ function states.updatePlaying(dt)
         if not vivo then
             love.timer.sleep(0.08)
             st.shakeTimer = constants.SHAKE_DURATION
+            shadersMod.triggerDamage(1.0, 0.9)
             st.fadeDir = 1
             st.gameState = constants.GAME_STATE_DEATH_ANIMATION
             local oldHighScore = st.highScore
@@ -285,6 +289,7 @@ function states.updatePlaying(dt)
 
         if shieldBefore and not shop.shieldActive then
             sound.play("shieldBreak")
+            shadersMod.triggerDamage(0.5, 0.5)
         end
 
         if comio then

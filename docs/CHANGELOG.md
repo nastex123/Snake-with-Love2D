@@ -10,6 +10,7 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 12:08:2026
 
+- **feature** (implemented): Chaser visual propuesta 06, Estrella de espinas, con ojo rastreador, animaciones IDLE/CHASE/FLANK/ENCIRCLE/CIERRE e IA social base en `entities/chaserAI.lua`. Añadidos CRT con curvatura, flash rojo y screen shake por daño, además de bloom a media resolución.
 - **docs** (created - 16:30): GDD.md seccion 3 expandida con subseccion `### Chaser (Red)`: config keys, spawn, IA greedy actual con limitaciones (ignora obstaculos/cuerpo, sesgo de orden fijo), colision, comportamiento durante boss, derrota, y diseno propuesto de IA social (SOLO predictor / DUPLA hunter+flankers / MANADA anillo+cierre 60%) con arquitectura del modulo `entities/chaserAI.lua` (buildPack + update, 4 estados), navegacion mejorada (evasion suave, tie-break shuffle, spread penalty, stuck counter), geometria de flanqueo, balance (slowdown 1.15, cap boss fuerza DUPLA) y contra-juego del jugador. TODO.md: nueva seccion "Chaser AI (design done, pending implementation)" con 7 tareas. Sin cambio de codigo.
 
 ## 08:08:2026
