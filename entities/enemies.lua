@@ -99,9 +99,14 @@ function enemies.spawnAt(type, gx, gy, params)
         e.wanderWait = love.math.random(2, 5)
     elseif type == "patroller" then
         e.moveInterval = params.moveInterval or constants.ENEMY_PATROLLER_SPEED
-        local dirs = {{1,0}, {-1,0}, {0,1}, {0,-1}}
-        local d = dirs[love.math.random(1, 4)]
-        e.dirX, e.dirY = d[1], d[2]
+        if params.dirX and params.dirY then
+            e.dirX, e.dirY = params.dirX, params.dirY
+        else
+            local dirs = {{1,0}, {-1,0}, {0,1}, {0,-1}}
+            local d = dirs[love.math.random(1, 4)]
+            e.dirX, e.dirY = d[1], d[2]
+        end
+        e.visRot = math.atan2(e.dirY, e.dirX)
     else
         e.moveInterval = 999
     end
@@ -126,6 +131,17 @@ function enemies.generar(snake, foodPos, obstacles, anchoGrilla, altoGrilla, sta
         eType = "spawner"
     end
 
+    if not enemies.canSpawn(eType) then
+        if eType == "chaser" and enemies.canSpawn("patroller") then
+            eType = "patroller"
+        elseif eType == "patroller" and enemies.canSpawn("chaser") then
+            eType = "chaser"
+        elseif not enemies.canSpawn("chaser") and not enemies.canSpawn("patroller") then
+            eType = "spawner"
+        end
+    end
+    if not enemies.canSpawn(eType) then return end
+
     local x, y
     local attempts = 0
     repeat
@@ -135,8 +151,11 @@ function enemies.generar(snake, foodPos, obstacles, anchoGrilla, altoGrilla, sta
     until (enemyHelpers.validarPos(x, y, snake, foodPos, obstacles, anchoGrilla, altoGrilla, enemies.list) or attempts > 100)
     if attempts > 100 then return end
 
+    local etapa = (mod and mod.stage) or 1
+    local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapa) - 1)))
+
     enemies.spawnAt(eType, x, y, {
-        moveInterval = (eType == "chaser" and constants.ENEMY_CHASER_SPEED / speedMult)
+        moveInterval = (eType == "chaser" and chaserInterval)
             or (eType == "patroller" and constants.ENEMY_PATROLLER_SPEED / speedMult)
             or nil
     })
@@ -220,7 +239,7 @@ end
 --  Update
 -- ============================================================
 
-function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
+function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, etapa, stageModifier)
     local now = love.timer.getTime()
 
     -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
@@ -231,6 +250,8 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
         anchoGrilla = anchoGrilla,
         altoGrilla = altoGrilla,
         obstaclePos = obstaclesMod and obstaclesMod.pos or {},
+        etapa = etapa or 1,
+        stageModifier = stageModifier or {},
     }
     chaserAI.updatePack(ctx, dt)
 
@@ -238,7 +259,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
 
-        -- Boss timeout: reds get queued for respawn, blues vanish
+        -- Boss timeout: reds get queued for respawn with alternating flank side, blues vanish
         if enemies.boss and enemies.boss.alive and e.alive then
             local age = now - (e.spawnTime or now)
             if age >= constants.BOSS_ENEMY_LIFETIME then
@@ -247,6 +268,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
                         type = "chaser",
                         respawnAt = now + constants.BOSS_RESPAWN_DELAY,
                         attempts = constants.BOSS_RESPAWN_RETRY,
+                        side = (e.side and -e.side) or (love.math.random() < 0.5 and 1 or -1),
                     })
                 end
                 e.alive = false
@@ -267,41 +289,47 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
             elseif e.type == "patroller" then
                 if e.moveTimer >= e.moveInterval then
                     e.moveTimer = 0
+
+                    local function isCellBlocked(cx, cy)
+                        if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then
+                            return true
+                        end
+                        for _, s in ipairs(snakeBody) do
+                            if s.x == cx and s.y == cy then return true end
+                        end
+                        if obstaclesMod and obstaclesMod.pos then
+                            for _, o in ipairs(obstaclesMod.pos) do
+                                if o.x == cx and o.y == cy then return true end
+                            end
+                        end
+                        if enemies.boss and enemies.boss.alive and enemies.boss.x == cx and enemies.boss.y == cy then
+                            return true
+                        end
+                        for _, oe in ipairs(enemies.list) do
+                            if oe ~= e and oe.alive and oe.x == cx and oe.y == cy then
+                                return true
+                            end
+                        end
+                        return false
+                    end
+
                     local nx = e.x + e.dirX
                     local ny = e.y + e.dirY
 
-                    if nx < 0 or nx >= anchoGrilla then
+                    if isCellBlocked(nx, ny) then
                         e.dirX = -e.dirX
-                        nx = e.x + e.dirX
-                    end
-                    if ny < 0 or ny >= altoGrilla then
                         e.dirY = -e.dirY
-                        ny = e.y + e.dirY
-                    end
-
-                    local blocked = false
-                    for _, s in ipairs(snakeBody) do
-                        if s.x == nx and s.y == ny then blocked = true; break end
-                    end
-                    if not blocked then
-                        e.x = nx
-                        e.y = ny
-                    end
-                    if ny < 0 or ny >= altoGrilla then
-                        e.dirY = -e.dirY
-                        ny = e.y + e.dirY
-                    end
-
-                    local occupied = false
-                    for _, oe in ipairs(enemies.list) do
-                        if oe ~= e and oe.alive and oe.x == nx and oe.y == ny then
-                            occupied = true; break
+                        local rx = e.x + e.dirX
+                        local ry = e.y + e.dirY
+                        if not isCellBlocked(rx, ry) then
+                            e.x = rx
+                            e.y = ry
                         end
-                    end
-                    if not occupied then
+                    else
                         e.x = nx
                         e.y = ny
                     end
+                    e.visRot = math.atan2(e.dirY, e.dirX)
                 end
 
             elseif e.type == "spawner" then
@@ -357,6 +385,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
             altoGrilla = altoGrilla,
             canSpawn = enemies.canSpawn,
             enemies = enemies,
+            speedMult = 1.0 + (boss.phase - 1) * 0.2,
         }
 
         if boss.state == "idle" then
@@ -408,7 +437,16 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod)
             if enemies.canSpawn("chaser") then
                 local gx, gy = enemyHelpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, enemies.list, 6, p.attempts)
                 if gx then
-                    enemies.spawnAt("chaser", gx, gy, {moveInterval = constants.ENEMY_CHASER_SPEED})
+                    local speedMult = (stageModifier and stageModifier.enemySpeed) or 1.0
+                    local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapa or 1) - 1)))
+                    local spawned = enemies.spawnAt("chaser", gx, gy, {
+                        moveInterval = chaserInterval,
+                    })
+                    if spawned and p.side then
+                        spawned.side = p.side
+                        spawned.aiState = "flank"
+                        spawned.role = "flanker"
+                    end
                     table.remove(pendingRespawns, i)
                 else
                     p.attempts = p.attempts - 5

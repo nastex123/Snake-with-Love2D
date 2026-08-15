@@ -38,13 +38,23 @@ local function drawChaser(e, tam, time, head)
         alpha = 0.38 + 0.14 * math.sin(time * 2 + seed)
     end
 
-    -- Aura (encircle ámbar pulsante, close cálido)
+    -- Aura (encircle ámbar pulsante, close cálido con estela de embestida)
     if st == "encircle" then
         love.graphics.setColor(AMBER[1], AMBER[2], AMBER[3], alpha * (0.14 + 0.26 * th))
         love.graphics.circle("fill", cx, cy, 7.6 * k)
     elseif st == "close" then
-        love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha * 0.45)
-        love.graphics.circle("fill", cx, cy, 7.6 * k)
+        local dashPulse = e.ringTighten and 0.45 or (0.6 + 0.25 * math.sin(time * 20))
+        love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha * dashPulse)
+        love.graphics.circle("fill", cx, cy, (8.2 + 1.2 * pul) * k)
+    end
+
+    -- Efecto de promocion a nuevo lider (corona dorada en expansion)
+    if e.promotedTimer and e.promotedTimer > 0 then
+        local pFrac = e.promotedTimer / 0.5
+        love.graphics.setColor(1, 0.85, 0.2, pFrac * 0.8)
+        love.graphics.setLineWidth(2)
+        love.graphics.circle("line", cx, cy, (6.0 + (1 - pFrac) * 8.0) * k)
+        love.graphics.setLineWidth(1)
     end
 
     -- Cuerpo: estrella de 4 puntas (elongadas en encircle)
@@ -155,20 +165,24 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
                 drawChaser(e, tam, time, snakeHead)
 
             elseif e.type == "patroller" then
-                love.graphics.setColor(constants.COLOR_ENEMY_PATROLLER[1], constants.COLOR_ENEMY_PATROLLER[2], constants.COLOR_ENEMY_PATROLLER[3])
-                local dx, dy = e.dirX, e.dirY
-                if dx == 0 and dy == 0 then dx = 1 end
-                local angle = math.atan2(dy, dx)
-                local r = tam * 0.4
+                local pulse = math.sin(time * 5) * 0.1 + 0.9
+                love.graphics.setColor(
+                    constants.COLOR_ENEMY_PATROLLER[1] * pulse,
+                    constants.COLOR_ENEMY_PATROLLER[2] * pulse,
+                    constants.COLOR_ENEMY_PATROLLER[3] * pulse
+                )
+                local angle = e.visRot or math.atan2(e.dirY or 0, e.dirX or 1)
+                local r = tam * 0.45
                 local pts = {
                     cx + math.cos(angle) * r, cy + math.sin(angle) * r,
                     cx + math.cos(angle + 2.5) * r, cy + math.sin(angle + 2.5) * r,
                     cx + math.cos(angle - 2.5) * r, cy + math.sin(angle - 2.5) * r
                 }
                 love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.3)
-                love.graphics.setLineWidth(1)
+                love.graphics.setColor(1, 1, 1, 0.4)
+                love.graphics.setLineWidth(1.5)
                 love.graphics.polygon("line", pts)
+                love.graphics.setLineWidth(1)
 
             elseif e.type == "spawner" then
                 local pulse = math.sin(time * 2) * 0.2 + 0.8

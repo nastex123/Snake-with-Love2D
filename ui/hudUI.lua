@@ -1,4 +1,4 @@
-﻿-- ui/hudUI.lua - HUD: grid, barra superior, slots y combo flash
+-- ui/hudUI.lua - HUD: grid, barra superior, slots y combo flash
 local hud = {}
 local constants = require("constants")
 
@@ -48,28 +48,26 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     love.graphics.rectangle("line", 0, 0, w, h)
 end
 
-function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
-    --[[
-    A J U S T E   D E   T A M A Ñ O
-    scale = altoPantalla / 600
-      - 600:  punto de referencia (la barra mide 28px a 600px de alto)
-      - >1:   la barra crece (1080/600=1.8x en 1080p)
-      - <1:   la barra se encoge (no ocurre porque 600 es el mínimo)
+local fontCache = {}
 
-    Para cambiar la agresividad del escalado:
-      - Cambia '600' por un número más bajo (ej: 400) → más grande
-      - Cambia '600' por un número más alto  (ej: 800) → más pequeño
-      - Pon scale=1 siempre → tamaño fijo sin importar resolución
-    --]]
+local function getCachedFont(fontSize)
+    if not fontCache[fontSize] then
+        local font
+        local ok = pcall(function() font = love.graphics.newFont(constants.FONT_FILE, fontSize) end)
+        if not ok or not font then
+            font = love.graphics.newFont(fontSize)
+        end
+        fontCache[fontSize] = font
+    end
+    return fontCache[fontSize]
+end
+
+function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
     local s = scale or 1
 
-    -- Fuente escalada para que el texto crezca con la barra
+    -- Fuente escalada para que el texto crezca con la barra (obtenida del cache)
     local fontSize = math.max(6, math.floor(constants.FONT_NORMAL * s))
-    local font
-    local ok = pcall(function() font = love.graphics.newFont(constants.FONT_FILE, fontSize) end)
-    if not ok then
-        font = love.graphics.newFont(fontSize)
-    end
+    local font = getCachedFont(fontSize)
     love.graphics.setFont(font)
 
     local hh = constants.HUD_HEIGHT * s          -- alto total de la barra

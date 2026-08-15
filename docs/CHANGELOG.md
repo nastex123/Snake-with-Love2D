@@ -8,6 +8,60 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 14:08:2026
+
+- **fix** (completed - 22:20): Restauración completa y garantizada del audio del juego y música continua:
+  - `audio/sound.lua`: Corregido el orden de decodificación en streaming (`seek` antes de `play`), evitando desincronización de buffers en OpenAL.
+  - `audio/sound.lua`: Implementado el reinicio automático del bucle musical en `sound:update(dt)` cuando la pista termina o se detiene, garantizando música continua en el menú y en la partida.
+  - `audio/sound.lua`: Agregados efectos de sonido procedurales `buttonHover` y `buttonClick` para interacción con la interfaz.
+  - `systems/gamestates.lua`: Verificación de `not sound:isPlaying()` en cada estado para reiniciar segmentos musicales si fueron interrumpidos externamente.
+  - `ui/menuUI.lua` & `main.lua`: Conectados los sonidos de feedback al pasar el ratón (`hover`) y hacer click sobre los botones del Menú Principal.
+- **fix** (completed - 18:38): Corrección integral de bugs en el subsistema de sonido y música:
+  - `systems/gamestates.lua`: Corregida la detección de racha musical con flanco de subida persistente (`prevComboActive`), permitiendo que la introducción del combo (`comboEnter`, 10s–17s) suene completa y transicione de forma natural al bucle `comboLoop` sin ser sobreescrita en cada tick.
+  - `audio/sound.lua`: Añadidas guardas estrictas de `sound.musicEnabled` en `startSegment()`, `playSegment()` y `crossfadeTo()`, evitando que la música se reactive sola tras ser desactivada en Configuración.
+  - `audio/sound.lua`: Añadida guarda de `sound.sfxEnabled` en `sound.play(name)`, permitiendo desactivar los efectos de sonido procedurales desde la interfaz de opciones.
+  - `audio/sound.lua`: `sound.setMasterVolume(v)` ahora aplica `love.audio.setVolume(sound.baseVolume)`, regulando el volumen general del motor OpenAL tanto para música como para todos los efectos de sonido.
+  - `audio/sound.lua`: Limpieza y detención estricta de fuentes de audio huérfanas al cancelar fundidos y cambios rápidos de segmento.
+- **feature** (completed - 18:20): Cinemática inicial fluida y continua (eliminado el salto abrupto de 3.0s):
+  - `ui/introUI.lua`: Ascenso continuo del diamante mediante interpolación suave con curva *Ease-Out Cubic* entre `t = 2.0s` y `t = 2.8s`, elevándose de forma orgánica desde el centro (`cy = 300px`) a la cabecera superior (`y = 108px`). Espiral convergente y destello (*flash*) sincronizados con la llegada a la cima.
+  - `ui/menuUI.lua`: Revelación orgánica del título `S N A K E` naciendo del resplandor del diamante a partir de `t = 2.8s` con micro-expansión de escala (`0.92 -> 1.0`).
+  - `ui/menuUI.lua`: Cascada escalonada (*staggered entrance*) de los botones de cristal y oro con micro-desplazamiento vertical hacia arriba y retardo de 0.08s por botón.
+  - `render/renderMain.lua`: Renderizado del menú sincronizado a partir de `introTimer >= 2.8s`.
+- **feature** (completed - 18:08): Rediseño visual del Menú Principal (*Balatro Style — Cristal & Oro*):
+  - `ui/introUI.lua`: Mantenido el diamante/rombo emblemático flotando en la zona superior detrás del título con brillo pulsante y rotación mística tras la intro, limpiando las partículas secundarias de la espiral.
+  - `ui/menuUI.lua`: Tipografía nítida y pura para el título `S N A K E` (eliminado el triple escalado que deformaba y duplicaba las letras). Tarjeta de High Score enmarcada en cristal oscuro translúcido con borde dorado brillante (`shimmer`).
+  - `ui/menuUI.lua`: 4 botones interactivos con bordes dorados, esquinas redondeadas (`8px`), elevación suave y cursor indicador `▶` al hacer hover.
+  - `ui/menuUI.lua`: Distribución y espaciado vertical corregido: garantizada una holgura limpia de más de 150px entre el botón `SALIR` y las pastillas inferiores de ayuda (`WASD / FLECHAS`, `+ / - VELOCIDAD`).
+- **fix** (completed - 17:50): Corregida la fuga visual de bloom/glow y sombra durante la pantalla de transición ("SALA COMPLETADA"):
+  - `render/renderMain.lua`: `drawGameGlow()` y `drawGameShadow()` ahora atenúan la emisión con `(1 - fadeAlpha)` y se cancelan por completo cuando `fadeAlpha >= 1` o durante la fase `hold`, evitando que el bloom aditivo se pinte sobre la pantalla negra.
+- **feature** (completed - 17:35): Implementación completa de la IA del Chaser (Cazador Rojo) en todas sus fases:
+  1. `entities/chaserAI.lua`: Detección de ocupación de slots en MANADA: al tener >=60% de slots ocupados (o 6s de espera máxima), se activa inmediatamente el cierre anticipado con fase `flash` de advertencia y posterior `dash` coordinado.
+  2. `entities/chaserAI.lua`: Sistema de promoción a nuevo líder `hunter` con feedback de anillo dorado cuando el líder previo es eliminado.
+  3. `world/world.lua` y `entities/enemies.lua`: Fórmula de escalado de velocidad progresiva por etapa: `intervalo = max(0.15s, (0.30 / speedMult) * 0.90^(etapa - 1))` con clamp estricto de 0.15s.
+  4. `systems/gamestates.lua`: Contexto enriquecido pasando `worldMod.etapa` y `worldMod.getModifier()` a `enemiesMod.update()`.
+  5. `entities/enemies.lua`: Integración en sala Boss con respawn en flancos alternados (`side = 1 / -1`) y garantía de modo DUPLA forzado por el cap `BOSS_MAX_RED = 3`.
+  6. `render/enemiesDraw.lua`: Pulido visual en `drawChaser()` con aura pulsante de embestida en fase `close` y halo de promoción de líder.
+  7. `docs/GDD.md`: Actualizada la sección 3 con la documentación completa de Chaser, Patroller y Spawner.
+- **fix** (completed - 17:25): Corrección integral de bugs y pulido de Patrollers:
+  1. `entities/enemies.lua`: Corregida la lógica de movimiento y rebote del Patroller ante colisiones frontales con muros, obstáculos, cuerpo de serpiente, otros enemigos y el Boss. Se eliminó el congelamiento y los deadlocks cara a cara.
+  2. `entities/enemies.lua`: Integrada la comprobación `canSpawn()` en `enemies.generar()` para respetar estrictamente los límites de `BOSS_MAX_RED` y `BOSS_MAX_BLUE` durante el encuentro con el Boss.
+  3. `entities/snake.lua`: Corregida la colisión con enemigos al morir: chocar y morir sin escudo/armadura ya no otorga monedas ni dispara logros de muerte de enemigo de forma fraudulenta.
+  4. `entities/bossAttacks.lua`: Ataque `spawn_adds` ahora utiliza `enemies.spawnAt()` estandarizado con multiplicador de velocidad por etapa (`speedMult`) y dirección explícita.
+  5. `world/world.lua`: Implementada detección de eje despejado (horizontal vs vertical) al spawnear patrulleros en plantillas de salas estrechas/corredores.
+  6. `systems/player.lua`: Bajas de enemigos por el ítem Bomba ahora invocan correctamente `achievementsMod.check("enemyKilled")` y `coinsChanged`.
+  7. `render/enemiesDraw.lua`: Rotación angular suave del Patroller basada en `visRot` y sutil pulso de energía para mejorar la legibilidad visual.
+- **fix** (completed - 17:15): Auditoría integral de bugs y optimizaciones de memoria aplicada con éxito:
+  1. `entities/enemies.lua`: Corregida la comprobación de colisiones de los patrulleros (patrollers) para respetar bloqueos con el cuerpo de la serpiente y obstáculos, eliminando comprobaciones duplicadas de límites de grilla.
+  2. `systems/player.lua`: Corregido el efecto del ítem Hambre ("Hunger") para otorgar 2 frutas con puntos/monedas y generar una comida dorada garantizada en lugar de sobrescribir inmediatamente la variable única de comida.
+  3. `systems/shop.lua`: Corregido el cálculo del índice de la tarjeta al comprar con el ratón (`purchaseFlash`), logrando que el destello verde parpadee en la tarjeta correspondiente.
+  4. `systems/achievements.lua`: Añadida protección de índice no nulo (`schedIndex and not schedIndex[aid]`) al programar notificaciones diferidas de logros.
+  5. `ui/hudUI.lua` y `systems/settings.lua`: Implementado caché de fuentes por tamaño (`getCachedFont` / `getFallbackFont`) eliminando la instanciación redundante de `love.graphics.newFont` en cada frame del ciclo de renderizado (60 FPS).
+  6. `systems/gamestates.lua`: Eliminada la función duplicada `processToasts()` y añadido `foodMod.update(dt)` en el ciclo de actualización común.
+  7. `entities/food.lua`: Separada la lógica de animación (`food.update(dt)`) del dibujo puro (`food.draw()`).
+  8. `world/world.lua`: Encapsulado `mundoCompletado` a través de `coreWorld.set("mundoCompletado", false)` evitando fugas al entorno global `_G`.
+- **feature** (completed - 16:45): Implementado sistema de Input Buffer (cola de hasta 2 giros) y protección anti-180° en `entities/snake.lua`. Evita colisiones accidentales al presionar teclas opuestas o giros rápidos en "L", y añade muestreo continuo de teclas mantenidas para una respuesta instantánea y fluida. `core/touch.lua` integrado con la misma cola `snake.encolarDireccion`.
+- **docs** (updated - 16:45): GDD.md actualizado en la sección de movimiento con la descripción del Input Buffer y protección Anti-180°.
+
 ## 12:08:2026
 
 - **feature** (implemented): Chaser visual propuesta 06, Estrella de espinas, con ojo rastreador, animaciones IDLE/CHASE/FLANK/ENCIRCLE/CIERRE e IA social base en `entities/chaserAI.lua`. Añadidos CRT con curvatura, flash rojo y screen shake por daño, además de bloom a media resolución.

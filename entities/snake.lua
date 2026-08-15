@@ -1,4 +1,4 @@
-﻿-- =============================================================================
+-- =============================================================================
 -- MÃ“DULO DE LA SERPIENTE
 -- Contiene la lÃ³gica de movimiento, colisiones y dibujo del cuerpo.
 -- =============================================================================
@@ -37,6 +37,9 @@ function snake.reset()
         },
         dirX = 1,
         dirY = 0,
+        lastMovedDirX = 1,
+        lastMovedDirY = 0,
+        inputQueue = {},
         prevBody = {
             {x = 5, y = 5},
             {x = 4, y = 5},
@@ -50,6 +53,33 @@ function snake.reset()
 end
 
 function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange)
+    s.inputQueue = s.inputQueue or {}
+
+    -- Si la cola está vacía, revisar si el jugador mantiene pulsada una tecla perpendicular válida
+    if #s.inputQueue == 0 and love.keyboard and love.keyboard.isDown then
+        local refY = s.lastMovedDirY or s.dirY
+        local refX = s.lastMovedDirX or s.dirX
+        if (love.keyboard.isDown("up") or love.keyboard.isDown("w")) and refY == 0 then
+            table.insert(s.inputQueue, {x = 0, y = -1})
+        elseif (love.keyboard.isDown("down") or love.keyboard.isDown("s")) and refY == 0 then
+            table.insert(s.inputQueue, {x = 0, y = 1})
+        elseif (love.keyboard.isDown("left") or love.keyboard.isDown("a")) and refX == 0 then
+            table.insert(s.inputQueue, {x = -1, y = 0})
+        elseif (love.keyboard.isDown("right") or love.keyboard.isDown("d")) and refX == 0 then
+            table.insert(s.inputQueue, {x = 1, y = 0})
+        end
+    end
+
+    -- Consumir el siguiente comando en cola si existe
+    if #s.inputQueue > 0 then
+        local nextDir = table.remove(s.inputQueue, 1)
+        s.dirX = nextDir.x
+        s.dirY = nextDir.y
+    end
+
+    s.lastMovedDirX = s.dirX
+    s.lastMovedDirY = s.dirY
+
     local nuevaCabezaX = s.body[1].x + s.dirX
     local nuevaCabezaY = s.body[1].y + s.dirY
 
@@ -150,17 +180,16 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         if e.alive and nuevaCabezaX == e.x and nuevaCabezaY == e.y then
             if s.ghost or immune() then
             else
-                local result = enemies.killEnemy(i)
-                if result then
-                    if shop.shieldActive then
-                        shop.shieldActive = false
-                        return true, false, result
-                    elseif s.armor > 0 then
-                        s.armor = s.armor - 1
-                        return true, false, result
-                    else
-                        return false, false, result
-                    end
+                if shop.shieldActive then
+                    shop.shieldActive = false
+                    local result = enemies.killEnemy(i)
+                    return true, false, result
+                elseif s.armor > 0 then
+                    s.armor = s.armor - 1
+                    local result = enemies.killEnemy(i)
+                    return true, false, result
+                else
+                    return false, false, nil
                 end
             end
         end
@@ -358,19 +387,53 @@ function snake.draw(s, alpha)
     end
 end
 
+function snake.encolarDireccion(s, tx, ty)
+    if not s or not tx or not ty then return end
+    s.inputQueue = s.inputQueue or {}
+
+    -- Máximo 2 giros en cola (el siguiente inmediato + 1 giro anticipado de esquina)
+    if #s.inputQueue >= 2 then return end
+
+    -- Determinar dirección de referencia (la última en cola o la última ejecutada)
+    local refX, refY
+    if #s.inputQueue > 0 then
+        local lastQueued = s.inputQueue[#s.inputQueue]
+        refX, refY = lastQueued.x, lastQueued.y
+    else
+        refX = s.lastMovedDirX or s.dirX
+        refY = s.lastMovedDirY or s.dirY
+    end
+
+    -- Descartar si es la misma dirección (no-op)
+    if tx == refX and ty == refY then
+        return
+    end
+
+    -- Descartar dirección opuesta (anti-suicidio 180° instantáneo)
+    if (tx == -refX and refX ~= 0) or (ty == -refY and refY ~= 0) then
+        return
+    end
+
+    -- Debe ser un giro perpendicular válido (90°)
+    if (refX ~= 0 and ty ~= 0 and tx == 0) or (refY ~= 0 and tx ~= 0 and ty == 0) then
+        table.insert(s.inputQueue, {x = tx, y = ty})
+    end
+end
+
 function snake.cambiarDireccion(s, tecla)
-    if (tecla == "up" or tecla == "w") and s.dirY ~= 1 then
-        s.dirX = 0
-        s.dirY = -1
-    elseif (tecla == "down" or tecla == "s") and s.dirY ~= -1 then
-        s.dirX = 0
-        s.dirY = 1
-    elseif (tecla == "left" or tecla == "a") and s.dirX ~= 1 then
-        s.dirX = -1
-        s.dirY = 0
-    elseif (tecla == "right" or tecla == "d") and s.dirX ~= -1 then
-        s.dirX = 1
-        s.dirY = 0
+    local tx, ty
+    if tecla == "up" or tecla == "w" then
+        tx, ty = 0, -1
+    elseif tecla == "down" or tecla == "s" then
+        tx, ty = 0, 1
+    elseif tecla == "left" or tecla == "a" then
+        tx, ty = -1, 0
+    elseif tecla == "right" or tecla == "d" then
+        tx, ty = 1, 0
+    end
+
+    if tx and ty then
+        snake.encolarDireccion(s, tx, ty)
     end
 end
 

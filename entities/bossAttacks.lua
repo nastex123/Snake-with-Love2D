@@ -95,23 +95,24 @@ function bossAttacks.execute(boss, attackName, dt, ctx)
             local j = love.math.random(1, i)
             dirs[i], dirs[j] = dirs[j], dirs[i]
         end
+        local speedMult = ctx.speedMult or 1.0
         for _, d in ipairs(dirs) do
             if spawnCount >= 2 then break end
             if not ctx.canSpawn("patroller") then break end
-            local nx, ny = boss.x + d[1]*2, boss.y + d[2]*2
+            local nx = boss.x + d[1]*2
+            local ny = boss.y + d[2]*2
             if nx >= 0 and nx < ctx.anchoGrilla and ny >= 0 and ny < ctx.altoGrilla then
                 local occupied = false
                 for _, e in ipairs(ctx.enemies.list) do
                     if e.alive and e.x == nx and e.y == ny then occupied = true; break end
                 end
                 if not occupied then
-                    local e = {
-                        x = nx, y = ny, type = "patroller", alive = true,
-                        dirX = d[1], dirY = d[2], moveTimer = 0, spawnTimer = 0,
-                        moveInterval = constants.ENEMY_PATROLLER_SPEED,
-                        dropCoins = 0, spawnTime = love.timer.getTime()
-                    }
-                    table.insert(ctx.enemies.list, e)
+                    ctx.enemies.spawnAt("patroller", nx, ny, {
+                        dirX = d[1],
+                        dirY = d[2],
+                        dropCoins = 0,
+                        moveInterval = constants.ENEMY_PATROLLER_SPEED / speedMult
+                    })
                     spawnCount = spawnCount + 1
                 end
             end
