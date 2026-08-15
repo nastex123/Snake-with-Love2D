@@ -70,33 +70,7 @@ local function processToasts()
     end
 end
 
-local function processToasts()
-    local st = world.state
-    if st.scheduledToasts and #st.scheduledToasts > 0 then
-        local i = 1
-        while i <= #st.scheduledToasts do
-            local toast = st.scheduledToasts[i]
-            if st.time >= toast.showAt then
-                if states.overlaysOpen() then
-                    i = i + 1  -- defer
-                else
-                    uiMod.showToast(toast.payload)
-                    if st.scheduledIndex then st.scheduledIndex[toast.id] = nil end
-                    if st.pendingAchievements then
-                        for j = #st.pendingAchievements, 1, -1 do
-                            if st.pendingAchievements[j] == toast.id then
-                                table.remove(st.pendingAchievements, j)
-                            end
-                        end
-                    end
-                    table.remove(st.scheduledToasts, i)
-                end
-            else
-                i = i + 1
-            end
-        end
-    end
-end
+local prevComboActive = false
 
 function states.updateCommon(dt)
     local st = world.state
@@ -104,31 +78,36 @@ function states.updateCommon(dt)
 
     timers.update(dt)
     shadersMod.update(dt)
+    foodMod.update(dt)
     processToasts()
-
-    -- Guardar estado previo de racha para detectar su finalización
-    local wasCombo = (st.comboCount and st.comboCount > 0)
 
     -- Música ambiental
     sound:update(dt)
     if st.gameState == constants.GAME_STATE_MENU then
-        if sound:getCurrentSegment() ~= "intro" then
+        if sound:getCurrentSegment() ~= "intro" or not sound:isPlaying() then
             sound:playSegment("intro")
         end
+        prevComboActive = false
     elseif st.gameState == constants.GAME_STATE_PLAYING then
+        local comboActive = (st.comboCount and st.comboCount > 0)
         if enemiesMod.boss and enemiesMod.boss.alive then
-            sound:playSegment("boss")
-        elseif st.comboCount and st.comboCount > 0 then
-            if not wasCombo then
-                sound:crossfadeTo("comboEnter")
-            else
-                sound:playSegment("comboLoop")
+            if sound:getCurrentSegment() ~= "boss" or not sound:isPlaying() then
+                sound:playSegment("boss")
             end
+            prevComboActive = false
+        elseif comboActive then
+            if not prevComboActive then
+                sound:crossfadeTo("comboEnter")
+            end
+            prevComboActive = true
         else
-            if sound:getCurrentSegment() ~= "intro" then
+            if sound:getCurrentSegment() ~= "intro" or not sound:isPlaying() then
                 sound:playSegment("intro")
             end
+            prevComboActive = false
         end
+    else
+        prevComboActive = false
     end
 
     if st.shakeTimer > 0 then
@@ -188,7 +167,7 @@ end
 -- Retorna true si cambió state a muerte
 function states.updatePlaying(dt)
     local st = world.state
-    enemiesMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod)
+    enemiesMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod, worldMod.etapa, worldMod.getModifier())
     if st.player.flashTimer > 0 then
         st.player.flashTimer = st.player.flashTimer - dt
     end

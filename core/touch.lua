@@ -58,16 +58,16 @@ function touch.touchreleased(id, x, y)
     if not player then return end
 
     if math.abs(dx) > math.abs(dy) then
-        if dx > 0 and player.dirX ~= -1 then
-            player.dirX = 1; player.dirY = 0
-        elseif dx < 0 and player.dirX ~= 1 then
-            player.dirX = -1; player.dirY = 0
+        if dx > 0 then
+            snakeMod.encolarDireccion(player, 1, 0)
+        elseif dx < 0 then
+            snakeMod.encolarDireccion(player, -1, 0)
         end
     else
-        if dy > 0 and player.dirY ~= -1 then
-            player.dirX = 0; player.dirY = 1
-        elseif dy < 0 and player.dirY ~= 1 then
-            player.dirX = 0; player.dirY = -1
+        if dy > 0 then
+            snakeMod.encolarDireccion(player, 0, 1)
+        elseif dy < 0 then
+            snakeMod.encolarDireccion(player, 0, -1)
         end
     end
 end

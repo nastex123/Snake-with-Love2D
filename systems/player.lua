@@ -9,6 +9,7 @@ local enemiesMod = require("entities.enemies")
 local particles = require("render.particles")
 local sound = require("audio.sound")
 local uiMod = require("ui.ui")
+local achievementsMod = require("systems.achievements")
 
 function player.calculateCurrentSpeed(base, fruits)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
@@ -72,13 +73,20 @@ function player.aplicarItem(itemId)
                             ps = particles.enemyKill(result.px, result.py, c[1], c[2], c[3])
                         })
                     end
+                    achievementsMod.check("enemyKilled")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
                 end
             end
         end
         sound.play("enemyKill")
     elseif itemId == "hunger" then
-        foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
-        foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+        st.frutasContador = st.frutasContador + 2
+        st.puntuacion = st.puntuacion + 20 * st.scoreMultiplier
+        st.monedas = st.monedas + 2 + st.coinBonus
+        foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, constants.FOOD_GOLD)
+        if st.player and st.player.body and st.player.body[1] then
+            uiMod.addPopup("+20 (HAMBRE)", st.player.body[1].x, st.player.body[1].y)
+        end
     elseif itemId == "speedReducer" then
         st.velocidadActual = math.max(constants.VELOCIDAD_MINIMA, st.velocidadActual - constants.SPEED_REDUCER_AMOUNT)
     elseif itemId == "turbo" then

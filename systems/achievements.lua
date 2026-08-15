@@ -163,7 +163,7 @@ function achievements.check(event, params)
                 local sreg = achievements.registry[aid]
                 local schedToasts = world.get("scheduledToasts")
                 local schedIndex = world.get("scheduledIndex")
-                if sreg and schedToasts and not schedIndex[aid] then
+                if sreg and schedToasts and schedIndex and not schedIndex[aid] then
                     schedIndex[aid] = true
                     table.insert(schedToasts, {
                         id = aid,

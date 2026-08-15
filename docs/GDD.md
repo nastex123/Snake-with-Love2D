@@ -12,9 +12,12 @@
 ## 2. Core Mechanics
 
 ### Movement
-- Grid-based snake movement (WASD/Arrow keys)
+- Grid-based snake movement (WASD/Arrow keys / Touch swipe)
 - Speed adjustable in real-time (+/- keys)
 - Snake grows when eating food
+- **Input Buffer (2-step queue)**: Permite registrar giros de esquinas rápidas (giros en "L") sin pérdida de respuesta ni sobrescritura prematura.
+- **Protección Anti-180°**: Descarta giros opuestos directos o en rápida sucesión para evitar colisiones accidentales contra el propio cuello/cuerpo.
+- **Soporte de tecla mantenida**: Muestreo automático de dirección perpendicular válida en cada paso si la cola está vacía.
 
 ### Collision System
 Order: Body → Obstacles → Boss → Projectiles → Enemies
@@ -77,56 +80,66 @@ El cazador. Persigue directamente la cabeza del jugador. Se dibuja como un rombo
 - `CIERRE`: giro rápido, destello blanco y signo de advertencia antes de la embestida.
 - La implementación está en `render/enemiesDraw.lua`; los estados y roles los administra `entities/chaserAI.lua`.
 
-#### Comportamiento social (implementación base)
+#### Comportamiento social (completamente implementado)
 
-La implementación base vive en `entities/chaserAI.lua` y cubre los modos SOLO, DUPLA y MANADA,
-la navegación con penalizaciones y el ciclo visual de cierre. Quedan pendientes el escalado exacto
-por etapa, el umbral de ocupación del 60% y el respawn lateral específico durante boss.
+La implementación vive en `entities/chaserAI.lua` y cubre los modos SOLO, DUPLA y MANADA,
+la navegación con penalizaciones, el escalado progresivo por etapa y el ciclo visual de cierre anticipado al 60%.
 
-Mejora de IA en 3 fases por **modo de manada**, clasificado por chasers vivos en la sala:
+Modos de manada por cantidad de chasers vivos en la sala:
 
 | pack.count | Modo | Roles |
 |---|---|---|
-| 1 | **SOLO** | Hunter + predicción |
-| 2–3 | **DUPLA** | 1 Hunter + 1–2 Flankers |
-| 4+ | **MANADA** | Anillo de cerco + cierre coordinado |
+| 1 | **SOLO** | Hunter con persecución y evasión |
+| 2–3 | **DUPLA** | 1 Hunter líder + 1–2 Flankers laterales |
+| 4+ | **MANADA** | Anillo de cerco orbital + cierre coordinado |
 
-**Estados por enemigo** (enums, no strings):
+**Estados por enemigo**:
 - `IDLE`: deambula si la cabeza está fuera de `CHASER_AGGRO_RADIUS = 8` (Manhattan).
-- `CHASE` (hunter): greedy directo con evasión suave.
-- `FLANK`: ataque lateral perpendicular a la dirección de la cabeza.
-- `ENCIRCLE`: navegación a un slot del anillo.
+- `CHASE` (hunter): persecución greedy directa con evasión suave.
+- `FLANK`: ataque lateral perpendicular a la dirección de la cabeza (`head + d*1 ± p*2`).
+- `ENCIRCLE`: navegación a un slot asignado del anillo orbital.
+- `CLOSE`: fase de embestida grupal acelerada (`speedFactor = 0.5`) tras aviso flash.
 
-**Arquitectura**: la IA pasa a un nuevo módulo `entities/chaserAI.lua` con dos niveles:
-- `chaserAI.buildPack(ctx)` — pase "colmena" 1×/tick: clasifica pack, asigna roles estables (refresh 0.5s, guard de edad <1s para no robar rol).
-- `chaserAI.update(e, dt, ctx, pack)` — navegación individual (greedy con scoring).
-
-**Navegación mejorada**:
+**Navegación y Geometría**:
 - Evasión suave: obstáculo = bloqueo duro, cuerpo de serpiente = penalización fuerte, otro enemigo = bloqueo duro.
-- Tie-break anti-bias: direcciones barajadas cada tick (elimina el sesgo del orden fijo).
-- Penalización anti-apilamiento (`CHASER_SPREAD_PENALTY`): celdas a ≤2 tiles de otro chaser puntúan peor.
-- Contador de stuck: tras 3 ticks sin movimiento válido, escapa a cualquier celda libre.
+- Tie-break barajado anti-sesgo en cada tick.
+- Penalización anti-apilamiento (`CHASER_SPREAD_PENALTY`).
+- **Cierre anticipado del 60%**: Al estar ≥60% de los slots ocupados (a distancia ≤1 del slot objetivo) o tras 6s de espera máxima, se dispara inmediatamente el cierre con destello de aviso (`flash`) y posterior embestida (`dash`).
+- **Escalado por etapa**: `intervalo = max(0.15s, (0.30 / speedMult) * 0.90^(etapa - 1))`.
+- **Durante Boss**: Cap `BOSS_MAX_RED = 3` fuerza permanentemente el modo DUPLA (1 Hunter + 2 Flankers); el respawn tras 15s reaparece en flancos laterales alternados (`side = 1 / -1`).
 
-**Geometría**:
-- Dirección de cabeza `d = body[1] − body[2]`; perpendiculares `p1 = (−dy, dx)`, `p2 = (dy, −dx)`.
-- Flanker L/R: target `head + d×1 ± p×2`; mantienen ≥2 tiles del hunter (pueden golpear a la serpiente si se cruza — sin distancia mínima a la cabeza).
-- Anillo MANADA: radio `min(3, grilla/6)`, slots priorizados por producto punto `(slot − cabeza)·d` (tapan rutas de escape, flanco trasero flojo por diseño).
-- Cierre: ≥60% de slots ocupados o 6s de hold max → todos pasan a hunter con destello de advertencia.
-- Transición suave: si la manada cae a dupla, promoción inmediata del más cercano a hunter.
+### Patroller (Blue)
 
-**Balance**:
-- Slowdown de manada: `CHASER_PACK_SLOWDOWN = 1.15` (el anillo amenaza pero deja huecos).
-- Durante el boss el cap 3 fuerza modo DUPLA (nunca MANADA).
+El patrullero. Se mueve en línea recta continua y rebota ante paredes, obstáculos, el Boss y otros enemigos. Se dibuja como un triángulo azul (`COLOR_ENEMY_PATROLLER = {0.2, 0.4, 0.9}`) con rotación orientada a su vector de movimiento y pulso de energía.
 
-**Escalado por etapa (propuesto)**: `intervalo = (0.3 / speedMult) × 1.10^(etapa−1)`, clamp mínimo 0.15s.
+#### Datos de config (`core/config.lua`)
+| Key | Valor | Descripción |
+|-----|-------|-------------|
+| `ENEMY_PATROLLER_SPEED` | 0.2 | Intervalo de movimiento base (segundos por tile) |
+| `ENEMY_DROP_PATROLLER` | 2 | Monedas al ser derrotado |
+| `patrollerWeight` | 0.20–0.35 | Peso de spawn por etapa |
+| `BOSS_MAX_BLUE` | 4 | Cap de patrollers durante el boss |
 
-**Contra-juego del jugador**:
-- Matar al **hunter** rompe el cerco (roles se re-anclan).
-- La espalda de la serpiente es el punto débil del anillo (slots traseros no priorizados).
-- En DUPLA, los flankers son menos letales solos: separarlos del hunter diluye la presión.
+#### Comportamiento
+- Al spawnear en salas de tipo corredor, detecta el eje de mayor espacio despejado (horizontal vs vertical) para patrullar a lo largo del pasillo.
+- Ante colisión frontal con cualquier elemento sólido (pared, obstáculo, cuerpo de serpiente, Boss u otro enemigo), invierte su dirección inmediatamente (`dirX = -dirX; dirY = -dirY`) y da el paso de rebote si la casilla opuesta está libre, evitando atascos o deadlocks cara a cara.
+
+### Spawner (Purple)
+
+El generador estático. Permanece inmóvil en su celda y genera periódicamente nuevos obstáculos adyacentes si hay celdas libres disponibles.
+
+#### Datos de config (`core/config.lua`)
+| Key | Valor | Descripción |
+|-----|-------|-------------|
+| `ENEMY_SPAWNER_INTERVAL` | 8.0 | Intervalo de generación de obstáculos (segundos) |
+| `ENEMY_DROP_SPAWNER` | 5 | Monedas al ser destruido |
+| `spawnerWeight` | 0.20–0.35 | Peso de spawn por etapa |
+
+#### Comportamiento
+- Durante el combate contra el Boss, su intervalo de spawn se multiplica por 1.5x (`spawnerInterval * 1.5`) para balancear la densidad de amenazas.
 
 ### Enemy Caps (during boss)
-- Red (Chasers): max 3
+- Red (Chasers): max 3 (fuerza modo DUPLA)
 - Blue (Patrollers): max 4
 
 ## 4. Items (12 total)

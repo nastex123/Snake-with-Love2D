@@ -1,4 +1,4 @@
-﻿local constants = require("constants")
+local constants = require("constants")
 local world = require("core.world")
 local snakeMod  = require("entities.snake")
 local foodMod   = require("entities.food")
@@ -154,23 +154,26 @@ function love.mousepressed(x, y, button)
     -- Menu main buttons
     if button == 1 and world.state.gameState == constants.GAME_STATE_MENU then
         local hit = uiMod.menuMousePressed(x, y)
-        if hit == 'play' then
-            worldMod.init()
-            world.state.mundoCompletado = false
-            iniciarSala(false)
-            world.state.fadeAlpha = 0
-            world.state.fadeDir = 0
-            world.state.gameState = constants.GAME_STATE_PLAYING
-            return
-        elseif hit == 'profiles' then
-            profilesMod.open()
-            return
-        elseif hit == 'settings' then
-            settingsMod.open()
-            return
-        elseif hit == 'exit' then
-            love.event.quit()
-            return
+        if hit then
+            sound.play("buttonClick")
+            if hit == 'play' then
+                worldMod.init()
+                world.state.mundoCompletado = false
+                iniciarSala(false)
+                world.state.fadeAlpha = 0
+                world.state.fadeDir = 0
+                world.state.gameState = constants.GAME_STATE_PLAYING
+                return
+            elseif hit == 'profiles' then
+                profilesMod.open()
+                return
+            elseif hit == 'settings' then
+                settingsMod.open()
+                return
+            elseif hit == 'exit' then
+                love.event.quit()
+                return
+            end
         end
     end
 

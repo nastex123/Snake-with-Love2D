@@ -60,12 +60,20 @@ end
 
 -- Widget helpers for hit areas (populated during draw, consumed by mousepressed)
 
+local fallbackFonts = {}
+local function getFallbackFont(s)
+    if not fallbackFonts[s] then
+        fallbackFonts[s] = love.graphics.newFont(s)
+    end
+    return fallbackFonts[s]
+end
+
 local function setFont(size)
     if ui and ui['font'..size] then
         love.graphics.setFont(ui['font'..size])
     else
         local s = size == 'Large' and 22 or size == 'Normal' and 16 or 12
-        love.graphics.setFont(love.graphics.newFont(s))
+        love.graphics.setFont(getFallbackFont(s))
     end
 end
 
@@ -79,7 +87,7 @@ local function drawCheckbox(x, y, label, value)
     love.graphics.rectangle('fill', bx, by, 22, 22, 4)
     if value then
         love.graphics.setColor(1, 1, 1)
-        love.graphics.setFont(love.graphics.newFont(16))
+        love.graphics.setFont(ui and ui.fontNormal or getFallbackFont(16))
         love.graphics.print('✓', bx + 4, by + 2)
     end
     return bx, by, 22, 22
@@ -118,7 +126,7 @@ local function drawDropdown(x, y, w, label, valueLabel)
     love.graphics.setColor(0.25, 0.25, 0.3)
     love.graphics.rectangle('fill', bx, y, bw, 24, 4)
     love.graphics.setColor(1, 1, 1)
-    love.graphics.setFont(ui and ui.fontNormal or love.graphics.newFont(14))
+    love.graphics.setFont(ui and ui.fontNormal or getFallbackFont(14))
     love.graphics.print(tostring(valueLabel), bx + 6, y + 4)
     -- ▾ arrow
     love.graphics.print('▾', bx + bw - 18, y + 4)
@@ -243,7 +251,7 @@ local function drawDropdownList()
     love.graphics.setColor(0.4, 0.4, 0.45)
     love.graphics.rectangle('line', dd.x, dd.y, dd.w, dd.h, 6)
     -- Items
-    love.graphics.setFont(ui and ui.fontNormal or love.graphics.newFont(14))
+    love.graphics.setFont(ui and ui.fontNormal or getFallbackFont(14))
     for i, item in ipairs(dd.items) do
         local iy = dd.y + (i - 1) * dd.itemH
         local isSel = (item.value == dd.current)

@@ -45,7 +45,7 @@ function renderMain.drawMenu(dt)
     shadersMod.drawBalatroBG(st.time, s)
     uiMod.drawBalatroIntro(st.introTimer, st.time, false)
     love.graphics.draw(st.menuPS, 0, 0)
-    if st.introTimer >= 3.0 then
+    if st.introTimer >= 2.8 then
         uiMod.drawMenu(st.introTimer, st.time, st.highScore)
     end
     if settingsMod and settingsMod.draw then settingsMod.draw() end
@@ -259,13 +259,19 @@ function renderMain.drawGameGlow(dt)
     local st = world.state
     love.graphics.setCanvas()
     shadersMod.beginGlow()
-    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION or st.gameState ~= constants.GAME_STATE_SHOP then
-        if st.gameState ~= constants.GAME_STATE_SHOP then
-            local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-                and (st.cronometro / st.velocidadActual) or 1
+    if (st.fadeAlpha and st.fadeAlpha >= 1) or (st.gameState == constants.GAME_STATE_TRANSITION and st.transitionPhase == "hold") then
+        love.graphics.setCanvas()
+        return
+    end
+    if st.gameState ~= constants.GAME_STATE_SHOP then
+        local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
+            and (st.cronometro / st.velocidadActual) or 1
+        local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
+        if fadeFactor > 0.001 then
             love.graphics.push()
             love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y + st.gameOffsetY)
-            snakeMod.draw(st.player, alpha)
+            love.graphics.setColor(1, 1, 1, fadeFactor)
+            snakeMod.draw(st.player, moveAlpha)
             foodMod.draw(st.time, dt)
             for _, entry in ipairs(st.activePS) do
                 love.graphics.draw(entry.ps, 0, 0)
@@ -280,14 +286,21 @@ function renderMain.drawGameShadow(dt)
     local st = world.state
     -- ---- CANVAS SHADOW: silueta de la serpiente ----
     shadersMod.beginShadow()
+    if (st.fadeAlpha and st.fadeAlpha >= 1) or (st.gameState == constants.GAME_STATE_TRANSITION and st.transitionPhase == "hold") then
+        love.graphics.setCanvas()
+        return
+    end
     if st.gameState ~= constants.GAME_STATE_SHOP then
-        local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
+        local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
             and (st.cronometro / st.velocidadActual) or 1
-        love.graphics.push()
-        love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y + st.gameOffsetY)
-        love.graphics.setColor(1, 1, 1, 1)
-        snakeMod.draw(st.player, alpha)
-        love.graphics.pop()
+        local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
+        if fadeFactor > 0.001 then
+            love.graphics.push()
+            love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y + st.gameOffsetY)
+            love.graphics.setColor(1, 1, 1, fadeFactor)
+            snakeMod.draw(st.player, moveAlpha)
+            love.graphics.pop()
+        end
     end
     love.graphics.setCanvas()
 end

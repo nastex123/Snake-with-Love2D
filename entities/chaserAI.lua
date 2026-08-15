@@ -195,6 +195,24 @@ function chaserAI.updatePack(ctx, dt)
     local aggroIn = constants.CHASER_AGGRO_RADIUS
     local aggroOut = constants.CHASER_AGGRO_RADIUS + 2
 
+    -- Deteccion de ocupacion de slots para cierre anticipado del 60%
+    if mode == "manada" and ringPhase == "enc" then
+        local inPositionCount = 0
+        for i, e in ipairs(chasers) do
+            e.ringIndex = i - 1
+            e.ringSize = n
+            local sx, sy = ringSlot(e, ctx)
+            if manhattan(e.x, e.y, sx, sy) <= 1 then
+                inPositionCount = inPositionCount + 1
+            end
+        end
+        if n > 0 and (inPositionCount / n) >= 0.60 then
+            local cycle = constants.CHASER_RING_CYCLE
+            ringTimer = cycle * 0.575
+            ringPhase = "flash"
+        end
+    end
+
     for i, e in ipairs(chasers) do
         local dist = manhattan(e.x, e.y, ctx.head.x, ctx.head.y)
 
@@ -216,6 +234,9 @@ function chaserAI.updatePack(ctx, dt)
                 e.aiState = "idle"
                 e.role = "hunter"
             elseif i == 1 then
+                if e.role ~= "hunter" then
+                    e.promotedTimer = 0.5
+                end
                 e.aiState = "chase"
                 e.role = "hunter"
             else
@@ -225,6 +246,10 @@ function chaserAI.updatePack(ctx, dt)
                 e.aiState = "flank"
                 e.role = "flanker"
             end
+        end
+
+        if e.promotedTimer and e.promotedTimer > 0 then
+            e.promotedTimer = e.promotedTimer - dt
         end
 
         if e.aiState == "idle" then

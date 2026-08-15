@@ -1,6 +1,7 @@
 local world = {}
 local constants = require("constants")
 local helpers = require("core.helpers")
+local coreWorld = require("core.world")
 
 -- Tracked state
 world.etapa = 1
@@ -400,7 +401,7 @@ function world.init()
     world.objetivoSala = 50
     world.dungeon = nil
     world.generarMazmorra()
-    mundoCompletado = false
+    coreWorld.set("mundoCompletado", false)
 end
 
 function world.getModifier()
@@ -586,10 +587,40 @@ function world.populateRoom(snakeBody, anchoGrilla, altoGrilla, obstaclesList, f
         for _ = 1, count do
             if love.math.random() <= (erule.weight or 1.0) then
                 local spawnFn = function(gx, gy)
+                    local pDirX, pDirY = nil, nil
+                    if erule.type == "patroller" then
+                        local function countClear(dx, dy)
+                            local clear = 0
+                            for dist = 1, 5 do
+                                local cx, cy = gx + dx * dist, gy + dy * dist
+                                if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then break end
+                                local blocked = false
+                                for _, o in ipairs(obstaclesMod.pos or {}) do
+                                    if o.x == cx and o.y == cy then blocked = true; break end
+                                end
+                                if blocked then break end
+                                clear = clear + 1
+                            end
+                            return clear
+                        end
+                        local freeH = countClear(1, 0) + countClear(-1, 0)
+                        local freeV = countClear(0, 1) + countClear(0, -1)
+                        if freeH > freeV then
+                            pDirX = (countClear(1, 0) >= countClear(-1, 0)) and 1 or -1
+                            pDirY = 0
+                        elseif freeV > freeH then
+                            pDirX = 0
+                            pDirY = (countClear(0, 1) >= countClear(0, -1)) and 1 or -1
+                        end
+                    end
+                    local etapa = world.etapa or 1
+                    local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapa) - 1)))
                     local params = {
-                        moveInterval = (erule.type == "chaser" and constants.ENEMY_CHASER_SPEED / speedMult)
+                        moveInterval = (erule.type == "chaser" and chaserInterval)
                             or (erule.type == "patroller" and constants.ENEMY_PATROLLER_SPEED / speedMult)
                             or nil,
+                        dirX = pDirX,
+                        dirY = pDirY,
                     }
                     enemiesMod.spawnAt(erule.type, gx, gy, params)
                 end
