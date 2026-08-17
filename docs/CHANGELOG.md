@@ -8,6 +8,18 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 17:08:2026
+
+- **refactor** (completed - 17:40): Split de archivos >500 líneas en facade + sub-módulos, delegando el dibujo/Generación a sub-módulos que reciben el facade por argumento (patrón de `ui/*UI.lua`):
+  1. `world/world.lua` (675 → 122): facade de estado (`etapa`, `sala`, `objetivoSala`, getters) que delega a `world/dungeonGen.lua` (355, BSP + templates + stage modifiers) y `world/populate.lua` (193, población de sala).
+  2. `systems/profiles.lua` (794 → 344): facade de estado/input que delega el dibujo a `systems/profilesDraw.lua` (509: select/input/confirm/achievements).
+  3. `systems/settings.lua` (589 → 373): facade que expone `audio`/`graphics`/`accessibility`/`dat` para `persistence.lua` y delega el dibujo a `systems/settingsDraw.lua` (261: tabs/controls/toasts).
+  - `entities/enemies.lua` (520) dejado intacto: sobrepasa el límite solo levemente y su extracción rompería el encapsulamiento de `telegraphs`/`attackObjects`/`pendingRespawns` sin beneficio real (opcional según el brief).
+  - Tarea delegada a AGY CLI; verificación headless independiente (`love .` → `error.log` vacío) tras cada split.
+- **fix** (completed - 17:35): Corrección de defectos introducidos en el split:
+  1. `world/dungeonGen.lua`: eliminada función `world.getStageMod()` duplicada y rota que indexaba globals `world`/`stageMod` (nil) causando crash al cargar (`attempt to index global 'world' (a nil value)`).
+  2. `systems/settings.lua`: reensamblado el cuerpo de `settings.close()` que había quedado partido (asignaciones de reset filtradas a nivel de módulo) y eliminada la redefinición duplicada de `settings.audio`/`graphics`/`accessibility` que pisaba el estado cargado por `open()`.
+
 ## 14:08:2026
 
 - **fix** (completed - 22:20): Restauración completa y garantizada del audio del juego y música continua:
