@@ -61,28 +61,32 @@ main.lua (raíz)
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 1407 | — | Game loop, state machine, orchestration |
+| main.lua | raíz | 380 | — | Game loop, state machine, orchestration (split 08:08:2026) |
 | constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
-| config.lua | core/ | 175 | — | Centralized configuration |
-| logger.lua | core/ | 45 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 80 | — | Timer manager with object pooling |
-| world.lua | core/ | 29 | world | World state container (no globals) |
+| config.lua | core/ | 183 | — | Centralized configuration |
+| logger.lua | core/ | 44 | Log | Logging (info/warn/error/debug) |
+| timers.lua | core/ | 90 | — | Timer manager with object pooling |
+| world.lua | core/ | 28 | world | World state container (no globals) |
 | helpers.lua | core/ | 52 | — | Utility functions |
-| snake.lua | entities/ | 371 | snakeMod | Movement, collision detection |
-| enemies.lua | entities/ | 813 | enemiesMod | Enemy AI, boss logic |
-| food.lua | entities/ | 131 | foodMod | Food spawning and types |
-| obstacles.lua | entities/ | 97 | obstaclesMod | Obstacle placement |
-| world.lua | world/ | 644 | worldMod | BSP dungeon generation, room templates |
+| snake.lua | entities/ | 440 | snakeMod | Movement, collision detection |
+| enemies.lua | entities/ | 520 | enemiesMod | Enemy AI, boss logic (split 08:08:2026: bossAttacks + enemyHelpers) |
+| food.lua | entities/ | 133 | foodMod | Food spawning and types |
+| obstacles.lua | entities/ | 103 | obstaclesMod | Obstacle placement |
+| world.lua | world/ | 122 | worldMod | Facade: state (etapa/sala/objetivoSala), getters, delegates to dungeonGen/populate |
+| world/dungeonGen.lua | world/ | 355 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
+| world/populate.lua | world/ | 193 | — | Room population (enemies/food/obstacles) (split 17:08:2026) |
 | items.lua | systems/ | 100 | itemsMod | Item definitions |
-| shop.lua | systems/ | 375 | shopMod | Shop logic and UI |
-| persistence.lua | systems/ | 347 | persistenceMod | Save/load system |
-| profiles.lua | systems/ | 793 | profilesMod | Profile management UI |
-| achievements.lua | systems/ | 180 | achievementsMod | Achievement tracking |
-| settings.lua | systems/ | 581 | settingsMod | Settings panel |
-| ui.lua | ui/ | 818 | uiMod | All UI rendering |
-| shaders.lua | render/ | 378 | shadersMod | Post-processing pipeline |
+| shop.lua | systems/ | 376 | shopMod | Shop logic and UI |
+| persistence.lua | systems/ | 348 | persistenceMod | Save/load system |
+| profiles.lua | systems/ | 344 | profilesMod | Facade: profile state, input, delegates draw to profilesDraw (split 17:08:2026) |
+| profilesDraw.lua | systems/ | 509 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
+| achievements.lua | systems/ | 184 | achievementsMod | Achievement tracking |
+| settings.lua | systems/ | 373 | settingsMod | Facade: audio/graphics/accessibility dat + state, delegates draw to settingsDraw (split 17:08:2026) |
+| settingsDraw.lua | systems/ | 261 | — | Settings tabs/controls/toasts rendering (split 17:08:2026) |
+| ui.lua | ui/ | 142 | uiMod | UI facade + state/fonts (split 08:08:2026: intro/menu/hud/toasts/popups/overlays) |
+| shaders.lua | render/ | 458 | shadersMod | Post-processing pipeline |
 | particles.lua | render/ | 156 | particlesMod | Particle effects |
-| sound.lua | audio/ | 309 | — | Audio management |
+| sound.lua | audio/ | 341 | — | Audio management |
 
 ## 3. State Machine
 

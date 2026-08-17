@@ -1,7 +1,6 @@
 # TODO — Snake Dungeon Crawler
 
 ## In Progress
-- [ ] Split files >500 lines (profiles.lua 793, world.lua 644, settings.lua 581)
 - [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
 
 ## Chaser AI (100% implementado)
@@ -29,6 +28,7 @@
 - [x] Split main.lua (1407 -> 359 lines) into systems/player.lua, systems/gameflow.lua, systems/debugTools.lua, systems/gamestates.lua, render/renderMain.lua (08:08:2026)
 - [x] Fix core/timers.lua: reserved word `repeat` used as field -> renamed to `loops` (syntax error blocked module load) (08:08:2026)
 - [x] Replace print() calls with core/logger.lua usage across modules (08:08:2026)
+- [x] Split files >500 lines into facade + submodules (17:08:2026): `world/world.lua` (675) -> facade (122) + `world/dungeonGen.lua` (355) + `world/populate.lua` (193); `systems/profiles.lua` (794) -> facade (344) + `systems/profilesDraw.lua` (509); `systems/settings.lua` (589) -> facade (373) + `systems/settingsDraw.lua` (261). `entities/enemies.lua` (520) left intact (optional, no clean split). Delegate via AGY CLI + independent headless `error.log` verification. Fixes applied: duplicate broken `world.getStageMod()` in dungeonGen.lua (nil-global crash), shattered `settings.close()` body + duplicate `settings.audio/graphics/accessibility` table redefinition.
 
 ## Completed (Fase 3)
 - [x] Migrate legacy globals to World-managed state (puntuacion, monedas, comboCount, gameState, fade*, transition*, debug*, menuPS, celebrationTimer, debugButtons) (08:08:2026)
