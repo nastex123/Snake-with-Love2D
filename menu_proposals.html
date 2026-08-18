@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Propuestas de Rediseño — Menú Principal (Snake Love2D)</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f18;
+            --panel: #16192b;
+            --panel-border: #262c4a;
+            --accent-cyan: #00d2ff;
+            --accent-gold: #ffd23f;
+            --accent-magenta: #ff2a7a;
+            --text-main: #e2e8f0;
+            --text-muted: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 24px 16px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 24px;
+            max-width: 900px;
+        }
+
+        h1 {
+            font-size: 26px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        h1 span {
+            color: var(--accent-cyan);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 18px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Selector de Propuestas */
+        .proposal-nav {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            background: var(--panel);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--panel-border);
+        }
+
+        .tab-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 10px 20px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .tab-btn.active {
+            background: var(--accent-cyan);
+            color: #050b14;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.35);
+        }
+
+        /* Layout Principal */
+        .main-layout {
+            display: flex;
+            gap: 28px;
+            max-width: 1280px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        /* Ventana de Previsualización (Simulador Love2D 800x600 escalado) */
+        .preview-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .window-frame {
+            width: 800px;
+            height: 600px;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .window-header {
+            height: 28px;
+            background: #111420;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 11px;
+            color: #718096;
+            user-select: none;
+        }
+
+        .window-title {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .window-title-icon {
+            width: 10px;
+            height: 10px;
+            background: #e53e3e;
+            border-radius: 50%;
+        }
+
+        .window-controls {
+            display: flex;
+            gap: 6px;
+        }
+
+        .window-controls div {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .viewport {
+            width: 800px;
+            height: 572px;
+            position: relative;
+            overflow: hidden;
+            background: #060913;
+        }
+
+        canvas#vortexCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .crt-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 20;
+            background: radial-gradient(circle at center, transparent 65%, rgba(0,0,0,0.4) 100%),
+                        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 100%, 100% 4px;
+        }
+
+        /* Capa UI dentro del viewport */
+        .menu-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px 20px 20px;
+            user-select: none;
+        }
+
+        /* ---- ESTILOS PROPUESTA 1: ARCADE CYBERPUNK ---- */
+        .p1 .menu-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 34px;
+            color: #00f0ff;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7), 0 0 25px rgba(0, 240, 255, 0.3), 3px 3px 0 #ff0055;
+            letter-spacing: 6px;
+            margin-top: 15px;
+            margin-bottom: 6px;
+            animation: titleFloat 4s ease-in-out infinite alternate;
+        }
+
+        .p1 .menu-subtitle {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 9px;
+            color: #ff0055;
+            letter-spacing: 4px;
+            text-shadow: 0 0 8px rgba(255, 0, 85, 0.6);
+            margin-bottom: 25px;
+        }
+
+        .p1 .highscore-badge {
+            background: rgba(10, 14, 28, 0.75);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), inset 0 0 10px rgba(0, 240, 255, 0.1);
+        }
+
+        .p1 .highscore-icon {
+            color: var(--accent-gold);
+            font-size: 14px;
+            animation: starSpin 3s linear infinite;
+        }
+
+        .p1 .highscore-text {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: var(--accent-gold);
+            letter-spacing: 1px;
+            text-shadow: 0 0 8px rgba(255, 210, 63, 0.5);
+        }
+
+        .p1 .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 250px;
+        }
+
+        .p1 .menu-btn {
+            background: rgba(14, 18, 36, 0.85);
+            border: 1.5px solid rgba(0, 240, 255, 0.25);
+            border-radius: 6px;
+            padding: 12px 16px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+
+        .p1 .menu-btn::before {
+            content: '▶';
+            font-size: 8px;
+            color: var(--accent-cyan);
+            position: absolute;
+            left: 14px;
+            opacity: 0;
+            transform: translateX(-6px);
+            transition: all 0.2s ease;
+        }
+
+        .p1 .menu-btn:hover {
+            background: rgba(0, 240, 255, 0.15);
+            border-color: var(--accent-cyan);
+            color: #00f0ff;
+            transform: translateX(4px);
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.4), inset 0 0 8px rgba(0, 240, 255, 0.2);
+        }
+
+        .p1 .menu-btn:hover::before {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .p1 .menu-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* ---- ESTILOS PROPUESTA 2: BALATRO STYLE / CRISTAL & ORO ---- */
+        .p2 .menu-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 38px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.8), 0 4px 0 #0f172a;
+            letter-spacing: 8px;
+            margin-top: 20px;
+            margin-bottom: 25px;
+            animation: titlePulse 3s ease-in-out infinite;
+        }
+
+        .p2 .highscore-badge {
+            background: linear-gradient(135deg, rgba(255, 210, 63, 0.15), rgba(255, 120, 0, 0.05));
+            border: 2px solid rgba(255, 210, 63, 0.4);
+            border-radius: 12px;
+            padding: 10px 28px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(255, 210, 63, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        .p2 .highscore-icon {
+            color: #ffd23f;
+            font-size: 16px;
+        }
+
+        .p2 .highscore-text {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            color: #ffd23f;
+            letter-spacing: 1.5px;
+        }
+
+        .p2 .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 260px;
+        }
+
+        .p2 .menu-btn {
+            background: rgba(18, 22, 40, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 13px 18px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .p2 .menu-btn:hover {
+            background: rgba(45, 55, 95, 0.95);
+            border-color: rgba(255, 210, 63, 0.6);
+            color: #ffd23f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 210, 63, 0.25);
+        }
+
+        /* ---- ESTILOS PROPUESTA 3: MINIMALISTA TÁCTICO / CLEAN PIXEL ---- */
+        .p3 .menu-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 32px;
+            color: #10b981;
+            text-shadow: 3px 3px 0 #064e3b;
+            letter-spacing: 4px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+
+        .p3 .highscore-badge {
+            background: #022c22;
+            border: 2px solid #10b981;
+            border-radius: 0;
+            padding: 6px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 35px;
+        }
+
+        .p3 .highscore-icon {
+            color: #10b981;
+            font-size: 12px;
+        }
+
+        .p3 .highscore-text {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #10b981;
+            letter-spacing: 1px;
+        }
+
+        .p3 .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 240px;
+        }
+
+        .p3 .menu-btn {
+            background: #0f172a;
+            border: 2px solid #334155;
+            border-radius: 0;
+            padding: 12px 16px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: #94a3b8;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .p3 .menu-btn:hover {
+            background: #1e293b;
+            border-color: #10b981;
+            color: #fff;
+        }
+
+        /* Pastillas inferiores de controles (Común y libre de superposiciones) */
+        .footer-controls {
+            margin-top: auto;
+            display: flex;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
+        .ctrl-pill {
+            background: rgba(15, 20, 35, 0.75);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 5px 12px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 7px;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .ctrl-pill span {
+            color: var(--accent-cyan);
+        }
+
+        /* Panel de Información Lateral */
+        .info-panel {
+            flex: 1;
+            min-width: 320px;
+            max-width: 420px;
+            background: var(--panel);
+            border: 1px solid var(--panel-border);
+            border-radius: 12px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .info-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+            border-bottom: 1px solid var(--panel-border);
+            padding-bottom: 10px;
+        }
+
+        .info-desc {
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .feature-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .feature-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            font-size: 13px;
+            color: var(--text-main);
+        }
+
+        .feature-item svg {
+            width: 16px;
+            height: 16px;
+            color: #10b981;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .palette-preview {
+            display: flex;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .color-chip {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            font-weight: 700;
+            color: #000;
+        }
+
+        .interactive-box {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .interactive-box label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .interactive-box input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-cyan);
+        }
+
+        /* Animaciones */
+        @keyframes titleFloat {
+            0% { transform: translateY(0px) scale(1); }
+            100% { transform: translateY(-4px) scale(1.02); }
+        }
+
+        @keyframes titlePulse {
+            0%, 100% { opacity: 0.95; }
+            50% { opacity: 1; text-shadow: 0 0 30px rgba(255, 255, 255, 1), 0 0 10px var(--accent-cyan); }
+        }
+
+        @keyframes starSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🎮 Menú Principal — <span>SNAKE DUNGEON CRAWLER</span></h1>
+        <p>Previsualizador interactivo a escala real 800x600. Haz clic en los botones para interactuar y alternar entre estilos.</p>
+    </header>
+
+    <nav class="proposal-nav">
+        <button class="tab-btn active" onclick="switchProposal(1)">
+            ⚡ Propuesta 1: Retro Neon / Cyberpunk
+        </button>
+        <button class="tab-btn" onclick="switchProposal(2)">
+            🃏 Propuesta 2: Balatro Style / Cristal & Oro
+        </button>
+        <button class="tab-btn" onclick="switchProposal(3)">
+            🟩 Propuesta 3: Minimalista Táctico / Clean
+        </button>
+    </nav>
+
+    <div class="main-layout">
+        <!-- Ventana Love2D simulada -->
+        <div class="preview-container">
+            <div class="window-frame">
+                <div class="window-header">
+                    <div class="window-title">
+                        <div class="window-title-icon"></div>
+                        <span>Snake — Dungeon Crawler (Love2D 11.4)</span>
+                    </div>
+                    <div class="window-controls">
+                        <div></div>
+                        <div></div>
+                        <div></div>
+                    </div>
+                </div>
+
+                <div class="viewport" id="viewport">
+                    <canvas id="vortexCanvas" width="800" height="572"></canvas>
+                    <div class="crt-overlay"></div>
+
+                    <!-- Menú UI Dinámico -->
+                    <div class="menu-ui p1" id="menuUi">
+                        <div class="menu-title">S N A K E</div>
+                        <div class="menu-subtitle" id="menuSub">DUNGEON CRAWLER</div>
+
+                        <div class="highscore-badge">
+                            <div class="highscore-icon">★</div>
+                            <div class="highscore-text" id="hsLabel">HIGH SCORE: 554</div>
+                        </div>
+
+                        <div class="btn-group">
+                            <button class="menu-btn" onclick="playSound('select')">JUGAR</button>
+                            <button class="menu-btn" onclick="playSound('select')">PERFILES</button>
+                            <button class="menu-btn" onclick="playSound('select')">CONFIGURACIÓN</button>
+                            <button class="menu-btn" onclick="playSound('select')">SALIR</button>
+                        </div>
+
+                        <div class="footer-controls">
+                            <div class="ctrl-pill"><span>WASD / FLECHAS</span> MOVER</div>
+                            <div class="ctrl-pill"><span>+ / -</span> VELOCIDAD</div>
+                            <div class="ctrl-pill"><span>TAB</span> DEBUG</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel lateral con especificaciones -->
+        <div class="info-panel" id="infoPanel">
+            <div class="info-title" id="pTitle">⚡ Propuesta 1: Retro Neon / Cyberpunk</div>
+            <div class="info-desc" id="pDesc">
+                Diseño vibrante de alto contraste inspirado en máquinas arcade clásicas y estética neón. Corrige la superposición del logo con un título de doble capa nítido y botones con micro-desplazamiento lateral interactivo.
+            </div>
+
+            <ul class="feature-list" id="pFeatures">
+                <li class="feature-item">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Título nítido con sombra desplazada magenta/cian sin duplicaciones.</span>
+                </li>
+                <li class="feature-item">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Espaciado vertical balanceado (45px libres antes de los controles).</span>
+                </li>
+                <li class="feature-item">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span>Cursor triangular pixel art reactivo al posar el cursor sobre cada botón.</span>
+                </li>
+            </ul>
+
+            <div class="interactive-box">
+                <label>
+                    <span>High Score de prueba</span>
+                    <span id="hsVal">554</span>
+                </label>
+                <input type="range" min="0" max="9999" value="554" oninput="updateHighScore(this.value)">
+            </div>
+
+            <div>
+                <label style="font-size: 12px; font-weight:600; color:var(--text-muted);">Paleta de Colores:</label>
+                <div class="palette-preview" id="paletteBox">
+                    <div class="color-chip" style="background:#00f0ff;">Cian</div>
+                    <div class="color-chip" style="background:#ffd23f;">Oro</div>
+                    <div class="color-chip" style="background:#ff0055; color:#fff;">Rosa</div>
+                    <div class="color-chip" style="background:#0e1224; color:#fff; border-color:#00f0ff;">Fondo</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Web Audio API para SFX de prueba interactivos
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'select') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            }
+        }
+
+        // Simulación del Canvas Vórtice Shader
+        const canvas = document.getElementById('vortexCanvas');
+        const ctx = canvas.getContext('2d');
+        let time = 0;
+        let vortexStyle = 1;
+
+        function drawVortex() {
+            time += 0.015;
+            const w = canvas.width;
+            const h = canvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.fillStyle = '#060913';
+            ctx.fillRect(0, 0, w, h);
+
+            // Capas de espiral matemática simulando el shader de Balatro
+            const arms = 4;
+            const maxRadius = Math.max(w, h) * 0.7;
+
+            for (let r = maxRadius; r > 10; r -= 6) {
+                const angleOffset = (r / 60) + time * 0.8;
+                for (let a = 0; a < arms; a++) {
+                    const angle = (a * (Math.PI * 2 / arms)) + angleOffset;
+                    const x = cx + Math.cos(angle) * r;
+                    const y = cy + Math.sin(angle) * r;
+
+                    ctx.beginPath();
+                    ctx.arc(x, y, r * 0.45, 0, Math.PI * 2);
+
+                    if (vortexStyle === 1) {
+                        ctx.fillStyle = (a % 2 === 0) ? 'rgba(0, 180, 255, 0.035)' : 'rgba(255, 0, 85, 0.025)';
+                    } else if (vortexStyle === 2) {
+                        ctx.fillStyle = (a % 2 === 0) ? 'rgba(255, 210, 63, 0.035)' : 'rgba(30, 60, 120, 0.04)';
+                    } else {
+                        ctx.fillStyle = (a % 2 === 0) ? 'rgba(16, 185, 129, 0.035)' : 'rgba(15, 23, 42, 0.05)';
+                    }
+                    ctx.fill();
+                }
+            }
+
+            // Viñeta circular central oscura para garantizar legibilidad del menú
+            const grad = ctx.createRadialGradient(cx, cy, 60, cx, cy, 320);
+            grad.addColorStop(0, 'rgba(6, 9, 19, 0.35)');
+            grad.addColorStop(0.7, 'rgba(6, 9, 19, 0.65)');
+            grad.addColorStop(1, 'rgba(6, 9, 19, 0.95)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, w, h);
+
+            requestAnimationFrame(drawVortex);
+        }
+        drawVortex();
+
+        // Datos de cada propuesta
+        const proposals = {
+            1: {
+                title: "⚡ Propuesta 1: Retro Neon / Cyberpunk",
+                desc: "Diseño vibrante de alto contraste inspirado en máquinas arcade clásicas y estética neón. Corrige la superposición del logo con un título de doble capa nítido y botones con micro-desplazamiento lateral interactivo.",
+                features: [
+                    "Título nítido con sombra desplazada magenta/cian sin duplicaciones.",
+                    "Espaciado vertical balanceado (45px libres antes de los controles).",
+                    "Cursor triangular pixel art reactivo al posar el cursor sobre cada botón.",
+                    "Tarjeta de High Score con aura ámbar/dorada pulida."
+                ],
+                palette: [
+                    { name: 'Cian', bg: '#00f0ff', color: '#000' },
+                    { name: 'Oro', bg: '#ffd23f', color: '#000' },
+                    { name: 'Rosa', bg: '#ff0055', color: '#fff' },
+                    { name: 'Fondo', bg: '#0e1224', color: '#fff' }
+                ],
+                hasSub: true,
+                vortex: 1
+            },
+            2: {
+                title: "🃏 Propuesta 2: Balatro Style / Cristal & Oro",
+                desc: "Inspirada en la estética hipnótica y pulida de Balatro. Utiliza tarjetas translúcidas flotantes (Glassmorphism oscuro), marcos dorados con brillo pulsante y tipografía elegante con micro-animaciones continuas.",
+                features: [
+                    "Efecto de cristal translúcido oscuro con desenfoque de fondo.",
+                    "Bordes dorados con pulso de luminosidad suave al hacer hover.",
+                    "Desvanecimiento completo del orbe inicial tras 3.0s (fondo limpio).",
+                    "Badge de High Score enmarcado como tarjeta de logro premium."
+                ],
+                palette: [
+                    { name: 'Oro', bg: '#ffd23f', color: '#000' },
+                    { name: 'Azul', bg: '#1e3a8a', color: '#fff' },
+                    { name: 'Blanco', bg: '#f8fafc', color: '#000' },
+                    { name: 'Cristal', bg: '#121628', color: '#fff' }
+                ],
+                hasSub: false,
+                vortex: 2
+            },
+            3: {
+                title: "🟩 Propuesta 3: Minimalista Táctico / Clean Pixel",
+                desc: "Diseño limpio y austero de baja distracción con acentos en verde esmeralda y esquinas rectas. Prioriza la máxima legibilidad, tiempos de reacción visual instantáneos y estética retro auténtica.",
+                features: [
+                    "Tipografía 100% limpia sin sombras deformadas ni escalados múltiples.",
+                    "Botones de borde cuadrado con alto contraste táctico.",
+                    "Mínimo consumo visual para foco total en el gameplay.",
+                    "Distribución geométrica exacta con holguras amplias en cada sección."
+                ],
+                palette: [
+                    { name: 'Verde', bg: '#10b981', color: '#000' },
+                    { name: 'Pizarra', bg: '#334155', color: '#fff' },
+                    { name: 'Oscuro', bg: '#0f172a', color: '#fff' },
+                    { name: 'Esmeralda', bg: '#064e3b', color: '#fff' }
+                ],
+                hasSub: false,
+                vortex: 3
+            }
+        };
+
+        function switchProposal(id) {
+            // Actualizar botones de navegación
+            document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+                btn.classList.toggle('active', idx === id - 1);
+            });
+
+            // Actualizar clases del contenedor UI
+            const menuUi = document.getElementById('menuUi');
+            menuUi.className = `menu-ui p${id}`;
+
+            const data = proposals[id];
+            vortexStyle = data.vortex;
+
+            // Subtítulo
+            const sub = document.getElementById('menuSub');
+            sub.style.display = data.hasSub ? 'block' : 'none';
+
+            // Actualizar panel lateral
+            document.getElementById('pTitle').textContent = data.title;
+            document.getElementById('pDesc').textContent = data.desc;
+
+            const featList = document.getElementById('pFeatures');
+            featList.innerHTML = '';
+            data.features.forEach(f => {
+                const li = document.createElement('li');
+                li.className = 'feature-item';
+                li.innerHTML = `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg><span>${f}</span>`;
+                featList.appendChild(li);
+            });
+
+            const palBox = document.getElementById('paletteBox');
+            palBox.innerHTML = '';
+            data.palette.forEach(p => {
+                const chip = document.createElement('div');
+                chip.className = 'color-chip';
+                chip.style.backgroundColor = p.bg;
+                chip.style.color = p.color;
+                chip.textContent = p.name;
+                palBox.appendChild(chip);
+            });
+        }
+
+        function updateHighScore(val) {
+            document.getElementById('hsVal').textContent = val;
+            document.getElementById('hsLabel').textContent = `HIGH SCORE: ${val}`;
+        }
+    </script>
+</body>
+</html>
