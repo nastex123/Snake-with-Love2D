@@ -16,6 +16,8 @@ sound.baseVolume = 0.5
 sound.fadeDuration = 0.5
 sound.fading = false
 sound.fadeTimer = 0
+sound.musicEnabled = true
+sound.sfxEnabled = true
 
 local oldSource = nil
 local fadeSource = nil
@@ -46,12 +48,13 @@ local function makeSrc()
 end
 
 local function startSegment(name)
+    if not sound.musicEnabled then return end
     local seg = sound.fragments[name]
     if not seg then return end
     if activeSource then activeSource:stop() end
     activeSource = makeSrc()
-    activeSource:play()
     activeSource:seek(seg.start)
+    activeSource:play()
     currentSegment = name
     segmentEnd = seg.finish
     if nextLoopSource then nextLoopSource:stop(); nextLoopSource = nil end
@@ -59,24 +62,43 @@ local function startSegment(name)
 end
 
 function sound:playSegment(name)
+    if not sound.musicEnabled then return end
     if sound.fading then
         if oldSource then
             oldSource:stop()
             oldSource = nil
         end
+        if fadeSource and fadeSource ~= activeSource then
+            fadeSource:stop()
+            fadeSource = nil
+        end
         sound.fading = false
         sound.fadeTimer = 0
-        fadeSource = nil
         targetSegment = nil
     end
-    if currentSegment == name then return end
+    if currentSegment == name and activeSource and activeSource:isPlaying() then return end
     startSegment(name)
 end
 
 function sound:crossfadeTo(name)
+    if not sound.musicEnabled then return end
     local seg = sound.fragments[name]
     if not seg then return end
-    if currentSegment == name and not sound.fading then return end
+    if currentSegment == name and not sound.fading and activeSource and activeSource:isPlaying() then return end
+
+    -- Cancel previous crossfade cleanly if already in progress
+    if sound.fading then
+        if oldSource then
+            oldSource:stop()
+            oldSource = nil
+        end
+        if fadeSource then
+            fadeSource:stop()
+            fadeSource = nil
+        end
+        sound.fading = false
+        sound.fadeTimer = 0
+    end
 
     if activeSource and activeSource:isPlaying() then
         oldSource = activeSource
@@ -86,8 +108,8 @@ function sound:crossfadeTo(name)
 
     fadeSource = makeSrc()
     fadeSource:setVolume(0)
-    fadeSource:play()
     fadeSource:seek(seg.start)
+    fadeSource:play()
 
     targetSegment = name
     sound.fading = true
@@ -123,8 +145,22 @@ function sound:stop()
 end
 
 function sound:update(dt)
+    if not sound.musicEnabled then
+        if activeSource and activeSource:isPlaying() then
+            sound:stop()
+        end
+        return
+    end
+
     if not currentSegment then return end
-    if not activeSource then return end
+
+    -- Auto-reiniciar el segmento si se detuvo el stream
+    if not activeSource or not activeSource:isPlaying() then
+        if not sound.fading then
+            startSegment(currentSegment)
+        end
+        return
+    end
 
     -- ==== CROSSFADE ====
     if sound.fading then
@@ -166,8 +202,8 @@ function sound:update(dt)
         if pos >= loopZone and not nextLoopReady then
             nextLoopSource = makeSrc()
             nextLoopSource:setVolume(0)
-            nextLoopSource:play()
             nextLoopSource:seek(seg.start)
+            nextLoopSource:play()
             nextLoopReady = true
         end
 
@@ -191,21 +227,14 @@ function sound:update(dt)
         return
     end
 
-    -- ==== SEGMENTOS NO-SEAMLESS ====
-    if not activeSource:isPlaying() then
-        return
-    end
-
+    -- ==== SEGMENTOS NO-SEAMLESS (intro, boss, comboEnter) ====
     local pos = activeSource:tell()
 
     if pos >= segmentEnd then
         if currentSegment == "comboEnter" then
             startSegment("comboLoop")
         else
-            local seg = sound.fragments[currentSegment]
-            if seg then
-                activeSource:seek(seg.start)
-            end
+            startSegment(currentSegment)
         end
     end
 end
@@ -276,9 +305,12 @@ function sound.load()
     sources.enemyKill = love.audio.newSource(makeSweep(800, 400, 0.1, 0.25), "static")
     sources.boss_food_tick = love.audio.newSource(makeSine(880, 0.08, 0.2), "static")
     sources.boss_defeated = love.audio.newSource(makeSweep(440, 1320, 0.4, 0.3), "static")
+    sources.buttonHover = love.audio.newSource(makeSine(660, 0.04, 0.15), "static")
+    sources.buttonClick = love.audio.newSource(makeSweep(440, 880, 0.08, 0.25), "static")
 end
 
 function sound.play(name)
+    if sound.sfxEnabled == false then return end
     if sources[name] then
         sources[name]:stop()
         sources[name]:play()
@@ -287,14 +319,15 @@ end
 
 -- Control de volumen y toggles expuestos para settings
 function sound.setMasterVolume(v)
-    sound.baseVolume = math.max(0, math.min(1, v))
+    sound.baseVolume = math.max(0, math.min(1, v or 0.5))
+    pcall(function() love.audio.setVolume(sound.baseVolume) end)
     if activeSource then activeSource:setVolume(sound.baseVolume) end
     if nextLoopSource then nextLoopSource:setVolume(sound.baseVolume) end
 end
 
 function sound.enableMusic(flag)
-    -- Si desactivamos la música paramos las fuentes; si activamos, arrancamos el segmento intro
-    if not flag then
+    sound.musicEnabled = not not flag
+    if not sound.musicEnabled then
         sound:stop()
     else
         if not sound:isPlaying() then sound:playSegment('intro') end
@@ -302,7 +335,6 @@ function sound.enableMusic(flag)
 end
 
 function sound.enableSfx(flag)
-    -- Implementación simple: habilitar/deshabilitar reproducción de SFX en sound.play
     sound.sfxEnabled = not not flag
 end
 

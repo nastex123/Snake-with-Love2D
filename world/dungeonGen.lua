@@ -1,18 +1,7 @@
-local world = {}
 local constants = require("constants")
-local helpers = require("helpers")
+local dungeonGen = {}
 
--- Tracked state
-world.etapa = 1
-world.sala = 1
-world.puntajeSala = 0
-world.objetivoSala = 50
-
--- Dungeón generation result
-world.dungeon = nil  -- { rooms[], corridors[], roomGraph{} }
-
--- Stage modifiers (keep existing for backward compat)
-local stageModifiers = {
+dungeonGen.stageModifiers = {
     [1] = { spawnRate = 1.0, enemySpeed = 1.0, chaserWeight = 0.40, patrollerWeight = 0.35, spawnerWeight = 0.25, targetMult = 1.0, bossVida = 3 },
     [2] = { spawnRate = 1.2, enemySpeed = 1.15, chaserWeight = 0.50, patrollerWeight = 0.30, spawnerWeight = 0.20, targetMult = 1.3, bossVida = 4 },
     [3] = { spawnRate = 1.4, enemySpeed = 1.3, chaserWeight = 0.35, patrollerWeight = 0.30, spawnerWeight = 0.35, targetMult = 1.6, bossVida = 5 },
@@ -21,7 +10,7 @@ local stageModifiers = {
 }
 
 -- Stage modifiers map (countMult, hpMult, spawnMult, objectiveMult)
-local stageMod = {
+dungeonGen.stageMod = {
     [1] = { countMult = 1.0, hpMult = 1.0, objMult = 1.0, bossHP = 3 },
     [2] = { countMult = 1.2, hpMult = 1.15, objMult = 1.3, bossHP = 4 },
     [3] = { countMult = 1.4, hpMult = 1.3, objMult = 1.6, bossHP = 5 },
@@ -29,12 +18,8 @@ local stageMod = {
     [5] = { countMult = 2.0, hpMult = 2.2, objMult = 2.5, bossHP = 8 },
 }
 
-function world.getStageMod()
-    return stageMod[world.etapa] or stageMod[5]
-end
-
 -- Room template registry with spawn rules
-world.roomTemplates = {
+dungeonGen.roomTemplates = {
     corridor = {
         id = "corridor",
         name = "Pasillo",
@@ -149,18 +134,6 @@ world.roomTemplates = {
 -- Template IDs ordered by weight for selection
 local templateIds = {"corridor", "arena", "choke", "hub", "treasure", "spawner"}
 
-function world.calcularObjetivo()
-    local room = world.getCurrentRoom()
-    if not room then return 50 end
-    local base = room.objectiveBase or 50
-    local mod = world.getStageMod()
-    return math.floor(base * mod.objMult)
-end
-
--- ============================================================
---  BSP Dungeon Generator
--- ============================================================
-
 local function bspSplit(rect, depth, maxDepth, minLeaf)
     if depth >= maxDepth then return {rect} end
     local splitH = rect.w > rect.h and rect.w >= rect.h * 1.3
@@ -240,7 +213,7 @@ local function selectTemplateForRoom(roomRect, roomIndex, totalRooms)
     -- Weight selection based on room size, position, and stage
     local weights = {}
     for _, tid in ipairs(templateIds) do
-        local tpl = world.roomTemplates[tid]
+        local tpl = dungeonGen.roomTemplates[tid]
         local w = tpl.weight
         -- Arena more likely for large rooms
         if roomRect.w >= 180 and roomRect.h >= 150 and tid == "arena" then
@@ -271,7 +244,7 @@ local function selectTemplateForRoom(roomRect, roomIndex, totalRooms)
     return "arena"
 end
 
-function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
+function dungeonGen.generar(world, anchoVirtual, altoVirtual, targetRooms)
     love.math.setRandomSeed(os.time() + world.etapa * 1000 + love.math.random(1, 99999))
     local vw = anchoVirtual or constants.DUNGEON_VIRTUAL_W
     local vh = altoVirtual or constants.DUNGEON_VIRTUAL_H
@@ -327,7 +300,7 @@ function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
     -- Assign templates
     for i, rect in ipairs(rooms) do
         local tid = selectTemplateForRoom(rect, i, #rooms)
-        local tpl = world.roomTemplates[tid]
+        local tpl = dungeonGen.roomTemplates[tid]
         rooms[i] = {
             id = i,
             rect = rect,
@@ -379,266 +352,4 @@ function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
     end
 end
 
--- ============================================================
---  Room progression API (backward compatible)
--- ============================================================
-
-function world.getCurrentRoom()
-    if not world.dungeon or not world.dungeon.rooms then return nil end
-    return world.dungeon.rooms[world.sala]
-end
-
-function world.getRoomCount()
-    if not world.dungeon or not world.dungeon.rooms then return 5 end
-    return #world.dungeon.rooms
-end
-
-function world.init()
-    world.etapa = 1
-    world.sala = 1
-    world.puntajeSala = 0
-    world.objetivoSala = 50
-    world.dungeon = nil
-    world.generarMazmorra()
-    mundoCompletado = false
-end
-
-function world.getModifier()
-    return stageModifiers[world.etapa] or stageModifiers[5]
-end
-
-function world.esJefe()
-    local room = world.getCurrentRoom()
-    return room and room.template == "boss"
-end
-
-function world.avanzarSala()
-    local nextSala = world.sala + 1
-    local maxRoom = world.dungeon and #world.dungeon.rooms or 5
-    if nextSala <= maxRoom then
-        world.sala = nextSala
-        if world.dungeon and world.dungeon.rooms[world.sala] then
-            world.dungeon.rooms[world.sala].visited = true
-        end
-    else
-        world.sala = maxRoom
-    end
-    world.puntajeSala = 0
-    world.objetivoSala = world.calcularObjetivo()
-end
-
-function world.avanzarEtapa()
-    world.etapa = world.etapa + 1
-    world.generarMazmorra()
-    world.puntajeSala = 0
-    world.objetivoSala = world.calcularObjetivo()
-end
-
-function world.etapaCompletada()
-    return world.etapa > 5
-end
-
-function world.isLastRoom()
-    if not world.dungeon or not world.dungeon.rooms then return world.sala >= 5 end
-    return world.sala >= #world.dungeon.rooms
-end
-
--- ============================================================
---  Placement helpers (local)
--- ============================================================
-
-local function buildAvoidList(snakeBody, obstaclesPos, enemiesList, foodPos)
-    local list = {}
-    for _, s in ipairs(snakeBody) do
-        list[#list + 1] = {x = s.x, y = s.y, radius = 0}
-    end
-    for _, o in ipairs(obstaclesPos) do
-        list[#list + 1] = {x = o.x, y = o.y, radius = 0}
-    end
-    for _, e in ipairs(enemiesList) do
-        if e.alive then
-            list[#list + 1] = {x = e.x, y = e.y, radius = 1}
-        end
-    end
-    if foodPos then
-        list[#list + 1] = {x = foodPos.x, y = foodPos.y, radius = 0}
-    end
-    return list
-end
-
-local function samplePosition(ancho, alto, avoidList, attempts, minDist)
-    minDist = minDist or 1
-    attempts = attempts or 60
-    for _ = 1, attempts do
-        local gx = love.math.random(0, ancho - 1)
-        local gy = love.math.random(0, alto - 1)
-        local valid = true
-        for _, a in ipairs(avoidList) do
-            local dist = math.abs(gx - a.x) + math.abs(gy - a.y)
-            if dist < (a.radius or minDist) then
-                valid = false
-                break
-            end
-        end
-        if valid then return gx, gy end
-    end
-    return nil, nil
-end
-
-local function reservePosition(avoidList, gx, gy, radius)
-    table.insert(avoidList, {x = gx, y = gy, radius = radius or 2})
-end
-
-local function placeNEntities(spawnFn, count, ancho, alto, avoidList, params)
-    params = params or {}
-    local placed = 0
-    for _ = 1, count do
-        local gx, gy = samplePosition(ancho, alto, avoidList, params.attempts or 60, params.minDist or 1)
-        if gx then
-            spawnFn(gx, gy)
-            reservePosition(avoidList, gx, gy, params.avoidRadius or 2)
-            placed = placed + 1
-        else
-            break
-        end
-    end
-    return placed
-end
-
--- ============================================================
---  Spawn rules interpreter
--- ============================================================
-
-function world.populateRoom(snakeBody, anchoGrilla, altoGrilla, obstaclesList, foodMod, enemiesMod, obstaclesMod)
-    local room = world.getCurrentRoom()
-    if not room then
-        foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
-        enemiesMod.generar(snakeBody, foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier())
-        return
-    end
-
-    local template = world.roomTemplates[room.template]
-    if not template then
-        foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
-        enemiesMod.generar(snakeBody, foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier())
-        return
-    end
-
-    local rules = template.spawnRules
-    local stageMod = world.getStageMod()
-    local enemiesRules = rules.enemies or {}
-    local foodRule = rules.food or {baseCount = 1}
-    local obstaclesRule = rules.obstacles or {baseCount = 0}
-    local bossRule = rules.boss
-
-    -- Build avoid list from snake body + existing obstacles + existing enemies
-    local avoidList = buildAvoidList(snakeBody, obstaclesMod.pos, enemiesMod.list, foodMod.pos)
-
-    -- Place obstacles first (so food/enemies can avoid them)
-    local obsCount = math.max(1, math.floor(obstaclesRule.baseCount * stageMod.countMult))
-    if obsCount > 0 then
-        placeNEntities(function(gx, gy)
-            obstaclesMod.spawnAt(gx, gy)
-        end, obsCount, anchoGrilla, altoGrilla, avoidList, {avoidRadius = 1, minDist = 1})
-    end
-
-    -- Si es sala de jefe, reservar centro + 8 celdas adyacentes para evitar que comida
-    -- o enemigos aparezcan sobre el boss
-    if bossRule and world.esJefe() then
-        local cx = math.floor(anchoGrilla / 2)
-        local cy = math.floor(altoGrilla / 2)
-        for dx = -1, 1 do
-            for dy = -1, 1 do
-                local rx, ry = cx + dx, cy + dy
-                if rx >= 0 and rx < anchoGrilla and ry >= 0 and ry < altoGrilla then
-                    reservePosition(avoidList, rx, ry, 1)
-                end
-            end
-        end
-    end
-
-    -- Place food (one item; type based on room template odds)
-    local foodType
-    local r = love.math.random()
-    if r < (foodRule.coinChance or 0.15) then
-        foodType = constants.FOOD_COIN
-    elseif r < ((foodRule.coinChance or 0.15) + (foodRule.goldChance or 0.15)) then
-        foodType = constants.FOOD_GOLD
-    else
-        foodType = constants.FOOD_NORMAL
-    end
-    do
-        local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 2)
-        if gx then
-            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesMod.pos, foodType, gx, gy)
-            reservePosition(avoidList, gx, gy, 1)
-        else
-            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesMod.pos, foodType)
-        end
-    end
-
-    -- Place enemies using spawnAt and placement helpers
-    local stageModifier = world.getModifier()
-    local speedMult = stageModifier.enemySpeed or 1.0
-    for _, erule in ipairs(enemiesRules) do
-        local base = erule.baseCount or 1
-        local count = math.max(0, math.floor(base * stageMod.countMult))
-        for _ = 1, count do
-            if love.math.random() <= (erule.weight or 1.0) then
-                local spawnFn = function(gx, gy)
-                    local params = {
-                        moveInterval = (erule.type == "chaser" and constants.ENEMY_CHASER_SPEED / speedMult)
-                            or (erule.type == "patroller" and constants.ENEMY_PATROLLER_SPEED / speedMult)
-                            or nil,
-                    }
-                    enemiesMod.spawnAt(erule.type, gx, gy, params)
-                end
-                placeNEntities(spawnFn, 1, anchoGrilla, altoGrilla, avoidList, {
-                    avoidRadius = 3,
-                    minDist = 8,
-                    attempts = 40,
-                })
-            end
-        end
-    end
-
-    -- Boss room
-    if bossRule and world.esJefe() then
-        local hp = math.floor((bossRule.baseHP or 3) * stageMod.hpMult)
-        local coins = (bossRule.dropCoins or 5) + world.etapa * 2
-        enemiesMod.spawnBoss(world.etapa, anchoGrilla, altoGrilla, hp, coins)
-    end
-end
-
--- ============================================================
---  Dungeon map data for minimap rendering
--- ============================================================
-
-function world.getDungeonMapData()
-    if not world.dungeon then return nil end
-    local data = {
-        rooms = {},
-        corridors = {},
-        virtualW = world.dungeon.virtualW,
-        virtualH = world.dungeon.virtualH,
-    }
-    for _, r in ipairs(world.dungeon.rooms) do
-        table.insert(data.rooms, {
-            id = r.id,
-            rect = r.rect,
-            template = r.template,
-            name = r.name,
-            centerX = r.centerX,
-            centerY = r.centerY,
-            visited = r.visited,
-            cleared = r.cleared,
-            current = (r.id == world.sala),
-        })
-    end
-    for _, c in ipairs(world.dungeon.corridors) do
-        table.insert(data.corridors, {from = c.from, to = c.to, path = c.path})
-    end
-    return data
-end
-
-return world
+return dungeonGen

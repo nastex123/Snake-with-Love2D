@@ -1,6 +1,7 @@
 local achievements = {}
-local persistence = require('persistence')
+local persistence = require('systems.persistence')
 local constants = require('constants')
+local world = require('core.world')
 
 achievements.registry = {
     first_kill = {
@@ -127,7 +128,7 @@ function achievements.check(event, params)
         if params and params.totalCoins then
             profile.stats.totalCoins = params.totalCoins
         else
-            profile.stats.totalCoins = monedas
+            profile.stats.totalCoins = world.get("monedas") or 0
         end
         if not profile.achievements.coins_100 and profile.stats.totalCoins >= 100 then
             profile.achievements.coins_100 = {done = true, at = os.time()}
@@ -147,10 +148,11 @@ function achievements.check(event, params)
         for aid, v in pairs(profile.achievements) do
             if v.done and (v.queued ~= true) then
                 v.queued = true
-                if pendingAchievements then
+                local pendingAch = world.get("pendingAchievements")
+                if pendingAch then
                     local exists = false
-                    for _, x in ipairs(pendingAchievements) do if x == aid then exists = true break end end
-                    if not exists then table.insert(pendingAchievements, aid) end
+                    for _, x in ipairs(pendingAch) do if x == aid then exists = true break end end
+                    if not exists then table.insert(pendingAch, aid) end
                 else
                     if ui and ui.showToast then
                         local reg = achievements.registry[aid]
@@ -159,11 +161,13 @@ function achievements.check(event, params)
                 end
                 -- schedule delayed toast (overlay-aware)
                 local sreg = achievements.registry[aid]
-                if sreg and scheduledToasts and not scheduledIndex[aid] then
-                    scheduledIndex[aid] = true
-                    table.insert(scheduledToasts, {
+                local schedToasts = world.get("scheduledToasts")
+                local schedIndex = world.get("scheduledIndex")
+                if sreg and schedToasts and schedIndex and not schedIndex[aid] then
+                    schedIndex[aid] = true
+                    table.insert(schedToasts, {
                         id = aid,
-                        showAt = (time or 0) + constants.TOAST_SCHEDULE_DELAY,
+                        showAt = (world.get("time") or 0) + constants.TOAST_SCHEDULE_DELAY,
                         payload = {
                             id = aid,
                             title = sreg.title,

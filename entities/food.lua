@@ -35,10 +35,12 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
     end
 
     if gx == nil then
+        local attempts = 0
         repeat
             nuevaX = love.math.random(0, anchoGrilla - 1)
             nuevaY = love.math.random(0, altoGrilla - 1)
             colisiona = false
+            attempts = attempts + 1
 
             for _, segmento in ipairs(snake) do
                 if nuevaX == segmento.x and nuevaY == segmento.y then
@@ -55,7 +57,10 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
                     end
                 end
             end
-        until not colisiona
+        until not colisiona or attempts > 500
+        if colisiona then
+            return
+        end
     end
 
     food.pos.x = nuevaX
@@ -76,22 +81,19 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
     end
 end
 
-local tipoColors = {
-    [constants.FOOD_NORMAL] = {1, 0.3, 0.3},
-    [constants.FOOD_GOLD] = {1, 0.84, 0.0},
-    [constants.FOOD_COIN] = {0.2, 0.6, 1}
-}
-
 local tipoGlow = {
     [constants.FOOD_NORMAL] = {1, 0.3, 0.3},
     [constants.FOOD_GOLD] = {1, 0.84, 0.0},
     [constants.FOOD_COIN] = {0.2, 0.6, 1}
 }
 
-function food.draw(time, dt)
+function food.update(dt)
     if food.spawnTimer > 0 then
-        food.spawnTimer = math.max(0, food.spawnTimer - (dt or 0.016))
+        food.spawnTimer = math.max(0, food.spawnTimer - dt)
     end
+end
+
+function food.draw(time, dt)
     local spawnFrac = 1 - food.spawnTimer / SPAWN_DURATION
     -- easing elástico suave: overshoot leve al aparecer
     local spawnScale = spawnFrac < 1
@@ -104,7 +106,7 @@ function food.draw(time, dt)
     local pulse = 1 + math.sin(time * 4) * 0.08
     local size = (tam - 1) * pulse * spawnScale
     local offset = (tam - size) / 2
-    local c = tipoGlow[food.tipo]
+    local c = tipoGlow[food.tipo] or {1, 0.3, 0.3}
     local half = tam / 2
 
     love.graphics.setColor(c[1], c[2], c[3], 0.15 + math.sin(time * 3) * 0.08)

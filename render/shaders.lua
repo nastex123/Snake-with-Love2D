@@ -1,31 +1,65 @@
 local shaders = {}
 local constants = require("constants")
+local Log = require("core.logger")
 
 -- ============================================================
--- CRT: scanlines + vignette + chromatic aberration + grain
+-- CRT: curvatura + scanlines + vignette + chromatic aberration
+--      + grain + damage flash + screen shake
 -- ============================================================
 local SRC_CRT = [[
 extern vec2 resolution;
 extern float time;
 extern float intensity;
+extern float damageFlash;
+extern float shake;
 
 vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
-    float ca = 0.0012 * intensity;
-    float r = Texel(tex, vec2(uv.x + ca, uv.y)).r;
-    float g = Texel(tex, uv).g;
-    float b = Texel(tex, vec2(uv.x - ca, uv.y)).b;
-    vec4 col = vec4(r, g, b, Texel(tex, uv).a);
+    vec2 base_uv = uv;
 
-    float scan = sin(uv.y * resolution.y * 1.5) * 0.5 + 0.5;
+    // Curvatura CRT
+    vec2 dc = base_uv - 0.5;
+    float r2 = dot(dc, dc);
+    vec2 curved_uv = base_uv + dc * r2 * (0.16 * intensity);
+
+    // Bordes negros si se sale de la pantalla
+    if (curved_uv.x < 0.0 || curved_uv.x > 1.0 || curved_uv.y < 0.0 || curved_uv.y > 1.0) {
+        return vec4(0.0, 0.0, 0.0, 1.0) * color;
+    }
+
+    // Screen shake
+    float shake_amp = shake * 0.0045;
+    vec2 shake_offset = vec2(
+        sin(time * 63.0) + sin(time * 17.0) * 0.5,
+        cos(time * 49.0) + cos(time * 23.0) * 0.5
+    ) * shake_amp;
+
+    vec2 suv = curved_uv + shake_offset;
+    suv = clamp(suv, 0.0, 1.0);
+
+    // Aberración cromática
+    float ca = 0.0012 * intensity;
+    float r = Texel(tex, vec2(suv.x + ca, suv.y)).r;
+    float g = Texel(tex, suv).g;
+    float b = Texel(tex, vec2(suv.x - ca, suv.y)).b;
+    vec4 col = vec4(r, g, b, Texel(tex, suv).a);
+
+    // Scanlines
+    float scan = sin(suv.y * resolution.y * 1.5) * 0.5 + 0.5;
     col.rgb *= 1.0 - scan * 0.055 * intensity;
 
-    vec2 vc = uv - 0.5;
+    // Vignette
+    vec2 vc = suv - 0.5;
     float vig = 1.0 - dot(vc, vc) * 2.0 * intensity;
     col.rgb *= clamp(vig, 0.0, 1.0);
 
-    float grain = fract(sin(dot(uv * resolution + time * 80.0,
+    // Grain
+    float grain = fract(sin(dot(suv * resolution + time * 80.0,
         vec2(127.1, 311.7))) * 43758.5453);
     col.rgb += (grain - 0.5) * 0.016 * intensity;
+
+    // Damage flash
+    float flash = clamp(damageFlash, 0.0, 1.0);
+    col.rgb = mix(col.rgb, vec3(1.0, 0.10, 0.12), flash * 0.55);
 
     return col * color;
 }
@@ -198,14 +232,34 @@ vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords
 }
 ]]
 
-local canvasScene, canvasGlow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal
+local canvasScene, canvasGlow, canvasGlowLow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal
 local shCRT, shBlurH, shBlurV, shShadow, shHeat, shBalatro
-local W, H
+local W, H, BW, BH
+
+-- Estado de efectos (feedback de daño): decae en shaders.update(dt)
+local fx = {
+    damage = 0,
+    shake = 0,
+}
+
+function shaders.triggerDamage(amount, shakeAmount)
+    fx.damage = math.max(fx.damage, amount or 0.7)
+    fx.shake = math.max(fx.shake, shakeAmount or 0.6)
+end
+
+function shaders.update(dt)
+    fx.damage = math.max(0, fx.damage - dt * 2.2)
+    fx.shake = math.max(0, fx.shake - dt * 3.0)
+end
+
+function shaders.getFX()
+    return fx
+end
 
 local function tryShader(src)
     local ok, s = pcall(love.graphics.newShader, src)
     if not ok then
-        -- print("Shader error: " .. tostring(s))
+        Log.warn("shaders.tryShader failed: " .. tostring(s))
     end
     return ok and s or nil
 end
@@ -213,6 +267,8 @@ end
 function shaders.load()
     W = love.graphics.getWidth()
     H = love.graphics.getHeight()
+    BW = math.max(1, math.floor(W / 2))
+    BH = math.max(1, math.floor(H / 2))
 
     shCRT    = tryShader(SRC_CRT)
     shBlurH  = tryShader(SRC_BLUR_H_FIXED)
@@ -227,10 +283,19 @@ function shaders.load()
         return c
     end
 
+    -- Bloom a media resolución: blur más barato y visualmente equivalente.
+    -- Filtro linear siempre (el bloom es luz difusa; nearest lo rompería).
+    local function newCLow()
+        local c = love.graphics.newCanvas(BW, BH)
+        c:setFilter("linear", "linear")
+        return c
+    end
+
     canvasScene       = newC()
     canvasGlow        = newC()
-    canvasBlurH       = newC()
-    canvasBlurV       = newC()
+    canvasGlowLow     = newCLow()
+    canvasBlurH       = newCLow()
+    canvasBlurV       = newCLow()
     canvasShadow      = newC()
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
@@ -240,16 +305,24 @@ end
 function shaders.recreateCanvases(pixelScale, filter)
     W = love.graphics.getWidth()
     H = love.graphics.getHeight()
+    BW = math.max(1, math.floor(W / 2))
+    BH = math.max(1, math.floor(H / 2))
     local function newC()
         local c = love.graphics.newCanvas(W, H)
         local f = filter == 'nearest' and 'nearest' or 'linear'
         c:setFilter(f, f)
         return c
     end
+    local function newCLow()
+        local c = love.graphics.newCanvas(BW, BH)
+        c:setFilter("linear", "linear")
+        return c
+    end
     canvasScene       = newC()
     canvasGlow        = newC()
-    canvasBlurH       = newC()
-    canvasBlurV       = newC()
+    canvasGlowLow     = newCLow()
+    canvasBlurH       = newCLow()
+    canvasBlurV       = newCLow()
     canvasShadow      = newC()
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
@@ -303,30 +376,35 @@ function shaders.drawBalatroBG(time, intensity)
 end
 
 function shaders.composite(time, crtIntensity, isMenu)
-    -- 1. Bloom H
+    -- 1. Downsample del glow a media resolución
+    love.graphics.setCanvas(canvasGlowLow)
+    love.graphics.clear(0, 0, 0, 0)
+    love.graphics.setColor(1, 1, 1, 1)
+    love.graphics.draw(canvasGlow, 0, 0, 0, BW / W, BH / H)
+
+    -- 2. Bloom H (media resolución)
     love.graphics.setCanvas(canvasBlurH)
     love.graphics.clear(0, 0, 0, 0)
     if shBlurH then
-        shBlurH:send("resolution", {W, H})
-        shBlurH:send("radius", 3.0)
+        shBlurH:send("resolution", {BW, BH})
+        shBlurH:send("radius", 2.0)
         love.graphics.setShader(shBlurH)
     end
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(canvasGlow, 0, 0)
+    love.graphics.draw(canvasGlowLow, 0, 0)
     love.graphics.setShader()
 
-    -- 2. Bloom V
+    -- 3. Bloom V (media resolución)
     love.graphics.setCanvas(canvasBlurV)
     love.graphics.clear(0, 0, 0, 0)
     if shBlurV then
-        shBlurV:send("resolution", {W, H})
-        shBlurV:send("radius", 3.0)
+        shBlurV:send("resolution", {BW, BH})
+        shBlurV:send("radius", 2.0)
         love.graphics.setShader(shBlurV)
     end
     love.graphics.draw(canvasBlurH, 0, 0)
     love.graphics.setShader()
 
-    -- 3. Shadow blur
+    -- 4. Shadow blur (full resolution)
     love.graphics.setCanvas(canvasShadowBlur)
     love.graphics.clear(0, 0, 0, 0)
     if shShadow then
@@ -337,11 +415,11 @@ function shaders.composite(time, crtIntensity, isMenu)
     love.graphics.draw(canvasShadow, 0, 0)
     love.graphics.setShader()
 
-    -- 4. Componer en canvasFinal
+    -- 5. Componer en canvasFinal
     love.graphics.setCanvas(canvasFinal)
     love.graphics.clear(0, 0, 0, 1)
 
-    -- 4a. Escena base (con heat distortion opcional)
+    -- 5a. Escena base (con heat distortion opcional)
     if isMenu and shHeat then
         shHeat:send("time", time)
         shHeat:send("strength", 1.0)
@@ -351,23 +429,25 @@ function shaders.composite(time, crtIntensity, isMenu)
     love.graphics.draw(canvasScene, 0, 0)
     love.graphics.setShader()
 
-    -- 4b. Sombra con offset
+    -- 5b. Sombra con offset
     love.graphics.setColor(1, 1, 1, 1)
     love.graphics.draw(canvasShadowBlur, 5, 7)
 
-    -- 4c. Bloom additive
+    -- 5c. Bloom additive (escalado de vuelta a resolución completa)
     love.graphics.setBlendMode("add")
     love.graphics.setColor(1, 1, 1, 0.6)
-    love.graphics.draw(canvasBlurV, 0, 0)
+    love.graphics.draw(canvasBlurV, 0, 0, 0, W / BW, H / BH)
     love.graphics.setBlendMode("alpha")
 
     love.graphics.setCanvas()
 
-    -- 5. CRT sobre canvasFinal → backbuffer
+    -- 6. CRT sobre canvasFinal → backbuffer
     if shCRT then
         shCRT:send("resolution", {W, H})
         shCRT:send("time", time)
         shCRT:send("intensity", crtIntensity or 0.75)
+        shCRT:send("damageFlash", fx.damage or 0)
+        shCRT:send("shake", fx.shake or 0)
         love.graphics.setShader(shCRT)
     end
     love.graphics.setColor(1, 1, 1, 1)

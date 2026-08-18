@@ -1,10 +1,24 @@
 # Snake Love2D — Dungeon Crawler
 
+## Estándares (obligatorio)
+- **Siempre iterar hasta que el programa sea funcional**: `love .` debe ejecutar sin errores antes de dar una tarea por completada.
+- **Siempre revisar el log en busca de errores** tras cada cambio; no declarar completada una tarea con errores/warnings nuevos.
+- Aplicar las reglas de arquitectura del proyecto: sin variables globales, módulos `local X = {}`, `return X`, sistemas sobre entidades, object pooling, config central, logger, dividir archivos >300–500 líneas. (Nota: AGENTS.md referenciaba la skill `documentation` en `.opencode/skills/documentation/SKILL.md`, pero dicha skill NO existe en el repo; aplicar estas reglas directamente.)
+- El código actual (fases previas) aún tiene globals; la migración se hace de forma incremental y cada paso debe dejar el juego funcional.
+
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
 ## Arquitectura (18 modulos + helpers)
-`main.lua` (loop, 7 estados), `constants.lua`, `world.lua` (dungeon), `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss), `food.lua` (3 tipos), `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `ui.lua` (intro Balatro, HUD, popups, toasts), `obstacles.lua`, `particles.lua` (textura 4x4 procedural), `shaders.lua` (bloom+CRT+sombra+heat), `persistence.lua`, `sound.lua` (SFX procedural + single .ogg), `settings.lua` (mouse-only panel), `profiles.lua` (gestor max 3), `achievements.lua` (11 logros), `helpers.lua` (deep_copy).
+Estructura de carpetas por sistema:
+- `main.lua` (loop, 7 estados), `constants.lua` — raíz (constants.lua es shim de `core/config.lua`)
+- `core/` → `config.lua` (config central), `logger.lua` (Log.info/warn/error/debug), `timers.lua` (timer manager con pooling), `helpers.lua` (deep_copy, rect/math utils)
+- `entities/` → `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss) + `bossAttacks.lua` (4 ataques) + `enemyHelpers.lua`, `food.lua` (3 tipos), `obstacles.lua`
+- `world/` → `world.lua` (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` (BSP, templates, stage modifiers) + `populate.lua` (población de sala)
+- `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade mouse-only panel, expone `audio`/`graphics`/`accessibility`/`dat`) + `settingsDraw.lua` (render tabs), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render select/input/confirm/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug)
+- `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, accesibilidad) + submódulos `introUI.lua` (intro Balatro + high score), `menuUI.lua` (menu + botones), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug). Delegacion: submódulos reciben `ui` como primer argumento
+- `render/` → `shaders.lua` (bloom+CRT+sombra+heat), `particles.lua` (textura 4x4 procedural) + `renderMain.lua` (drawScene) + `enemiesDraw.lua`
+- `audio/` → `sound.lua` (SFX procedural + single .ogg)
 
 Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`.
 
@@ -74,6 +88,8 @@ Menu usa heat distortion. Debug menu se dibuja DESPUES del composite.
 - Font `PressStart2P-Regular.ttf` via `pcall` con fallback. Sizes: 28/16/11/8
 
 ## Estilo
-- Variables globales (sin `local`): `puntuacion`, `monedas`, `comboCount`, `gameState`, `debugImmune`, `transitionTarget`, `transitionPhase`, `fadeDir`, `fadeAlpha`, etc.
+- **LEGADO (a migrar)**: variables globales `puntuacion`, `monedas`, `comboCount`, `gameState`, `debugImmune`, `transitionTarget`, `transitionPhase`, `fadeDir`, `fadeAlpha`. Código nuevo: NO globals — módulos `local X = {}`, `return X`, estado administrado en un World.
+- Código nuevo: `local` siempre, enums para estados, data-driven, timer manager, render separado de lógica, no crear tablas por frame.
 - Colores como `{r,g,b}` o `{r,g,b,a}`
 - Cero emojis
+- No `print()` por todo el proyecto; usar `core/logger.lua`:`Log.info/warn/error`.

@@ -1,6 +1,6 @@
 local shop = {}
 local constants = require("constants")
-local items = require("items")
+local items = require("systems.items")
 
 shop.slots = {nil, nil, nil}
 
@@ -165,7 +165,7 @@ function shop.draw(monedas, velocidadActual)
         local eased = entryFrac * entryFrac * (3 - 2 * entryFrac)
         local drawY = cardY + (1 - eased) * 40
 
-        cardRects[#cardRects + 1] = {x = startX, y = drawY, w = CARD_W, h = CARD_H, item = def}
+        cardRects[#cardRects + 1] = {x = startX, y = drawY, w = CARD_W, h = CARD_H, item = def, cardIdx = idx}
 
         local own = shop.isOwned(def.id)
         local affordable = monedas >= def.cost
@@ -347,11 +347,12 @@ function shop.procesarCompra(monedas, itemId, costo)
 end
 
 function shop.mousepressed(x, y, monedas)
-    for _, rect in ipairs(cardRects) do
+    for idx, rect in ipairs(cardRects) do
         if x >= rect.x and x <= rect.x + rect.w and y >= rect.y and y <= rect.y + rect.h then
             local result = shop.procesarCompra(monedas, rect.item.id, rect.item.cost)
             if result then
-                table.insert(purchaseFlash, {idx = 1, timer = 0.3})
+                local cardIndex = rect.cardIdx or idx
+                table.insert(purchaseFlash, {idx = (page - 1) * 3 + cardIndex, timer = 0.3})
             end
             return result
         end
