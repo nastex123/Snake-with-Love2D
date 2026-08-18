@@ -71,15 +71,35 @@
 - [x] TODO tracking
 - [x] File reorganization (8 system folders)
 
-## Phase 8: Final Polish ⏳ Not Started
-**Goal**: Release-ready quality
+## Phase 8: Gameplay & Combat Evolution 🔄 In Progress
+**Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
-- [ ] Balance tuning
-- [ ] Bug fixes
-- [ ] Performance optimization
-- [ ] Final testing
-- [ ] LICENSE file
-- [ ] Release packaging
+- [ ] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
+- [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
+- [ ] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
+- [ ] Elite Encounters & 5 Mini-Bosses (Mid-stage room 3 challenges with guaranteed golden rewards)
+- [ ] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks)
+- [ ] Room Modifiers, Curses & Blessings (10 mutators: Zero Gravity, Midas Curse, Phoenix Blessing, Tunnel Vision, etc.)
+- [ ] Stage Tarot Draft System (12 fate cards drafted on rooms 1, 2, 4)
+- [ ] Special Mystery Rooms (Gambler's Den, Doppelgänger Mirror, Gold Rush, Trial of Triads)
+- [ ] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis)
+- [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
+- [ ] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts)
+- [ ] Master Snake Skin Catalog (200+ variants, 5 primitive render engines, Zero-GC vertex buffers)
+- [ ] 10 Unlockable Game Modes (Endless, Rush, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Draft, Sudden Death, Maze Runner)
+- [ ] 80 Engineering & Gameplay Improvements Suite (Input ramp-up, corner buffering, AABB ray-cast pre-filter, half-res FBO reflections, Voronoi fracture, fixed timestep)
+
+## Phase 9: Final Polish & Release ⏳ Not Started
+**Goal**: Release-ready quality, sensorial polish, visual style evolution, accessibility and packaging
+
+- [ ] 100 Visual Style & Rendering Evolution Proposals (GDD §20 / TDD §10.24: Dynamic lighting & 2D drop shadows, procedural autotiling, GLSL bloom threshold, squish/stretch micro-animations, specular floor reflections, directional shake, 50ms hitstop, reactive layered music, enemy telegraphs, particle fluids, stone HUD, volumetric fog)
+- [ ] Accessibility & QoL Suite (GDD §21.4 / TDD §10.21: Colorblind filters, FX sliders, training mode, run history, record PNG export, full keybind mapping, HUD performance overlay, Alt+Tab auto-pause, HD vibration)
+- [ ] Balance tuning (Boss food target & economy curves)
+- [ ] Bug fixes & performance profiling (Zero-GC memory audit, 60s zero-allocation test)
+- [ ] Full Gamepad / Controller integration & vibration
+- [ ] Create LICENSE file (MIT)
+- [ ] Final testing & Release packaging
+- [x] Curación e integración de las 80 propuestas del socio técnico (GDD §21 / TDD §10.25): resolución de duplicados contra §20, priorización y consolidación de arquitectura completada (17:08:2026)
 
 ---
 
