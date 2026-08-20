@@ -1,7 +1,70 @@
 # TODO — Snake Dungeon Crawler
 
-## In Progress
+## Completed (Documentación - 17:08:2026)
+- [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
+
+## In Progress (Phase 8: Gameplay & Combat Evolution)
+- [ ] **Combat & Survival Package**:
+  - [ ] Held-Key Tactical Slither Movement Engine (`snake.isDirectionHeld()`, real-time world, classic auto-slither toggle in settings)
+  - [ ] Survival Streak multiplier (+0.1x per cleared room) in `world.state.survivalStreak` & HUD
+  - [ ] Interactive Death Screen: "Continue / Revive" [30$] vs "Accept Death" (-30% coins & reset streak)
+  - [ ] Tactical Snake Abilities: Autotomy (Q/L2 tail sacrifice), Reverse Slither, Tail Snap (180° turn pushback)
+  - [ ] Constrictor Loop mechanic: 5s timed buff destroying encircled enemies with combo bonus
+  - [ ] 4 Special Foods + 5 Dynamic Fruits (Repelling Orbit, Countdown Bomb, Prismatic Shifter, Twin Apples, Streak Diamond)
+  - [ ] Persistent `highestStreak` metric in `persistence.lua` and `profiles.lua`
+- [ ] **Extended Items Arsenal (51-60)**:
+  - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
+- [ ] **Stage Biomes & Hazards**:
+  - [ ] Stage 1: Stone Catacombs (standard solid walls)
+  - [ ] Stage 2: Frozen Crypt (ice tiles with +1 slide momentum on turns)
+  - [ ] Stage 3: Volcanic Cavern (timed magma fissure hazards)
+  - [ ] Stage 4: Toxic Hive (slime tiles with -20% step speed)
+  - [ ] Stage 5: Void Sanctuary (void borders with lethal drop / no wall-wrap)
+  - [ ] Pressure Spikes hazard (0.5s trigger delay)
+- [ ] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)**:
+  - [ ] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards
+- [ ] **Boss Enrage Phase & Laser Attacks**:
+  - [ ] 3-food threshold enrage state (35% faster telegraphs & high tempo music)
+  - [ ] Laser Perimeter attack (center dividing continuous beams)
+- [ ] **Room Modifiers, Curses & Blessings**:
+  - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
+- [ ] **Stage Tarot Draft System**:
+  - [ ] Draft UI on rooms 1, 2, 4 with 12 Tarot Cards (Mercury, Iron Spine, Eagle Eye, Shadow Thief, etc.)
+- [ ] **Special Mystery Rooms**:
+  - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
+- [ ] **Status Effects Engine**:
+  - [ ] Overdrive on combo x6, Medusa Tail petrification, Venom Spore confusion, Cryo-Stasis
+- [ ] **Meta-Progression Shrine**:
+  - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
+- [ ] **Daily Challenges, Lore Codex & Bounties**:
+  - [ ] PRNG Daily Seed dungeon, Bestiary & Synergy Codex, Bounty Board contract system
+- [ ] **Endgame Modes & Master Skin Catalog**:
+  - [ ] 10 Unlockable modes: Endless Abyss, Time Attack, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Loadout Draft, Sudden Death, Maze Runner
+  - [ ] Master Snake Skin Catalog (+200 variants, 5 primitive render engines)
+- [ ] **80 Engineering & Gameplay Improvements Suite**:
+  - [ ] Input ramp-up ($0.03\text{s}$ threshold), corner buffering, metrónomo táctico HUD, ghost frame de 3s en revive
+  - [ ] AABB pre-filter para Ray Casting de Constrictor, highlight de lazo cerrado, esquirlas de oro en rocas
+  - [ ] Half-res FBO specular reflections ($0.5\times$ canvas), Voronoi glass fracture shader en Game Over
+  - [ ] Fixed timestep a 60 ticks desacoplado de Hz, test unitario de memoria zero-allocation (60s constante)
+- [ ] **Sensorial Audio-Visual Polish & 100 Visual Style Proposals (Phase 9)**:
+  - [ ] Dynamic 2D Lighting (conic head spotlight, drop shadows at 45°, ambient occlusion, torch glow)
+  - [ ] Procedural Autotiling (4-variant noise hash, moisture decals, frost, magma veins)
+  - [ ] Advanced GLSL Shaders (bloom selective threshold >0.8, dynamic chromatic aberration, heat haze, Voronoi fracture)
+  - [ ] Snake Micro-Animations (metameric wave interpolation, squish/stretch, eye tracking, swallowing bulge)
+  - [ ] Enemy & Combat VFX (telegraph sweep, laser trails, parabolic coin bounce, anisotropic shockwaves)
+  - [ ] Chiseled Stone HUD & Ambient Volumetric Fog (parallax fog, dust motes, god rays, holographic cards)
+  - [ ] Specular floor reflections, directional shake, 50ms hitstop, reactive layered music, segment glow, drift sparks, death desaturation, glass fracture, audio reverb
+- [ ] **Accessibility & QoL Suite (Phase 9)**:
+  - [ ] Colorblind filters, FX sliders, training mode, run history, record PNG export, full keybind mapping, HUD performance overlay, Alt+Tab auto-pause, HD vibration
 - [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
+
+## Backlog — GDD §21 (80 Propuestas del Socio Técnico)
+Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (sin análogo previo) o **[solapa → ref]** (refina una especificación existente; la fuente canónica se conserva).
+- [ ] **B1 Feedback & Game Feel (§21.1)** — Causa de muerte explícita, replay lento al morir, amenaza en bordes, escala de amenaza por color, pitch de combo, flash de comidas activas, HUD defensas segmentado, ghost frame con reloj radial, preview Autotomy, acorde de cadena, timer de racha, campana de última defensa, distinción de estados defensivos, hundimiento de tiles, barra de botín del boss, zoom-out de jefes, resolución por sala, modo eco.
+- [ ] **B2 Contenido & Variedad (§21.2)** — Templates Cruz/Espiral/Laberinto, cofres de tributo, muros vivos, cofre que huye, enemigo mimic, comida canguro, orbes de purga, muros reflectores Void, spawner constelación, arena dinámica del boss, élite 2x2 rara, interruptores de piso, frutas por bioma, enemigo parásito, salas de memoria, boss alternativo etapa 3, objetos ambientales, comida-llave, oleadas con respiro, salidas duales.
+- [ ] **B3 Meta-Persistencia-Rejugabilidad (§21.3)** — Mejor sala por etapa, leaderboard por modo, historial 20 runs + JSON, ver semilla, prestigio de perfil, contratos con skin, Trial de corazones, racha de etapas, colección de runas, bonus clean run, skin por run, desafíos por enemigo, partida 10 min, torneo hot-seat, ficha de sala en Códice, highestCombo, apuestas post-etapa, orden semanal de minis, stats de tienda, logros ocultos.
+- [ ] **B4 Arquitectura-UX-Accesibilidad (§21.4)** — Event bus, timers consolidados, presets de dificultad, escalado UI, perfilado runtime, escritura atómica profiles.dat, asset manager, alto contraste, reducción de movimiento, tooltips de tienda, reanudar run, metrónomo de grid, smoke tests headless, escena de estrés, tweaks avanzados, contrato de API, schema_version de perfil, i18n con fallback, input centralizado, guía DX.
+- [x] **Resolver duplicados de las 80 propuestas**: cruce completado contra catálogo visual (§20) y consolidación canónica ejecutada en GDD §20/§21 y TDD §10.23-10.25 (17:08:2026).
 
 ## Chaser AI (100% implementado)
 - [x] Implement `entities/chaserAI.lua` (updatePack + step, estados IDLE/CHASE/FLANK/ENCIRCLE/CIERRE)
@@ -40,7 +103,7 @@
 
 ## High Priority
 - [ ] Create LICENSE file (MIT mentioned in README but missing)
-- [ ] Add remaining font sizes documentation (28/16/11/8)
+- [x] Add remaining font sizes documentation (28/16/11/8) — documentado en TDD §9 (17:08:2026)
 
 ## Medium Priority
 - [ ] Balance tuning for boss encounter (food target = 15)
@@ -66,4 +129,4 @@
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 14:08:2026 (Input Buffer & Anti-180 Protection)*
+*Last updated: 17:08:2026 (Fase 8 — Gameplay & Combat Evolution)*
