@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 19:08:2026
+
+- **docs** (completed - 16:38): Especificación técnica y de diseño completa del Rediseño del Menú Principal (Distribución Asimétrica y Título Calca 1:1 Estilo #12) en `docs/GDD.md §7`, `docs/TDD.md §5.1`, `docs/ROADMAP.md Fase 8` y `docs/TODO.md`:
+  1. **Distribución Asimétrica**: Panel lateral izquierdo (40% de ancho, altura completa, fondo translúcido degradado con borde neón) conteniendo los 4 botones interactivos (`JUGAR`, `PERFILES`, `CONFIGURACIÓN`, `SALIR`) centrados verticalmente; Diamante emblema asentado permanentemente en el centro exacto de la pantalla `(cx, cy)` con pulso senoidal y alas neón como núcleo divisorio; Tarjeta de High Score anclada en la esquina inferior derecha; Eliminación de pastillas de controles inferiores para máxima limpieza visual.
+  2. **Título Calca 1:1 Estilo #12**: Recreación fiel de tipografía de acero biselado con terminaciones aladas, gemas gemelas cian superior e inferior engarzadas en monturas metálicas sobre y bajo la letra 'A', remates de marco metálico y pase de emisión de glow para el shader de bloom (`assets/title_style12.png` y `assets/title_style12_glow.png`).
+  3. **Planificación & Backlog**: Priorizado como el primer hito de implementación inmediata para la próxima sesión en `docs/TODO.md`.
+
 ## 17:08:2026
 
 - **docs** (completed - 20:35): Consolidación y deduplicación exhaustiva de la documentación técnica y de diseño (`docs/GDD.md`, `docs/TDD.md`, `docs/ROADMAP.md`, `docs/TODO.md`):

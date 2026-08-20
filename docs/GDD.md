@@ -469,15 +469,21 @@ MENU → PLAYING → TRANSITION → SHOP → PLAYING → ...
 PLAYING → DEATH_ANIMATION → HIGH_SCORE/SHOP → MENU
 ```
 
-## 7. Visual Style
+## 7. Visual Style & Main Menu Layout
 
-- Pixel art aesthetic (PressStart2P font)
-- Procedural particle effects (4x4 texture)
-- Post-processing shaders:
-  - Bloom (glow → blurH → blurV)
-  - CRT effect
-  - Shadow blur
-  - Heat distortion (menu)
+- **Estética Retro-Arcade de Alto Contraste**: Tipografía pixel art (`PressStart2P`), paleta de acentos cian, oro y magenta, y renderizado nítido sin blur.
+- **Rediseño Asimétrico del Menú Principal**:
+  - *Panel Lateral Izquierdo*: Franja continua de arriba a abajo (altura completa $100\%$, ancho $40\%$) en cristal oscuro translúcido degradado hacia el centro con línea divisoria neón.
+  - *Botones Arcade Centrados*: 4 botones interactivos (`JUGAR`, `PERFILES`, `CONFIGURACIÓN`, `SALIR`) de $260\,\text{px}$, centrados verticalmente en la pantalla con separación de $14\,\text{px}$, animación de entrada escalonada, sonido de hover y destello cian.
+  - *Diamante Emblema Central*: Núcleo divisorio en el centro exacto de la pantalla $(c_x = w/2, c_y = h/2)$ con pulso senoidal y alas neón.
+  - *Título "S N A K E" Estilo #12 (Calca 1:1)*: Logotipo de acero biselado con aristas aladas, ápice triangular en 'A', gemas gemelas cian superior e inferior engarzadas en monturas metálicas sobre y bajo el centro, ubicado en la mitad derecha $(x = w \times 0.70, y = h \times 0.38)$.
+  - *Tarjeta HIGH SCORE*: Anclada limpiamente en la esquina inferior derecha enmarcada en cristal y oro.
+- **Efectos Procedurales y Partículas**: Textura $4 \times 4$ procedural para fuego, humo y chispas.
+- **Pipeline de Shaders de Post-Procesado**:
+  - Bloom selectivo (glow pass $\to$ blurH $\to$ blurV $\to$ mezcla aditiva) conectado con las gemas del título y el diamante central.
+  - Efecto CRT con scanlines y curvatura.
+  - Sombra proyectada difusa.
+  - Distorsión de calor (*Heat Haze*) en el fondo fluido Balatro.
 
 ## 8. Audio
 

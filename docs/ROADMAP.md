@@ -74,6 +74,7 @@
 ## Phase 8: Gameplay & Combat Evolution 🔄 In Progress
 **Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
+- [ ] Asymmetric Main Menu UI Redesign & Title Style #12 1:1 Replica (Left vertical panel with centered buttons, central emblem diamond, right-aligned steel/cyan twin-gem title, bottom-right high score card)
 - [ ] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
 - [ ] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
