@@ -1,6 +1,41 @@
 local shaders = {}
 local constants = require("constants")
 local Log = require("core.logger")
+local ui = require("ui.ui")
+
+-- ============================================================
+-- Corrección daltonica (Protanopia / Deuteranopia / Tritanopia)
+-- ============================================================
+local SRC_COLORBLIND = [[
+extern mat3 colorMatrix;
+
+vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
+    vec4 texColor = Texel(tex, uv);
+    vec3 corrected = colorMatrix * texColor.rgb;
+    corrected = clamp(corrected, 0.0, 1.0);
+    return vec4(corrected, texColor.a) * color;
+}
+]]
+
+-- Matrices de corrección daltonica (Daltonization para protanopia, deuteranopia, tritanopia)
+-- Matriz 3x3 para GLSL (column-major en Love2D)
+local COLORBLIND_MATRICES = {
+    protanopia = {
+        1.0, 0.3033, 0.3033,
+        0.0, 0.6967, -0.3033,
+        0.0, 0.0, 1.0,
+    },
+    deuteranopia = {
+        0.6967, 0.0, -0.3033,
+        0.3033, 1.0, 0.3033,
+        0.0, 0.0, 1.0,
+    },
+    tritanopia = {
+        1.0, 0.0, 0.0,
+        -0.3033, 0.6967, 0.0,
+        0.3033, 0.3033, 1.0,
+    },
+}
 
 -- ============================================================
 -- CRT: curvatura + scanlines + vignette + chromatic aberration
@@ -232,8 +267,8 @@ vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords
 }
 ]]
 
-local canvasScene, canvasGlow, canvasGlowLow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal
-local shCRT, shBlurH, shBlurV, shShadow, shHeat, shBalatro
+local canvasScene, canvasGlow, canvasGlowLow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal, canvasPost
+local shCRT, shBlurH, shBlurV, shShadow, shHeat, shBalatro, shColorblind
 local W, H, BW, BH
 
 -- Estado de efectos (feedback de daño): decae en shaders.update(dt)
@@ -276,6 +311,7 @@ function shaders.load()
     shShadow = tryShader(SRC_SHADOW)
     shHeat   = tryShader(SRC_HEAT)
     shBalatro = tryShader(SRC_BALATRO_BG)
+    shColorblind = tryShader(SRC_COLORBLIND)
 
     local function newC()
         local c = love.graphics.newCanvas(W, H)
@@ -299,6 +335,7 @@ function shaders.load()
     canvasShadow      = newC()
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
+    canvasPost        = newC()
 end
 
 -- Recreate canvases and apply filter settings (filter: 'nearest' | 'linear')
@@ -326,6 +363,7 @@ function shaders.recreateCanvases(pixelScale, filter)
     canvasShadow      = newC()
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
+    canvasPost        = newC()
 end
 
 function shaders.beginScene(br, bg, bb)
@@ -366,7 +404,9 @@ function shaders.drawBalatroBG(time, intensity)
         local c3_b = 0.2 + i * 0.8
         shBalatro:send("colour_3", {c3_r, c3_g, c3_b, 1})
 
-        shBalatro:send("contrast", 1.2)
+        local isHighContrast = ui and ui.highContrast
+        local bgContrast = isHighContrast and 1.6 or 1.2
+        shBalatro:send("contrast", bgContrast)
         shBalatro:send("spin_amount", i)
         love.graphics.setShader(shBalatro)
     end
@@ -434,25 +474,63 @@ function shaders.composite(time, crtIntensity, isMenu)
     love.graphics.draw(canvasShadowBlur, 5, 7)
 
     -- 5c. Bloom additive (escalado de vuelta a resolución completa)
+    local isHighContrast = ui and ui.highContrast
+    local bloomAlpha = isHighContrast and 0.15 or 0.6
     love.graphics.setBlendMode("add")
-    love.graphics.setColor(1, 1, 1, 0.6)
+    love.graphics.setColor(1, 1, 1, bloomAlpha)
     love.graphics.draw(canvasBlurV, 0, 0, 0, W / BW, H / BH)
     love.graphics.setBlendMode("alpha")
 
     love.graphics.setCanvas()
 
-    -- 6. CRT sobre canvasFinal → backbuffer
-    if shCRT then
-        shCRT:send("resolution", {W, H})
-        shCRT:send("time", time)
-        shCRT:send("intensity", crtIntensity or 0.75)
-        shCRT:send("damageFlash", fx.damage or 0)
-        shCRT:send("shake", fx.shake or 0)
-        love.graphics.setShader(shCRT)
+    -- 6. CRT y Corrección Daltoniana sobre canvasFinal → backbuffer
+    local finalCrt = crtIntensity or 0.75
+    if isHighContrast then
+        finalCrt = math.min(1.0, finalCrt * 1.25)
     end
-    love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.draw(canvasFinal, 0, 0)
-    love.graphics.setShader()
+
+    local colorblindMode = ui and ui.colorblind
+    local cbMatrix = (colorblindMode and colorblindMode ~= "off") and COLORBLIND_MATRICES[colorblindMode] or nil
+    local applyCB = cbMatrix and shColorblind and canvasPost
+
+    if applyCB then
+        -- 6a. CRT sobre canvasFinal → canvasPost
+        love.graphics.setCanvas(canvasPost)
+        love.graphics.clear(0, 0, 0, 1)
+        if shCRT then
+            shCRT:send("resolution", {W, H})
+            shCRT:send("time", time)
+            shCRT:send("intensity", finalCrt)
+            shCRT:send("damageFlash", fx.damage or 0)
+            shCRT:send("shake", fx.shake or 0)
+            love.graphics.setShader(shCRT)
+        end
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(canvasFinal, 0, 0)
+        love.graphics.setShader()
+        love.graphics.setCanvas()
+
+        -- 6b. Colorblind pass sobre canvasPost → backbuffer
+        shColorblind:send("colorMatrix", cbMatrix)
+        love.graphics.setShader(shColorblind)
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(canvasPost, 0, 0)
+        love.graphics.setShader()
+    else
+        -- 6. CRT sobre canvasFinal → backbuffer directo
+        love.graphics.setCanvas()
+        if shCRT then
+            shCRT:send("resolution", {W, H})
+            shCRT:send("time", time)
+            shCRT:send("intensity", finalCrt)
+            shCRT:send("damageFlash", fx.damage or 0)
+            shCRT:send("shake", fx.shake or 0)
+            love.graphics.setShader(shCRT)
+        end
+        love.graphics.setColor(1, 1, 1, 1)
+        love.graphics.draw(canvasFinal, 0, 0)
+        love.graphics.setShader()
+    end
 end
 
 return shaders

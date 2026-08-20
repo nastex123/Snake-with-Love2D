@@ -86,8 +86,12 @@ function renderMain.drawGame(dt)
     -- fondo fluido Balatro procedural (siempre llena toda la pantalla)
     shadersMod.drawBalatroBG(st.time, 0.8 + st.comboIntensity * 0.2)
 
-    -- HUD fijo en la parte superior de la pantalla (escala con resolución)
-    local hudScale = love.graphics.getHeight() / 600
+    -- HUD fijo en la parte superior de la pantalla (escala con resolución y ui.scale)
+    local baseHudScale = love.graphics.getHeight() / 600
+    local rawScale = baseHudScale * (uiMod.scale or 1.0)
+    -- Limitar la escala máxima para evitar desborde horizontal del HUD con ui.scale=1.5
+    local maxScale = love.graphics.getWidth() / 520
+    local hudScale = math.min(rawScale, maxScale)
     uiMod.drawHUD(st.puntuacion, st.highScore, st.monedas, shop.shieldActive, shop.magnetTimer, constants.MAGNET_DURATION, st.baseSpeed, nil, st.comboCount, st.activeTimers, worldMod.etapa, worldMod.sala, worldMod.objetivoSala, hudScale)
 
     -- Slots en la parte inferior (fijo, fuera del bloque centrado)

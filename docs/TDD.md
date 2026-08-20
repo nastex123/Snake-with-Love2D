@@ -220,6 +220,31 @@ Menu: additional heat distortion pass
 Debug menu: drawn AFTER composite (no post-processing)
 ```
 
+### 5.1 Main Menu Asymmetric UI Architecture & Style #12 Title Pipeline
+
+El menú principal opera con una composición asimétrica de alto impacto visual distribuida en 3 zonas:
+
+```
+┌──────────────────────────────────────┬──────────────────┬──────────────────────────────────────┐
+│ PANEL LATERAL IZQUIERDO (40% Ancho)  │ CENTRO (cx, cy)  │     SECTOR DERECHO (60% Ancho)       │
+│ • Rectángulo y = 0..h, w = w * 0.40  │ • Diamante       │ • Título Estilo #12 en (w*0.7, h*0.38)│
+│ • Fondo oscuro con alpha progresivo  │   Emblema        │ • Doble diamante cian (top/bottom)   │
+│ • Borde divisorio neón a la derecha  │ • Pulso senoidal │ • Glow pass en shaders.beginGlow()   │
+│ • 4 botones centrados verticalmente  │ • Núcleo divisor │ • Tarjeta HIGH SCORE (bottom-right)  │
+└──────────────────────────────────────┴──────────────────┴──────────────────────────────────────┘
+```
+
+#### Pipeline de Renderizado del Título Estilo #12 (Calca 1:1)
+1. **Asset Base (`assets/title_style12.png`)**:
+   - Renderizado en `ui/menuUI.lua` con `love.graphics.draw(img, x, y, 0, scale, scale, originX, originY)`.
+   - Flotación senoidal suave: `ty = baseTy + math.sin(time * 1.5) * 2`.
+   - Sombra 3D profunda con offset `(+3, +4)` y tinte negro al $85\%$.
+2. **Pase Emisivo de Glow (`assets/title_style12_glow.png`)**:
+   - Dibujado en `render/renderMain.lua` `shadersMod.beginGlow()` con modulación senoidal `glowPulse = 0.75 + math.sin(time * 3.5) * 0.25`.
+   - El shader de Bloom procesa las gemas gemelas cian y aristas reflectantes generando halo luminoso en tiempo real.
+3. **Hitbox y Eventos de Ratón**:
+   - `ui.menuButtons` registra `x = math.floor((panelW - bw) / 2)` y `y = math.floor(by + (i-1) * (bh + gap))`, asegurando detección exacta en `menu.mousePressed()` y `menu.updateHover()`.
+
 ## 6. Persistence Layer
 
 ### Files
