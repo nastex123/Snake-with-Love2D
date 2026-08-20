@@ -3,24 +3,24 @@
 ## Estándares (obligatorio)
 - **Siempre iterar hasta que el programa sea funcional**: `love .` debe ejecutar sin errores antes de dar una tarea por completada.
 - **Siempre revisar el log en busca de errores** tras cada cambio; no declarar completada una tarea con errores/warnings nuevos.
-- Aplicar las reglas de arquitectura del proyecto: sin variables globales, módulos `local X = {}`, `return X`, sistemas sobre entidades, object pooling, config central, logger, dividir archivos >300–500 líneas. (Nota: AGENTS.md referenciaba la skill `documentation` en `.opencode/skills/documentation/SKILL.md`, pero dicha skill NO existe en el repo; aplicar estas reglas directamente.)
+- Aplicar las reglas de arquitectura del proyecto: sin variables globales, módulos `local X = {}`, `return X`, sistemas sobre entidades, object pooling, config central, logger, dividir archivos >300–500 líneas. (La skill `documentation` está en `.opencode/skills/documentation/SKILL.md` y se aplica junto a estas reglas.)
 - El código actual (fases previas) aún tiene globals; la migración se hace de forma incremental y cada paso debe dejar el juego funcional.
 
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (18 modulos + helpers)
+## Arquitectura (42 módulos + helpers)
 Estructura de carpetas por sistema:
 - `main.lua` (loop, 7 estados), `constants.lua` — raíz (constants.lua es shim de `core/config.lua`)
-- `core/` → `config.lua` (config central), `logger.lua` (Log.info/warn/error/debug), `timers.lua` (timer manager con pooling), `helpers.lua` (deep_copy, rect/math utils)
-- `entities/` → `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss) + `bossAttacks.lua` (4 ataques) + `enemyHelpers.lua`, `food.lua` (3 tipos), `obstacles.lua`
+- `core/` → `config.lua` (config central), `logger.lua` (Log.info/warn/error/debug), `timers.lua` (timer manager con pooling), `world.lua` (World.state, estado global sin globals), `touch.lua` (input táctil), `helpers.lua` (deep_copy, rect/math utils)
+- `entities/` → `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss) + `bossAttacks.lua` (4 ataques) + `enemyHelpers.lua` + `chaserAI.lua` (IA social SOLO/DUPLA/MANADA), `food.lua` (3 tipos), `obstacles.lua`
 - `world/` → `world.lua` (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` (BSP, templates, stage modifiers) + `populate.lua` (población de sala)
 - `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade mouse-only panel, expone `audio`/`graphics`/`accessibility`/`dat`) + `settingsDraw.lua` (render tabs), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render select/input/confirm/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug)
 - `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, accesibilidad) + submódulos `introUI.lua` (intro Balatro + high score), `menuUI.lua` (menu + botones), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug). Delegacion: submódulos reciben `ui` como primer argumento
 - `render/` → `shaders.lua` (bloom+CRT+sombra+heat), `particles.lua` (textura 4x4 procedural) + `renderMain.lua` (drawScene) + `enemiesDraw.lua`
 - `audio/` → `sound.lua` (SFX procedural + single .ogg)
 
-Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`.
+Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`, `settingsMod`, `profilesMod`, `playerMod`, `achievementsMod`.
 
 ## Estados (`constants.lua`)
 `MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`
