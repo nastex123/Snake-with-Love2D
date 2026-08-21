@@ -3,14 +3,16 @@
 ## Completed (Documentación - 17:08:2026)
 - [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
 
+## Completed (Menú Principal Asimétrico & Título Estilo #12 - 21:08:2026)
+- [x] **Rediseño del Menú Principal (Distribución Asimétrica & Título Calca 1:1 Estilo #12)**:
+  - [x] **Panel Lateral Izquierdo**: Franja continua de 0 a 100% de altura ocupando el 40% del ancho (`panelW = w * 0.40`) con degradado oscuro (`COLOR_BG_BOX` con alpha progresivo) y línea divisoria vertical neón a la derecha en `ui/menuUI.lua`.
+  - [x] **Botones Centrados Verticalmente**: 4 botones arcade (JUGAR, PERFILES, CONFIGURACIÓN, SALIR) de 260px de ancho, centrados horizontalmente en el panel izquierdo y verticalmente en la pantalla con espaciado de 14px, animación de entrada escalonada y elevación/glow en hover en `ui/menuUI.lua`.
+  - [x] **Diamante Emblema Central**: Cinemática de `ui/introUI.lua` ajustada para que el diamante se eleve al centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` y permanezca flotando allí permanentemente con pulso senoidal y alas neón como núcleo divisor.
+  - [x] **Título "S N A K E" Calca 1:1 (Diseño #12)**: Renderizado en el sector derecho (`x = w * 0.70`, `y = h * 0.40`) usando `assets/title_style12.png` (acero biselado con aristas aladas y gemas gemelas cian superior/inferior) + `assets/title_style12_glow.png` conectado al shader de bloom vía `uiMod.drawMenuGlow` en `render/renderMain.lua`.
+  - [x] **Tarjeta HIGH SCORE**: Reubicada en la esquina inferior derecha (`cardX = w - cardW - 28`, `cardY = h - cardH - 22`).
+  - [x] **Limpieza**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD").
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
-- [ ] **🔥 PRÓXIMA SESIÓN — PRIORIDAD 1: Rediseño del Menú Principal (Distribución Asimétrica & Título Calca 1:1 Estilo #12)**:
-  - [ ] **Panel Lateral Izquierdo**: Implementar franja continua de 0 a 100% de altura ocupando el 40% del ancho (`panelW = w * 0.40`) con degradado oscuro (`COLOR_BG_BOX` con alpha progresivo) y línea divisoria vertical neón a la derecha.
-  - [ ] **Botones Centrados Verticalmente**: 4 botones arcade (JUGAR, PERFILES, CONFIGURACIÓN, SALIR) de 260px de ancho, centrados horizontalmente en el panel izquierdo y verticalmente en la pantalla con espaciado de 14px, animación de entrada escalonada y elevación/glow en hover.
-  - [ ] **Diamante Emblema Central**: Ajustar cinemática de `ui/introUI.lua` para que el diamante se eleve al centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` y permanezca flotando allí con pulso senoidal y alas neón como núcleo divisor.
-  - [ ] **Título "S N A K E" Calca 1:1 (Diseño #12)**: Renderizado en el sector derecho (`x = w * 0.70`, `y = h * 0.38`) usando `assets/title_style12.png` (acero biselado con aristas aladas y gemas gemelas cian superior/inferior) + `assets/title_style12_glow.png` en el pase de bloom de `renderMain.lua`.
-  - [ ] **Tarjeta HIGH SCORE**: Reubicar en la esquina inferior derecha (`cardX = w - cardW - 32`, `cardY = h - cardH - 24`).
-  - [ ] **Limpieza**: Eliminar las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD").
 - [ ] **Combat & Survival Package**:
   - [ ] Held-Key Tactical Slither Movement Engine (`snake.isDirectionHeld()`, real-time world, classic auto-slither toggle in settings)
   - [ ] Survival Streak multiplier (+0.1x per cleared room) in `world.state.survivalStreak` & HUD

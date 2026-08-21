@@ -33,9 +33,9 @@ function intro.draw(ui, t, globalTime, glowPass)
 
     -- Diamante Emblema Arcade (0.5s en adelante)
     if t >= 0.5 then
-        local targetY = h * 0.18 + math.sin((globalTime or t) * 1.5) * 4
+        local floatOffset = math.sin((globalTime or t) * 1.5) * 3
         local diamondY
-        local ds = 18
+        local ds = 20
 
         if t < 1.2 then
             -- Ascenso inicial desde la parte inferior al centro de la pantalla
@@ -45,19 +45,9 @@ function intro.draw(ui, t, globalTime, glowPass)
             local eased = 1 + c3 * (riseProgress - 1)^3 + c1 * (riseProgress - 1)^2
             diamondY = cy + (1 - eased) * 140
             ds = 20 + (1 - riseProgress) * 4
-        elseif t < 2.0 then
-            -- Permanece en el centro absorbiendo la energia de la espiral
-            diamondY = cy
-            ds = 20
-        elseif t < 2.8 then
-            -- Ascenso continuo y suave del centro hacia la cabecera (Ease-Out Cubic)
-            local p = (t - 2.0) / 0.8
-            local eased = 1 - (1 - p)^3
-            diamondY = cy + (targetY - cy) * eased
-            ds = 20
         else
-            -- Asentado como sello arcade en la cabecera
-            diamondY = targetY
+            -- Asentado de forma permanente en el centro exacto (cx, cy) con flotacion senoidal
+            diamondY = cy + floatOffset
             ds = 20
         end
 
@@ -146,8 +136,8 @@ function intro.draw(ui, t, globalTime, glowPass)
         local maxRadius = math.min(w, h) * 0.55
         local speedMult = 1 + sp * 3
 
-        -- Centro dinamico de la espiral que sigue al diamante
-        local spiralCenterY = (t >= 2.0) and (cy + (h * 0.18 - cy) * (1 - (1 - (t - 2.0) / 0.8)^3)) or cy
+        -- Centro de la espiral en el centro exacto (cx, cy)
+        local spiralCenterY = cy
 
         for i = 0, numShapes - 1 do
             local frac = i / numShapes
