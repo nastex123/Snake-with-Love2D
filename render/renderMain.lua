@@ -52,9 +52,12 @@ function renderMain.drawMenu(dt)
     if profilesMod and profilesMod.visible then profilesMod.draw() end
     love.graphics.setCanvas()
 
-    -- glow: solo elementos luminosos de la intro
+    -- glow: elementos luminosos de la intro y del menu (gemas del titulo)
     shadersMod.beginGlow()
     uiMod.drawBalatroIntro(st.introTimer, st.time, true)
+    if st.introTimer >= 2.8 and uiMod.drawMenuGlow then
+        uiMod.drawMenuGlow(st.introTimer, st.time)
+    end
     love.graphics.setCanvas()
 
     shadersMod.beginShadow()

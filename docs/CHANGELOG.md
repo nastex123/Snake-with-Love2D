@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 21:08:2026
+
+- **feature** (completed - 16:06): Implementación completa del Rediseño del Menú Principal (Distribución Asimétrica y Título Calca 1:1 Estilo #12):
+  1. `ui/introUI.lua`: Cinemática de entrada actualizada para que el diamante emblema ascienda y se asiente permanentemente en el centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` con pulso senoidal y alas neón, sirviendo como núcleo divisorio entre el panel de controles y el sector del título.
+  2. `ui/menuUI.lua`: Panel vertical izquierdo cubriendo el 40% del ancho con fondo oscuro translúcido, línea divisoria vertical neón a la derecha y 4 botones (`JUGAR`, `PERFILES`, `CONFIGURACIÓN`, `SALIR`) centrados verticalmente con animación de entrada y hover reactivo.
+  3. `ui/menuUI.lua` & `assets/`: Título "S N A K E" calca 1:1 exacta del Diseño #12 (letras de acero biselado, aristas aladas, ápice triangular en 'A', gemas gemelas cian superior e inferior engarzadas en monturas de metal oscuro) con carga de `title_style12.png` y mapa de emisión `title_style12_glow.png`.
+  4. `render/renderMain.lua` & `ui/ui.lua`: Integrado `uiMod.drawMenuGlow` en el pase de bloom de `shadersMod.beginGlow()` para que las gemas cian y aristas del título emitan resplandor bloom en tiempo real.
+  5. `ui/menuUI.lua`: Tarjeta de High Score anclada en la esquina inferior derecha con marco de oro y estrella pixelada. Eliminadas las pastillas de control inferiores para una composición limpia y despejada.
+
 ## 19:08:2026
 
 - **docs** (completed - 16:38): Especificación técnica y de diseño completa del Rediseño del Menú Principal (Distribución Asimétrica y Título Calca 1:1 Estilo #12) en `docs/GDD.md §7`, `docs/TDD.md §5.1`, `docs/ROADMAP.md Fase 8` y `docs/TODO.md`:

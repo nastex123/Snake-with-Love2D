@@ -68,6 +68,10 @@ function ui.drawMenu(menuTime, globalTime, highScore)
     menu.draw(ui, menuTime, globalTime, highScore)
 end
 
+function ui.drawMenuGlow(menuTime, globalTime)
+    menu.drawGlow(ui, menuTime, globalTime)
+end
+
 function ui.menuMousePressed(x, y)
     return menu.mousePressed(ui, x, y)
 end
