@@ -2,6 +2,7 @@
 local menu = {}
 local constants = require("constants")
 local sound = require("audio.sound")
+local titleDraw = require("ui.titleDraw")
 
 -- Paleta Arcade Alto Contraste
 local COLOR_CYAN     = {0.0, 0.94, 1.0}
@@ -12,29 +13,7 @@ local COLOR_BG_BOX   = {0.039, 0.051, 0.094}
 local COLOR_BG_HOVER = {0.06, 0.09, 0.18}
 local COLOR_BG_PRESS = {0.02, 0.03, 0.06}
 
--- Cache de texturas del logotipo Estilo #12
-local titleImage = nil
-local titleGlowImage = nil
-local titleLoaded = false
-
-local function loadTitleAssets()
-    if titleLoaded then return end
-    titleLoaded = true
-    pcall(function()
-        if love.filesystem.getInfo("assets/title_style12.png") then
-            titleImage = love.graphics.newImage("assets/title_style12.png")
-            titleImage:setFilter("linear", "linear")
-        end
-        if love.filesystem.getInfo("assets/title_style12_glow.png") then
-            titleGlowImage = love.graphics.newImage("assets/title_style12_glow.png")
-            titleGlowImage:setFilter("linear", "linear")
-        end
-    end)
-end
-
 function menu.draw(ui, menuTime, globalTime, highScore)
-    loadTitleAssets()
-
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
     local panelW = math.floor(w * 0.40)
@@ -67,48 +46,14 @@ function menu.draw(ui, menuTime, globalTime, highScore)
         love.graphics.setLineWidth(1)
     end
 
-    -- === TITULO "S N A K E" (Calca 1:1 Estilo #12 en Sector Derecho) ===
+    -- === TITULO "S N A K E" (Renderizado 100% Procedural Estilo #12) ===
     if titleAlpha > 0 then
         local ty = math.floor(h * 0.40)
         local floatOffset = math.sin((globalTime or menuTime) * 1.5) * 3
-
         local scaleProgress = math.min(1, (menuTime - 2.8) / 0.5)
         local enterScale = 0.92 + 0.08 * (1 - (1 - scaleProgress)^2)
 
-        if titleImage then
-            local iw = titleImage:getWidth()
-            local ih = titleImage:getHeight()
-            local imgScale = enterScale * 0.95
-
-            -- 1. Sombra negra profunda
-            love.graphics.setColor(0, 0, 0, titleAlpha * 0.95)
-            love.graphics.draw(titleImage, rightCenterX + 4, ty + floatOffset + 4, 0, imgScale, imgScale, iw / 2, ih / 2)
-            love.graphics.draw(titleImage, rightCenterX + 2, ty + floatOffset + 2, 0, imgScale, imgScale, iw / 2, ih / 2)
-
-            -- 2. Imagen principal a todo color (acero biselado + gemas gemelas cian)
-            love.graphics.setColor(1, 1, 1, titleAlpha)
-            love.graphics.draw(titleImage, rightCenterX, ty + floatOffset, 0, imgScale, imgScale, iw / 2, ih / 2)
-        else
-            -- Fallback si la imagen no esta disponible
-            local titleText = "S N A K E"
-            love.graphics.setFont(ui.fontTitle)
-            local th = ui.fontTitle:getHeight()
-            local tw = ui.fontTitle:getWidth(titleText)
-
-            love.graphics.push()
-            love.graphics.translate(rightCenterX, ty + floatOffset)
-            love.graphics.scale(enterScale, enterScale)
-            love.graphics.translate(-rightCenterX, -(ty + floatOffset))
-
-            love.graphics.setColor(0, 0, 0, titleAlpha * 0.95)
-            love.graphics.printf(titleText, rightCenterX - tw / 2 + 3, ty + floatOffset + 3, tw, "center")
-            love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], titleAlpha * 0.8)
-            love.graphics.printf(titleText, rightCenterX - tw / 2 - 1, ty + floatOffset - 1, tw, "center")
-            love.graphics.setColor(1, 1, 1, titleAlpha)
-            love.graphics.printf(titleText, rightCenterX - tw / 2, ty + floatOffset, tw, "center")
-
-            love.graphics.pop()
-        end
+        titleDraw.draw(rightCenterX, ty, enterScale * 1.15, titleAlpha, globalTime or menuTime, floatOffset)
     end
 
     -- === BOTONES DEL MENU (Centrados Verticalmente en Panel Izquierdo) ===
@@ -257,9 +202,6 @@ function menu.draw(ui, menuTime, globalTime, highScore)
 end
 
 function menu.drawGlow(ui, menuTime, globalTime)
-    loadTitleAssets()
-    if not titleGlowImage then return end
-
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
     local panelW = math.floor(w * 0.40)
@@ -270,17 +212,10 @@ function menu.drawGlow(ui, menuTime, globalTime)
 
     local ty = math.floor(h * 0.40)
     local floatOffset = math.sin((globalTime or menuTime) * 1.5) * 3
-
     local scaleProgress = math.min(1, (menuTime - 2.8) / 0.5)
     local enterScale = 0.92 + 0.08 * (1 - (1 - scaleProgress)^2)
-    local imgScale = enterScale * 0.95
 
-    local iw = titleGlowImage:getWidth()
-    local ih = titleGlowImage:getHeight()
-
-    local glowPulse = 0.8 + math.sin((globalTime or menuTime) * 3.5) * 0.2
-    love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], titleAlpha * glowPulse * 0.95)
-    love.graphics.draw(titleGlowImage, rightCenterX, ty + floatOffset, 0, imgScale, imgScale, iw / 2, ih / 2)
+    titleDraw.drawGlow(rightCenterX, ty, enterScale * 1.15, titleAlpha, globalTime or menuTime, floatOffset)
 end
 
 function menu.mousePressed(ui, x, y)
