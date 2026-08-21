@@ -10,6 +10,12 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 21:08:2026
 
+- **feature** (completed - 16:15): Generación y renderizado 100% procedural del Título "S N A K E" Estilo #12 enteramente en código Love2D:
+  1. `ui/titleDraw.lua`: Nuevo submódulo de renderizado vectorial de alto rendimiento sin texturas ráster externas. Define la geometría convexa de las 5 letras (`S`, `N`, `A`, `K`, `E`) con facetado biselado metálico, facetas de luz platino superior (`COLOR_STEEL_TOP`), sombras de gunmetal inferior (`COLOR_STEEL_SHADOW`), líneas de cresta de alto contraste y sombra 3D profunda.
+  2. **Doble Gema y Monturas**: Renderizado procedural de las monturas de acero angulares y doble gema de diamante cian facetada (superior sobre el ápice de 'A' e inferior bajo el travesaño) con núcleo blanco brillante.
+  3. `ui/menuUI.lua`: Eliminada la dependencia de texturas PNG en disco y migrado al pipeline procedural `titleDraw.draw()` y `titleDraw.drawGlow()`.
+  4. `render/renderMain.lua`: Pase de bloom procedural totalmente conectado a `titleDraw.drawGlow()`.
+
 - **feature** (completed - 16:06): Implementación completa del Rediseño del Menú Principal (Distribución Asimétrica y Título Calca 1:1 Estilo #12):
   1. `ui/introUI.lua`: Cinemática de entrada actualizada para que el diamante emblema ascienda y se asiente permanentemente en el centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` con pulso senoidal y alas neón, sirviendo como núcleo divisorio entre el panel de controles y el sector del título.
   2. `ui/menuUI.lua`: Panel vertical izquierdo cubriendo el 40% del ancho con fondo oscuro translúcido, línea divisoria vertical neón a la derecha y 4 botones (`JUGAR`, `PERFILES`, `CONFIGURACIÓN`, `SALIR`) centrados verticalmente con animación de entrada y hover reactivo.
