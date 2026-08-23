@@ -52,80 +52,109 @@ function intro.draw(ui, t, globalTime, glowPass)
         end
 
         local pulse = 0.8 + math.sin((globalTime or t) * 3) * 0.2
-        local ptsOuter = {
-            cx, diamondY - ds,
-            cx + ds, diamondY,
-            cx, diamondY + ds,
-            cx - ds, diamondY
-        }
-        local innerDs = ds * 0.55
-        local ptsInner = {
-            cx, diamondY - innerDs,
-            cx + innerDs, diamondY,
-            cx, diamondY + innerDs,
-            cx - innerDs, diamondY
-        }
+        if ui.emblemTexture then
+            -- Renderizado HD del Diamante Emblema (Textura + Glow)
+            local embScale = (ds / 20) * 0.22 -- ~112px de ancho en pantalla
+            local originX, originY = 256, 256
 
-        if glowPass then
-            -- Elementos luminosos para bloom shader (bordes y nucleo neon)
-            love.graphics.setLineWidth(2)
-            love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.9 * pulse)
-            love.graphics.polygon("line", ptsOuter)
-            love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.8 * pulse)
-            love.graphics.polygon("line", ptsInner)
+            if glowPass then
+                if ui.emblemGlowTexture then
+                    love.graphics.setColor(1, 1, 1, 0.9 * pulse)
+                    love.graphics.draw(ui.emblemGlowTexture, cx, diamondY, 0, embScale, embScale, originX, originY)
+                end
+            else
+                -- Sombra proyectada sutil
+                love.graphics.setColor(0, 0, 0, 0.85)
+                love.graphics.draw(ui.emblemTexture, cx + 3, diamondY + 3, 0, embScale, embScale, originX, originY)
 
-            -- Lineas de alas laterales neon
-            love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.85 * pulse)
-            love.graphics.line(cx - ds - 16, diamondY, cx - ds - 2, diamondY)
-            love.graphics.line(cx + ds + 2, diamondY, cx + ds + 16, diamondY)
-            love.graphics.line(cx, diamondY - ds - 10, cx, diamondY - ds - 2)
-            love.graphics.line(cx, diamondY + ds + 2, cx, diamondY + ds + 10)
+                -- Textura base completa
+                love.graphics.setColor(1, 1, 1, 1.0)
+                love.graphics.draw(ui.emblemTexture, cx, diamondY, 0, embScale, embScale, originX, originY)
 
-            -- Nucleo brillante
-            love.graphics.setColor(1, 1, 1, 0.95)
-            love.graphics.rectangle("fill", cx - 3, diamondY - 3, 6, 6)
-            love.graphics.setLineWidth(1)
+                -- Pulso de brillo sobre la textura base
+                if ui.emblemGlowTexture and pulse > 0.8 then
+                    local overlayAlpha = (pulse - 0.8) * 1.5
+                    love.graphics.setColor(1, 1, 1, overlayAlpha)
+                    love.graphics.draw(ui.emblemGlowTexture, cx, diamondY, 0, embScale, embScale, originX, originY)
+                end
+            end
         else
-            -- Scene pass: Sombra negra nitida
-            local ptsShadow = {
-                cx + 3, diamondY - ds + 3,
-                cx + ds + 3, diamondY + 3,
-                cx + 3, diamondY + ds + 3,
-                cx - ds + 3, diamondY + 3
+            -- Fallback procedimental básico
+            local ptsOuter = {
+                cx, diamondY - ds,
+                cx + ds, diamondY,
+                cx, diamondY + ds,
+                cx - ds, diamondY
             }
-            love.graphics.setColor(0, 0, 0, 0.85)
-            love.graphics.polygon("fill", ptsShadow)
+            local innerDs = ds * 0.55
+            local ptsInner = {
+                cx, diamondY - innerDs,
+                cx + innerDs, diamondY,
+                cx, diamondY + innerDs,
+                cx - innerDs, diamondY
+            }
 
-            -- Relleno solido oscuro
-            love.graphics.setColor(COLOR_BG_BOX[1], COLOR_BG_BOX[2], COLOR_BG_BOX[3], 0.95)
-            love.graphics.polygon("fill", ptsOuter)
+            if glowPass then
+                -- Elementos luminosos para bloom shader (bordes y nucleo neon)
+                love.graphics.setLineWidth(2)
+                love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.9 * pulse)
+                love.graphics.polygon("line", ptsOuter)
+                love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.8 * pulse)
+                love.graphics.polygon("line", ptsInner)
 
-            -- Borde exterior NEON CIAN (2px, bordes rectos)
-            love.graphics.setLineWidth(2)
-            love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.95)
-            love.graphics.polygon("line", ptsOuter)
+                -- Lineas de alas laterales neon
+                love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.85 * pulse)
+                love.graphics.line(cx - ds - 16, diamondY, cx - ds - 2, diamondY)
+                love.graphics.line(cx + ds + 2, diamondY, cx + ds + 16, diamondY)
+                love.graphics.line(cx, diamondY - ds - 10, cx, diamondY - ds - 2)
+                love.graphics.line(cx, diamondY + ds + 2, cx, diamondY + ds + 10)
 
-            -- Borde interior NEON MAGENTA (2px, bordes rectos)
-            love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.85)
-            love.graphics.polygon("line", ptsInner)
+                -- Nucleo brillante
+                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.rectangle("fill", cx - 3, diamondY - 3, 6, 6)
+                love.graphics.setLineWidth(1)
+            else
+                -- Scene pass: Sombra negra nitida
+                local ptsShadow = {
+                    cx + 3, diamondY - ds + 3,
+                    cx + ds + 3, diamondY + 3,
+                    cx + 3, diamondY + ds + 3,
+                    cx - ds + 3, diamondY + 3
+                }
+                love.graphics.setColor(0, 0, 0, 0.85)
+                love.graphics.polygon("fill", ptsShadow)
 
-            -- Lineas de conexion / alas neon de 2px
-            love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.9)
-            love.graphics.line(cx - ds - 16, diamondY, cx - ds - 2, diamondY)
-            love.graphics.line(cx + ds + 2, diamondY, cx + ds + 16, diamondY)
-            love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.9)
-            love.graphics.line(cx, diamondY - ds - 10, cx, diamondY - ds - 2)
-            love.graphics.line(cx, diamondY + ds + 2, cx, diamondY + ds + 10)
+                -- Relleno solido oscuro
+                love.graphics.setColor(COLOR_BG_BOX[1], COLOR_BG_BOX[2], COLOR_BG_BOX[3], 0.95)
+                love.graphics.polygon("fill", ptsOuter)
 
-            -- Puntos terminales en las alas
-            love.graphics.setColor(COLOR_GOLD[1], COLOR_GOLD[2], COLOR_GOLD[3], 0.95)
-            love.graphics.rectangle("fill", cx - ds - 18, diamondY - 1, 3, 3)
-            love.graphics.rectangle("fill", cx + ds + 16, diamondY - 1, 3, 3)
+                -- Borde exterior NEON CIAN (2px, bordes rectos)
+                love.graphics.setLineWidth(2)
+                love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.95)
+                love.graphics.polygon("line", ptsOuter)
 
-            -- Nucleo blanco pixelado
-            love.graphics.setColor(1, 1, 1, 0.95)
-            love.graphics.rectangle("fill", cx - 3, diamondY - 3, 6, 6)
-            love.graphics.setLineWidth(1)
+                -- Borde interior NEON MAGENTA (2px, bordes rectos)
+                love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.85)
+                love.graphics.polygon("line", ptsInner)
+
+                -- Lineas de conexion / alas neon de 2px
+                love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], 0.9)
+                love.graphics.line(cx - ds - 16, diamondY, cx - ds - 2, diamondY)
+                love.graphics.line(cx + ds + 2, diamondY, cx + ds + 16, diamondY)
+                love.graphics.setColor(COLOR_MAGENTA[1], COLOR_MAGENTA[2], COLOR_MAGENTA[3], 0.9)
+                love.graphics.line(cx, diamondY - ds - 10, cx, diamondY - ds - 2)
+                love.graphics.line(cx, diamondY + ds + 2, cx, diamondY + ds + 10)
+
+                -- Puntos terminales en las alas
+                love.graphics.setColor(COLOR_GOLD[1], COLOR_GOLD[2], COLOR_GOLD[3], 0.95)
+                love.graphics.rectangle("fill", cx - ds - 18, diamondY - 1, 3, 3)
+                love.graphics.rectangle("fill", cx + ds + 16, diamondY - 1, 3, 3)
+
+                -- Nucleo blanco pixelado
+                love.graphics.setColor(1, 1, 1, 0.95)
+                love.graphics.rectangle("fill", cx - 3, diamondY - 3, 6, 6)
+                love.graphics.setLineWidth(1)
+            end
         end
     end
 

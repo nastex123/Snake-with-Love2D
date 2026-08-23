@@ -8,6 +8,472 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 22:08:2026
+
+- **fix** (completed - 22:22): Resolución definitiva de dependencias circulares y validación End-to-End en Love2D:
+  1. `render/shaders.lua` & `systems/persistence.lua`: Eliminadas referencias cruzadas innecesarias a `ui.ui` que provocaban el error `loop or previous error loading module 'systems.persistence'`.
+  2. `systems/debugTools.lua`: Añadido soporte para alias de tecla `enter` además de `return` y `kpenter`.
+  3. **Suite End-to-End**: Verificado el ciclo completo de vida del juego (carga inicial, menú a 60 FPS, herramienta de debug `F2` con arrastre y persistencia, menú de debug `Tab`, transición y gameplay `PLAYING`, pausa y despausa `PAUSED`) con $0$ errores.
+
+- **fix** (completed - 22:18): Verificación integral de todos los módulos y limpieza de duplicados para ejecución perfecta de `love .`:
+  1. `systems/debugTools.lua`: Verificados y unificados todos los manejadores de eventos y modales de depuración (`Tab`, `F2`, `Achievements`), eliminando bloques redundantes y garantizando 0 errores y warnings en ejecución.
+  2. `main.lua`: Verificado el ciclo de vida completo (`love.load`, `love.update`, `love.draw`, `love.mousemoved`, `love.mousereleased`, `love.keypressed`) para ejecución interactiva continua.
+
+- **feature** (completed - 22:10): Implementada la herramienta interactiva de **Ajuste y Depuración del Logotipo con la tecla F2 y Guardado Permanente**:
+  1. `systems/debugTools.lua`: Desarrollado el modal táctico HUD para calibración del logotipo "SNAKE" en tiempo real:
+     - **Arrastre Directo con Ratón:** Bounding box interactivo sobre el logotipo que permite arrastrarlo libremente por la pantalla.
+     - **Controles de Precisión por Teclado:** Flechas de dirección ($\pm 1\,\text{px}$, con Shift para $\pm 10\,\text{px}$), `[` y `]` para escala de píxel, `-` y `+` para profundidad 3D, `R` para restaurar valores por defecto y `Enter`/`F2` para guardar y cerrar.
+     - **Panel HUD Táctico:** Panel superior derecho con lecturas de coordenadas en vivo ($X, Y$), escala, espaciado y botones interactivos (`[X-]`, `[X+]`, `[Y-]`, `[Y+]`, `[RESET]`, `[GUARDAR]`, `[CERRAR]`).
+  2. `systems/persistence.lua`: Añadida la sección `logo` (`offsetX`, `offsetY`, `scale`, `spacing`, `depth`) en `settingsDefaults` y funciones `getLogoConfig()` / `saveLogoConfig()` para persistencia automática en disco (`settings.dat`).
+  3. `ui/menuUI.lua`: Dinamizadas las funciones `menu.draw`, `menu.drawGlow` y exportada `menu.getLogoBounds` para respetar la configuración guardada del usuario.
+
+- **feature** (completed - 22:04): Implementado en el motor Love2D el **Logotipo Procedural Isométrico 2.5D en Color Cian Neón (#09 + #16)**:
+  1. `ui/menuUI.lua`: Sustituido el logotipo raster estático por el motor procedural isométrico de pixel art en tiempo real a 60 FPS:
+     - **Extrusión 3D Isométrica:** 5 capas de profundidad hacia abajo a la izquierda a $45^\circ$ con base de sombra negra y canto de cian profundo (`#004c59`).
+     - **Fachada Frontal:** Gradiente de 4 tonos en cian neón (`#00F0FF`) con bisel superior de arista en platino blanco/cian hielo (`#a6f5ff`).
+     - **Barrido Especular y Destello en Cruz (#16):** Haz de luz blanca pura continuo con destello estroboscópico de 4 puntas en los vértices del título.
+     - **Glow Pass:** Integrado en el pase de bloom shader (`menu.drawGlow`) para generar un resplandor celeste envolvente.
+
+- **feature** (completed - 21:59): Catálogo de **20 Propuestas de Texturas de Alrededor para el Logotipo SNAKE** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Creado un taller interactivo para probar 20 fondos, chasis y macro-entornos procedurales alrededor del logotipo isométrico de oro noble a 60 FPS:
+     - **Controles Globales:** Opacidad de Textura ($10\%$ a $100\%$), Velocidad de Brillo ($1\times$ a $5\times$) y 5 temas de color arcade.
+     - **Bloque I (Chasis & Placas 01-05):** 01. Placa de Titanio con Remaches, 02. Zarpazos de Hidra a 45° (Fondo #06), 03. Marco #11 Chunky con 4 Condensadores, 04. Micro-Engranajes de Relojería, 05. Placa Biselada con Corte a 60°.
+     - **Bloque II (Mazmorra & Piedra 06-10):** 06. Losas de Piedra de Cripta Agrietada, 07. Glifos Rúnicos Místicos Grabados, 08. Cadenas de Hierro Suspendidas, 09. Llama de Antorchas de Mazmorra, 10. Micro-Calaveras de Boss en el Marco.
+     - **Bloque III (Plasma & Cyber 11-15):** 11. Matriz HUD Táctica Target Lock-On Grid (#11), 12. Matriz de Puntos de Radar Táctico, 13. Filamentos de Rayos Tesla Saltando, 14. Scanlines Horizontales CRT, 15. Anillo Hexagonal Cyber-Step.
+     - **Bloque IV (Reptil & Orgánico 16-20):** 16. Textura de Escamas de Víbora Gigante, 17. Serpiente Ouroboros Circular en Relieve, 18. Niebla de Mazmorra Flotante, 19. Rayos Solares Radiantes (God Rays), 20. Master Sanctuary (Fusión Maestra de Entorno).
+
+- **feature** (completed - 21:56): Catálogo de **20 Propuestas de Mejora y Refinamiento para el Logotipo #01** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Desarrollado un taller interactivo estructurado con 20 mejoras sobre el diseño isométrico de oro macizo y barrido especular a 60 FPS:
+     - **Controles Globales:** Ajustes de Profundidad 3D ($2\,\text{px}$ a $8\,\text{px}$), Velocidad ($1\times$ a $5\times$) y 5 temas de color.
+     - **Bloque I (Bisel & Metales 01-05):** 01. Bisel Superior en Platino Especular, 02. Degradado Metálico de 5 Niveles, 03. Destello con Anillo Solar Óptico, 04. Oclusión Ambiental en Rincones, 05. Pulido Esmerilado a 45°.
+     - **Bloque II (Detalles de Víbora 06-10):** 06. Ojo de Víbora Oculto en la 'S', 07. Colmillos Biselados en 'S' y 'E', 08. Micro-Escamas en Relieve Hexagonal, 09. Ranuras de Plasma Cian Ocultas, 10. Micro-Calavera de Boss en la 'A'.
+     - **Bloque III (Haces & Óptica 11-15):** 11. Barrido de Haz Curvo Ondulante, 12. Doble Haz Desfasado en Armonía, 13. Destellos Múltiples en Crestas, 14. Estela de Fósforo Post-Barrido, 15. Pulso de Resplandor en el Contorno.
+     - **Bloque IV (Física 3D & Máster 16-20):** 16. Levitación Isométrica Suave en Y, 17. Micro-Condensadores de 6x6 px en las 4 Esquinas, 18. Emisión de Micro-Partículas de Oro Flotantes, 19. Extrusión 3D Orgánica que Respira, 20. Master Gold Titan Supreme (Fusión Máxima de 5 Sistemas).
+
+- **feature** (completed - 21:54): Catálogo de **12 Variantes de la FUSIÓN #09 + #16 (Isométrico 2.5D de Oro Noble con Barrido Especular)** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Integrada la combinación maestra entre la estructura isométrica 3D escalonada a $45^\circ$ y el barrido de luz especular en oro noble con destellos en cruz blanca a 60 FPS:
+     - **Controles Globales:** Ajustes de Profundidad 3D ($2\,\text{px}$ a $8\,\text{px}$), Velocidad de Brillo ($1\times$ a $5\times$) y 5 paletas de color arcade.
+     - **Bloque I (Isométrico Puro 01-03):** 01. Fusión Pura (Classic Chiseled Gold Foil), 02. Bisel Doble Filo en Oro y Platino, 03. Extrusión Profunda de 8 Niveles.
+     - **Bloque II (Haces de Luz & Glint 04-06):** 04. Barrido de Doble Haz Desfasado, 05. Glint Reactivo al Cursor, 06. Destellos Estroboscópicos en las 4 Esquinas.
+     - **Bloque III (Físicas & Movimiento 07-09):** 07. Isométrico con Levitación Senoidal Flotante, 08. Extrusión Invertida Hacia Abajo Derecha (+45°), 09. Emisión de Micro-Partículas de Oro Volátiles.
+     - **Bloque IV (Fusión Suprema 10-12):** 10. Canto con Ranuras de Plasma Cian Ocultas, 11. Fachada con Escamas de Serpiente Grabadas, 12. Master Gold Chisel Logo (Fusión Definitiva Arcade).
+
+- **feature** (completed - 21:53): Catálogo de **20 Propuestas de Logotipo "SNAKE" 100% PROCEDURAL** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Desarrollado un taller interactivo con 20 sistemas procedurales matemáticos para el título "SNAKE" a 60 FPS:
+     - **Controles Globales:** Selectores de Amplitud de Onda ($0\,\text{px}$ a $6\,\text{px}$), Velocidad ($1\times$ a $5\times$) y 5 temas de color.
+     - **Bloque I (Anatomía & Reptil 01-05):** 01. Serpiente Vertebral Ondulante, 02. Escamas de Víbora con Bisel Paramétrico, 03. Colmillos Gemelos & Lengua Bífida, 04. Víbora de Plasma Neón Constrictora, 05. Ojos de Serpiente con Eye-Tracking.
+     - **Bloque II (Cyberpunk & Plasma 06-10):** 06. Titanio Biselado con Núcleo de Plasma, 07. Glitch Matricial CRT Bit-Shift, 08. Ondulación Senoidal Balatro a Contrafase, 09. Isométrico 2.5D con Extrusión de Sombra, 10. Arco Eléctrico Tesla de Alta Tensión.
+     - **Bloque III (Mazmorra Gótica 11-15):** 11. Runas Antiguas Talladas en Piedra, 12. Monograma con Calavera de Boss en la 'A', 13. Fuego Neón Celular Ascendente, 14. Cristales Geoda en los Vértices, 15. Hierro Forjado con Cadenas Péndulo.
+     - **Bloque IV (Balatro Chic & Oro 16-20):** 16. Oro Macizo con Barrido de Brillo Especular, 17. Matriz de Puntos HUD Scanner, 18. Doble Filo Cyber-Step con Condensadores, 19. Respiración Orgánica a 60 BPM, 20. Master Snake Emblem (Fusión Maestra Definitiva).
+
+- **feature** (completed - 21:31): Implementada en el motor Love2D la **Tarjeta Oficial Combinada de Perfil y High Score con la Moneda Circular 3D #01 y Medalla #01**:
+  1. `ui/menuUI.lua`: Integrada la Tarjeta #11 Chunky (marco de 2px con delineado exterior negro de 1px y 4 condensadores esquineros pesados de $6\times 6\,\text{px}$) en la esquina inferior derecha del menú principal:
+     - **División y Fondo:** Fondo izquierdo oscuro (`#050c17`) y fondo derecho a $60^\circ$ (`#0c1b2c`) con divisor de plasma cian.
+     - **Progreso de Mazmorra:** 5 celdas con la celda activa pulsante y micro-calavera de boss pixel art de $7\times 5\,\text{px}$ en la celda 5.
+     - **Moneda Circular 3D #01:** Disco circular procedural con rotación trigonométrica $3\text{D}$ elipsoidal a 60 FPS, extrusión de canto cilíndrico de espesor dinámico y serpiente paramétrica concéntrica.
+     - **Medalla Oficial #01:** Cinta bicolor en V (azul/rojo) con disco de oro biselado y destello especular junto a la etiqueta `"HI-SCORE"`.
+     - **Interactividad Total:** Reconocimiento de Hover y click en la tarjeta para abrir el gestor de perfiles (`profilesMod.open()`).
+  2. `main.lua`: Enrutado el click en la tarjeta (`card_profile`) para abrir de inmediato la pantalla de perfiles con feedback sonoro.
+
+- **feature** (completed - 21:25): Catálogo de **5 Propuestas de Moneda de Oro en DISCO CIRCULAR PROCEDURAL** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Implementada geometría estrictamente circular ($x^2 + y^2 \le R^2$) con proyección elipsoidal $3\text{D}$ $(x/r_x)^2 + (y/R)^2 \le 1$ y extrusión de canto cilíndrico curvo:
+     - **Control de Radio:** Slider interactivo para calibrar el radio circular de la moneda ($4\,\text{px}$ a $7\,\text{px}$).
+     - **01. Disco Circular con Relieve de Serpiente Paramétrica:** Círculo perfecto con serpiente paramétrica concéntrica y destello central.
+     - **02. Disco Circular con Sombreado Esférico Normal 3D:** Superficie esférica $z = \sqrt{R^2 - x^2 - y^2}$ con luz orbital continua a 60 FPS.
+     - **03. Disco Circular con Borde Estriado Numismático:** 12 estrías perimetrales uniformes en $\theta_k = \frac{2\pi k}{12}$.
+     - **04. Víbora Viva en Órbita Circular Concéntrica:** Serpiente enroscada con ondulación radial $r(\theta, t) = R_0 + A\sin(3\theta - \omega t)$.
+     - **05. Disco Circular Imperial con Doble Anillo y Gema Neón:** Anillos concéntricos circulares con gema cian neón central.
+
+- **feature** (completed - 21:18): Catálogo de **5 Propuestas de Moneda de Oro 100% PROCEDURAL** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Motor matemático en JavaScript a 60 FPS con 5 algoritmos procedurales para la moneda sin matrices estáticas:
+     - **Control de Profundidad:** Slider para ajustar la profundidad del bisel y relieve ($1\,\text{px}$ a $5\,\text{px}$).
+     - **01. Serpiente Paramétrica Lemniscata:** Ecuación en ocho infinito ($x = A\cos(t), y = A\sin(t)\cos(t)$) proyectada en rotación 3D.
+     - **02. Iluminación Lambertiana y Vector Normal 3D:** Producto escalar $\vec{N} \cdot \vec{L}$ en tiempo real con órbita de luz a 60 FPS.
+     - **03. Oro Facetado en Voronoi Geométrica:** 8 facetas angulares que refractan luz independientemente como una joya tallada.
+     - **04. Víbora Viva Ondulando:** Cinemática senoidal continua $y = \sin(\omega t - kx)$ que se desplaza físicamente al rotar.
+     - **05. Disco Rúnico con Anillo de Datos:** Muescas generadas por funciones trigonométricas y núcleo de diamante neón pulsante.
+
+- **feature** (completed - 21:13): Desglose Modular de Texturas y **12 Propuestas de Rotación 3D de la Moneda de Serpiente** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Creado panel superior de descomposición por capas independientes (Bisel Exterior, Núcleo, Sello de Serpiente en Relieve, Canto 3D y Destello Glint) y 12 algoritmos de rotación 3D a 60 FPS:
+     - **Sprite Sheet Generado:** `assets/pixel_gold_coin_rotation_spritesheet.jpg` con la grilla de 8 fases de rotación $360^\circ$ e iluminación.
+     - **Control de Giro:** Slider para calibrar la velocidad de rotación ($1\times$ a $6\times$ RPM).
+     - **Bloque I (Giro Continuo 3D):** 01. Rotación 3D Continua Suave, 02. Rotación por Cuadros Discretos de 8 Frames, 03. Rotación con Pausa Frontal de 1.5s.
+     - **Bloque II (Reactivo & Hover):** 04. Fija en Reposo y Giro Acelerado en Hover, 05. Rotación con Inclinación Parabólica en Y, 06. Oscilación Pendular Tipo Moneda Tambaleante.
+     - **Bloque III (Partículas & Sombras):** 07. Giro 3D con Sombra Proyectada en la Placa, 08. Giro con Destello Especular en el Vértice de 90°, 09. Giro con Estela de Micro-Partículas de Oro.
+     - **Bloque IV (Fusión Integral):** 10. Moneda con Reverso de Dragón Invertido, 11. Efecto Moneda Flotante con Levitación Vertical, 12. Master 3D Serpent Coin (Fusión Definitiva Arcade).
+
+- **feature** (completed - 21:10): Generadas **2 Propuestas Visuales en Imagen para el Ícono de Moneda de Oro en Pixel Art**:
+  1. `assets/pixel_gold_coin_snake_emblem.jpg`: Moneda de oro macizo en pixel art de 16-bits con emblema en relieve de serpiente dragón enroscada y destello especular blanco.
+  2. `assets/pixel_gold_coin_boss_skull.jpg`: Doblón de oro de mazmorra con calavera de boss cornuda en relieve central y anillo exterior con muescas rúnicas grabadas.
+
+- **bugfix** (completed - 21:09): Corregidas comillas no escapadas en la definición de la propuesta 1 de moneda en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Validada la sintaxis JavaScript con Node.js; las 12 tarjetas de moneda en pixel art ahora se renderizan perfectamente a 60 FPS.
+
+- **feature** (completed - 21:08): Catálogo de **12 Propuestas de Ícono de Moneda de Oro en PIXEL ART** sobre la Tarjeta #11 Chunky en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Integrada la Medalla Oficial #01 (con cinta bicolor en V) y desarrolladas 12 variantes de monedas de oro pixel art en matrices de $10\times 10\,\text{px}$ a $12\times 10\,\text{px}$:
+     - **Sellos & Físicas:** Monedas octogonales, de rotación 3D en 4 frames, numismática con agujero central, dobles monedas 2.5D, coronas reales, joyas neón y ojos de dragón.
+     - **Bloque I (Sellos & Grabados):** 01. Moneda con Sello de Serpiente en 'S', 02. Moneda Antigua con Agujero Cuadrado Central, 03. Doblón de Pirata con Calavera de Boss Grabada.
+     - **Bloque II (Geometría & Gemas):** 04. Moneda Hexagonal Cyber-Step con Núcleo Neón, 05. Doblón con Corona Real de Tres Picos Grabada, 06. Moneda Romboidal de Tesoro Antiguo.
+     - **Bloque III (Rotación 3D & Destello):** 07. Moneda Giratoria Animada en 4 Frames (3D Spin Coin), 08. Pila de Dos Monedas de Oro en Perspectiva 2.5D, 09. Moneda con Destello de Luz Especular Parpadeante.
+     - **Bloque IV (Dragón & Reliquias):** 10. Moneda con Ojo de Dragón / Pupila Reptiliana, 11. Moneda de Doble Anillo Solar Radiante, 12. Lingote Chunky con Borde Dentado de 8 Dientes.
+
+- **feature** (completed - 20:58): Catálogo de **12 Propuestas de Ícono de Medalla en PIXEL ART** sobre la Tarjeta #11 Chunky en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Integrada la Tarjeta #11 Chunky (marco de 3px con delineado negro de 1px y condensadores pesados de $8\times 8\,\text{px}$) como chasis oficial, y diseñadas 12 medallas de 8-bits para el High Score:
+     - **Sprites de Medalla:** Matrices pixel a pixel ($11\times 11\,\text{px}$ a $14\times 14\,\text{px}$) con cintas en V, coronas, alas, cruces de hierro, calaveras doradas, laureles y destellos solares.
+     - **Bloque I (Cintas & Corona):** 01. Medalla Colgante con Cinta Bicolor en V, 02. Medallón Octagonal con Gema Neón Engarzada, 03. Medalla Imperial con Corona de Tres Picos.
+     - **Bloque II (Alas & Laureles):** 04. Medalla Alada de Ouroboros Sagrado, 05. Medalla con Corona de Laurel de la Victoria, 06. Cruz de Caballero de Mazmorra con Zafiro.
+     - **Bloque III (Mazmorra & Calavera):** 07. Medalla de Calavera Dorada de Cazador de Bosses, 08. Medalla con Cinta Militar Superior y Pasador, 09. Medalla de Escudo Heráldico Medieval.
+     - **Bloque IV (Sol & Legendarias):** 10. Medalla Solar con Ocho Rayos Radiantes, 11. Medalla de Doble Anillo con Puntos Cardinales, 12. Medalla Legendaria con Destello Especular Animado.
+
+- **feature** (completed - 20:54): Catálogo de **12 Propuestas de Tarjeta & Marco #02 en PIXEL ART PURO** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Transformación integral al formato pixel art de 8-bits puro con desactivación de suavizado (`imageSmoothingEnabled = false`):
+     - **Tipografía & Sprites:** Integrada la fuente retro `'Press Start 2P'`, moneda de oro octagonal en matriz de $10\times 10\,\text{px}$, calavera de boss de $9\times 8\,\text{px}$, estrella de récord de $9\times 9\,\text{px}$ y división escalonada en escalera a $60^\circ$.
+     - **Bloque I (Retro Arcade 8-Bit):** 01. Marco #02 Pixel Art Clásico de 8-Bits, 02. Condensadores de Esquina Escalonados en Cruz Pixel, 03. Marco con Pistas de Circuito en Ángulo Escalonado 45°.
+     - **Bloque II (Dithering & Escalares):** 04. Marco con Dithering Checkerboard en el Canal, 05. Doble Filo Escalonado en Escalera Pixelada a 45°, 06. Marco con Micro-Gemas Romboidales en Píxeles de 5x5.
+     - **Bloque III (Sprites Animados):** 07. Condensadores Animados en 4 Frames de Carga Retro, 08. Pulso de Energía en Píxeles Discretos Paso a Paso, 09. Estrella de Récord Parpadeante en 2 Frames.
+     - **Bloque IV (Chunky & Bicolor):** 10. Marco Bicolor Pixel Art (Cian Neón + Oro Noble), 11. Marco Grueso Chunky de 3 Píxeles con Contorno Negro, 12. Master Pixel Art Dungeon Card (Fusión Definitiva).
+
+- **feature** (completed - 20:39): Catálogo de **12 Variantes de Marco de Doble Filo Neón & Ranura de Energía (#09 Evolution)** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS enfocado en la arquitectura de doble filo perimetral y canales de energía/plasma con interactividad:
+     - **Control de Separación:** Slider para calibrar el ancho del canal de energía ($2\,\text{px}$ a $6\,\text{px}$).
+     - **Bloque I (Plasma & Nodos):** 01. Doble Filo Neón con Pulso de Plasma Perimetral, 02. Nodos Condensadores de Energía en las 4 Esquinas, 03. Paquete de Datos Láser Circulando a Alta Velocidad.
+     - **Bloque II (Chaflán & Cascadas):** 04. Doble Filo Escalonado a 45° (Cyber-Step Conduits), 05. Triple Filo Neón en Cascada Gradual de Luz, 06. Doble Filo con Chevrons Diagonales a 60°.
+     - **Bloque III (Circuitos & Fósforo):** 07. Pistas de Circuito PCB Intercaladas en la Ranura, 08. Micro-Scanlines de Fósforo en el Canal Intermedio, 09. Micro-Remaches de Luz Blancos Alineados.
+     - **Bloque IV (Híbrido & Brechas):** 10. Doble Filo Bicolor (Cian Neón Exterior + Oro Interior), 11. Brechas Tácticas de Aire en los Centros del Marco, 12. Doble Filo Acorazado con Conectores Laterales de Puente.
+
+- **feature** (completed - 20:36): Catálogo de **12 Propuestas de Marco Exterior y Chasis para la Tarjeta de Perfil & Récord** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 variaciones de arquitectura de bordes perimetrales, chaflanes, remaches, alas, HUD y engranajes:
+     - **Control de Grosor:** Slider para calibrar el ancho del marco ($1\,\text{px}$ a $4\,\text{px}$).
+     - **Bloque I (Cyber-Step & Blindaje):** 01. Chaflán Doble Escalonado (Cyber-Step Frame #03), 02. Bisel Acorazado con Pernos Hexagonales Allen, 03. Marco Octagonal Industrial con Asas Laterales.
+     - **Bloque II (Bestias & Alas):** 04. Cuatro Colmillos Convergentes en las Esquinas, 05. Alas de Dragón / Gárgola en los Flancos, 06. Espinas Dorsales Segmentadas en Bordes.
+     - **Bloque III (HUD & Táctica):** 07. Mirilla Reticular Táctica HUD (Target Lock-On #11), 08. Regla Milimétrica Táctica con Marcas de Calibración, 09. Marco de Doble Filo Neón con Ranura de Energía.
+     - **Bloque IV (Arcano & Relojería):** 10. Micro-Engranajes de Relojería en los Vértices (#03), 11. Marco Arcano con Gemas Romboidales Incrustadas, 12. Corona Heráldica Superior & Dock Acorazado.
+
+- **bugfix** (completed - 20:23): Corregida la firma de parámetros en `initDetailedBoneCanvas` y refinado el layout de encabezados en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Solucionado el desajuste de argumentos en `prop.draw` que causaba el canvas negro; todas las 12 tarjetas ahora renderizan fluidamente a 60 FPS con sus fósiles anatómicos, cráneos y costillas en tiempo real.
+
+- **feature** (completed - 20:19): Catálogo de **12 Propuestas de Fósil de Serpiente Detallado (Anatomía Ósea en JS)** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Implementado motor de renderizado óseo anatómico con dibujo individual de cráneos fósiles, órbitas oculares, mandíbulas, colmillos de marfil, centros vertebrales, apófisis espinosas y pares de costillas curvas con sombreado de excavación:
+     - **Control de Contraste:** Slider para calibrar el tono de marfil y la sombra profunda de excavación ($50\%$ a $100\%$).
+     - **Bloque I (Anatomía & Cráneo):** 01. Fósil Anatómico Completo de Excavación, 02. Cráneo Desarticulado Sagital con Suturas de Hueso, 03. Fósil de Cabeza y Cola con Anillas de Cascabel Óseo.
+     - **Bloque II (Costillas Curvas & Jaula):** 04. Costillas Abiertas en Abanico Torácico Profundo, 05. Jaula Torácica con Costillas Dobles Superpuestas, 06. Costillas en Flecha Inclinadas a 45° con Puntas Agudas.
+     - **Bloque III (Relieve 3D & Nichos):** 07. Fósil con Relieve Escultórico 3D de Marfil y Sombra, 08. Lecho de Excavación Arqueológica con Sedimento Oscuro, 09. Fósil Ouroboros Circular Detallado (Devorando la Cola).
+     - **Bloque IV (Física IK & Médula):** 10. Fósil Articulado Reactivo al Cursor (Cinemática Ósea), 11. Médula Espinal con Pulso Lumínico Continuo, 12. Fósil de Cuarzo y Hueso con Refracción en Hover.
+
+- **feature** (completed - 20:17): Catálogo de **12 Modelos y Algoritmos de Serpiente Procedural en JavaScript** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo de física, cinemática y animación de serpientes en JS puro a 60 FPS con soporte para interacciones con ratón y click:
+     - **Control de Velocidad:** Slider dinámico para calibrar la velocidad de actualización física en tiempo real ($1\times$ a $5\times$).
+     - **Bloque I (Cinemática & Física):** 01. Cinemática Inversa Articulada (Follow-the-Leader), 02. Locomoción por Onda Senoidal Continua Dinámica, 03. Serpiente Elástica con Tensión de Muelle (Spring Physics).
+     - **Bloque II (IA & Ataques):** 04. Serpiente Autónoma con IA de Patrullaje (Wander Steering), 05. Cobra en Enrosque con Ataque al Click (Click-to-Strike), 06. Serpiente Depredadora Persiguiendo Monedas Flotantes.
+     - **Bloque III (Mecánico & Geometría):** 07. Serpiente de Relojería con Micro-Engranajes en Juntas, 08. Ouroboros Infinito Giratorio en Bucle Continuo, 09. Serpiente Tron Celular en Cuadrícula Discreta.
+     - **Bloque IV (Plasma & Cristal):** 10. Serpiente de Plasma con Estela de Fuego Neón, 11. Serpiente de Relámpago y Descargas Fractales, 12. Fósil de Cristal Volcánico con Refracción Cromática.
+
+- **feature** (completed - 20:06): Catálogo de **12 Propuestas de Fósil de Serpiente 100% PROCEDURAL** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Eliminada la dependencia de imágenes estáticas externas; implementado motor de renderizado 100% matemático procedural a 60 FPS:
+     - **Control de Amplitud:** Slider dinámico para ajustar la altura de ondulación de la columna ($2\,\text{px}$ a $18\,\text{px}$).
+     - **Bloque I (Senoidales & Curvas):** 01. Fósil Senoidal Progresivo (Cálculo Puro x, y(x)), 02. Doble Columna Vertebral Entrelazada de Hidra, 03. Fósil Sinuoso en Curva S Central Compacto.
+     - **Bloque II (Costillas & Mandíbula):** 04. Mandíbula de Víbora Articulada que se Abre en Hover, 05. Costillas Curvas en Arco Parabólico, 06. Costillas Inclinadas a 45° Estilo Pescado / Anguila.
+     - **Bloque III (Geometría & Hexágonos):** 07. Fósil Ouroboros Infinito Procedural (Lemniscata), 08. Vértebras Hexagonales Blindadas de Titanio, 09. Fósil Circundante Envolvente del Avatar de Perfil.
+     - **Bloque IV (Energía & Partículas):** 10. Tren de Ondas de Luz Progresivo por las Vértebras, 11. Disipación de Polvo Espectral desde las Costillas, 12. Fósil Reactivo al Cursor (Inverse Kinematics).
+
+- **feature** (completed - 20:03): Generada e integrada la textura **Pixel Art Novato (`snake_novice_pixelart.jpg`)** en las 12 tarjetas de `tools/menu_button_proposals.html`:
+  1. `tools/assets/snake_novice_pixelart.jpg`: Textura de estilo 8-bit/16-bit minimalista con ladrillos simples, líneas de mortero cian nítidas y un esqueleto fósil de serpiente encantador y limpio.
+  2. `tools/menu_button_proposals.html`: Integrada la imagen directamente en el fondo de las 12 propuestas con diferentes tratamientos (Cortes a 60°, Modos de Fusión, Tinte Monocromático, Viñeta, Mortero Reactivo, Scanlines y Parallax).
+
+- **feature** (completed - 19:55): Integración y Previsualización de **Fósil de Serpiente en Piedra (Modo Pixel Art Limpio)** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Incorporado banner con la imagen de textura generada `assets/snake_fossil_pixelart.jpg` y 12 variaciones de integración procedural en Canvas a 60 FPS:
+     - **Control de Opacidad:** Slider dinámico para ajustar la visibilidad del fósil (10% a 100%).
+     - **Bloque I (Fósil Central):** 01. Fósil Sinuoso en Curva S Central Limpio, 02. Fósil con Cráneo Reactivo y Costillas Espaciadas, 03. Fósil en Relieve de Piedra Oscura con Sombra Pixel.
+     - **Bloque II (Fósiles en Flancos):** 04. Fósil Serpenteante en Flanco Izquierdo del Avatar, 05. Fósil Ouroboros Circular en Panel Derecho, 06. Doble Fósil Simétrico en los Dos Extremos.
+     - **Bloque III (Costillas Horizontales):** 07. Eje Vertebral Horizontal Recorriendo Toda la Tarjeta, 08. Doble Banda de Costillas Fósiles Arriba y Abajo, 09. Costillas Fósiles Diagonales Siguiendo el Corte a 60°.
+     - **Bloque IV (Pulso & Sprite Baking):** 10. Fósil con Pulso de Energía Progresivo a 60 FPS, 11. Fósil con Mortero de Bioluminiscencia Esmeralda, 12. Fósil Integrado con la Imagen Pixel Art Generada.
+
+- **feature** (completed - 19:53): Generadas **3 Propuestas Visuales en Imagen** para la Textura de Fondo de Piedra & Serpiente:
+  1. `snake_stone_tiles`: Muro de sillería de obsidiana con ondas sinuosas de cuerpo de serpiente, escamas diamantinas y juntas de mortero con resplandor neón cian/esmeralda.
+  2. `snake_fossil_masonry`: Mampostería de basalto ancestral con relieve de esqueleto fósil de serpiente gigante, costillas labradas y musgo bioluminiscente en las grietas.
+  3. `serpent_ouroboros_blocks`: Pared de sillería labrada con relieve central de doble dragón/serpiente Ouroboros entrelazado en nudo infinito y halo de energía neón.
+
+- **feature** (completed - 19:50): Catálogo de **12 Propuestas de Texturas de Piedra con Formas y Motivos de Serpiente** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 texturas de sillería de piedra inspiradas en la anatomía y silueta de la víbora:
+     - **Bloque I (Curvas & Ondulaciones):** 01. Ladrillos en Ondulaciones de Serpiente (Sinuous Waves), 02. Surcos de Deslizamiento de Víbora, 03. Espirales Concéntricas de Cobra en Reposo.
+     - **Bloque II (Escamas & Cascabel):** 04. Sillería de Placas Ventrales de Víbora, 05. Patrón de Cascabel Diamantina en Piedra (Diamondback), 06. Ladrillos con Escamas Dorsales Superpuestas.
+     - **Bloque III (Costillas & Colmillos):** 07. Muro con Costillas y Vértebras de Serpiente Fósil, 08. Sillería de Colmillos Entrecruzados (Interlocking Fangs), 09. Bloques Esculpidos con Cabeza y Cola de Víbora.
+     - **Bloque IV (Ouroboros & Mítico):** 10. Ladrillos de Doble Ouroboros Entrelazado (Infinito), 11. Mosaico de Micro-Serpientes Teseladas (Escher Style), 12. Piedra de Hidra con Grietas en Cabeza de Serpiente.
+
+- **feature** (completed - 19:49): Catálogo de **12 Propuestas de Texturas de Piedra, Sillería & Ladrillos de Mazmorra** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 variaciones especializadas de mampostería, bloques de sillería y losas de cripta:
+     - **Bloque I (Sillería & Adoquines):** 01. Sillería Clásica con Bisel en Cada Bloque, 02. Pavimento de Piedras Irregulares de Cripta, 03. Mampostería de Granito Bicolor en Contraste.
+     - **Bloque II (Grietas de Neón & Runas):** 04. Piedra Ancestral con Grietas de Neón Luminoso, 05. Ladrillos Rúnicos Grabados en Cada Bloque, 06. Bloques de Mazmorra con Sarcófago Grabado.
+     - **Bloque III (Obsidiana & Megalitos):** 07. Bloques de Obsidiana Pulida con Bisel Reflectivo, 08. Bloques Megalíticos con Grapas de Hierro Forjado, 09. Muro de Mazmorra con Relieve de Grilletes y Cadenas.
+     - **Bloque IV (Herringbone & Musgo):** 10. Adoquines en Espina de Pez (Herringbone Stone), 11. Ladrillos de Mazmorra con Musgo Bioluminiscente, 12. Adoquines Arqueados Concéntricos (Radial Cobble).
+
+- **feature** (completed - 19:48): Catálogo de **12 Propuestas de Textura de Fondo** (Tarjeta Perfil & Récord a 60°) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 texturas y acabados superficiales de fondo aplicados sobre la tarjeta unificada:
+     - **Bloque I (Reptil & Mazmorra):** 01. Zarpazos de Hidra a 45° en Bajorrelieve (#06), 02. Malla de Micro-Escamas Romboidales de Víbora, 03. Bloques de Sillería de Piedra de Cripta.
+     - **Bloque II (Metal & Carbono):** 04. Placa de Acero Carbono Martillado, 05. Metal Cepillado con Reflejo Anisotrópico, 06. Chevrons de Acorazamiento Escalonados.
+     - **Bloque III (Grid & Circuitos):** 07. Cuadrícula Táctica Milimétrica (Blueprint Grid), 08. Pistas de Circuito PCB & Nodos de Oro, 09. Hexágonos en Panal de Abeja Blindado.
+     - **Bloque IV (Líneas & Runas):** 10. Isolíneas de Topografía de Mazmorra, 11. Micro-Runas Nórdicas en Penumbra, 12. Scanlines de Fósforo CRT y Ruido Analógico.
+
+- **feature** (completed - 19:47): Catálogo de **12 Propuestas de Micro-Detalles Internos** (Tarjeta Perfil + Récord a 60°) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 variaciones de micro-detalles de alta precisión sobre la composición con divisor diagonal a 60° y barra de 5 celdas:
+     - **Bloque I (Celdas & Calaveras):** 01. Micro-Calavera de Jefe en Celda 5 & Pulso de Celda, 02. Separadores de Luz Neón de 1px entre Celdas, 03. Puntos LED Diamante sobre Cada Celda.
+     - **Bloque II (Iconos & Estrellas):** 04. Moneda 3D Rotatoria con Brillo Especular, 05. Micro-Estrella de 5 Puntas en Encabezado de Récord, 06. Chevrons de Rango Militar junto al Nombre.
+     - **Bloque III (Textura & Remaches):** 07. Micro-Scanlines Tácticas en Panel Izquierdo, 08. Micro-Remaches de Titanio en Vértices de la Diagonal, 09. Bisel Interior Doble con Filo Especular de 1px.
+     - **Bloque IV (FX & Tipografía):** 10. Tipografía Digital de 7 Segmentos para el Récord, 11. Chispas de Polvo Dorado en Hover sobre el Récord, 12. Micro-Medidor de Bio-Energía bajo el Nombre.
+
+- **feature** (completed - 19:44): Catálogo de **12 Propuestas de Macro-Detalles Interiores** (Base Diagonal a 60°) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 variaciones de macro-detalles e iconografía sobre el diseño con divisor sesgado a 60°:
+     - **Bloque I (Sellos & Coronas):** 01. Sello de Cera Imperial 3D & Estrella, 02. Corona Heráldica de Tres Picos, 03. Cinta Diagonal de Honor.
+     - **Bloque II (Bestias & Colmillos):** 04. Colmillos de Víbora Abrazando el Divisor, 05. Micro-Ojo de Víbora Reactivo, 06. Zarpazos de Hidra Transversales.
+     - **Bloque III (Táctica & HUD):** 07. Corchetes de Francotirador Lock-On, 08. Pernos Allen de Titanio & Ventilación, 09. Scanner de Bio-Signos & ADN.
+     - **Bloque IV (Recursos & Logros):** 10. Micro-Engranaje de Relojería Custodiando Monedas, 11. Módulo de Logros con Tres Gemas, 12. Barra de Progreso de Mazmorra en 5 Celdas Neón.
+
+- **feature** (completed - 19:43): Catálogo de **12 Propuestas de Diseño Interno para la Tarjeta de Perfil & Récord** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 variaciones de arquitectura y distribución interna para la Tarjeta #01 (Placa de Identificación & Sello):
+     - **Bloque I (Biseles & Nichos):** 01. Doble Nicho Octagonal con Bisel de Neón, 02. Bisel Escalonado Cyber-Step Interior, 03. Doble Cámara Acorazada con Biseles de Titanio.
+     - **Bloque II (Zarpazos & Vértebras):** 04. Fondo de Zarpazos de Hidra y Chevrons, 05. Columna Vertebral de Serpiente como Divisor, 06. Malla de Escamas Romboidales en Relieve.
+     - **Bloque III (Grid Táctica & PCB):** 07. Cuadrícula Táctica con Micro-Scanlines, 08. Pistas de Circuito PCB Doradas, 09. Divisor Diagonal Dinámico a 60°.
+     - **Bloque IV (Layouts & Docks):** 10. Dock de Estatus Inferior Integrado, 11. Nicho Central con Pilares de Mazmorra, 12. Runas de Forja Ancestral en Fondo.
+
+- **feature** (completed - 19:42): Selección de la **Tarjeta Combinada #01 (Placa de Identificación & Sello de Oro)**:
+  1. `tools/menu_button_proposals.html`: Aprobado el diseño base de la Tarjeta #01 para Perfil + High Score:
+     - **Panel Izquierdo (Identidad & Recursos):** Avatar de serpiente en marco reforzado, nombre de perfil editable, contador de monedas de oro y etapa máxima.
+     - **Panel Derecho (Gloria & Récord):** Sello dorado de cera/medalla con estrella central y cifra de High Score en alta visibilidad.
+     - **Chasis:** Placa metálica blindada con divisor luminoso y remaches.
+
+- **feature** (completed - 19:39): Catálogo de **15 Propuestas Combinadas de Tarjeta de Perfil de Jugador + Récord High Score** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 15 diseños integrados que unifican el nombre/avatar del perfil activo, las monedas acumuladas, el progreso de etapa y el récord de puntuación máxima:
+     - **Bloque I (Placas & Blasón Militar):** 01. Placa de Identificación & Sello de Oro, 02. Escudo Heráldico & Laurel, 03. Cartel de Recompensa (Wanted Plaque), 04. Relicario de Cripta con Sello de Titanio.
+     - **Bloque II (Cyber-HUD & Chips):** 05. Terminal Holográfica de Explorador HUD, 06. Tarjeta de Datos PCB Ciberpunk, 07. Scanner de ADN de Serpiente, 08. Matriz de Celdas Hexagonales.
+     - **Bloque III (Tesorería & Grimorio):** 09. Cofre del Tesoro con Calavera de Oro, 10. Tomo / Grimorio de Hazañas Ancestrales, 11. Altar de Cristal de Almas, 12. Moneda Conmemorativa de Alta Mazmorra.
+     - **Bloque IV (Criaturas & Ouroboros):** 13. Placa de Piel de Hidra y Colmillos, 14. Gema Ojo de Dragón con Pedestal, 15. Insignia Ouroboros de Victoria Infinita.
+
+- **feature** (completed - 19:33): Catálogo de **15 Propuestas de Remates y Acentos en las Esquinas del Chasis Cyber-Step** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 15 variaciones de remates y micro-efectos para las esquinas del botón, manteniendo el chasis Cyber-Step #03, los zarpazos de hidra #06, el Rombo #06 con cuatro colmillos, los micro-engranajes #03 y la mirilla HUD #11:
+     - **Bloque I (Mecánico & Blindaje):** 01. Micro-Cuadros Neón Sólidos, 02. Pernos Allen Hexagonales, 03. Corchetes Angulares L-Shield, 04. Remaches de Cobre Quemado.
+     - **Bloque II (Cyber-HUD & LEDs):** 05. Micro-LEDs de Estado Titilantes, 06. Pistas de Circuito en Esquina, 07. Doble Ranura de Neón, 08. Chispas de Arco Eléctrico.
+     - **Bloque III (Gemas & Runas):** 09. Diamante Micro-Gema, 10. Runas Arcanas Esquinadas, 11. Espolones / Colmillos de Acero, 12. Cuña Biselada de Titanio.
+     - **Bloque IV (Táctico & Muescas):** 13. Muescas de Calibración Táctica, 14. Chevrons de Flujo / Flechas Inward, 15. Cremallera de Dientes Escalonados.
+
+- **feature** (completed - 19:32): Selección del **Rombo Central #06 (Cuatro Colmillos Convergentes)**:
+  1. `tools/menu_button_proposals.html`: Aprobado el diseño del Rombo #06 para el enmarcado del Ojo de Víbora:
+     - **Geometría del Rombo:** Marco biselado cian/azul con cuatro colmillos de marfil afilados en los vértices apuntando hacia el ojo.
+     - **Estratificación:** El ojo de víbora queda contenido dentro de la cuenca oscura (delante del fondo y detrás del borde azul y los colmillos).
+
+- **feature** (completed - 19:27): Catálogo de **20 Propuestas de Diseño para el Rombo Central** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 20 variaciones de rombo que enmarcan el ojo de víbora manteniendo el chasis Cyber-Step #03, los zarpazos de hidra #06, los micro-engranajes #03 y la mirilla HUD #11:
+     - **Bloque I (Geometría & Gótico):** 01. Doble Escalonado de Mazmorra, 02. Alado / Ojo de Horus, 03. Facetado en 4 Cuadrantes, 04. Rosetón Romboide Gótico, 05. Círculo de Transmutación.
+     - **Bloque II (Anatomía & Víbora):** 06. Cuatro Colmillos Convergentes, 07. Escamas de Queratina, 08. Ouroboros de Doble Cabeza, 09. Mandíbula Articulada, 10. Costillas de Dragón.
+     - **Bloque III (Cyber-HUD & Táctica):** 11. Retícula de Francotirador, 12. Pistas de Circuito PCB, 13. Doble Cátodo de Neón, 14. Corchetes L-Bracket, 15. Matriz de Micro-LEDs.
+     - **Bloque IV (Forja & Reliquias):** 16. Runas Nórdicas Grabadas, 17. Hierro Forjado con Clavos, 18. Cadenas Entrelazadas, 19. Relicario Sagrado de Cristal, 20. Corona Imperial Quebrada.
+
+- **fix** (completed - 19:22): Corrección de recorte por Canvas en `ui/menuUI.lua`:
+  1. `ui/menuUI.lua`: Reemplazado `love.graphics.stencil` por `love.graphics.setScissor` para evitar el error de ausencia de stencil buffer en el pipeline de renderizado de `sceneCanvas`, manteniendo el ojo de víbora perfectamente recortado dentro del rombo (delante del fondo oscuro y detrás del borde azul).
+  2. `love . --test`: Verificación de ejecución exitosa con 0 errores a 60 FPS.
+
+- **polish** (completed - 19:21): Ajuste de estratificación del Ojo de Víbora en `ui/menuUI.lua`:
+  1. `ui/menuUI.lua`: Configurado el renderizado en capas exacto para el rombo central de los botones:
+     - **Capa Base:** Fondo oscuro del rombo (`polygon('fill')`).
+     - **Capa Intermedia:** El Ojo (`ui.eyeIrisTexture`) renderizado **delante del fondo del rombo**, recortado con máscara `stencil` para que nunca desborde la geometría del rombo.
+     - **Capa Superior:** El **borde azul/cian del rombo** (`polygon('line')`) y la línea de contacto de párpado, asegurando que el ojo quede estrictamente **detrás del borde azul**.
+  2. `love . --test`: Verificación de ejecución exitosa con 0 errores a 60 FPS.
+
+- **polish** (completed - 19:18): Ajuste de capa para `assets/ui_eye_iris.png` en `ui/menuUI.lua`:
+  1. `ui/menuUI.lua`: Reordenada la jerarquía de renderizado en capas del Ojo de Víbora para que `ui.eyeIrisTexture` se dibuje en la capa interior profunda, quedando enmarcado y contenido por debajo del marco de la cuenca ocular, de la línea de contacto de párpados, de la mirilla HUD Lock-On (#11) y del texto del botón.
+
+- **feature** (completed - 19:15): Implementación de la **Opción A (Sprite Baking en Imágenes PNG)** para Botones de Menú:
+  1. `scripts/generate_ui_sprites.py`: Generador en Python con Pillow para rasterizar a nivel de píxel los sprites PNG optimizados:
+     - `assets/ui_button_normal.png` (276x48, 694 B): Placa base Cyber-Step #03 con zarpazos de hidra #06 y sombra proyectada.
+     - `assets/ui_button_hover.png` (276x48, 681 B): Placa en estado Hover con borde cian brillante e iluminación de zarpazos.
+     - `assets/ui_button_press.png` (276x48, 695 B): Placa en estado Pressed con desplazamiento de sombra.
+     - `assets/ui_gear_node.png` (24x24, 275 B): Micro-engranaje mecánico de 6 facetas con eje central para rotación en GPU.
+     - `assets/ui_reticle_corner.png` (12x12, 93 B): Corchetes de mirilla HUD Lock-On (#11).
+     - `assets/ui_eye_iris.png` (28x28, 443 B): Iris estriado de víbora con pupila vertical y doble reflejo corneal.
+  2. `ui/ui.lua` & `ui/menuUI.lua`: Carga con `pcall` y renderizado ultra-rápido en 1 draw call con rotación dinámica de engranajes y seguimiento ocular en tiempo real.
+  3. `love . --test`: Verificación de ejecución exitosa con 0 errores.
+
+- **feature** (completed - 15:40): Integración del **Diseño Maestro Definitivo del Botón** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Consolidación de todas las elecciones del usuario en un expositor interactivo a 60 FPS con controles completos de paleta y animación:
+     - **Chasis / Silueta:** *Forma #03 Cyber-Step* (Chaflán doble escalonado en 2 niveles de 3px x 3px).
+     - **Núcleo Central:** *Ojo de Víbora Holográfico* (Parpadeo continuo suave de párpados en arco cada 3.5s + Eye-Tracking hacia el cursor del ratón en tiempo real + pupila vertical rasgada).
+     - **Fondo Interior:** *Fondo #06 Zarpazos de Hidra* (Tres marcas de garras con iluminación y relieve).
+     - **Nodos Laterales:** *Nodos #03 Micro-Engranajes Mecánicos* (Ruedas dentadas de 6 facetas que rotan con el cursor).
+     - **Efecto Hover:** *Hover #11 Mirilla Reticular HUD Lock-On* (4 corchetes angulares de francotirador que se cierran suavemente sobre el ojo al pasar el ratón).
+
+- **feature** (completed - 15:39): Catálogo de **12 Propuestas de Efectos Hover** (Forma #03 Cyber-Step + Ojo Intacto + Zarpazos #06 + Engranajes #03) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 12 comportamientos dinámicos al pasar el ratón:
+     - 01. *Serpientes de Plasma Rápido + Giro Overdrive* (Serpientes a 260px/s con lengua bífida y engranajes a 3x).
+     - 02. *Furia Depredadora + Sobrecarga de Zarpazos* (Contracción agresiva de pupila y zarpazos blancos incandescentes).
+     - 03. *Escaneo Láser Bidireccional* (Fina línea vertical láser de 1px que barre el botón de lado a lado).
+     - 04. *Onda de Choque Sísmica Concéntrica* (Pulsos de energía elíptica expandidos desde el ojo).
+     - 05. *Glitch Cibernético & Desfase RGB* (Bandas de ruido horizontal con aberración cromática).
+     - 06. *Vórtice de Partículas de Mana* (6 micro-orbes en órbita elíptica alrededor de la cuenca ocular).
+     - 07. *Supercalentamiento de Forja Térmica* (Gradiente radial de metal al rojo vivo incandescente).
+     - 08. *Apertura Mecánica y Válvula de Presión* (Engranajes que avanzan 3px hacia el exterior del chasis).
+     - 09. *Arcos Eléctricos Tesla* (Rayos que saltan intermitentemente entre los engranajes y el ojo).
+     - 10. *Aura de Sombras Espectrales & Fuego Fatuo* (Niebla oscura flotante con flamas azuladas).
+     - 11. *Matriz HUD Táctica con Mirilla Reticular* (Corchetes de encuadre angular de francotirador lock-on).
+     - 12. *Destello Prismático Iridiscente a 45°* (Haz de brillo líquido que recorre la placa).
+
+- **feature** (completed - 15:37): Catálogo de **10 Nuevas Propuestas de Nodos Laterales (Serie II)** (Forma #03 Cyber-Step + Ojo Intacto + Zarpazos de Hidra #06) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Implementación de 10 alternativas adicionales de nodos laterales a 60 FPS:
+     - 01. *Puntas de Flecha de Obsidiana* (Triángulos de sílex negro volcánico con aristas de cristal blanco).
+     - 02. *Gemas Ovaladas en Engarce de Garra* (Gemas elípticas engarzadas por 4 micro-garras de titanio).
+     - 03. *Micro-Engranajes de Relojería* (Ruedas dentadas de 6 dientes que rotan en Hover).
+     - 04. *Relámpagos en Zig-Zag (Angular Shock)* (Descargas de rayo en Z con energía cinética).
+     - 05. *Flor de Lis Gótica Heráldica* (Tridente imperial de 3 pétalos góticos de la realeza).
+     - 06. *Cristales de Cuarzo Gemelos en V* (Dos agujas de cristal prismático divergentes con brillo cian).
+     - 07. *Broquel Romboidal con Cruz Templaria* (Escudo de acero en rombo con cruz grabada en el centro).
+     - 08. *Foco Emisor de Láser Cibernético* (Lente colimadora con punto de mira infrarroja pulsante).
+     - 09. *Gotas de Veneno en Suspensión Líquida* (Gotas en forma de lágrima invertida con destello especular).
+     - 10. *Ojo de Cerradura Ornamental Esqueleto* (Bocallave gótica de bronce con luz mística interna).
+
+- **feature** (completed - 15:35): Catálogo de **12 Propuestas de Nodos Laterales** (Forma #03 Cyber-Step + Ojo Intacto + Zarpazos de Hidra #06) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Implementación de 12 alternativas para reemplazar los diamantes romboidales laterales a 60 FPS:
+     - 01. *Colmillos de Víbora de Marfil* (Micro-colmillos afilados curvados con gota de veneno neón).
+     - 02. *Pernos Hexagonales de Titanio Blindado* (Tuercas mecánicas de 6 facetas con ranura y brillo).
+     - 03. *Micro-Cráneos de Serpiente* (Calaveras talladas en bajo relieve con ojos titilantes en Hover).
+     - 04. *Sigilos Rúnicos Arcanos `ᛟ` y `ᛋ`* (Runas nórdicas ancestrales grabadas).
+     - 05. *Orbes de Plasma Esféricos 3D* (Esferas de energía con gradiente radial y resplandor).
+     - 06. *Doble Chevron Angular `<<` y `>>`* (Flechas tácticas direccionales hacia el centro).
+     - 07. *Empuñaduras de Dagas Medievales* (Crucetas con guardamanos y pomo dorado).
+     - 08. *Micro-Ouroboros Anulares* (Aros de serpiente devorándose la cola).
+     - 09. *Micro-LEDs de Telemetría Táctica* (Columna vertical de 3 LEDs de estado).
+     - 10. *Garras de Dragón de Tres Puntas* (Tridentes afilados curvados hacia el interior).
+     - 11. *Reloj de Arena / Crux de Mazmorra* (Silueta en X con faceta central).
+     - 12. *Monedas de Oro Imperial con Relieve* (Medallones antiguos con escudo de cobra grabado).
+
+- **feature** (completed - 15:33): Catálogo de **10 Propuestas de Silueta y Forma de Botón** (Ojo Intacto + Zarpazos de Hidra #06) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Implementación de 10 geometrías y siluetas exteriores para la placa del botón a 60 FPS, manteniendo el Ojo de Víbora intacto (parpadeo automático, tracking ocular y pupilas rasgadas), el Fondo #06 de Zarpazos de Hidra, gemas romboidales y serpientes patrulleras:
+     - 01. *Octagonal de Chaflán Clásico (45°)* (Chaflán limpio de 6px con pips de esquina rectos).
+     - 02. *Puntas Chevron / Colmillos Extremos* (Extremos laterales en punta angular hacia afuera `< ===== >`).
+     - 03. *Chaflán Doble Escalonado (Cyber-Step)* (Recorte en dos niveles de 3px x 3px estilo búnker).
+     - 04. *Romboide Hexagonal / Diamante Elongado* (Punta superior e inferior en V que enmarcan el ojo).
+     - 05. *Alas Angulares de Gárgola* (Aletas superiores proyectadas hacia arriba).
+     - 06. *Cápsula Ojival Gótica* (Laterales en arco semicircular ojival).
+     - 07. *Chasis de Placa con Muescas Dentadas* (Entalladuras perimetrales que abrazan la cuenca ocular).
+     - 08. *Trapezoide Invertido con Bisel Agresivo* (Borde superior ancho con chaflán profundo de 8px).
+     - 09. *Escudo Heráldico de Armas (V-Crest)* (Punta inferior central en V de escudo de mazmorra).
+     - 10. *Cintura Entallada de Víbora (Concave Waist)* (Curvatura cóncava lateral con capuchas de cobra en las gemas).
+
+- **feature** (completed - 15:29): Catálogo de **50 Propuestas de Fondo Procedural con el Ojo de Víbora Intacto** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Taller interactivo a 60 FPS con 50 tratamientos de fondo únicos divididos en 5 bloques temáticos (Reptil & Orgánico, Forja & Catacumbas, Arcano & Magia, Cyber & Arcade HUD, Biomas & Tesorería), **reproduciendo en cada una de las 50 propuestas el Ojo de Víbora intacto** con parpadeo automático suave, seguimiento ocular del ratón (Eye-Tracking), pupilas rasgadas y reflejos corneales.
+
+- **feature** (completed - 15:28): Restauración del **Ojo de Víbora Holográfico con Parpadeo Procedural y Eye-Tracking** en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Reestablecido el diseño principal centrado en el Ojo de Víbora intacto a 60 FPS con parpadeo automático cada 3.5s, dilatación de pupila, seguimiento ocular reactivo hacia el ratón, serpientes patrulleras con lengua bífida y gemas laterales.
+
+- **feature** (completed - 15:27): Catálogo Maestro de **50 Propuestas de Diseño de Botón** en HTML5 Canvas (`tools/menu_button_proposals.html`):
+  1. `tools/menu_button_proposals.html`: Taller interactivo organizado en 5 bloques temáticos de 10 variantes cada uno, con renderizado a 60 FPS, filtrado por categorías, buscador por texto, selector de 5 paletas y soporte de interacción con ratón (hover/click):
+     - **Bloque I: Reptil, Dragón & Anatomía Orgánica (01-10):** Muda de piel, colmillos de basilisco, placa dorsal de estegodragón, caparazón de tortuga dragón, venas de veneno fluorescente, garras de hidra, aliento ígneo, ouroboros infinito, piel de cocodrilo y nido de huevos de cristal.
+     - **Bloque II: Forja Medieval & Catacumbas Góticas (11-20):** Hierro damasco, cota de malla, bisagras de cofre, espadas cruzadas, vitral de catedral, lápidas con cadenas, cerradura de jefe, rastrillo de calabozo, corona quebrada y yunque alquímico.
+     - **Bloque III: Arcano, Magia & Runas Astrales (21-30):** Círculo de transmutación, constelación de serpiente, cristal de mana, portal del vacío, runas nórdicas, fuego fatuo, pergamino quemado, arco tesla, eclipse sangriento y reloj cósmico.
+     - **Bloque IV: Cyber-Arcade & HUD Sci-Fi (31-40):** Wireframe grid 3D, glitch VHS, matriz LED 50x8, sonar 360°, batería de plasma, terminal de fósforo, microchip de silicio, mira de sniper, osciloscopio 60Hz y tubos Nixie.
+     - **Bloque V: Piedra Ancestral, Biomas & Tesorería (41-50):** Ladrillos con musgo, fisuras de lava, carámbanos glaciales, monedas de oro, arenisca del desierto, cueva fúngica, astillas de obsidiana, raíces milenarias, agua subterránea y materia oscura líquida.
+
+- **polish** (completed - 15:26): Mejoras en el **Fondo de Botón Procedural** (Ojo de Víbora #01 Intacto) en `tools/menu_button_proposals.html`:
+  1. `tools/menu_button_proposals.html`: Preservado al 100% el renderizado del Ojo de Víbora (parpadeo natural cada 4s, dilatación de pupila, seguimiento ocular hacia el cursor y reflejos corneales) mientras se modelaron 3 tratamientos de fondo:
+     - **Fondo 1 (Destacado - Obsidiana & Escamas en Abanico):** Halo místico radial detrás del ojo con respiración senoidal, vetas de escamas que nacen de los lados del ojo en degradado hacia los extremos y micro-scanlines.
+     - **Fondo 2 (Acero de Mazmorra & Doble Riel):** Dos finas ranuras horizontales de luz con gradiente cenital y micro-remaches de fijación en 4 esquinas.
+     - **Fondo 3 (Cristal del Vacío & Sigilos Rúnicos):** Sigilos tallados en bajo relieve (`ᛟ` y `ᛋ`) a los lados del ojo y micro-aristas de cristal facetado.
+
+- **feature** (completed - 15:24): Implementación del **Ojo de Víbora Holográfico con Parpadeo Procedural** y Seguimiento de Ratón (`tools/menu_button_proposals.html`):
+  1. `tools/menu_button_proposals.html`: Evolución de la Propuesta #07 a un laboratorio con 3 variantes interactivas a 60 FPS:
+     - **Parpadeo Procedural Natural:** Animación de cierre suave de párpados en arco (`Math.sin(norm * Math.PI)`) cada ~4s o mediante el botón de forzar parpadeo (`⚡ Forzar Parpadeo`).
+     - **Seguimiento Ocular en Tiempo Real (Mouse Tracking):** El iris y la pupila rasgada miran hacia las coordenadas del cursor del ratón con limitador elíptico.
+     - **Variante A (Clásica & Párpados 3D):** Párpados en arco, iris circular con fibras de gradiente, pupila vertical rasgada y doble reflejo corneal blanco.
+     - **Variante B (Arcana & Membrana Nictitante):** Tercer párpado diagonal translúcido de reptil y escamas peri-oculares.
+     - **Variante C (Cibernética & Calibración):** Obturador mecánico de 4 láminas con retícula HUD y anillos concéntricos.
+
+- **feature** (completed - 15:21): Implementación de **12 Propuestas de Diseño Interno** para botones en el taller interactivo HTML (`tools/menu_button_proposals.html`):
+  1. `tools/menu_button_proposals.html`: Catálogo interactivo a 60 FPS con 12 variantes de textura interna en tiempo real:
+     - 01. *Escamas Hexagonales de Dragón* (Malla de panal en bajo relieve con reflejo iridiscente).
+     - 02. *Pistas PCB & Runas Alquímicas* (Circuitos arcanos con micro-matriz de LEDs titilantes).
+     - 03. *Doble Runa de Veneno & Colmillos* (Glifos de víbora angulares a los lados del texto).
+     - 04. *Rejilla CRT & Micro-Fósforo* (Scanlines arcade densas de 2px con trama de cátodo).
+     - 05. *Blindaje de Placas de Titanio* (3 paneles horizontales con remaches de acero biselados).
+     - 06. *Espectro de Frecuencia / Audio VU* (Barras ecualizadoras neón danzantes).
+     - 07. *Ojo de Víbora Holográfico* (Iris estriado circular con pupila rasgada reactiva).
+     - 08. *Prisma de Cristal Astral* (Triángulos de refracción geométrica sagrada).
+     - 09. *Radar Táctico / Sonar de Mazmorra* (Ondas concéntricas con barrido rotatorio).
+     - 10. *Filigrana de Acero Gótico* (Arcos ojivales entrelazados con espinas de catedral).
+     - 11. *Célula de Fusión & Plasma Líquido* (Ondas fluidas continuas de alta energía).
+     - 12. *Costillas de Serpiente Ancestral* (Arcos óseos con espina dorsal central).
+
+- **feature** (completed - 15:19): Ampliación del **Laboratorio Interactivo de Botones en HTML5** (`tools/menu_button_proposals.html`):
+  1. `tools/menu_button_proposals.html`: Creado un taller interactivo autónomo con barra de controles en tiempo real:
+     - Selector de 4 paletas dinámicas (Cian Neón, Oro & Dragón, Amatista del Vacío, Veneno Esmeralda).
+     - Control deslizante de velocidad de serpiente (80 a 320 px/s).
+     - Emisor de partículas/chispas de energía mágica en hover con decaimiento alfa.
+     - Brillo especular dinámico con gradiente radial que rastrea la posición $X$ del ratón en tiempo real.
+     - Animación de **lengua bífida de serpiente** parpadeante (`tongue flick`) en la cabeza de las serpientes superior e inferior.
+     - Vetas de escamas en bajo relieve, gemas facetadas en 4 tonos con rayos en cruz y brackets con colmillos de víbora.
+
+- **feature** (completed - 15:17): Implementación de la **Serpiente Procedural Deslizante en Hover** y detalles arcanos en botones del Menú Principal:
+  1. `ui/menuUI.lua`: Animación activa en `Hover` con dos serpientes de luz simétricas deslizándose en tiempo real a $160\,\text{px/s}$:
+     - Borde superior: Serpiente cian deslizándose de izquierda a derecha con cabeza luminosa, ojos y 6 segmentos de cola con oscilación senoidal ondulante (`math.sin(t * 18 + seg * 0.8)`).
+     - Borde inferior: Serpiente en contra-flujo deslizándose de derecha a izquierda.
+     - Detalles adicionales: Vetas de micro-escamas/chevrons de serpiente en bajo relieve, destellos en cruz en las gemas y muescas de colmillos en los brackets laterales.
+  2. `tools/menu_button_proposals.html`: Actualizado el visor HTML5 interactivo con la animación de serpiente en bordes a 60 FPS.
+
+- **polish** (completed - 15:15): Enriquecimiento del **Diseño Interno Procedural** para los botones del Menú Principal:
+  1. `ui/menuUI.lua`: Añadidas gemas gemelas romboidales en 4 facetas cian (`x+18` y `x+w-18`) con montura oscura y destello blanco en hover, micro-scanlines tácticas horizontales de baja opacidad (`scanAlpha`) y bisel interior concéntrico octagonal.
+  2. `tools/menu_button_proposals.html`: Actualizadas las 3 propuestas interactivas con ricos detalles internos (gemas en Propuesta 1, paneles 3D y remaches en Propuesta 2, pistas PCB y barras de energía en Propuesta 3).
+
+- **feature** (completed - 15:14): Catálogo interactivo de 3 propuestas procedurales para **Botones del Menú Principal** (`tools/menu_button_proposals.html`):
+  1. `tools/menu_button_proposals.html`: Visor interactivo a 60 FPS con soporte para ratón (hover/click) que modela las 3 variantes procedurales de `260x40 px`:
+     - **Propuesta 1 (Cyber-Arcade Neón)**: Chasis octagonal biselado (6px), borde neón cian pulsante, highlight especular superior, 4 pips en vértices y brackets laterales.
+     - **Propuesta 2 (Placa de Forja & Remaches)**: Hierro pesado con bisel 3D, resplandor de forja en oro/ámbar y 4 remaches perimetrales circulares con luz cenital.
+     - **Propuesta 3 (Consola Táctica Glassmorphism)**: Cristal oscuro minimalista con barra vertical de acento láser a la izquierda y micro-cursor de focalización.
+
+- **refactor** (completed - 15:09): Transición completa a botones UI 100% procedimentales (Zero-Texture Architecture):
+  1. `ui/ui.lua`: Eliminada la dependencia y carga de texturas PNG y quads para botones.
+  2. `ui/menuUI.lua`: Motor de renderizado procedimental autónomo de alto rendimiento mediante primitivas vectoriales de `love.graphics` (sombra octagonal sólida, chaflán biselado de 6px, fondo oscuro de obsidiana con gradientes reactivos, highlight especular superior, borde perimetral neón con pulso senoidal en hover, corchetes laterales y pips de esquina de $3 \times 3\,\text{px}$).
+  3. Limpieza: Eliminados los archivos de textura temporal y scripts generadores externos.
+
+- **feature** (completed - 15:06): Implementación de la textura en **auténtico Pixel Art 16-Bit** para `assets/ui_button_primary.png` (Propuesta 01: Acero Cromado 16-Bit & Gemas Gemelas Estilo #12):
+  1. `scripts/generate_button_texture.py`: Motor de rasterizado pixel-perfect sobre cuadrícula nativa de 260x40 px escalado x2 mediante Nearest Neighbor a 520x240 px (3 frames de 520x80 px). Paleta indexada de 5 tonos de acero, bisel superior de platino blanco de 1px, chaflán escalonado de 5px, gemas romboidales pixeladas de 4 facetas, brackets laterales y respuesta de desplazamiento +1px en estado presionado.
+  2. `assets/ui_button_primary.png`: Nuevo spritesheet en Pixel Art puro de alto contraste, nítido y libre de artefactos de blur, armonizado al 100% con la tipografía retro `PressStart2P`.
+
+- **polish** (completed - 15:02): Desacoplamiento de efectos procedurales superpuestos en botones de UI (`ui/menuUI.lua`):
+  1. `ui/menuUI.lua`: Eliminado el segundo pase de tinte aditivo en hover (`glowPulse`) y los caracteres de cursor de texto (`>` y `<`) que se dibujaban encima de la textura, permitiendo apreciar el 100% de los detalles artísticos, biseles y marcadores del spritesheet `ui_button_primary.png`.
+
+- **polish** (completed - 15:00): Implementación del diseño **03. CRT Scanline Monolith (Arcade Retro Clásico)** para `assets/ui_button_primary.png`:
+  1. `scripts/generate_button_texture.py`: Reemplazo del generador con arquitectura de pantalla CRT abombada, líneas de barrido entrelazadas de fósforo (scanlines), viñeta de cristal de tubo de rayos catódicos, marco biselado de gabinete arcade, corchetes angulares de calibración (estilo monitor PVM/Trinitron) y barras de señal escalonadas en los laterales.
+  2. `assets/ui_button_primary.png`: Nuevo spritesheet generado con fondo negro fósforo de alto contraste (`#040A12`), emisión de cátodo en hover (`#00FFFF`), y respuesta de amortiguación en estado presionado.
+
+- **polish** (completed - 14:58): Rediseño HD de textura para botones UI (`assets/ui_button_primary.png`) con Bisel de Acero Neón #12 y Obsidiana Glassmorphism:
+  1. `scripts/generate_button_texture.py`: Script generador en Python/PIL actualizado con arquitectura de renderizado por capas vía `Image.alpha_composite` y supersampling 2x (1040x480) redimensionado con filtro Lanczos a 520x240 px (3 frames de 520x80 px: Normal, Hover, Pressed).
+  2. `assets/ui_button_primary.png`: Nuevo spritesheet con cuerpo de obsidiana profundo (`#0E1420`), micro-scanlines de alta definición, biseles facetados de titanio con destello cenital especular (*sheen*), doble borde neón cian eléctrico, monturas romboidales con gemas gemelas cian cristalinas en perfecta armonía 1:1 con el logotipo Estilo #12, y aura luminosa pulsante para el estado Hover.
+
+- **feature** (completed - 14:45): Catálogo interactivo de 50 propuestas en 2D Pixel Art Retro Dungeon Crawler para botones UI:
+  1. `tools/snake_button_50_proposals.html`: Galería completa con 50 spritesheets interactivos (Normal, Hover, Presionado) renderizados a 60 FPS con motor pixel-art procedural, buscador en tiempo real y 5 categorías temáticas extraídas de la documentación del proyecto (Hierro & Forja, Piedra & Mazmorra, Biomas & Elementos, Arcade & Neón, Reliquias & Jefes).
+
+- **feature** (completed - 14:34): Integración del nuevo logotipo 2D Pixel Art oficial "Gothic Dungeon Steel & Winged Gargoyles" (Propuesta #1):
+  1. `scripts/process_title_logo.py`: Script de procesamiento que extrae la imagen generada, aplica autocrop (1300x474 px), elimina el fondo con transparencia limpia y genera el mapa de emisión lumínica.
+  2. `assets/title_style12.png`: Textura base de alta resolución con marco de gárgolas aladas, tipografía de acero biselado, runas cian luminosas y placa "DUNGEON CRAWLER".
+  3. `assets/title_style12_glow.png`: Mapa de emisión luminosa de runas cian y ojos rojos para el pase aditivo del shader de Bloom.
+  4. `ui/menuUI.lua`: Escalado dinámico (`targetLogoW`) adaptativo a la resolución de pantalla y renderizado con sombra 3D, animación de entrada y flotación senoidal.
+
+- **feature** (completed - 14:26): Galería interactiva con 20 propuestas en auténtico **2D Pixel Art Retro Dungeon Crawler** para el título "SNAKE":
+  1. `tools/snake_logo_proposals.html`: Motor de rasterizado pixel-perfect (matriz bitmap 7x9 por letra, escala x4 de píxeles enteros, sombreado de 4 tonos en rampa y dithering) con 20 estilos animados en tiempo real:
+     - *Hierro & Cromo*: 16-Bit Chrome & Twin Gems, Gothic Gargoyle Iron, Bloodstained Steel, Catacomb Trap Chainmail.
+     - *Mazmorra & Runas*: Dungeon Stone & Cyan Moss, Dragon Gold & Ruby, Cursed Obsidian & Purple Rune, 1-Bit Dither Void, Copper & Emerald, Cursed Eye Boss Relic, Pharaoh Sandstone, Royal Void Crystal.
+     - *Fuego, Veneno & Hielo*: Toxic Crypt Slime (con gotas animadas), Necromancer Bone & Cyan Flame, Molten Lava Core, Spectral Ice Cavern, Poisonous Viper Scales.
+     - *Arcade & Neón*: Dual Neon Arcade CRT, 8-Bit Cyber-Matrix, Arcade Glitch Shift.
+     - Incluye filtros por categoría y botón para copiar el prompt IA pixel-art optimizado.
+
+- **feature** (completed - 14:03): Integración de texturas HD y pase de Bloom para el Diamante Emblema central del menú:
+  1. `tools/emblem_preview.html`: Herramienta de previsualización procedural autónoma en HTML5 Canvas con animación senoidal y micro-scanlines.
+  2. `scripts/generate_emblem_texture.py`: Script generador en Python/PIL para exportar la textura base transparente `assets/diamond_emblem.png` y el mapa de emisión `assets/diamond_emblem_glow.png` (512x512 px) con biseles de acero/cromo, alas mecánicas escalonadas, sustrato de obsidiana, pistas PCB, anillo cian, runa magenta y núcleo estelar.
+  3. `ui/ui.lua`: Carga segura con `pcall` de `ui.emblemTexture` y `ui.emblemGlowTexture`.
+  4. `ui/introUI.lua`: Renderizado del sprite HD centrado en `(cx, diamondY)` con sombra proyectada, animación de ascenso cinemático, flotación senoidal, modulación de brillo y emisión en el pase de Bloom (`glowPass`).
+
+- **feature** (completed - 13:46): Textura Cyberpunk / Neon Arcade de alta resolución (2x) para botones del menú UI:
+  1. `scripts/generate_button_texture.py`: Script generador de precisión geométrica con PIL para exportar `assets/ui_button_primary.png` (520x240 px, 3 estados apilados verticalmente de 520x80 px: Normal, Hover, Pressed). Incluye biseles sci-fi achaflanados, gradientes oscuros en azul obsidiana, micro-rejilla interior, borde cian eléctrico, acentos de pips en esquinas y muescas tecnológicas laterales.
+  2. `assets/ui_button_primary.png`: Spritesheet modular de alta resolución optimizado para escalado a 260x40 px en Love2D.
+  3. `ui/ui.lua`: Integración en `ui.load()` con carga segura `pcall` y definición de quads para estados Normal, Hover y Pressed (`ui.quadBtnNormal`, `ui.quadBtnHover`, `ui.quadBtnPressed`).
+  4. `ui/menuUI.lua`: Renderizado con quads de textura, preservando la tipografía dinámica, indicadores de cursor `<`, `>` y fallback procedimental robusto.
+
 ## 21:08:2026
 
 - **polish** (completed - 16:35): Restauración y pulido de máxima fidelidad visual 1:1 del logotipo "S N A K E" Estilo #12:

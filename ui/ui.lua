@@ -36,6 +36,40 @@ function ui.load()
         ui.fontNormal = love.graphics.newFont(constants.FONT_NORMAL)
         ui.fontSmall = love.graphics.newFont(constants.FONT_SMALL)
     end
+
+
+
+    -- Carga de textura del Diamante Emblema (Base + Glow)
+    local embOk, embTex = pcall(love.graphics.newImage, "assets/diamond_emblem.png")
+    if embOk and embTex then
+        ui.emblemTexture = embTex
+    else
+        ui.emblemTexture = nil
+    end
+
+    local glowOk, glowTex = pcall(love.graphics.newImage, "assets/diamond_emblem_glow.png")
+    if glowOk and glowTex then
+        ui.emblemGlowTexture = glowTex
+    else
+        ui.emblemGlowTexture = nil
+    end
+
+    -- Carga de Sprites PNG del Botón Maestro (Opción A)
+    local function tryLoad(path)
+        local ok, img = pcall(love.graphics.newImage, path)
+        if ok and img then
+            img:setFilter("nearest", "nearest")
+            return img
+        end
+        return nil
+    end
+
+    ui.btnTexNormal = tryLoad("assets/ui_button_normal.png")
+    ui.btnTexHover = tryLoad("assets/ui_button_hover.png")
+    ui.btnTexPress = tryLoad("assets/ui_button_press.png")
+    ui.gearTexture = tryLoad("assets/ui_gear_node.png")
+    ui.reticleTexture = tryLoad("assets/ui_reticle_corner.png")
+    ui.eyeIrisTexture = tryLoad("assets/ui_eye_iris.png")
 end
 
 function ui.setScale(s)

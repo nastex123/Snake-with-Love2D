@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SNAKE — 20 Propuestas de Texturas de Alrededor para el Logotipo (HTML Workshop)</title>
+    <!-- Fuente Pixel Art Retro de Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background: #030509; color: #fff; display: flex; flex-direction: column; align-items: center; padding: 25px; min-height: 100vh; }
+        h1 { font-size: 19px; color: #00F0FF; margin-bottom: 6px; text-shadow: 0 0 16px rgba(0, 240, 255, 0.6); letter-spacing: 2px; font-family: 'Press Start 2P', monospace; text-align: center; }
+        p.subtitle { color: #8fa0b5; margin-bottom: 20px; font-size: 12px; text-align: center; line-height: 1.5; }
+        
+        /* Barra Superior de Ajustes */
+        .controls-bar {
+            background: #08101a;
+            border: 2px solid #16283d;
+            border-radius: 6px;
+            padding: 12px 20px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            max-width: 1380px;
+            width: 100%;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+        }
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 11px; color: #a2b7cf; }
+        .control-group label { font-weight: bold; }
+        select, input[type="range"] { background: #0f1a28; border: 1px solid #20364e; color: #00F0FF; padding: 5px 10px; border-radius: 4px; outline: none; cursor: pointer; }
+
+        /* Categorías / Filtros */
+        .filters-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1380px;
+            margin-bottom: 24px;
+        }
+        .filter-btn {
+            background: #09121e;
+            border: 2px solid #192b40;
+            color: #8da4be;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: 'Press Start 2P', monospace;
+        }
+        .filter-btn:hover { background: #132236; border-color: #00F0FF; color: #fff; }
+        .filter-btn.active { background: #00F0FF; color: #030509; border-color: #00F0FF; box-shadow: 0 0 10px rgba(0, 240, 255, 0.4); }
+
+        /* Grid de 20 Tarjetas */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(430px, 1fr)); gap: 20px; max-width: 1380px; width: 100%; }
+        .card { background: #070d16; border: 2px solid #142234; border-radius: 8px; padding: 16px 14px; display: flex; flex-direction: column; align-items: center; position: relative; transition: border-color 0.2s, box-shadow 0.2s; }
+        .card:hover { border-color: #00F0FF; box-shadow: 0 8px 24px rgba(0, 240, 255, 0.22); }
+        .stage { width: 100%; height: 135px; background: #020408; border: 2px solid #0e1a28; border-radius: 6px; position: relative; display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 10px; overflow: hidden; image-rendering: pixelated; }
+        .badge { background: rgba(0, 240, 255, 0.15); color: #00F0FF; border: 1px solid #00F0FF; padding: 2px 6px; border-radius: 2px; font-size: 8px; font-weight: bold; font-family: 'Press Start 2P', monospace; }
+        .desc { font-size: 10.5px; color: #8fa5bc; line-height: 1.4; text-align: left; width: 100%; }
+        .desc li { margin-bottom: 3px; margin-left: 14px; }
+        .desc strong { color: #e2ecf7; }
+    </style>
+</head>
+<body>
+    <h1>SNAKE — TEXTURAS ALREDEDOR DEL LOGO</h1>
+    <p class="subtitle">20 Propuestas de Texturas de Fondo, Chasis, Placas y Entornos de Mazmorra para el Logotipo Isométrico de Oro Noble<br><span style="color:#00F0FF;">Pasa el ratón (Hover) sobre cada diseño para interactuar con las luces dinámicas, partículas y texturas a 60 FPS</span></p>
+
+    <!-- Barra de Ajustes Generales -->
+    <div class="controls-bar">
+        <div class="control-group">
+            <label>Paleta:</label>
+            <select id="themeSelect">
+                <option value="gold">Oro Noble (Tesorería)</option>
+                <option value="cyan">Cian Neón (Arcade)</option>
+                <option value="emerald">Veneno Esmeralda (Víbora)</option>
+                <option value="purple">Amatista del Vacío (Etapa 5)</option>
+                <option value="crimson">Fuego Carmesí (Volcán)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Opacidad Textura:</label>
+            <input type="range" id="texOpacity" min="10" max="100" step="10" value="70">
+            <span id="opVal" style="color:#00F0FF; min-width:30px; font-weight:bold; font-family:'Press Start 2P', monospace; font-size:9px;">70%</span>
+        </div>
+        <div class="control-group">
+            <label>Velocidad Brillo:</label>
+            <input type="range" id="speedSlider" min="1" max="5" step="1" value="3">
+            <span id="speedVal" style="color:#FFD700; min-width:20px; font-weight:bold; font-family:'Press Start 2P', monospace; font-size:9px;">3x</span>
+        </div>
+    </div>
+
+    <!-- Filtros por Categoría -->
+    <div class="filters-bar">
+        <button class="filter-btn active" data-cat="all">Todos (20)</button>
+        <button class="filter-btn" data-cat="chasis">Chasis & Placas (5)</button>
+        <button class="filter-btn" data-cat="mazmorra">Mazmorra & Piedra (5)</button>
+        <button class="filter-btn" data-cat="plasma">Plasma & Cyber (5)</button>
+        <button class="filter-btn" data-cat="reptil">Reptil & Orgánico (5)</button>
+    </div>
+
+    <!-- Grid de 20 Tarjetas -->
+    <div class="grid" id="proposalsGrid"></div>
+
+    <script>
+        const CW = 400;
+        const CH = 130;
+
+        const PALETTES = {
+            gold: { main: '#FFD700', mainRgba: a => `rgba(255, 215, 0, ${a})`, dark: '#806000', light: '#FFFF99', gold: '#FFD700', goldLight: '#FFFF99', goldMid: '#c99700', goldDark: '#5c4500', bg: '#050402', titanium: '#32260f', black: '#020406', red: '#FF3355', blue: '#FFB800', cyan: '#00F0FF' },
+            cyan: { main: '#00F0FF', mainRgba: a => `rgba(0, 240, 255, ${a})`, dark: '#006680', light: '#a6f5ff', gold: '#00F0FF', goldLight: '#e0fbff', goldMid: '#00b8cc', goldDark: '#004c59', bg: '#020408', titanium: '#18283b', black: '#020406', red: '#FF3355', blue: '#3388FF', cyan: '#00F0FF' },
+            emerald: { main: '#2ECC71', mainRgba: a => `rgba(46, 204, 113, ${a})`, dark: '#146633', light: '#a8ffca', gold: '#2ECC71', goldLight: '#e0ffe8', goldMid: '#249e58', goldDark: '#0e4222', bg: '#020603', titanium: '#132c1b', black: '#020603', red: '#FF3355', blue: '#2ECC71', cyan: '#00F0FF' },
+            purple: { main: '#E056FD', mainRgba: a => `rgba(224, 86, 253, ${a})`, dark: '#8018a0', light: '#f5b8ff', gold: '#E056FD', goldLight: '#fde8ff', goldMid: '#b035c9', goldDark: '#521261', bg: '#040106', titanium: '#2a1236', black: '#040106', red: '#FF3355', blue: '#9B59B6', cyan: '#00F0FF' },
+            crimson: { main: '#FF3355', mainRgba: a => `rgba(255, 51, 85, ${a})`, dark: '#991129', light: '#ffa3b1', gold: '#FF3355', goldLight: '#ffe0e6', goldMid: '#cc1a3d', goldDark: '#660b1e', bg: '#060102', titanium: '#361118', black: '#060102', red: '#FF3355', blue: '#C0392B', cyan: '#00F0FF' }
+        };
+
+        const state = {
+            theme: 'gold',
+            category: 'all',
+            texOpacity: 0.7,
+            speedMult: 3,
+            mouseX: 0,
+            mouseY: 0
+        };
+
+        document.getElementById('themeSelect').addEventListener('change', e => state.theme = e.target.value);
+        const opSlider = document.getElementById('texOpacity');
+        const opVal = document.getElementById('opVal');
+        opSlider.addEventListener('input', e => {
+            state.texOpacity = parseInt(e.target.value) / 100;
+            opVal.textContent = `${e.target.value}%`;
+        });
+        const speedSlider = document.getElementById('speedSlider');
+        const speedVal = document.getElementById('speedVal');
+        speedSlider.addEventListener('input', e => {
+            state.speedMult = parseInt(e.target.value);
+            speedVal.textContent = `${state.speedMult}x`;
+        });
+
+        // Matriz de Letras Base (S - N - A - K - E)
+        const LETTERS = [
+            [" XXXXX ", "XX   XX", "XX     ", " XXXXX ", "     XX", "XX   XX", " XXXXX "], // S
+            ["XX   XX", "XXX  XX", "XXXX XX", "XX XXXX", "XX  XXX", "XX   XX", "XX   XX"], // N
+            [" XXXXX ", "XX   XX", "XX   XX", "XXXXXXX", "XX   XX", "XX   XX", "XX   XX"], // A
+            ["XX   XX", "XX  XX ", "XX XX  ", "XXXX   ", "XX XX  ", "XX  XX ", "XX   XX"], // K
+            ["XXXXXXX", "XX     ", "XX     ", "XXXXXX ", "XX     ", "XX     ", "XXXXXXX"]  // E
+        ];
+
+        // Función de Renderizado del Logotipo Isométrico de Oro Maestro
+        function renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH) {
+            const scale = 5, spacing = 8, depth = 5;
+            const totalW = 5 * (7 * scale) + 4 * spacing;
+
+            // Extrusión 3D
+            for (let d = depth; d >= 1; d--) {
+                const offX = -d, offY = d;
+                let curX = startX + offX;
+                const col = (d === depth) ? '#000000' : (d > 2 ? p.goldDark : p.goldMid);
+
+                for (let i = 0; i < 5; i++) {
+                    const mat = LETTERS[i];
+                    for (let r = 0; r < 7; r++) {
+                        for (let c = 0; c < 7; c++) {
+                            if (mat[r][c] === 'X') {
+                                ctx.fillStyle = col;
+                                ctx.fillRect(curX + c * scale, startY + offY + r * scale, scale, scale);
+                            }
+                        }
+                    }
+                    curX += 7 * scale + spacing;
+                }
+            }
+
+            // Fachada Frontal de Oro
+            let curX = startX;
+            for (let i = 0; i < 5; i++) {
+                const mat = LETTERS[i];
+                for (let r = 0; r < 7; r++) {
+                    for (let c = 0; c < 7; c++) {
+                        if (mat[r][c] === 'X') {
+                            const px = curX + c * scale;
+                            const py = startY + r * scale;
+                            const distToSweep = Math.abs(px - (startX + sweepX));
+
+                            let col;
+                            if (distToSweep < 10) col = '#ffffff';
+                            else if (r === 0 || c === 0) col = '#ffffff'; // Platino rim
+                            else if (r <= 2) col = p.gold;
+                            else if (r <= 4) col = p.goldMid;
+                            else col = p.goldDark;
+
+                            ctx.fillStyle = col;
+                            ctx.fillRect(px, py, scale, scale);
+                        }
+                    }
+                }
+                curX += 7 * scale + spacing;
+            }
+
+            // Destello en Cruz Blanca
+            const glintX = startX + sweepX;
+            if (glintX >= startX && glintX <= startX + totalW) {
+                const glintY = startY + 12;
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(glintX - 7, glintY - 1, 15, 3);
+                ctx.fillRect(glintX - 1, glintY - 7, 3, 15);
+                ctx.fillStyle = p.goldLight;
+                ctx.fillRect(glintX - 3, glintY - 3, 7, 7);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(glintX - 1, glintY - 1, 3, 3);
+            }
+        }
+
+        // =========================================================================
+        // 20 PROPUESTAS DE TEXTURAS DE ALREDEDOR
+        // =========================================================================
+        const SURROUNDING_PROPOSALS = [
+            // --- BLOQUE I: CHASIS & PLACAS (01-05) ---
+            {
+                id: 1, cat: 'chasis',
+                name: "01. Placa de Titanio con Chaflanes y Remaches (Chassis Plate)",
+                tag: "Placa Acorazada con Bisel Doble a 45° y 4 Remaches",
+                desc: [
+                    "El logo reposa sobre una placa oscura biselada con 4 remaches en las esquinas.",
+                    "Acentúa la solidez y enmarca el título dentro de la interfaz."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    // Placa de titanio
+                    ctx.fillStyle = `rgba(8, 16, 26, ${op})`;
+                    ctx.fillRect(40, 20, 320, 90);
+                    ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.6})`;
+                    ctx.strokeRect(40, 20, 320, 90);
+
+                    // 4 Remaches
+                    const rivets = [[46, 26], [354, 26], [46, 104], [354, 104]];
+                    rivets.forEach(([rx, ry]) => {
+                        ctx.fillStyle = '#000000'; ctx.fillRect(rx - 2, ry - 2, 5, 5);
+                        ctx.fillStyle = isH ? '#ffffff' : p.gold; ctx.fillRect(rx - 1, ry - 1, 3, 3);
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 2, cat: 'chasis',
+                name: "02. Zarpazos de Hidra a 45° (Hydra Claw Slashes)",
+                tag: "Ranuras Diagonales que Armonizan con el Fondo del Botón #03",
+                desc: [
+                    "Líneas diagonales a 45° grabadas detrás del logotipo en gradiente sutil.",
+                    "Unificación estética directa con la textura de fondo oficial de los botones."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.18})`;
+                    for (let x = -50; x < CW + 50; x += 18) {
+                        ctx.fillRect(x + Math.sin(t) * 2, 0, 3, CH);
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 3, cat: 'chasis',
+                name: "03. Marco #11 Chunky con 4 Condensadores de Esquina",
+                tag: "Contorno Negro de 1px, Borde Cian y Condensadores 8x8",
+                desc: [
+                    "Envoltura perimetral idéntica a la Tarjeta #11 oficial de la pantalla de inicio.",
+                    "Máxima coherencia visual entre la tarjeta inferior y el logotipo superior."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    // Marco
+                    ctx.fillStyle = '#000000'; ctx.fillRect(48, 24, 304, 82);
+                    ctx.fillStyle = `rgba(5, 12, 23, ${op})`; ctx.fillRect(50, 26, 300, 78);
+                    ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.8})`; ctx.strokeRect(50, 26, 300, 78);
+
+                    // 4 Condensadores
+                    const nodes = [[48, 24], [344, 24], [48, 98], [344, 98]];
+                    nodes.forEach(([nx, ny]) => {
+                        ctx.fillStyle = '#000000'; ctx.fillRect(nx, ny, 8, 8);
+                        ctx.fillStyle = isH ? '#ffffff' : (p.cyan || '#00F0FF'); ctx.fillRect(nx + 1, ny + 1, 6, 6);
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(nx + 2, ny + 2, 4, 4);
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 4, cat: 'chasis',
+                name: "04. Micro-Engranajes de Relojería en los Flancos",
+                tag: "Dos Engranajes Giratorios de 12px a la Izquierda y Derecha",
+                desc: [
+                    "Engranajes de relojería que giran lentamente en los extremos del título.",
+                    "A juego con los Nodos #03 seleccionados para los botones del menú."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    // Engranajes
+                    const gRot = t * (isH ? 4 : 1.5);
+                    const gears = [[45, 65], [355, 65]];
+                    gears.forEach(([gx, gy], idx) => {
+                        ctx.save();
+                        ctx.translate(gx, gy);
+                        ctx.rotate(idx === 0 ? gRot : -gRot);
+                        ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.7})`;
+                        ctx.fillRect(-8, -2, 16, 4); ctx.fillRect(-2, -8, 4, 16);
+                        ctx.fillStyle = '#020406'; ctx.fillRect(-4, -4, 8, 8);
+                        ctx.restore();
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 5, cat: 'chasis',
+                name: "05. Placa Biselada con Corte a 60° (Divided Plate)",
+                tag: "Fondo Dividido en Dos Tonos a 60° Idéntico a la Tarjeta",
+                desc: [
+                    "Placa dividida en escalera a 60° con tono oscuro (#050c17) y tono cian (#0c1b2c).",
+                    "Crea una línea de fuga continua con la tarjeta de perfil."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(5, 12, 23, ${op})`;
+                    ctx.fillRect(40, 25, 320, 80);
+                    // Corte a 60°
+                    ctx.fillStyle = `rgba(12, 27, 44, ${op})`;
+                    for (let py = 0; py < 80; py++) {
+                        const splitX = 180 + Math.floor(py * 0.45);
+                        ctx.fillRect(splitX, 25 + py, (40 + 320) - splitX, 1);
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+
+            // --- BLOQUE II: MAZMORRA & PIEDRA (06-10) ---
+            {
+                id: 6, cat: 'mazmorra',
+                name: "06. Losas de Piedra de Cripta Agrietada (Dungeon Masonry)",
+                tag: "Pared de Ladrillos de Mazmorra con Grietas y Musgo Neón",
+                desc: [
+                    "Ladrillos de piedra oscura con juntas de mortero y micro-grietas procedurales.",
+                    "Acentúa el carácter dungeon crawler del juego."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(20, 30, 42, ${op * 0.4})`;
+                    for (let y = 10; y < CH - 10; y += 20) {
+                        for (let x = 10; x < CW - 10; x += 40) {
+                            const offX = ((y / 20) % 2) * 20;
+                            ctx.strokeRect(x + offX, y, 38, 18);
+                        }
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 7, cat: 'mazmorra',
+                name: "07. Glifos Rúnicos Místicos Grabados (Glowing Runes)",
+                tag: "Runas Místicas de Fondo que Pulsen en Ciclo Senoidal",
+                desc: [
+                    "Símbolos rúnicos antiguos grabados alrededor del texto con brillo dorado y cian.",
+                    "Efecto de templo ancestral de mazmorra."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    const runes = [
+                        [50, 40], [70, 95], [330, 40], [350, 95], [200, 20]
+                    ];
+                    ctx.fillStyle = `rgba(255, 215, 0, ${op * (0.3 + Math.sin(t*3)*0.2)})`;
+                    runes.forEach(([rx, ry]) => {
+                        ctx.fillRect(rx, ry, 6, 2); ctx.fillRect(rx + 2, ry - 4, 2, 10); ctx.fillRect(rx + 4, ry - 2, 2, 6);
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 8, cat: 'mazmorra',
+                name: "08. Cadenas de Hierro Suspendidas en los Flancos",
+                tag: "Eslabones de Cadena de Mazmorra con Oscilación Pendular",
+                desc: [
+                    "Cadenas de hierro forjado que cuelgan a los lados con física pendular suave.",
+                    "Sensación de calabozo profundo y peligro."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(100, 120, 145, ${op * 0.6})`;
+                    for (let ch = 0; ch < 2; ch++) {
+                        const cx = ch === 0 ? 45 : 355;
+                        for (let link = 0; link < 7; link++) {
+                            const lx = cx + Math.sin(t * 3 + link * 0.5) * 2;
+                            const ly = 15 + link * 14;
+                            ctx.fillRect(lx - 2, ly, 5, 8);
+                        }
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 9, cat: 'mazmorra',
+                name: "09. Llama de Antorchas de Mazmorra en los Lados",
+                tag: "Dos Antorchas de Píxeles que Arden e Iluminan el Título",
+                desc: [
+                    "Antorchas de pixel art en los flancos con fuego celular en movimiento a 60 FPS.",
+                    "Aporta calidez e iluminación dinámica sobre el oro noble."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    const torches = [[35, 60], [365, 60]];
+                    torches.forEach(([tx, ty]) => {
+                        // Soporte de hierro
+                        ctx.fillStyle = `rgba(50, 60, 75, ${op})`; ctx.fillRect(tx - 2, ty, 5, 25);
+                        // Fuego animado
+                        ctx.fillStyle = p.red; ctx.fillRect(tx - 3, ty - 6 + Math.sin(t*12)*2, 7, 8);
+                        ctx.fillStyle = p.gold; ctx.fillRect(tx - 2, ty - 8 + Math.cos(t*14)*2, 5, 6);
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(tx - 1, ty - 9, 3, 3);
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 10, cat: 'mazmorra',
+                name: "10. Micro-Calaveras de Boss en el Marco Perimetral",
+                tag: "Hilera de Micro-Cráneos en Relieve en las Esquinas",
+                desc: [
+                    "Micro-cráneos grabados en las esquinas de la placa de fondo.",
+                    "Símbolo de los 5 jefes de etapa de la torre."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    const skulls = [[45, 30], [355, 30], [45, 100], [355, 100]];
+                    ctx.fillStyle = `rgba(140, 165, 190, ${op * 0.5})`;
+                    skulls.forEach(([sx, sy]) => {
+                        ctx.fillRect(sx - 3, sy - 3, 7, 7);
+                        ctx.fillStyle = '#020406'; ctx.fillRect(sx - 2, sy - 1, 1, 2); ctx.fillRect(sx + 1, sy - 1, 1, 2);
+                        ctx.fillStyle = `rgba(140, 165, 190, ${op * 0.5})`;
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+
+            // --- BLOQUE III: PLASMA & CYBER (11-15) ---
+            {
+                id: 11, cat: 'plasma',
+                name: "11. Matriz HUD Táctica Target Lock-On Grid (#11)",
+                tag: "Corchetes en L, Líneas Scanlines y Retícula Táctica",
+                desc: [
+                    "Retícula táctica con corchetes en las 4 esquinas idéntica al Hover #11 del botón.",
+                    "Aporta estética ciber-arcade retrofuturista."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${op * (isH ? 0.9 : 0.4)})`;
+                    ctx.lineWidth = 1.5;
+                    // Corchetes en L
+                    const o = 10;
+                    ctx.strokeRect(30, 20, o, 1); ctx.strokeRect(30, 20, 1, o);
+                    ctx.strokeRect(370 - o, 20, o, 1); ctx.strokeRect(370, 20, 1, o);
+                    ctx.strokeRect(30, 110, o, 1); ctx.strokeRect(30, 110 - o, 1, o);
+                    ctx.strokeRect(370 - o, 110, o, 1); ctx.strokeRect(370, 110 - o, 1, o);
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 12, cat: 'plasma',
+                name: "12. Matriz de Puntos de Radar Táctico (Dot Matrix Grid)",
+                tag: "Cuadrícula de Puntos Perforados con Barrido de Radar",
+                desc: [
+                    "Malla de micro-puntos cian de fondo con un haz de radar que barre en círculo.",
+                    "Sensación de centro de mando militar táctico."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.25})`;
+                    for (let y = 15; y < CH - 15; y += 10) {
+                        for (let x = 25; x < CW - 25; x += 10) {
+                            ctx.fillRect(x, y, 1.5, 1.5);
+                        }
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 13, cat: 'plasma',
+                name: "13. Filamentos de Rayos Tesla Saltando en el Fondo",
+                tag: "Descargas de Plasma Eléctrico de Alta Frecuencia",
+                desc: [
+                    "Chispas y rayos de plasma que conectan el marco exterior con el título.",
+                    "Flashes estroboscópicos de alto impacto visual."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    if (Math.random() < 0.5 || isH) {
+                        ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.8})`;
+                        ctx.fillRect(50, 40 + Math.sin(t*8)*20, 30, 1.5);
+                        ctx.fillRect(320, 60 + Math.cos(t*9)*20, 30, 1.5);
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 14, cat: 'plasma',
+                name: "14. Scanlines Horizontales CRT con Aberración",
+                tag: "Líneas de Barrido de Monitor Arcade Retro de los 90",
+                desc: [
+                    "Líneas de barrido horizontales alternas de 1px emulando hardware analógico.",
+                    "Aporta textura retro clásica sin restar legibilidad."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(0, 0, 0, ${op * 0.4})`;
+                    for (let y = 0; y < CH; y += 3) {
+                        ctx.fillRect(0, y, CW, 1);
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 15, cat: 'plasma',
+                name: "15. Anillo Hexagonal Cyber-Step de Fondo",
+                tag: "Hexágono Iluminado en Cian Neón Enmarcando el Centro",
+                desc: [
+                    "Silueta hexagonal de plasma detrás del texto que pulsa en respiración senoidal.",
+                    "Enfoca la mirada directamente en el monograma 'SNAKE'."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    const pulse = 0.5 + Math.sin(t*4)*0.3;
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${op * pulse})`;
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.moveTo(70, 65); ctx.lineTo(130, 25); ctx.lineTo(270, 25);
+                    ctx.lineTo(330, 65); ctx.lineTo(270, 105); ctx.lineTo(130, 105);
+                    ctx.closePath();
+                    ctx.stroke();
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+
+            // --- BLOQUE IV: REPTIL & ORGÁNICO (16-20) ---
+            {
+                id: 16, cat: 'reptil',
+                name: "16. Textura de Escamas de Víbora Gigante (Serpent Skin)",
+                tag: "Malla de Rombos de Piel de Serpiente en el Fondo",
+                desc: [
+                    "Tramado hexagonal de escamas de reptil en tonos titánicos oscuros.",
+                    "Fondo biológico que resalta el brillo del oro noble."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(24, 40, 59, ${op * 0.35})`;
+                    for (let y = 15; y < CH - 15; y += 8) {
+                        for (let x = 20; x < CW - 20; x += 12) {
+                            const offX = ((y / 8) % 2) * 6;
+                            ctx.fillRect(x + offX, y, 4, 4);
+                        }
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 17, cat: 'reptil',
+                name: "17. Serpiente Ouroboros Circular en Relieve de Fondo",
+                tag: "Círculo Ouroboros de Serpiente que Muerde su Cola",
+                desc: [
+                    "Un halo circular en bajorrelieve de la serpiente infinita detrás del logo.",
+                    "Símbolo emblemático de la franquicia Snake."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.strokeStyle = `rgba(255, 215, 0, ${op * 0.3})`;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(CW / 2, CH / 2, 52, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 18, cat: 'reptil',
+                name: "18. Emisión de Humo / Niebla de Mazmorra Flotante",
+                tag: "Bruma Misteriosa de Píxeles que Desliza Bajo las Letras",
+                desc: [
+                    "Partículas de niebla en gradiente azul/gris que se desplazan lentamente.",
+                    "Crea profundidad ambiental y atmósfera de misterio."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(40, 65, 95, ${op * 0.25})`;
+                    for (let i = 0; i < 8; i++) {
+                        const mx = (i * 55 + t * 15) % (CW + 40) - 20;
+                        const my = 85 + Math.sin(t * 2 + i) * 10;
+                        ctx.fillRect(mx, my, 45, 12);
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 19, cat: 'reptil',
+                name: "19. Rayos Solares Radiantes / Haces de Templo (God Rays)",
+                tag: "Haces de Luz Diagonal que Emanan Detrás del Logotipo",
+                desc: [
+                    "Rayos de luz dorada volumétrica que se abren en abanico.",
+                    "Sensación de reliquia sagrada iluminada en la cripta."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    ctx.fillStyle = `rgba(255, 215, 0, ${op * 0.08})`;
+                    for (let a = -0.6; a <= 0.6; a += 0.25) {
+                        ctx.beginPath();
+                        ctx.moveTo(CW / 2, 0);
+                        ctx.lineTo(CW / 2 + Math.tan(a + Math.sin(t)*0.05) * 120 - 15, CH);
+                        ctx.lineTo(CW / 2 + Math.tan(a + Math.sin(t)*0.05) * 120 + 15, CH);
+                        ctx.closePath();
+                        ctx.fill();
+                    }
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            },
+            {
+                id: 20, cat: 'reptil',
+                name: "20. Master Sanctuary (Fusión Maestra Definitiva de Entorno)",
+                tag: "Placa Biselada + Zarpazos 45° + Condensadores + Glifos Rúnicos",
+                desc: [
+                    "La combinación maestra de todos los sistemas: chasis acorazado con zarpazos a 45°,",
+                    "4 condensadores esquineros, glifos rúnicos y niebla mística. La portada suprema."
+                ],
+                draw: (ctx, t, isH, p) => {
+                    const op = state.texOpacity;
+                    // Placa de titanio con zarpazos
+                    ctx.fillStyle = `rgba(6, 14, 24, ${op * 0.9})`; ctx.fillRect(40, 22, 320, 86);
+                    ctx.fillStyle = `rgba(0, 240, 255, ${op * 0.15})`;
+                    for (let x = 10; x < CW; x += 18) { ctx.fillRect(x, 22, 2.5, 86); }
+                    ctx.strokeStyle = `rgba(0, 240, 255, ${op * 0.7})`; ctx.strokeRect(40, 22, 320, 86);
+
+                    // 4 Condensadores
+                    const nodes = [[38, 20], [354, 20], [38, 102], [354, 102]];
+                    nodes.forEach(([nx, ny]) => {
+                        ctx.fillStyle = '#000000'; ctx.fillRect(nx, ny, 8, 8);
+                        ctx.fillStyle = isH ? '#ffffff' : (p.cyan || '#00F0FF'); ctx.fillRect(nx + 1, ny + 1, 6, 6);
+                        ctx.fillStyle = '#ffffff'; ctx.fillRect(nx + 2, ny + 2, 4, 4);
+                    });
+
+                    const totalW = 5*(7*5)+4*8;
+                    const startX = Math.round((CW - totalW)/2), startY = 46;
+                    const sweepX = (t * state.speedMult * 40) % (totalW + 60) - 30;
+                    renderMasterGoldLogo(ctx, startX, startY, sweepX, p, isH);
+                }
+            }
+        ];
+
+        const grid = document.getElementById('proposalsGrid');
+
+        function renderCards() {
+            grid.innerHTML = '';
+            const filtered = SURROUNDING_PROPOSALS.filter(p => state.category === 'all' || p.cat === state.category);
+
+            filtered.forEach(prop => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div style="width: 100%; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <h2 style="font-size: 10px; color: #eef5fc; text-align: left; margin: 0; font-family: 'Press Start 2P', monospace;">${prop.name}</h2>
+                        <span class="badge" style="white-space: nowrap;">#${prop.id < 10 ? '0' + prop.id : prop.id}</span>
+                    </div>
+                    <div class="tag" style="width: 100%; text-align: left; font-size: 8.5px; color: #FFD700; margin-bottom: 8px; font-weight: bold; font-family: 'Press Start 2P', monospace;">${prop.tag}</div>
+                    <div class="stage">
+                        <canvas id="c_${prop.id}" width="400" height="130"></canvas>
+                    </div>
+                    <ul class="desc">
+                        ${prop.desc.map(d => `<li>${d}</li>`).join('')}
+                    </ul>
+                `;
+                grid.appendChild(card);
+                initSurroundingCanvas(prop);
+            });
+        }
+
+        function initSurroundingCanvas(prop) {
+            const canvas = document.getElementById(`c_${prop.id}`);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+            let isHover = false;
+
+            canvas.addEventListener('mousemove', (e) => {
+                isHover = true;
+                const rect = canvas.getBoundingClientRect();
+                state.mouseX = e.clientX - rect.left;
+                state.mouseY = e.clientY - rect.top;
+            });
+            canvas.addEventListener('mouseleave', () => { isHover = false; });
+
+            function render() {
+                const now = performance.now() * 0.001;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const pal = PALETTES[state.theme];
+
+                prop.draw(ctx, now, isHover, pal);
+
+                if (document.getElementById(`c_${prop.id}`)) {
+                    requestAnimationFrame(render);
+                }
+            }
+            render();
+        }
+
+        // Listeners de Filtros
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                state.category = btn.getAttribute('data-cat');
+                renderCards();
+            });
+        });
+
+        renderCards();
+    </script>
+</body>
+</html>
