@@ -1,7 +1,6 @@
 local shaders = {}
 local constants = require("constants")
 local Log = require("core.logger")
-local ui = require("ui.ui")
 
 -- ============================================================
 -- Corrección daltonica (Protanopia / Deuteranopia / Tritanopia)

@@ -164,7 +164,7 @@ function love.mousepressed(x, y, button)
                 world.state.fadeDir = 0
                 world.state.gameState = constants.GAME_STATE_PLAYING
                 return
-            elseif hit == 'profiles' then
+            elseif hit == 'profiles' or hit == 'card_profile' then
                 profilesMod.open()
                 return
             elseif hit == 'settings' then
@@ -231,12 +231,18 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
 end
 
 function love.mousereleased(x,y,button)
+    if debugTools.mousereleased and debugTools.mousereleased(x,y,button) then
+        return
+    end
     if settingsMod and settingsMod.mousereleased and settingsMod.visible then
         settingsMod.mousereleased(x,y,button)
     end
 end
 
 function love.mousemoved(x,y,dx,dy)
+    if debugTools.mousemoved and debugTools.mousemoved(x,y,dx,dy) then
+        return
+    end
     if settingsMod and settingsMod.mousemoved and settingsMod.visible then
         settingsMod.mousemoved(x,y,dx,dy)
     end
@@ -262,6 +268,10 @@ function love.textinput(text)
 end
 
 function love.keypressed(tecla)
+    if debugTools.keypressed and debugTools.keypressed(tecla) then
+        return
+    end
+
     if tecla == "tab" then
         world.state.debugMenuOpen = not world.state.debugMenuOpen
         return

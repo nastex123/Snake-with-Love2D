@@ -1,6 +1,5 @@
 local persistence = {}
 local sound = require('audio.sound')
-local ui = require('ui.ui')
 local shaders = require('render.shaders')
 local helpers = require('core.helpers')
 local world = require('core.world')
@@ -14,8 +13,23 @@ local settingsDefaults = {
     controls = { inputType = 'autodetect', sensitivity = 1.0 },
     graphics = { pixelScale = 2, filter = 'nearest', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
     gameplay = { difficulty = 'normal', tutorials = true, tradeKill = true },
-    accessibility = { uiScale = 1.0, highContrast = false, colorblind = 'off' }
+    accessibility = { uiScale = 1.0, highContrast = false, colorblind = 'off' },
+    logo = { offsetX = 0, offsetY = 0, scale = 6, spacing = 10, depth = 5 }
 }
+
+function persistence.getLogoConfig()
+    if not persistence.settings then persistence.loadSettings() end
+    if not persistence.settings.logo then
+        persistence.settings.logo = helpers.deep_copy(settingsDefaults.logo)
+    end
+    return persistence.settings.logo
+end
+
+function persistence.saveLogoConfig(cfg)
+    if not persistence.settings then persistence.loadSettings() end
+    persistence.settings.logo = cfg or persistence.settings.logo
+    return persistence.saveSettings(persistence.settings)
+end
 
 function persistence.defaults()
     return helpers.deep_copy(settingsDefaults)

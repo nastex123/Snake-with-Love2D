@@ -258,6 +258,9 @@ function renderMain.drawGame(dt)
     if st.debugAchievementsOpen then
         debugTools.drawDebugAchievementsModal()
     end
+    if debugTools and debugTools.isLogoDebugOpen and debugTools.isLogoDebugOpen() then
+        debugTools.drawLogoDebug()
+    end
     -- draw toasts on top of everything
     if uiMod.drawToasts then uiMod.drawToasts() end
 end
