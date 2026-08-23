@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management  
 **Entry Point**: `main.lua`  
-**Total Modules**: 42 .lua files  
-**Total Lines**: ~9,275
+**Total Modules**: 45 .lua files  
+**Total Lines**: ~9,100 (post-split 23:08:2026: menuUI 683→205+129+214, debugTools 503→196+189, shaders 535→496)
 
 ### Folder Structure
 
@@ -47,13 +47,15 @@ Snake-with-Love2D/
 ├── ui/
 │   ├── ui.lua                  ← facade: popups/toasts/menu/fuentes/accesibilidad
 │   ├── introUI.lua             ← intro Balatro + high score
-│   ├── menuUI.lua              ← menú + botones
+│   ├── menuUI.lua              ← facade 205l: panel 40% + botones 260×40 gap14, delega logo/card
+│   ├── menuLogo.lua            ← logo procedural cian isométrico 2.5D (getBounds, draw, drawGlow) 129l
+│   ├── menuCard.lua            ← tarjeta #11 Chunky 344×76 circular 3D coin 214l
 │   ├── hudUI.lua               ← grid/HUD/slots/combo
 │   ├── toastsUI.lua            ← toasts
 │   ├── popupsUI.lua            ← popups
 │   └── overlaysUI.lua          ← pausa/minimapa/overlay dungeon debug
 ├── render/
-│   ├── shaders.lua             ← bloom+CRT+sombra+heat
+│   ├── shaders.lua             ← bloom+CRT+sombra+heat (dedup SRC_BLUR 496l)
 │   ├── particles.lua           ← textura 4x4 procedural
 │   ├── renderMain.lua          ← drawScene + menú
 │   └── enemiesDraw.lua         ← draw enemigos/Chaser (estrella de espinas)
@@ -77,8 +79,8 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── systems/profiles.lua → systems/persistence.lua, ui/ui.lua, systems/achievements.lua, systems/profilesDraw.lua
 ├── systems/settings.lua → systems/persistence.lua, core/helpers.lua, ui/ui.lua, render/shaders.lua, systems/settingsDraw.lua
 ├── systems/achievements.lua → systems/persistence.lua, core/world.lua
-├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua, systems/debugTools.lua
-├── ui/ui.lua (facade) ──→ ui/introUI.lua, ui/menuUI.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua
+├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua, systems/debugTools.lua → systems/debugLogo.lua
+├── ui/ui.lua (facade) ──→ ui/introUI.lua, ui/menuUI.lua → ui/menuLogo.lua + ui/menuCard.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua
 ├── render/shaders.lua, render/particles.lua, render/renderMain.lua, render/enemiesDraw.lua
 └── audio/sound.lua
 ```
@@ -107,7 +109,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | populate.lua | world/ | 193 | — | Room population (enemies/food/obstacles) (split 17:08:2026) |
 | items.lua | systems/ | 100 | itemsMod | Item definitions (registry + 4 categorías) |
 | shop.lua | systems/ | 376 | shopMod | Shop logic and UI |
-| persistence.lua | systems/ | 348 | persistenceMod | Save/load system (profiles.dat, syncActiveProfile) |
+| persistence.lua | systems/ | 362 | persistenceMod | Save/load system (profiles.dat + settings.dat con logo {offsetX,offsetY,scale,spacing,depth}, syncActiveProfile) |
 | profiles.lua | systems/ | 344 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
 | profilesDraw.lua | systems/ | 509 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
 | achievements.lua | systems/ | 184 | achievementsMod | Achievement tracking (11 logros) |
@@ -116,15 +118,18 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | player.lua | systems/ | 141 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
 | gameflow.lua | systems/ | 105 | — | Runs/rooms: init run, reset sala |
 | gamestates.lua | systems/ | 464 | — | Update por estado (7 estados): playing, death, highScore, transition |
-| debugTools.lua | systems/ | 235 | — | Menú debug (Tab): skip/coins/immune/speed/streak |
+| debugTools.lua | systems/ | 196 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
+| debugLogo.lua | systems/ | 189 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
 | ui.lua | ui/ | 143 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
 | introUI.lua | ui/ | 152 | — | Intro Balatro + high score |
-| menuUI.lua | ui/ | 221 | — | Menú principal + botones |
+| menuUI.lua | ui/ | 205 | — | Facade menú (panel 40% + 4 botones 260×40 gap14, delega a menuLogo/menuCard) (split 23:08:2026) |
+| menuLogo.lua | ui/ | 129 | — | Logo procedural cian 2.5D (getBounds, draw, drawGlow) (split 23:08:2026) |
+| menuCard.lua | ui/ | 214 | — | Tarjeta #11 Chunky 344×76 + moneda circular 3D + medalla (split 23:08:2026) |
 | hudUI.lua | ui/ | 235 | — | Grid/HUD/slots/combo |
 | toastsUI.lua | ui/ | 88 | — | Toasts |
 | popupsUI.lua | ui/ | 49 | — | Popups |
 | overlaysUI.lua | ui/ | 118 | — | Pausa/minimapa/dungeon debug |
-| shaders.lua | render/ | 458 | shadersMod | Post-processing pipeline (bloom/CRT/shadow/heat) |
+| shaders.lua | render/ | 496 | shadersMod | Post-processing pipeline (bloom/CRT/shadow/heat, dedup SRC_BLUR 23:08:2026) |
 | particles.lua | render/ | 156 | particlesMod | Particle effects (textura 4x4 procedural) |
 | renderMain.lua | render/ | 308 | — | drawScene, dibujo menú/glow/shadow (split 08:08:2026) |
 | enemiesDraw.lua | render/ | 285 | — | Draw enemigos + Chaser estrella de espinas |
@@ -219,6 +224,55 @@ Returns: vivo, comio, enemyKilled, bossResult, attackHit
 Menu: additional heat distortion pass
 Debug menu: drawn AFTER composite (no post-processing)
 ```
+
+### 5.1 Main Menu Asymmetric UI Architecture & Procedural Cyan Isometric Title Pipeline (Opción A: docs → código)
+
+El menú principal opera con una composición asimétrica de alto impacto visual distribuida en 3 zonas (Opción A — el código es canónico, `assets/title_style12*.png` solo fallback):
+
+```
+┌──────────────────────────────────────┬──────────────────┬──────────────────────────────────────┐
+│ PANEL LATERAL IZQUIERDO (40% Ancho)  │ CENTRO (cx, cy)  │     SECTOR DERECHO (60% Ancho)       │
+│ • Rectángulo y = 0..h, w = w * 0.40  │ • Diamante       │ • Logo procedural cian isométrico    │
+│ • Fondo oscuro con alpha progresivo  │   Emblema        │   2.5D 5 letras 7×7 pScale/spacing  │
+│ • Borde divisorio neón a la derecha  │ • Pulso senoidal │ • Pos vía getLogoBounds(t)          │
+│ • 4 botones centrados verticalmente  │ • Núcleo divisor │ • Glow solo glint en drawGlow()     │
+│ • Hitbox menuButtons                 │                  │ • Tarjeta #11 344×76 en rightCenterX │
+└──────────────────────────────────────┴──────────────────┴──────────────────────────────────────┘
+```
+
+#### Pipeline Procedural Cian Neón (#00F0FF) — `ui/menuUI.lua:16-53,90-169` + `systems/persistence.lua:17,20-32` + `systems/debugTools.lua:13-501`
+
+1. **Configuración paramétrica (`systems/persistence.lua:17,20-32`)**:
+   - `settingsDefaults.logo = {offsetX=0, offsetY=0, scale=6, spacing=10, depth=5}` persistido en `config/settings.dat` (Lua table via `lua_encode`/`lua_decode`, `deep_merge` contra defaults).
+   - `persistence.getLogoConfig()` lazy-load con `deep_copy` si falta `logo`; `saveLogoConfig(cfg)` escribe `settings.dat` inmediato.
+   - Rangos validados en `systems/debugTools.lua:313-326,472-493`: `scale` 2–12 (`[`/`]`), `depth` 1–10 (`-`/`+`/`kp±`), `offsetX/Y` int vía flechas (±1, Shift ±10) o drag, `spacing` default 10.
+   - **`menu.getLogoBounds(t)` (`ui/menuUI.lua:36-53`)** calcula posición canónica: `panelW=w*0.40`, `rightCenterX=panelW+floor((w-panelW)/2)`, `float=sin(t*1.5)*3`, `totalW=5*(7*pScale)+4*spacing`, `totalH=7*pScale`, `startX=rightCenterX-floor(totalW/2)+offsetX`, `startY=floor(h*0.36-totalH/2)+float+offsetY`. Retorna `startX,startY,totalW,totalH,depth,pScale,spacing,floatOffset`.
+
+2. **Motor procedural (`menu.draw` título, `ui/menuUI.lua:90-169`)**:
+   - 5 letras en matrices $7\times7$ (char `'X'` = bloque $pScale\times pScale$): `titleLetters[1..5]` para S,N,A,K,E (`" XXXXX "`, etc.).
+   - **Extrusión isométrica 3D a $45^\circ$**: `for d=depth..1` con offset `(-d,+d)`, color por profundidad: `d==depth` → sombra negra `{0,0,0,0.95}`, `d>2` → `{0,0.28,0.38}`, else `{0,0.55,0.70}`; dibuja 5×7×7 rects por capa.
+   - **Fachada frontal en 4 tonos cian neón** con bisel platino: si `distToSweep<12` → blanco puro; `elseif r==1||c==1` → platino `{0.70,0.96,1.0}`; `elseif r<=3` → cian neón `COLOR_CYAN`; `elseif r<=5` → `{0,0.72,0.85}`; else `{0,0.45,0.58}`. **Sweep** $sweepX=(t*160)\%(totalW+100)-50$, $distToSweep=|px-(startX+sweepX)|$; float ya aplicado vía `getLogoBounds`.
+   - **Glint cruz blanca (#16)**: `glintX=startX+sweepX` en `[startX,startX+totalW]`, `glintY=startY+12`, rects $17\times3$ + $3\times17$ blancas, halo cian $9\times9$ al 0.85 y núcleo $3\times3$ blanco.
+
+3. **Glow pass (`menu.drawGlow`, `ui/menuUI.lua:623-648`, invocado en `render/renderMain.lua:58-60`)**:
+   - Solo el glint aporta a `shaders.beginGlow()`: rects $21\times5$ + $5\times21$ cian al `glowPulse*0.95` + $5\times5$ blanco al `glowPulse`, con $glowPulse=0.8+\sin(t*3.5)*0.2$.
+   - **Fallback histórico no canónico**: `loadTitleAssets()` (`ui/menuUI.lua:16-34`) mantiene `assets/title_style12.png` / `title_style12_glow.png` vía `pcall` + `filesystem.getInfo` como respaldo heredado; Opción A los deja sin uso canónico.
+
+4. **Tarjeta #11 Chunky (`ui/menuUI.lua:343-620`)**:
+   - Dimensiones $cardW=344, cardH=76$; **posición real** `cardX=rightCenterX-floor(cardW/2)+200` (`ui/menuUI.lua:355`), $cardY=h-cardH-18$ (corrige docs previos `w-cardW-28`); registrada en `ui.menuButtons` como `card_profile` para hover/click → `profilesMod.open()`.
+   - Chasis: sombra `g=3`, borde chunky 2px cian + delineado 1px negro, filo interior blanco, 4 condensadores $6\times6$ px en `(±g±1)`.
+   - Fondos: izquierdo `#050c17` sólido, derecho `#0c1b2c` a $60^\circ$ vía `splitStartX=cardX+floor(cardW*0.52)` + loop `py` con `currentSplitX=splitStartX+floor(py*0.45)`; divisor cian cada 2px.
+   - Moneda elipsoidal 3D: $R=5.0$, $coinRx=\max(0.5,R\cdot|\cos(t\cdot4.5)|)$, $thickness=\max(1,\lfloor2(1-|\cos|)+0.5\rfloor)$, canto cilíndrico por scanline y disco elíptico $spanW=coinRx\sqrt{1-(py/R)^2}$ con núcleo y sello paramétrico de 10 ptos.
+
+5. **Herramienta de calibración F2 (`systems/debugTools.lua:13-501`, post-composite `render/renderMain.lua:261-263`)**:
+   - Estado `World.state.debugLogoOpen` toggled por `F2` (`debugTools.toggleLogoDebug()` / `debugTools.keypressed` + `love.keypressed` en `main.lua`), con toast + `sound.play("buttonClick")` y `persistence.saveLogoConfig()` al cerrar.
+   - **BBox interactivo**: `bx=startX-depth-4, by=startY-4, bw=totalW+depth+8, bh=totalH+depth+8` con fill `pulse*0.4` y line `pulse` donde $pulse=0.7+\sin(t*6)*0.3$, retícula central $(cx,cy)$ y badge `X: startX (Off: offsetX)  Y: startY (Off: offsetY)`.
+   - **HUD $286\times180$** en $(w-286-10,10)$ con header `Offset: X:±d  Y:±d` + `Escala: scale  Espacio: spacing  Prof: depth`, 8 botones `[X-][X+][Y-][Y+]` ($62\times22$), `[Esc-][Esc+][Prof-][Prof+]` y 3 acciones `[RESET]($80\times24$)/[GUARDAR]($94\times24$)/[CERRAR]($82\times24$)`; leyenda `Flechas: Mover (Shift: 10px) / []: Escala | -/+: Prof | R: Reset / Enter/F2: Guardar`.
+   - **Input**: `mousepressed` detecta HUD buttons (actualiza `cfg` y `saveLogoConfig()` inmediato) o hit en bbox inicia drag (`logoDebugDragging=true`, guarda `logoDragStartX/Y` + `logoInitialOffsetX/Y`); `mousemoved` actualiza `offset=floor(initial+delta)`; `mousereleased` guarda; `keypressed` maneja flechas (±1/Shift ±10), `[`/`]` escala 2–12, `-`/`+` depth 1–10, `R` reset a $(0,0,6,10,5)$, `Enter`/`Esc`/`F2` → `toggleLogoDebug()`+save. Persistencia inmediata en cada ajuste.
+   - **Render post-composite** en `renderMain.drawGame()` `if debugTools.isLogoDebugOpen() then drawLogoDebug()` tras `shaders.composite()` + debug menu, para evitar bloom/shadow sobre el HUD.
+
+6. **Panel y botones (hitbox)**:
+   - `ui.menuButtons` registra `x= floor((panelW-bw)/2)` + `slideX=(1-btnAlpha)*-16`, `y= floor((h-totalMenuHeight)/2)+(i-1)*(bh+gap)+yOffset` (hover -2/pressed +2), con $bw=260, bh=40, gap=14$; verificación exacta en `menu.mousePressed()` y `menu.updateHover()` (hover dispara `sound.play("buttonHover")`).
 
 ## 6. Persistence Layer
 

@@ -3,6 +3,16 @@
 ## Completed (Documentación - 17:08:2026)
 - [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
 
+## Completed (Menú Principal Asimétrico & Título Procedural Cian Isométrico 2.5D - 21:08:2026 → alineado a código Opción A 23:08:2026)
+- [x] **Rediseño del Menú Principal (Distribución Asimétrica & Título Procedural Cian #00F0FF — Opción A docs→código)**:
+  - [x] **Panel Lateral Izquierdo**: Franja continua de 0 a 100% de altura ocupando el 40% del ancho (`panelW = w * 0.40`) con degradado oscuro (`COLOR_BG_BOX` con alpha progresivo) y línea divisoria vertical neón a la derecha en `ui/menuUI.lua:39-88`.
+  - [x] **Botones Centrados Verticalmente**: 4 botones arcade (JUGAR, PERFILES, CONFIGURACIÓN, SALIR) de 260px de ancho, centrados horizontalmente en el panel izquierdo y verticalmente en la pantalla con espaciado de 14px, animación de entrada escalonada y elevación/glow en hover en `ui/menuUI.lua:172-341`.
+  - [x] **Diamante Emblema Central**: Cinemática de `ui/introUI.lua` ajustada para que el diamante se eleve al centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` y permanezca flotando allí permanentemente con pulso senoidal y alas neón como núcleo divisor (`render/renderMain.lua:46`).
+  - [x] **Título "S N A K E" Procedural Isométrico 2.5D Cian Neón #00F0FF (render canónico)**: Motor 100% procedural en `ui/menuUI.lua:90-169` con 5 letras en matrices 7×7 (`pScale` default 6 rango 2–12, `spacing` 10, `depth` 5 rango 1–10), extrusión isométrica 45° hacia (-d,+d) en 5 capas, fachada 4 tonos cian + bisel platino #a6f5ff, sweep especular continuo `t*160`, destello cruz blanca 17×3+3×17, flotación `sin(t*1.5)*3`. Posición/escala parametrizadas vía `menu.getLogoBounds(t)` (`ui/menuUI.lua:36-53`) que lee `persistence.getLogoConfig()` (`systems/persistence.lua:17,20-32`) con `logo={offsetX,offsetY,scale,spacing,depth}` defaults 0,0,6,10,5 persistido en `config/settings.dat`. Glow solo del glint en `menu.drawGlow()` (`ui/menuUI.lua:623-648`) vía `shaders.beginGlow()`; `assets/title_style12.png/glow.png` quedan como **fallback histórico** cargado con `pcall` en `loadTitleAssets()` (`ui/menuUI.lua:16-34`) sin ser render canónico (Opción A).
+  - [x] **Tarjeta Combinada Perfil & HIGH SCORE #11 Chunky 344×76 + Medalla + Moneda Circular 3D**: Posición real `cardX = rightCenterX - cardW/2 + 200` (`ui/menuUI.lua:355`), `cardY = h - cardH - 18` (corrige `w-cardW-28`), marco chunky 2px cian + delineado negro 1px + 4 condensadores 6×6, fondo izq #050c17 der 60° #0c1b2c, 5 celdas con micro-calavera 7×5, moneda elipsoidal `coinRx=R*|cos(t*4.5)|` R=5.0 con espesor dinámico y cinta V + disco oro.
+  - [x] **Herramienta de Calibración F2 (debugLogoOpen)**: Toggle `World.state.debugLogoOpen` en `systems/debugTools.lua:13-501` con drag directo del bbox (`startX-depth-4, startY-4, totalW+depth+8, totalH+depth+8`), HUD táctico 286×180 en (w-296,10) con botones [X-/X+/Y-/Y+/Esc-/Esc+/Prof-/Prof+/RESET/GUARDAR/CERRAR], atajos flechas/Shift 10px, [] escala 2-12, -/+ depth 1-10, R reset, Enter/F2 guardar persistente vía `persistence.saveLogoConfig()` → `config/settings.dat`, dibujada post-composite en `render/renderMain.lua:261-263`.
+  - [x] **Limpieza**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD").
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [ ] **Combat & Survival Package**:
   - [ ] Held-Key Tactical Slither Movement Engine (`snake.isDirectionHeld()`, real-time world, classic auto-slither toggle in settings)
@@ -92,6 +102,7 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Fix core/timers.lua: reserved word `repeat` used as field -> renamed to `loops` (syntax error blocked module load) (08:08:2026)
 - [x] Replace print() calls with core/logger.lua usage across modules (08:08:2026)
 - [x] Split files >500 lines into facade + submodules (17:08:2026): `world/world.lua` (675) -> facade (122) + `world/dungeonGen.lua` (355) + `world/populate.lua` (193); `systems/profiles.lua` (794) -> facade (344) + `systems/profilesDraw.lua` (509); `systems/settings.lua` (589) -> facade (373) + `systems/settingsDraw.lua` (261). `entities/enemies.lua` (520) left intact (optional, no clean split). Delegate via AGY CLI + independent headless `error.log` verification. Fixes applied: duplicate broken `world.getStageMod()` in dungeonGen.lua (nil-global crash), shattered `settings.close()` body + duplicate `settings.audio/graphics/accessibility` table redefinition.
+- [x] Limpieza recomendada 23:08:2026: `ui/menuUI.lua` 683 → facade 205 + `ui/menuLogo.lua` 129 + `ui/menuCard.lua` 214; `systems/debugTools.lua` 503 → 196 + `systems/debugLogo.lua` 189; `render/shaders.lua` 535→496 dedup SRC_BLUR; `LICENSE` MIT creado; `love .` verificado 0 errores tras cada split.
 
 ## Completed (Fase 3)
 - [x] Migrate legacy globals to World-managed state (puntuacion, monedas, comboCount, gameState, fade*, transition*, debug*, menuPS, celebrationTimer, debugButtons) (08:08:2026)
@@ -102,7 +113,7 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] core/timers.lua timer manager created and wired to love.update (08:08:2026)
 
 ## High Priority
-- [ ] Create LICENSE file (MIT mentioned in README but missing)
+- [x] Create LICENSE file (MIT mentioned in README but missing) — creado `LICENSE` 23:08:2026 (refactor limpieza)
 - [x] Add remaining font sizes documentation (28/16/11/8) — documentado en TDD §9 (17:08:2026)
 
 ## Medium Priority
@@ -129,4 +140,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 17:08:2026 (Fase 8 — Gameplay & Combat Evolution)*
+*Last updated: 23:08:2026 (Limpieza recomendada — menuUI/debugLogo/shaders + LICENSE)*
