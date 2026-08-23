@@ -795,6 +795,223 @@
         });
 
         renderCards();
+
+        // =====================================================================
+        // 10 PROPUESTAS PARA EL CUADRO ENORME DETRÁS DE LOS BOTONES (PANEL 40%)
+        // =====================================================================
+        const PANEL_PROPOSALS = [
+            {
+                id: 1,
+                name: "01. Titanio Cepillado + Remaches Allen",
+                tag: "Metal cepillado horizontal + 6 pernos hexagonales",
+                desc: ["Líneas finas horizontales como metal cepillado con 6 pernos Allen en el borde.", "Reflejo anisotrópico sutil que se desplaza con el hover."],
+                draw: (ctx,t,isH,p) => {
+                    const op = state.texOpacity;
+                    const panelW = 162;
+                    ctx.fillStyle = `rgba(8,16,26,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    // cepillado
+                    ctx.fillStyle = `rgba(0,240,255,${op*0.08})`;
+                    for(let y=0;y<CH;y+=4){ ctx.fillRect(0,y,panelW,1); }
+                    // pernos
+                    const bolts=[[12,14],[panelW-12,14],[12,CH-14],[panelW-12,CH-14],[12,CH/2],[panelW-12,CH/2]];
+                    bolts.forEach(([bx,by])=>{ ctx.fillStyle='#000'; ctx.fillRect(bx-4,by-4,8,8); ctx.fillStyle=isH?'#fff':p.goldMid; ctx.fillRect(bx-2,by-2,4,4); ctx.fillStyle='#fff'; ctx.fillRect(bx-1,by-1,2,2); });
+                    // borde neón
+                    ctx.fillStyle=p.mainRgba(op*(isH?0.9:0.5)); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 2,
+                name: "02. Sillería de Cripta Agrietada",
+                tag: "Ladrillos 38×18 con grietas y mortero neón",
+                desc: ["Mampostería de piedra oscura con juntas y grietas procedurales cada 2 filas.", "Acentúa el dungeon crawler sin saturar."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(12,18,28,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.strokeStyle=`rgba(80,95,115,${op*0.5})`; ctx.lineWidth=1;
+                    for(let y=6;y<CH;y+=20){ for(let x=6;x<panelW;x+=42){ const off=((y/20)%2)*20; if(x+off+36<panelW) ctx.strokeRect(x+off-6,y,36,16);} }
+                    if(isH){ ctx.fillStyle=`rgba(0,240,255,${op*0.15})`; for(let i=0;i<3;i++){ const gy=30+i*28; ctx.fillRect(10,gy,panelW-20,1); } }
+                    ctx.fillStyle=p.mainRgba(op*0.6); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 3,
+                name: "03. Zarpazos de Hidra a 45° Continuos",
+                tag: "Diagonales 3px que unifican panel + botones",
+                desc: ["Mismo motivo #06 de los botones pero a gran escala en el panel 40%.", "Coherencia total entre fondo y placa Cyber-Step."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(6,12,22,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(0,240,255,${op*0.12})`;
+                    for(let x=-20;x<panelW+20;x+=14){ ctx.save(); ctx.translate(x,0); ctx.rotate(Math.PI/4); ctx.fillRect(0,-4,3,CH*2); ctx.restore(); }
+                    ctx.fillStyle=p.mainRgba(op*0.7); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 4,
+                name: "04. Grid Táctico Milimétrico",
+                tag: "Cuadrícula 10px + corchetes esquineros L",
+                desc: ["Blueprint grid con puntos perforados y 4 corchetes L en esquinas del panel.", "Estética centro de mando militar."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(7,13,24,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(0,240,255,${op*0.18})`;
+                    for(let y=10;y<CH;y+=10) for(let x=8;x<panelW;x+=10) ctx.fillRect(x,y,1,1);
+                    ctx.strokeStyle=p.mainRgba(op*0.6); ctx.lineWidth=1.2;
+                    const o=8; [[0,0],[panelW-o,0],[0,CH-o],[panelW-o,CH-o]].forEach(([x,y])=>{ ctx.strokeRect(x+2,y+2,o,2); ctx.strokeRect(x+2,y+2,2,o); });
+                    ctx.fillStyle=p.mainRgba(op*0.6); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 5,
+                name: "05. Carbono Martillado + Bisel Doble",
+                tag: "Metal oscuro con relieve martillado y bisel 2px",
+                desc: ["Textura de carbono con puntos irregulares y bisel interior cian de 2px.", "Solidez blindada sin brillo excesivo."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(10,14,20,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(90,110,135,${op*0.12})`;
+                    for(let i=0;i<120;i++){ const x=Math.random()*panelW, y=Math.random()*CH; ctx.fillRect(x,y,2,2); }
+                    ctx.strokeStyle=`rgba(0,240,255,${op*0.5})`; ctx.lineWidth=2; ctx.strokeRect(2,2,panelW-4,CH-4);
+                    ctx.strokeStyle=`rgba(255,255,255,${op*0.12})`; ctx.lineWidth=1; ctx.strokeRect(4,4,panelW-8,CH-8);
+                    ctx.fillStyle=p.mainRgba(op*0.7); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 6,
+                name: "06. Escamas Romboidales de Víbora",
+                tag: "Malla romboidal 12×8 con offset cada fila",
+                desc: ["Escamas hexagonales sutiles en titánico oscuro, mismo lenguaje que el logo.", "Fondo biológico reptil muy inmersivo."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(9,15,26,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(24,40,59,${op*0.35})`;
+                    for(let y=12;y<CH;y+=10) for(let x=10;x<panelW;x+=14){ const off=((y/10)%2)*7; ctx.fillRect(x+off,y,5,5); }
+                    ctx.fillStyle=p.mainRgba(op*0.6); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 7,
+                name: "07. Obsidiana Pulida con Bisel Reflectivo",
+                tag: "Negro espejo + filo blanco y canto cian",
+                desc: ["Obsidiana pulida con bisel interior blanco y borde cian neón de 2px.", "Máximo contraste para que los botones floten."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(4,6,12,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(255,255,255,${op*0.07})`; ctx.fillRect(2,2,panelW-4,18);
+                    ctx.strokeStyle=`rgba(255,255,255,${op*0.18})`; ctx.lineWidth=1; ctx.strokeRect(1,1,panelW-2,CH-2);
+                    ctx.fillStyle=p.mainRgba(op*0.8); ctx.fillRect(panelW,0,2,CH);
+                    // caps oro
+                    ctx.fillStyle=`rgba(255,215,0,${op})`; ctx.fillRect(panelW-2,0,4,10); ctx.fillRect(panelW-2,CH-10,4,10);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 8,
+                name: "08. PCB Dorado + Nodos de Circuito",
+                tag: "Pistas de circuito y pads dorados en L",
+                desc: ["Pistas PCB en ángulo 45°/90° con pads circulares en el borde interior.", "Look tech-tesorería para el panel lateral."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(8,12,20,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.strokeStyle=`rgba(255,215,0,${op*0.25})`; ctx.lineWidth=1;
+                    for(let y=20;y<CH;y+=28){ ctx.beginPath(); ctx.moveTo(10,y); ctx.lineTo(panelW-18,y); ctx.lineTo(panelW-10,y+8); ctx.stroke(); ctx.fillStyle=`rgba(255,215,0,${op*0.7})`; ctx.fillRect(panelW-14,y+4,6,6); }
+                    ctx.fillStyle=p.mainRgba(op*0.6); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 9,
+                name: "09. Herringbone + Musgo Bioluminiscente",
+                tag: "Espina de pez 45° con manchas de musgo verde",
+                desc: ["Adoquines en espina de pez con motas de musgo que pulsan verde suave.", "Toque orgánico de cripta viva."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(14,20,18,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.strokeStyle=`rgba(70,85,70,${op*0.35})`;
+                    for(let y=0;y<CH;y+=12) for(let x=0;x<panelW;x+=24){ ctx.strokeRect(x,y,22,10); }
+                    ctx.fillStyle=`rgba(46,204,113,${op*(0.12+Math.sin(t*2)*0.06)})`;
+                    for(let i=0;i<6;i++){ const mx=18+i*22%panelW, my=22+i*18%CH; ctx.fillRect(mx,my,6,3); }
+                    ctx.fillStyle=p.mainRgba(op*0.6); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            },
+            {
+                id: 10,
+                name: "10. Master Panel — Fusión Acero + Zarpazos + Borde Neón",
+                tag: "Titanio + zarpazos 45° + borde cian + 4 condensadores",
+                desc: ["Fusión maestra: base titanio, zarpazos diagonales, borde neón y 4 condensadores 6×6.", "La portada definitiva para el cuadro enorme."],
+                draw: (ctx,t,isH,p) => {
+                    const op=state.texOpacity; const panelW=162;
+                    ctx.fillStyle=`rgba(6,14,24,${op})`; ctx.fillRect(0,0,panelW,CH);
+                    ctx.fillStyle=`rgba(0,240,255,${op*0.10})`; for(let x=-10;x<panelW+10;x+=16){ ctx.fillRect(x,0,2,CH); }
+                    ctx.strokeStyle=p.mainRgba(op*0.7); ctx.lineWidth=2; ctx.strokeRect(1,1,panelW-2,CH-2);
+                    // condensadores
+                    [[2,2],[panelW-8,2],[2,CH-8],[panelW-8,CH-8]].forEach(([x,y])=>{ ctx.fillStyle='#000'; ctx.fillRect(x,y,6,6); ctx.fillStyle=isH?'#fff':p.cyan; ctx.fillRect(x+1,y+1,4,4); ctx.fillStyle='#fff'; ctx.fillRect(x+2,y+2,2,2); });
+                    ctx.fillStyle=p.mainRgba(op*0.85); ctx.fillRect(panelW,0,2,CH);
+                    drawPanelButtons(ctx,panelW,p,isH);
+                }
+            }
+        ];
+
+        function drawPanelButtons(ctx,panelW,p,isH){
+            // 4 botones mockup centrados en el panel
+            const bw=92, bh=18, gap=10;
+            const totalH=4*bh+3*gap;
+            const bx=Math.floor((panelW-bw)/2);
+            const by=Math.floor((CH-totalH)/2);
+            const labels=["JUGAR","PERFILES","CONFIG","SALIR"];
+            for(let i=0;i<4;i++){
+                const y=by+i*(bh+gap);
+                const hover = isH && i===1;
+                ctx.fillStyle='rgba(0,0,0,0.5)'; ctx.fillRect(bx+2,y+2,bw,bh);
+                ctx.fillStyle=hover?'rgba(6,18,32,1)':'rgba(8,16,28,1)'; ctx.fillRect(bx,y,bw,bh);
+                ctx.strokeStyle=hover?p.mainRgba(0.9):'rgba(0,240,255,0.25)'; ctx.lineWidth=1.2; ctx.strokeRect(bx,y,bw,bh);
+                // mini ojo
+                const ecx=bx+bw/2, ecy=y+bh/2;
+                ctx.fillStyle='rgba(2,4,8,1)'; ctx.beginPath(); ctx.moveTo(ecx-10,ecy); ctx.lineTo(ecx,ecy-5); ctx.lineTo(ecx+10,ecy); ctx.lineTo(ecx,ecy+5); ctx.closePath(); ctx.fill();
+                ctx.fillStyle='rgba(0,240,255,0.9)'; ctx.fillRect(ecx-1,ecy-1,2,2);
+                ctx.fillStyle='#fff'; ctx.font='6px "Press Start 2P"'; ctx.textAlign='center';
+                // texto pequeño encima del ojo para legibilidad en preview
+            }
+        }
+
+        const panelGrid = document.createElement('div');
+        panelGrid.id='panelGrid';
+        panelGrid.className='grid';
+        panelGrid.style.marginTop='28px';
+        // insertar título y grid después del primer grid
+        const title2 = document.createElement('h1');
+        title2.textContent='SNAKE — CUADRO ENORME DETRÁS DE LOS BOTONES (PANEL 40%)';
+        title2.style.marginTop='36px';
+        const sub2 = document.createElement('p');
+        sub2.className='subtitle';
+        sub2.innerHTML='10 Propuestas de Textura y Chasis para el Panel Lateral del 40% — el cuadro enorme que contiene JUGAR / PERFILES / CONFIGURACIÓN / SALIR<br><span style="color:#00F0FF;">Hover para ver borde neón, brillo y coherencia con los botones Cyber-Step + ojo de víbora</span>';
+        document.body.appendChild(title2);
+        document.body.appendChild(sub2);
+        document.body.appendChild(panelGrid);
+
+        function renderPanelCards(){
+            panelGrid.innerHTML='';
+            PANEL_PROPOSALS.forEach(prop=>{
+                const card=document.createElement('div'); card.className='card';
+                card.innerHTML=`<div style="width:100%;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><h2 style="font-size:10px;color:#eef5fc;text-align:left;margin:0;font-family:'Press Start 2P',monospace;">${prop.name}</h2><span class="badge">#${prop.id<10?'0'+prop.id:prop.id}</span></div><div class="tag" style="width:100%;text-align:left;font-size:8.5px;color:#FFD700;margin-bottom:8px;font-weight:bold;font-family:'Press Start 2P',monospace;">${prop.tag}</div><div class="stage"><canvas id="p_${prop.id}" width="400" height="130"></canvas></div><ul class="desc">${prop.desc.map(d=>`<li>${d}</li>`).join('')}</ul>`;
+                panelGrid.appendChild(card);
+                initPanelCanvas(prop);
+            });
+        }
+        function initPanelCanvas(prop){
+            const canvas=document.getElementById(`p_${prop.id}`); if(!canvas) return; const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=false; let isHover=false;
+            canvas.addEventListener('mousemove',()=>{isHover=true;}); canvas.addEventListener('mouseleave',()=>{isHover=false;});
+            function render(){ const now=performance.now()*0.001; ctx.clearRect(0,0,canvas.width,canvas.height); const pal=PALETTES[state.theme]; prop.draw(ctx,now,isHover,pal); if(document.getElementById(`p_${prop.id}`)) requestAnimationFrame(render); }
+            render();
+        }
+        renderPanelCards();
     </script>
 </body>
 </html>

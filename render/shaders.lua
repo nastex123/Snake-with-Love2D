@@ -99,45 +99,6 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
 }
 ]]
 
--- ============================================================
--- Bloom: separable gaussian, pasada H
--- ============================================================
-local SRC_BLUR_H = [[
-extern vec2 resolution;
-extern float radius;
-vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
-    float w[9];
-    w[0]=0.054; w[1]=0.122; w[2]=0.194; w[3]=0.230; w[4]=0.230;
-    w[5]=0.194; w[6]=0.122; w[7]=0.054; w[8]=0.054;
-    vec4 sum = vec4(0.0);
-    float step = radius / resolution.x;
-    for (int i = -4; i <= 4; i++) {
-        sum += Texel(tex, uv + vec2(float(i) * step, 0.0)) * w[i + 4];
-    }
-    return sum * color;
-}
-]]
-
--- ============================================================
--- Bloom: pasada V
--- ============================================================
-local SRC_BLUR_V = [[
-extern vec2 resolution;
-extern float radius;
-vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
-    float w[9];
-    w[0]=0.054; w[1]=0.122; w[2]=0.194; w[3]=0.230; w[4]=0.230;
-    w[5]=0.194; w[6]=0.122; w[7]=0.054; w[8]=0.054;
-    vec4 sum = vec4(0.0);
-    float step = radius / resolution.y;
-    for (int i = -4; i <= 4; i++) {
-        sum += Texel(tex, uv + vec2(0.0, float(i) * step)) * weights[i + 4];
-    }
-    return sum * color;
-}
-]]
-
--- Corregido: variable name consistency
 local SRC_BLUR_V_FIXED = [[
 extern vec2 resolution;
 extern float radius;
