@@ -1,37 +1,65 @@
+-- systems/settingsDraw.lua — Submódulo de renderizado y controles para el panel de ajustes
 local settingsDraw = {}
 local ui = require('ui.ui')
 local helpers = require('core.helpers')
 
-function settingsDraw.panelXY(settings)
-    local w = love.graphics.getWidth()
-    local h = love.graphics.getHeight()
-    return math.floor((w - settings.PW) / 2), math.floor((h - settings.PH) / 2)
-end
-
-function settingsDraw.showToast(settings, text, isError)
-    settings.toastText = text
-    settings.toastTimer = 2.5
-    settings.toastError = isError or false
-end
-
 local fallbackFonts = {}
-function settingsDraw.getFallbackFont(settings, s)
+
+local function getFallbackFont(s)
     if not fallbackFonts[s] then
         fallbackFonts[s] = love.graphics.newFont(s)
     end
     return fallbackFonts[s]
 end
 
-function settingsDraw.setFont(settings, size)
-    if ui and ui['font'..size] then
-        love.graphics.setFont(ui['font'..size])
+local function setFont(size)
+    if ui and ui['font' .. size] then
+        love.graphics.setFont(ui['font' .. size])
     else
-        local s = size == 'Large' and 22 or size == 'Normal' and 16 or 12
+        local s = size == 'Large' and 22 or (size == 'Normal' and 16 or 12)
         love.graphics.setFont(getFallbackFont(s))
     end
 end
 
-function settingsDraw.drawCheckbox(settings, x, y, label, value)
+local function panelXY(settings)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    return math.floor((w - settings.PW) / 2), math.floor((h - settings.PH) / 2)
+end
+
+local function showToast(settings, text, isError)
+    settings.toastText = text
+    settings.toastTimer = 2.5
+    settings.toastError = isError or false
+end
+
+local function hitTest(settings, x, y, hx, hy, hw, hh)
+    return x >= hx and x <= hx + hw and y >= hy and y <= hy + hh
+end
+
+local function checkboxKeyPath(key)
+    local parts = {}
+    for part in key:gmatch('[^.]+') do parts[#parts + 1] = part end
+    return parts
+end
+
+local function setNested(tbl, keypath, value)
+    local t = tbl
+    for i = 1, #keypath - 1 do
+        t = t[keypath[i]]
+        if not t then return end
+    end
+    t[keypath[#keypath]] = value
+end
+
+local function toggleCheckbox(settings, keypath)
+    local parts = checkboxKeyPath(keypath)
+    local t = settings.editing
+    for i = 1, #parts - 1 do t = t[parts[i]] end
+    t[parts[#parts]] = not t[parts[#parts]]
+end
+
+local function drawCheckbox(settings, x, y, label, value)
     setFont('Normal')
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(label, x, y + 2)
@@ -47,7 +75,7 @@ function settingsDraw.drawCheckbox(settings, x, y, label, value)
     return bx, by, 22, 22
 end
 
-function settingsDraw.drawSlider(settings, x, y, w, label, val)
+local function drawSlider(settings, x, y, w, label, val)
     setFont('Normal')
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(label, x, y + 2)
@@ -71,7 +99,7 @@ function settingsDraw.drawSlider(settings, x, y, w, label, val)
     return bx, y, bw, 24
 end
 
-function settingsDraw.drawDropdown(settings, x, y, w, label, valueLabel)
+local function drawDropdown(settings, x, y, w, label, valueLabel)
     setFont('Normal')
     love.graphics.setColor(1, 1, 1)
     love.graphics.print(label, x, y + 2)
@@ -87,7 +115,7 @@ function settingsDraw.drawDropdown(settings, x, y, w, label, valueLabel)
     return bx, y, bw, 24
 end
 
-function settingsDraw.drawButton(settings, x, y, w, h, text, color)
+local function drawButton(settings, x, y, w, h, text, color)
     love.graphics.setColor(unpack(color or {0.3, 0.3, 0.4}))
     love.graphics.rectangle('fill', x, y, w, h, 6)
     love.graphics.setColor(1, 1, 1)
@@ -95,6 +123,20 @@ function settingsDraw.drawButton(settings, x, y, w, h, text, color)
     love.graphics.printf(text, x, y + (h - 16) / 2, w, 'center')
     return x, y, w, h
 end
+
+-- Exportar helpers para llamadas con self o con settingsDraw.*
+settingsDraw.getFallbackFont = function(settings, s) return getFallbackFont(s) end
+settingsDraw.setFont = function(settings, size) return setFont(size) end
+settingsDraw.panelXY = panelXY
+settingsDraw.showToast = showToast
+settingsDraw.hitTest = hitTest
+settingsDraw.checkboxKeyPath = function(settings, key) return checkboxKeyPath(key) end
+settingsDraw.setNested = function(settings, tbl, keypath, value) return setNested(tbl, keypath, value) end
+settingsDraw.toggleCheckbox = toggleCheckbox
+settingsDraw.drawCheckbox = drawCheckbox
+settingsDraw.drawSlider = drawSlider
+settingsDraw.drawDropdown = drawDropdown
+settingsDraw.drawButton = drawButton
 
 function settingsDraw.drawAudioTab(settings, cx, cy, cw)
     -- Row 0: Master volume slider
@@ -106,7 +148,7 @@ function settingsDraw.drawAudioTab(settings, cx, cy, cw)
     local vy = cy + 8
     love.graphics.setColor(0.3, 0.3, 0.35)
     love.graphics.rectangle('fill', bx, vy, bw, 10, 5)
-    local val = settings.editing.audio.master
+    local val = settings.editing.audio.master or 1.0
     love.graphics.setColor(0, 0.85, 1)
     love.graphics.rectangle('fill', bx, vy, bw * val, 10, 5)
     local kx = bx + bw * val - 7
@@ -121,41 +163,35 @@ function settingsDraw.drawAudioTab(settings, cx, cy, cw)
     settings.g.masterVal = 'audio.master'
 
     -- Checkboxes
-    local ___bx, ___by, ___bw, ___bh = drawCheckbox(cx, cy + 40, 'Música', settings.editing.audio.music)
-    settings.g.musicBox = {___bx, ___by, ___bw, ___bh, key='audio.music'}
-    local ___bx, ___by, ___bw, ___bh = drawCheckbox(cx, cy + 72, 'Efectos de sonido', settings.editing.audio.sfx)
-    settings.g.sfxBox = {___bx, ___by, ___bw, ___bh, key='audio.sfx'}
+    local mbx, mby, mbw, mbh = drawCheckbox(settings, cx, cy + 40, 'Música', settings.editing.audio.music)
+    settings.g.musicBox = {mbx, mby, mbw, mbh, key = 'audio.music'}
+    local sbx, sby, sbw, sbh = drawCheckbox(settings, cx, cy + 72, 'Efectos de sonido', settings.editing.audio.sfx)
+    settings.g.sfxBox = {sbx, sby, sbw, sbh, key = 'audio.sfx'}
 end
 
 function settingsDraw.drawGraphicsTab(settings, cx, cy, cw)
-    local function label(label, y)
-        love.graphics.setColor(1, 1, 1)
-        setFont('Normal')
-        love.graphics.print(label, cx, y + 2)
-    end
-
     -- Pixel Scale
-    local ps = tostring(settings.editing.graphics.pixelScale)
-    local ___bx, ___by, ___bw, ___bh = drawDropdown(cx, cy, cw, 'Pixel Scale', ps)
-    settings.g.pixelScaleDrop = {___bx, ___by, ___bw, ___bh, key='graphics.pixelScale'}
+    local ps = tostring(settings.editing.graphics.pixelScale or 2)
+    local psx, psy, psw, psh = drawDropdown(settings, cx, cy, cw, 'Pixel Scale', ps)
+    settings.g.pixelScaleDrop = {psx, psy, psw, psh, key = 'graphics.pixelScale'}
 
     -- Resolution
     local res = settings.editing.graphics.resolution
     local resLabel = res and (tostring(res.width) .. 'x' .. tostring(res.height)) or 'Auto'
-    local ___bx, ___by, ___bw, ___bh = drawDropdown(cx, cy + 32, cw, 'Resolución', resLabel)
-    settings.g.resolutionDrop = {___bx, ___by, ___bw, ___bh, key='graphics.resolution'}
+    local rx, ry, rw, rh = drawDropdown(settings, cx, cy + 32, cw, 'Resolución', resLabel)
+    settings.g.resolutionDrop = {rx, ry, rw, rh, key = 'graphics.resolution'}
 
     -- Filter
-    local ___bx, ___by, ___bw, ___bh = drawDropdown(cx, cy + 64, cw, 'Filtro', settings.editing.graphics.filter)
-    settings.g.filterDrop = {___bx, ___by, ___bw, ___bh, key='graphics.filter'}
+    local fx, fy, fw, fh = drawDropdown(settings, cx, cy + 64, cw, 'Filtro', settings.editing.graphics.filter or 'nearest')
+    settings.g.filterDrop = {fx, fy, fw, fh, key = 'graphics.filter'}
 
     -- Fullscreen checkbox
-    local ___bx, ___by, ___bw, ___bh = drawCheckbox(cx, cy + 100, 'Pantalla completa', settings.editing.graphics.fullscreen)
-    settings.g.fullscreenBox = {___bx, ___by, ___bw, ___bh, key='graphics.fullscreen'}
+    local fsx, fsy, fsw, fsh = drawCheckbox(settings, cx, cy + 100, 'Pantalla completa', settings.editing.graphics.fullscreen)
+    settings.g.fullscreenBox = {fsx, fsy, fsw, fsh, key = 'graphics.fullscreen'}
 
     -- VSync checkbox
-    local ___bx, ___by, ___bw, ___bh = drawCheckbox(cx, cy + 132, 'VSync', settings.editing.graphics.vsync)
-    settings.g.vsyncBox = {___bx, ___by, ___bw, ___bh, key='graphics.vsync'}
+    local vx, vy, vw, vh = drawCheckbox(settings, cx, cy + 132, 'VSync', settings.editing.graphics.vsync)
+    settings.g.vsyncBox = {vx, vy, vw, vh, key = 'graphics.vsync'}
 end
 
 function settingsDraw.drawAccessibilityTab(settings, cx, cy, cw)
@@ -169,7 +205,7 @@ function settingsDraw.drawAccessibilityTab(settings, cx, cy, cw)
     love.graphics.setColor(0.3, 0.3, 0.35)
     love.graphics.rectangle('fill', bx, vy, bw, 10, 5)
     local minS, maxS = 0.8, 1.5
-    local val = settings.editing.accessibility.uiScale
+    local val = settings.editing.accessibility.uiScale or 1.0
     local frac = (val - minS) / (maxS - minS)
     love.graphics.setColor(0, 0.85, 1)
     love.graphics.rectangle('fill', bx, vy, bw * frac, 10, 5)
@@ -183,13 +219,13 @@ function settingsDraw.drawAccessibilityTab(settings, cx, cy, cw)
     settings.g.uiScaleVal = 'accessibility.uiScale'
 
     -- High contrast checkbox
-    local ___bx, ___by, ___bw, ___bh = drawCheckbox(cx, cy + 40, 'Alto contraste', settings.editing.accessibility.highContrast)
-    settings.g.highContrastBox = {___bx, ___by, ___bw, ___bh, key='accessibility.highContrast'}
+    local hx, hy, hw, hh = drawCheckbox(settings, cx, cy + 40, 'Alto contraste', settings.editing.accessibility.highContrast)
+    settings.g.highContrastBox = {hx, hy, hw, hh, key = 'accessibility.highContrast'}
 
     -- Colorblind dropdown
     local cbLabel = settings.editing.accessibility.colorblind or 'off'
-    local ___bx, ___by, ___bw, ___bh = drawDropdown(cx, cy + 72, cw, 'Daltonismo', cbLabel)
-    settings.g.colorblindDrop = {___bx, ___by, ___bw, ___bh, key='accessibility.colorblind'}
+    local cbx, cby, cbw, cbh = drawDropdown(settings, cx, cy + 72, cw, 'Daltonismo', cbLabel)
+    settings.g.colorblindDrop = {cbx, cby, cbw, cbh, key = 'accessibility.colorblind'}
 end
 
 function settingsDraw.drawDropdownList(settings)
@@ -229,33 +265,6 @@ function settingsDraw.drawToast(settings, w, h)
     love.graphics.setColor(1, 1, 1)
     setFont('Normal')
     love.graphics.printf(settings.toastText or '', tx + 12, ty + 10, tw - 24, 'center')
-end
-
-function settingsDraw.hitTest(settings, x, y, hx, hy, hw, hh)
-    return x >= hx and x <= hx + hw and y >= hy and y <= hy + hh
-end
-
-function settingsDraw.checkboxKeyPath(settings, key)
-    -- 'audio.music' -> settings.editing.audio.music
-    local parts = {}
-    for part in key:gmatch('[^.]+') do parts[#parts+1] = part end
-    return parts
-end
-
-function settingsDraw.setNested(settings, tbl, keypath, value)
-    local t = tbl
-    for i = 1, #keypath - 1 do
-        t = t[keypath[i]]
-        if not t then return end
-    end
-    t[keypath[#keypath]] = value
-end
-
-function settingsDraw.toggleCheckbox(settings, keypath)
-    local parts = checkboxKeyPath(keypath)
-    local t = settings.editing
-    for i = 1, #parts - 1 do t = t[parts[i]] end
-    t[parts[#parts]] = not t[parts[#parts]]
 end
 
 return settingsDraw
