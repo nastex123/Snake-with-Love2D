@@ -469,15 +469,29 @@ MENU → PLAYING → TRANSITION → SHOP → PLAYING → ...
 PLAYING → DEATH_ANIMATION → HIGH_SCORE/SHOP → MENU
 ```
 
-## 7. Visual Style
+## 7. Visual Style & Main Menu Layout
 
-- Pixel art aesthetic (PressStart2P font)
-- Procedural particle effects (4x4 texture)
-- Post-processing shaders:
-  - Bloom (glow → blurH → blurV)
-  - CRT effect
-  - Shadow blur
-  - Heat distortion (menu)
+- **Estética Retro-Arcade de Alto Contraste**: Tipografía pixel art (`PressStart2P`), paleta de acentos cian, oro y magenta, y renderizado nítido sin blur.
+- **Rediseño Asimétrico del Menú Principal**:
+  - *Panel Lateral Izquierdo*: Franja continua de arriba a abajo (altura completa $100\%$, ancho $40\%$) en cristal oscuro translúcido degradado hacia el centro con línea divisoria neón (`panelW = w * 0.40` en `ui/menuUI.lua:39-88`).
+  - *Botones Arcade Centrados*: 4 botones interactivos (`JUGAR`, `PERFILES`, `CONFIGURACIÓN`, `SALIR`) de $260\,\text{px}$, centrados verticalmente en la pantalla con separación de $14\,\text{px}$, animación de entrada escalonada, sonido de hover y destello cian (`ui/menuUI.lua:172-341`, botones con placa Cyber-Step y ojo de víbora central).
+  - *Diamante Emblema Central*: Núcleo divisorio en el centro exacto de la pantalla $(c_x = w/2, c_y = h/2)$ con pulso senoidal y alas neón (intro en `ui/introUI.lua`, render en `render/renderMain.lua:46`).
+  - *Título "S N A K E" — Logotipo Procedural Isométrico 2.5D Cian Neón (#00F0FF, render canónico)*: Motor 100% procedural en `ui/menuUI.lua:90-169` que es el render canónico (Opción A: docs → código). 5 letras en matrices $7\times7$ (`'X'` = píxel de $pScale\times pScale$), $pScale$ configurable, $spacing$ entre letras y $depth$ de extrusión. Pipeline:
+    1. **Extrusión isométrica $45^\circ$ hacia $(-d,+d)$** con $depth$ capas (default 5, rango 1–10): base sombra negra en $d=depth$ (`{0,0,0,0.95}`) y cantos cian profundo `{0,0.28,0.38}` / intermedio `{0,0.55,0.70}`.
+    2. **Fachada frontal en 4 tonos cian neón** con bisel superior platino `#a6f5ff` (`{0.70,0.96,1.0}` en fila/col 1), cian neón `{0,0.94,1.0}` en $r\le3$, cian medio `{0,0.72,0.85}` en $r\le5$, cian profundo `{0,0.45,0.58}` en el resto; **sweep especular continuo** $sweepX = (t\cdot160) \% (totalW+100)-50$ que pinta píxeles a $<12\,$px en blanco puro.
+    3. **Destello en cruz blanca (#16)** de $17\times3$ + $3\times17$ con núcleo $3\times3$ blanco y halo cian $9\times9$, centrado en $glintX = startX+sweepX$, $glintY = startY+12$, visible solo si $glintX\in[startX,startX+totalW]$.
+    4. **Flotación senoidal** $float = \sin(t\cdot1.5)\cdot3$ px.
+    5. **Posición y escala parametrizadas vía `menu.getLogoBounds(t)`** (`ui/menuUI.lua:36-53`): lee `persistence.getLogoConfig()` (`systems/persistence.lua:17,20-32`) con `logo = {offsetX, offsetY, scale, spacing, depth}` (defaults $0,0,6,10,5$) persistido en `config/settings.dat` (Lua table). Cálculo canónico: $panelW=w\cdot0.40$, $rightCenterX=panelW+\lfloor(w-panelW)/2\rfloor$, $totalW=5\cdot(7\cdot pScale)+4\cdot spacing$, $totalH=7\cdot pScale$, $startX=rightCenterX-\lfloor totalW/2\rfloor+offsetX$, $startY=\lfloor h\cdot0.36-totalH/2\rfloor+float+offsetY$. Rangos: $scale$ 2–12 (teclas `[`/`]`), $depth$ 1–10 (`-`/`+`).
+    6. **Glow selectivo solo del glint** en `menu.drawGlow()` (`ui/menuUI.lua:623-648`) vía `shaders.beginGlow()` con $glowPulse=0.8+\sin(t\cdot3.5)\cdot0.2$ (rects $21\times5$ + $5\times21$ cian + $5\times5$ blanco).
+    7. **Fallback histórico no canónico**: `assets/title_style12.png` / `assets/title_style12_glow.png` cargados con `pcall` en `loadTitleAssets()` (`ui/menuUI.lua:16-34`) solo como respaldo heredado; no son el render canónico tras la Opción A.
+  - *Tarjeta Combinada Perfil & HIGH SCORE (#11 Chunky $344\times76$ + Medalla + Moneda 3D)*: Chasis chunky 2px cian con delineado negro 1px y 4 condensadores $6\times6$ px en esquinas (`ui/menuUI.lua:343-620`). **Posición real** `cardX = rightCenterX - \lfloor cardW/2\rfloor + 200` (`ui/menuUI.lua:355`), $cardY = h - cardH - 18$ (no `w-cardW-28`), con fondo izquierdo `#050c17` y derecho a $60^\circ$ `#0c1b2c`, divisor plasma cian en `splitStartX = cardX+\lfloor cardW*0.52\rfloor$ con desplazamiento $0.45\cdot py$. Incluye: nombre perfil, 5 celdas de progreso con micro-calavera $7\times5$ en celda 5, moneda circular 3D elipsoidal procedural con $\text{coinRx}=R\cdot|\cos(t\cdot4.5)|$, $R=5.0$, espesor dinámico $thickness=\max(1,\lfloor2(1-|\cos|)+0.5\rfloor)$ y sello paramétrico de 10 ptos, y medalla oficial cinta V bicolor (azul/rojo $12\times6$) + disco oro $8\times8$ con glint $2\times2$ blanco. Hover sobre tarjeta (`card_profile` en `ui.menuButtons`) abre `profilesMod.open()`.
+  - *Herramienta de Calibración F2 (debugLogoOpen)*: Toggle `World.state.debugLogoOpen` (`systems/debugTools.lua:13-501`, `render/renderMain.lua:261-263` post-composite). Activa bbox pulsante $bw=totalW+depth+8$, $bh=totalH+depth+8$ en `(startX-depth-4, startY-4)` con pulso $0.7+\sin(t\cdot6)\cdot0.3$, retícula central y badge $X/Y$ con offsets. **HUD táctico $286\times180$** en $(w-296,10)$ con 11 botones: `[X-]/[X+]/[Y-]/[Y+]` (fila 1), `[Esc-]/[Esc+]/[Prof-]/[Prof+]` (fila 2), `[RESET]/[GUARDAR]/[CERRAR]` (fila 3) y leyenda de atajos. **Interacción**: drag directo del bbox (mousedown guarda `logoDragStartX/Y` + `logoInitialOffsetX/Y`; mousemove actualiza `offset=floor(initial+delta)`; mouseup guarda), y atajos: flechas $\pm1$px (Shift $\pm10$), `[`/`]` escala 2–12, `-`/`+` (y `kp-`/`kp+`) depth 1–10, `R` reset a defaults $(0,0,6,10,5)$, `Enter`/`F2`/`Esc` guarda y cierra vía `persistence.saveLogoConfig()` → `config/settings.dat`. Todos los ajustes persisten inmediatamente. Dibujado **post-composite** en `render/renderMain.lua:261` para evitar bloom/shadow.
+- **Efectos Procedurales y Partículas**: Textura $4 \times 4$ procedural para fuego, humo y chispas.
+- **Pipeline de Shaders de Post-Procesado**:
+  - Bloom selectivo (glow pass $\to$ blurH $\to$ blurV $\to$ mezcla aditiva) — en menú solo recibe el **glint del logo procedural** y el diamante central (no gemas gemelas del asset histórico).
+  - Efecto CRT con scanlines y curvatura.
+  - Sombra proyectada difusa.
+  - Distorsión de calor (*Heat Haze*) en el fondo fluido Balatro.
 
 ## 8. Audio
 

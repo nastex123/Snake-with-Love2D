@@ -63,7 +63,7 @@ local function getCachedFont(fontSize)
 end
 
 function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
-    local s = scale or 1
+    local s = scale or (ui and ui.scale) or 1
 
     -- Fuente escalada para que el texto crezca con la barra (obtenida del cache)
     local fontSize = math.max(6, math.floor(constants.FONT_NORMAL * s))
@@ -182,14 +182,18 @@ end
 function hud.drawSlots(ui, slotDisplay)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
-    local slotW = 120
-    local slotH = 26
-    local gap = 8
+    local s = math.min(ui and ui.scale or 1.0, w / 420)
+    local slotW = math.floor(120 * s)
+    local slotH = math.floor(26 * s)
+    local gap = math.floor(8 * s)
     local totalW = slotW * 3 + gap * 2
-    local startX = (w - totalW) / 2
-    local y = h - slotH - 6
+    local startX = math.floor((w - totalW) / 2)
+    local y = h - slotH - math.floor(6 * s)
 
-    love.graphics.setFont(ui.fontSmall)
+    local fontSize = math.max(6, math.floor(constants.FONT_SMALL * s))
+    local font = getCachedFont(fontSize)
+    love.graphics.setFont(font)
+    local fontH = font:getHeight()
 
     for i = 1, 3 do
         local x = startX + (i - 1) * (slotW + gap)
@@ -197,22 +201,23 @@ function hud.drawSlots(ui, slotDisplay)
 
         if slot then
             love.graphics.setColor(0.12, 0.12, 0.22, 0.85)
-            love.graphics.rectangle("fill", x, y, slotW, slotH, 3)
+            love.graphics.rectangle("fill", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.6)
-            love.graphics.rectangle("line", x, y, slotW, slotH, 3)
+            love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(1, 1, 1, 0.4)
-            love.graphics.print(i .. ".", x + 4, y + (slotH - ui.fontSmall:getHeight()) / 2)
+            love.graphics.print(i .. ".", x + 4 * s, y + (slotH - fontH) / 2)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(slot.name, x + 18, y + (slotH - ui.fontSmall:getHeight()) / 2)
+            love.graphics.print(slot.name, x + 18 * s, y + (slotH - fontH) / 2)
         else
             love.graphics.setColor(0.12, 0.12, 0.22, 0.4)
-            love.graphics.rectangle("fill", x, y, slotW, slotH, 3)
+            love.graphics.rectangle("fill", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
-            love.graphics.rectangle("line", x, y, slotW, slotH, 3)
+            love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
-            love.graphics.print(i .. ".", x + 4, y + (slotH - ui.fontSmall:getHeight()) / 2)
+            love.graphics.print(i .. ".", x + 4 * s, y + (slotH - fontH) / 2)
         end
     end
+    love.graphics.setFont(ui.fontNormal)
 end
 
 function hud.drawComboFlash(ui, time, comboCount, timer)
