@@ -98,7 +98,7 @@
 - [ ] Balance tuning (Boss food target & economy curves)
 - [ ] Bug fixes & performance profiling (Zero-GC memory audit, 60s zero-allocation test)
 - [ ] Full Gamepad / Controller integration & vibration
-- [x] Create LICENSE file (MIT)
+- [x] Create LICENSE file (Proprietary / All Rights Reserved — No Distribution)
 - [ ] Final testing & Release packaging
 - [x] Curación e integración de las 80 propuestas del socio técnico (GDD §21 / TDD §10.25): resolución de duplicados contra §20, priorización y consolidación de arquitectura completada (17:08:2026)
 

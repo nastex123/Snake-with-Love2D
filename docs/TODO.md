@@ -14,7 +14,7 @@
   - [x] **Herramienta de Calibración F2**: Implementada en `systems/debugLogo.lua` con drag directo de bounding box, HUD táctico 286×180, atajos de teclado y guardado permanente en `config/settings.dat`.
   - [x] **Modularización Limpia (<300 líneas)**: Desacoplados `ui/menuLogo.lua`, `ui/menuCard.lua`, `systems/debugLogo.lua`, `systems/settingsDraw.lua` y `systems/profilesDraw.lua`.
   - [x] **Corrección de Ámbitos y Estabilidad**: Resuelto el scope de funciones locales en `systems/settingsDraw.lua` (`attempt to call global 'setFont'`) y eliminadas referencias circulares huérfanas.
-  - [x] **Limpieza**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD") y creado archivo `LICENSE` (MIT).
+  - [x] **Limpieza & Licencia**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD") y configurado el archivo `LICENSE` (Propietario / All Rights Reserved — Sin permiso de distribución).
 
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [ ] **Combat & Survival Package**:

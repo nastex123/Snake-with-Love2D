@@ -69,6 +69,6 @@ El proyecto está estructurado en 45 módulos desacoplados con límites estricto
 
 ---
 
-## 📜 Licencia
+## 📜 Licencia & Derechos de Distribución
 
-Este proyecto está bajo la Licencia MIT. Consulta el archivo [`LICENSE`](LICENSE) para más detalles.
+Este proyecto es de **Código Propietario — Todos los Derechos Reservados** (All Rights Reserved). Se prohíbe la redistribución, republicación, venta o uso comercial del código fuente y recursos asociados sin autorización expresa por escrito. Consulta el archivo [`LICENSE`](LICENSE) para los términos completos.
