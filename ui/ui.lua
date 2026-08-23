@@ -70,6 +70,8 @@ function ui.load()
     ui.gearTexture = tryLoad("assets/ui_gear_node.png")
     ui.reticleTexture = tryLoad("assets/ui_reticle_corner.png")
     ui.eyeIrisTexture = tryLoad("assets/ui_eye_iris.png")
+    ui.alchemyCircleTex = tryLoad("assets/alchemy_circle.png")
+    ui.alchemyCircleGlow = tryLoad("assets/alchemy_circle_glow.png")
 end
 
 function ui.setScale(s)

@@ -74,7 +74,7 @@
 ## Phase 8: Gameplay & Combat Evolution 🔄 In Progress
 **Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
-- [x] Asymmetric Main Menu UI Redesign & Title Style #12 1:1 Replica (Left vertical panel with centered buttons, central emblem diamond, right-aligned steel/cyan twin-gem title, bottom-right high score card)
+- [x] Asymmetric Main Menu UI Redesign & Procedural Cyan Isometric Title 2.5D (Left vertical panel 40% with centered 4×260px buttons, central emblem diamond at w/2,h/2, right procedural cyan neon logo #00F0FF via ui/menuUI.lua:36-53,90-169 — 5×7×7 mats, pScale/spacing/depth, extrusión 45° (-d,+d), sweep t*160, glint cruz blanca, float sin*3, parametrizado vía menu.getLogoBounds(t) + persistence.settings.logo {offsetX,offsetY,scale,spacing,depth} defaults 0,0,6,10,5 en config/settings.dat, F2 calibration tool World.state.debugLogoOpen drag bbox + HUD 286×180 con flechas/Shift 10px, [] escala 2-12, -/+ depth 1-10, R reset, Enter/F2 guardar post-composite renderMain.lua:261; tarjeta #11 Chunky 344×76 en cardX=rightCenterX-cardW/2+200 con moneda elipsoidal coinRx=R*|cos|)
 - [ ] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
 - [ ] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)

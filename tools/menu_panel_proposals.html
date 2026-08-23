@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>SNAKE — Taller & Simulador de Texturas para el Panel del Menú Principal</title>
+    <!-- Google Fonts: Press Start 2P & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #030509;
+            --panel-bg: #070d18;
+            --border-color: #14243b;
+            --cyan-accent: #00F0FF;
+            --gold-accent: #FFD700;
+            --text-muted: #8ca2ba;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-main); color: #fff; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; min-height: 100vh; }
+        
+        header { text-align: center; margin-bottom: 16px; max-width: 1400px; width: 100%; }
+        h1 { font-family: 'Press Start 2P', monospace; font-size: 17px; color: var(--cyan-accent); margin-bottom: 8px; text-shadow: 0 0 16px rgba(0, 240, 255, 0.5); letter-spacing: 1px; }
+        p.subtitle { color: var(--text-muted); font-size: 13px; line-height: 1.5; }
+
+        /* Barra de Control Táctico */
+        .controls-panel {
+            background: #091322;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 14px 20px;
+            display: flex;
+            gap: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            max-width: 1400px;
+            width: 100%;
+            justify-content: space-between;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+        }
+        .control-group { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #a4bad4; font-weight: 600; }
+        select, input[type="range"], button.action-btn { 
+            background: #0f1c2e; 
+            border: 1.5px solid #223c5e; 
+            color: #00F0FF; 
+            padding: 6px 12px; 
+            border-radius: 5px; 
+            outline: none; 
+            cursor: pointer; 
+            font-size: 12px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        select:hover, button.action-btn:hover { border-color: var(--cyan-accent); background: #162a45; color: #fff; }
+        button.action-btn.active { background: var(--cyan-accent); color: #030509; border-color: var(--cyan-accent); font-weight: 800; }
+
+        /* Vistas / Tabs de Modo */
+        .view-switcher {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            max-width: 1400px;
+            width: 100%;
+            justify-content: center;
+        }
+        .tab-btn {
+            background: #0b1526;
+            border: 2px solid #1c3352;
+            color: #8fa5c2;
+            padding: 10px 22px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Press Start 2P', monospace;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .tab-btn:hover { border-color: var(--cyan-accent); color: #fff; background: #12223c; }
+        .tab-btn.active { background: var(--cyan-accent); color: #030509; border-color: var(--cyan-accent); box-shadow: 0 0 16px rgba(0, 240, 255, 0.4); }
+
+        /* Categorías */
+        .categories-bar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 1400px;
+            margin-bottom: 20px;
+        }
+        .cat-btn {
+            background: #070e1a;
+            border: 1.5px solid #16283f;
+            color: #7d96b3;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-size: 9px;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Press Start 2P', monospace;
+            transition: all 0.15s;
+        }
+        .cat-btn:hover { color: #fff; border-color: #2b4c75; background: #0f1c30; }
+        .cat-btn.active { background: #162b47; color: var(--cyan-accent); border-color: var(--cyan-accent); }
+
+        /* =========================================
+           MODO 1: SIMULADOR 1:1 DEL JUEGO COMPLETO
+           ========================================= */
+        #simView {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 1400px;
+        }
+        .sim-container {
+            display: flex;
+            gap: 24px;
+            width: 100%;
+            justify-content: center;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        .screen-frame {
+            background: #000;
+            border: 3px solid #00F0FF;
+            border-radius: 10px;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.35), 0 20px 50px rgba(0,0,0,0.9);
+            position: relative;
+            overflow: hidden;
+        }
+        .sim-sidebar {
+            flex: 1;
+            min-width: 320px;
+            max-width: 480px;
+            background: #081120;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .sim-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #0c182c;
+            border: 2px solid #1d3659;
+            padding: 10px 14px;
+            border-radius: 6px;
+        }
+        .nav-arrow {
+            background: #142742;
+            border: 1px solid var(--cyan-accent);
+            color: #00F0FF;
+            width: 34px;
+            height: 34px;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .nav-arrow:hover { background: #00F0FF; color: #000; }
+        .prop-info-title { font-family: 'Press Start 2P', monospace; font-size: 12px; color: #00F0FF; line-height: 1.5; }
+        .prop-info-badge { display: inline-block; background: rgba(0, 240, 255, 0.15); border: 1px solid #00F0FF; color: #00F0FF; font-family: 'Press Start 2P', monospace; font-size: 8px; padding: 3px 8px; border-radius: 3px; margin-top: 6px; }
+        .prop-details { font-size: 13px; color: #9bb2cb; line-height: 1.6; }
+        .prop-details li { margin-bottom: 8px; margin-left: 18px; }
+        .prop-details strong { color: #fff; }
+
+        /* =========================================
+           MODO 2: CATÁLOGO DE TARJETAS AMPLIADAS
+           ========================================= */
+        #gridView { width: 100%; max-width: 1400px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: 24px; width: 100%; }
+        .card { 
+            background: #08111e; 
+            border: 2px solid #14243b; 
+            border-radius: 8px; 
+            padding: 16px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+        .card:hover { border-color: #00F0FF; transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0, 240, 255, 0.25); }
+        .card.active-card { border-color: #FFD700; box-shadow: 0 0 20px rgba(255, 215, 0, 0.35); }
+        .card-stage { 
+            width: 100%; 
+            height: 280px; 
+            background: #020408; 
+            border: 2px solid #0d1a2d; 
+            border-radius: 6px; 
+            position: relative; 
+            overflow: hidden; 
+            margin-bottom: 12px;
+        }
+        .card-header { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; }
+        .card-title { font-family: 'Press Start 2P', monospace; font-size: 11px; color: #fff; font-weight: bold; }
+        .card-badge { font-family: 'Press Start 2P', monospace; font-size: 8px; background: rgba(0, 240, 255, 0.15); color: #00F0FF; border: 1px solid #00F0FF; padding: 3px 6px; border-radius: 2px; }
+        .card-desc { font-size: 12px; color: #8da4be; line-height: 1.5; width: 100%; }
+        .card-desc li { margin-bottom: 4px; margin-left: 16px; }
+        .card-desc strong { color: #e1ecf7; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>SNAKE — TEXTURAS PARA EL PANEL DE BOTONES</h1>
+        <p class="subtitle">Taller de Diseño y Visualizador en Tiempo Real (20 Propuestas Procedurales a 60 FPS)<br>
+        <span style="color:#00F0FF;">Prueba el Simulador 1:1 para ver el juego completo o inspecciona el Catálogo en Modo Libre de Botones.</span></p>
+    </header>
+
+    <!-- Barra de Ajustes Tácticos -->
+    <div class="controls-panel">
+        <div class="control-group">
+            <label>Visibilidad de Botones:</label>
+            <select id="btnVisSelect">
+                <option value="full">Botones Normales (100%)</option>
+                <option value="ghost">Botones Translúcidos (25%) [Recomendado]</option>
+                <option value="none">Ocultar Botones (Solo Textura 100% Limpia)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Paleta:</label>
+            <select id="themeSelect">
+                <option value="cyan">Cian Neón (Arcade)</option>
+                <option value="gold">Oro Noble (Tesorería)</option>
+                <option value="emerald">Veneno Esmeralda (Víbora)</option>
+                <option value="purple">Amatista del Vacío (Etapa 5)</option>
+                <option value="crimson">Fuego Carmesí (Volcán)</option>
+                <option value="dark">Obsidiana Monocromo (Goth)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Opacidad Textura:</label>
+            <input type="range" id="opSlider" min="20" max="100" step="10" value="70">
+            <span id="opVal" style="color:#00F0FF; min-width:32px; font-weight:bold;">70%</span>
+        </div>
+        <div class="control-group">
+            <label>Escala / Zoom:</label>
+            <input type="range" id="zoomSlider" min="5" max="15" step="1" value="10">
+            <span id="zoomVal" style="color:#FFD700; min-width:32px; font-weight:bold;">1.0x</span>
+        </div>
+    </div>
+
+    <!-- Selector de Vistas -->
+    <div class="view-switcher">
+        <button class="tab-btn active" id="tabSim" onclick="switchView('sim')">
+            <span>🎮</span> SIMULADOR DE PANTALLA COMPLETA 1:1
+        </button>
+        <button class="tab-btn" id="tabGrid" onclick="switchView('grid')">
+            <span>🖼️</span> CATÁLOGO DE LAS 20 PROPUESTAS
+        </button>
+    </div>
+
+    <!-- =========================================
+         VISTA 1: SIMULADOR 1:1 PANTALLA COMPLETA
+         ========================================= -->
+    <div id="simView">
+        <div class="sim-container">
+            <!-- Marco de Pantalla 800x600 Real -->
+            <div class="screen-frame">
+                <canvas id="simCanvas" width="800" height="600"></canvas>
+            </div>
+
+            <!-- Panel Lateral de Información y Navegación -->
+            <div class="sim-sidebar">
+                <div class="sim-selector">
+                    <button class="nav-arrow" onclick="prevProposal()">◀</button>
+                    <div style="text-align:center;">
+                        <span style="font-size:10px; color:#7d97b5; font-family:'Press Start 2P', monospace;">PROPUESTA</span>
+                        <div id="curPropNum" style="font-size:20px; font-weight:800; color:#FFD700; font-family:'Press Start 2P', monospace; margin-top:4px;">01 / 20</div>
+                    </div>
+                    <button class="nav-arrow" onclick="nextProposal()">▶</button>
+                </div>
+
+                <div>
+                    <h3 id="simTitle" class="prop-info-title">01. Sillería de Cripta con Mortero Neón</h3>
+                    <div id="simBadge" class="prop-info-badge">MAZMORRA & PIEDRA</div>
+                </div>
+
+                <ul id="simDesc" class="prop-details"></ul>
+
+                <div style="background:#0c182c; border:1px solid #1d3659; border-radius:6px; padding:12px; font-size:11px; color:#8ea7c5; line-height:1.5;">
+                    <strong style="color:#00F0FF;">💡 Atajos de Teclado:</strong><br>
+                    • <strong>Flechas Izq / Der:</strong> Cambiar de propuesta.<br>
+                    • <strong>Tecla B:</strong> Alternar visibilidad de botones.<br>
+                    • <strong>Espacio:</strong> Pausar / Reanudar animaciones.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- =========================================
+         VISTA 2: CATÁLOGO DE 20 TARJETAS AMPLIADAS
+         ========================================= -->
+    <div id="gridView" style="display:none;">
+        <div class="categories-bar">
+            <button class="cat-btn active" data-filter="all">TODAS (20)</button>
+            <button class="cat-btn" data-filter="stone">I. MAZMORRA & PIEDRA (01-05)</button>
+            <button class="cat-btn" data-filter="snake">II. ESCAMAS & VÍBORA (06-10)</button>
+            <button class="cat-btn" data-filter="cyber">III. CYBER-GRID & HUD (11-15)</button>
+            <button class="cat-btn" data-filter="arcane">IV. ARCANO & VACÍO (16-20)</button>
+        </div>
+
+        <div class="grid" id="gridCardsContainer"></div>
+    </div>
+
+    <script>
+        // ==========================================
+        // BASE DE DATOS DE LAS 20 PROPUESTAS
+        // ==========================================
+        const proposals = [
+            // BLOQUE I: MAZMORRA & PIEDRA (01-05)
+            {
+                id: "01",
+                category: "stone",
+                title: "Sillería de Cripta con Mortero Neón",
+                badge: "PIEDRA & NEÓN",
+                desc: [
+                    "<strong>Bloques de Obsidiana Escalonados:</strong> Muro de sillería de 52x26 px con bisel superior e iluminación cenital.",
+                    "<strong>Mortero Bioluminiscente:</strong> Juntas de 1px que emiten un pulso cian vivo en los cruces de cada bloque.",
+                    "<strong>Solidez Monumental:</strong> Aporta profundidad gótica sin restarle protagonismo a los botones."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    const bw = Math.round(52 * opt.scale), bh = Math.round(26 * opt.scale);
+                    const rows = Math.ceil(h / bh) + 1;
+                    const cols = Math.ceil(w / bw) + 1;
+                    const alpha = opt.opacity;
+
+                    ctx.fillStyle = '#050a14';
+                    ctx.fillRect(0, 0, w, h);
+
+                    for (let r = 0; r < rows; r++) {
+                        const shift = (r % 2 === 0) ? 0 : bw / 2;
+                        for (let c = -1; c < cols; c++) {
+                            const x = c * bw + shift;
+                            const y = r * bh;
+
+                            // Bloque
+                            ctx.fillStyle = ((r + c) % 3 === 0) ? '#081324' : '#050c18';
+                            ctx.fillRect(x + 1, y + 1, bw - 2, bh - 2);
+
+                            // Bisel superior de luz
+                            ctx.fillStyle = `rgba(255, 255, 255, ${0.04 * alpha})`;
+                            ctx.fillRect(x + 1, y + 1, bw - 2, 1);
+
+                            // Sombra inferior
+                            ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * alpha})`;
+                            ctx.fillRect(x + 1, y + bh - 2, bw - 2, 1);
+
+                            // Mortero neón
+                            const glow = 0.4 + Math.sin(t * 2 + r * 0.6 + c * 0.8) * 0.3;
+                            ctx.fillStyle = opt.themeRgba(0.16 * alpha * glow);
+                            ctx.fillRect(x, y, bw, 1.5);
+                            ctx.fillRect(x, y, 1.5, bh);
+                        }
+                    }
+                }
+            },
+            {
+                id: "02",
+                category: "stone",
+                title: "Losas de Basalto con Fisuras Místicas",
+                badge: "GRIETAS DE PLASMA",
+                desc: [
+                    "<strong>Losas Irregulares de Basalto:</strong> Bloques de roca oscura con fracturas geométricas.",
+                    "<strong>Fisuras de Plasma Vivas:</strong> Grietas continuas que laten con energía magmática o cian frío.",
+                    "<strong>Destellos en Nodos:</strong> Puntos de energía que brillan en cada intersección."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040710';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    ctx.strokeStyle = opt.themeRgba(0.28 * alpha * (0.6 + Math.sin(t * 3) * 0.4));
+                    ctx.lineWidth = 1.5 * opt.scale;
+                    ctx.beginPath();
+
+                    const sc = opt.scale;
+                    const nodes = [
+                        [20*sc, 20*sc], [80*sc, 60*sc], [40*sc, 140*sc], [130*sc, 190*sc], [60*sc, 290*sc], [140*sc, 380*sc], [70*sc, 480*sc], [160*sc, 560*sc],
+                        [180*sc, 40*sc], [260*sc, 110*sc], [210*sc, 220*sc], [290*sc, 310*sc], [230*sc, 420*sc], [300*sc, 520*sc]
+                    ];
+
+                    for (let i = 0; i < nodes.length - 1; i++) {
+                        ctx.moveTo(nodes[i][0], nodes[i][1]);
+                        const mx = (nodes[i][0] + nodes[i+1][0]) / 2 + Math.sin(t + i) * 4;
+                        const my = (nodes[i][1] + nodes[i+1][1]) / 2 + Math.cos(t + i) * 4;
+                        ctx.lineTo(mx, my);
+                        ctx.lineTo(nodes[i+1][0], nodes[i+1][1]);
+                    }
+                    ctx.stroke();
+
+                    for (let n of nodes) {
+                        const spark = 0.5 + Math.sin(t * 4 + n[0]) * 0.5;
+                        ctx.fillStyle = opt.themeRgba(0.5 * alpha * spark);
+                        ctx.beginPath();
+                        ctx.arc(n[0], n[1], 2.5 * opt.scale, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                }
+            },
+            {
+                id: "03",
+                category: "stone",
+                title: "Mampostería de Cadenas & Grilletes",
+                badge: "CADENAS GÓTICAS",
+                desc: [
+                    "<strong>Eslabones de Cadenas Colgantes:</strong> Filas verticales de hierro forjado a los laterales.",
+                    "<strong>Física de Péndulo:</strong> Balanceo senoidal suave que simula movimiento gravitacional.",
+                    "<strong>Atmósfera de Mazmorra:</strong> Remaches de anclaje oscuro de alta seguridad."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040812';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    function drawChain(x, swing) {
+                        const linkH = 16 * opt.scale;
+                        const count = Math.ceil(h / linkH) + 1;
+                        for (let i = 0; i < count; i++) {
+                            const y = i * linkH;
+                            const sw = Math.sin(t * 1.5 + i * 0.25) * swing * opt.scale;
+                            ctx.strokeStyle = `rgba(160, 190, 220, ${0.16 * alpha})`;
+                            ctx.lineWidth = 2.5 * opt.scale;
+                            ctx.strokeRect(x + sw - 4 * opt.scale, y, 8 * opt.scale, 12 * opt.scale);
+                            ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * alpha})`;
+                            ctx.fillRect(x + sw - 2 * opt.scale, y + 2, 4 * opt.scale, 8 * opt.scale);
+                        }
+                    }
+                    drawChain(24 * opt.scale, 4);
+                    drawChain(60 * opt.scale, 2.5);
+                    drawChain(w - 60 * opt.scale, 2.5);
+                    drawChain(w - 24 * opt.scale, 4);
+                }
+            },
+            {
+                id: "04",
+                category: "stone",
+                title: "Relieve de Columnas & Arcos Ojivales",
+                badge: "ARQUITECTURA CATEDRAL",
+                desc: [
+                    "<strong>Pilastras Estriadas Laterales:</strong> Columnas de piedra labrada a los dos costados del panel.",
+                    "<strong>Medio Arco Superior:</strong> Dovelas góticas que enmarcan toda la botonera.",
+                    "<strong>Jerarquía Noble:</strong> Otorga una presencia solemne de templo ancestral."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#050b16';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    const colW = 36 * opt.scale;
+                    function drawCol(x) {
+                        ctx.fillStyle = '#081426';
+                        ctx.fillRect(x, 0, colW, h);
+                        ctx.strokeStyle = opt.themeRgba(0.2 * alpha);
+                        ctx.lineWidth = 1.5;
+                        for (let fl = 6 * opt.scale; fl < colW; fl += 8 * opt.scale) {
+                            ctx.beginPath();
+                            ctx.moveTo(x + fl, 0);
+                            ctx.lineTo(x + fl, h);
+                            ctx.stroke();
+                        }
+                    }
+                    drawCol(8 * opt.scale);
+                    drawCol(w - colW - 8 * opt.scale);
+
+                    // Arco superior
+                    ctx.strokeStyle = opt.themeRgba(0.25 * alpha);
+                    ctx.lineWidth = 2.5 * opt.scale;
+                    ctx.beginPath();
+                    ctx.arc(w / 2, 60 * opt.scale, w / 2 - 40 * opt.scale, Math.PI, 0, false);
+                    ctx.stroke();
+                }
+            },
+            {
+                id: "05",
+                category: "stone",
+                title: "Pared de Nichos & Micro-Calaveras",
+                badge: "CATACUMBA RELIEVE",
+                desc: [
+                    "<strong>Nichos Cúbicos Oscuros:</strong> Cavidades de piedra talladas uniformemente en la pared.",
+                    "<strong>Micro-Calaveras Pixel Art:</strong> Cráneos con ojos de fuego cian que vigilan la mazmorra.",
+                    "<strong>Temática Dungeon:</strong> Recuerdo de los héroes caídos en expediciones pasadas."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040710';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const nw = 54 * opt.scale, nh = 40 * opt.scale;
+                    const gap = 16 * opt.scale;
+
+                    for (let y = 20; y < h; y += nh + gap) {
+                        for (let x = 16; x < w; x += nw + gap) {
+                            ctx.fillStyle = '#020408';
+                            ctx.fillRect(x, y, nw, nh);
+                            ctx.strokeStyle = `rgba(255, 255, 255, ${0.06 * alpha})`;
+                            ctx.strokeRect(x, y, nw, nh);
+
+                            const cx = x + nw / 2;
+                            const cy = y + nh / 2;
+                            ctx.fillStyle = `rgba(180, 210, 230, ${0.12 * alpha})`;
+                            ctx.fillRect(cx - 6 * opt.scale, cy - 5 * opt.scale, 12 * opt.scale, 9 * opt.scale);
+                            ctx.fillRect(cx - 4 * opt.scale, cy + 4 * opt.scale, 8 * opt.scale, 4 * opt.scale);
+
+                            ctx.fillStyle = opt.themeRgba(0.5 * alpha * (0.7 + Math.sin(t * 3 + x) * 0.3));
+                            ctx.fillRect(cx - 4 * opt.scale, cy - 3 * opt.scale, 2.5 * opt.scale, 2.5 * opt.scale);
+                            ctx.fillRect(cx + 1.5 * opt.scale, cy - 3 * opt.scale, 2.5 * opt.scale, 2.5 * opt.scale);
+                        }
+                    }
+                }
+            },
+
+            // BLOQUE II: ESCAMAS & VÍBORA (06-10)
+            {
+                id: "06",
+                category: "snake",
+                title: "Malla de Escamas Ventrales (Snake Belly)",
+                badge: "VIENTRE ACORAZADO",
+                desc: [
+                    "<strong>Placas Horizontales Superpuestas:</strong> Escamas anchas tipo vientre blindado de serpiente gigante.",
+                    "<strong>Bisel Especular Metálico:</strong> Aristas con brillo tenue de luz superior continua.",
+                    "<strong>Soporte Horizontal:</strong> Abraza los 4 botones arcade de forma completamente natural."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040814';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const plateH = 26 * opt.scale;
+                    const count = Math.ceil(h / plateH) + 1;
+
+                    for (let i = 0; i < count; i++) {
+                        const y = i * plateH;
+                        ctx.fillStyle = (i % 2 === 0) ? '#061022' : '#08172e';
+                        ctx.fillRect(10, y, w - 20, plateH - 3);
+
+                        ctx.fillStyle = opt.themeRgba(0.22 * alpha);
+                        ctx.fillRect(10, y, w - 20, 1.5 * opt.scale);
+
+                        ctx.fillStyle = `rgba(0, 0, 0, ${0.5 * alpha})`;
+                        ctx.fillRect(10, y + plateH - 4, w - 20, 1.5 * opt.scale);
+                    }
+                }
+            },
+            {
+                id: "07",
+                category: "snake",
+                title: "Piel de Víbora Diamantina (Hexagonal)",
+                badge: "ESCAMAS DIAMANTINAS",
+                desc: [
+                    "<strong>Rombos & Hexágonos Teselados:</strong> Trama de escamas en patrón de cascabel diamantina.",
+                    "<strong>Reflejo de Luz Viva:</strong> Brillo anisotrópico que oscila con movimiento orgánico a 60 FPS.",
+                    "<strong>Gran Definición:</strong> Textura hiper-detallada de gran riqueza visual."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#030712';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const size = 22 * opt.scale;
+                    const rows = Math.ceil(h / size) + 1;
+                    const cols = Math.ceil(w / size) + 1;
+
+                    for (let r = 0; r < rows; r++) {
+                        const shift = (r % 2 === 0) ? 0 : size / 2;
+                        for (let c = -1; c < cols; c++) {
+                            const cx = c * size + shift;
+                            const cy = r * size;
+
+                            ctx.beginPath();
+                            ctx.moveTo(cx, cy - size / 2);
+                            ctx.lineTo(cx + size / 2, cy);
+                            ctx.lineTo(cx, cy + size / 2);
+                            ctx.lineTo(cx - size / 2, cy);
+                            ctx.closePath();
+
+                            const shine = 0.5 + Math.sin(t * 2 + (r + c) * 0.4) * 0.5;
+                            ctx.fillStyle = ((r + c) % 3 === 0) ? '#081528' : '#050e1c';
+                            ctx.fill();
+                            ctx.strokeStyle = opt.themeRgba(0.1 * alpha * (0.8 + shine * 0.4));
+                            ctx.stroke();
+                        }
+                    }
+                }
+            },
+            {
+                id: "08",
+                category: "snake",
+                title: "Esqueleto Vertebral en Relieve Lateral",
+                badge: "COLUMNA FÓSIL",
+                desc: [
+                    "<strong>Eje Espinal Vertical:</strong> Columna de vértebras fósiles a la izquierda del panel.",
+                    "<strong>Costillas que Enmarcan:</strong> Arcos óseos que se extienden horizontalmente hacia los botones.",
+                    "<strong>Centros Medulares de Plasma:</strong> Puntos de energía dorada viva en cada junta vertebral."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040812';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    const sx = 36 * opt.scale;
+                    ctx.strokeStyle = opt.themeRgba(0.24 * alpha);
+                    ctx.lineWidth = 3.5 * opt.scale;
+                    ctx.beginPath();
+                    ctx.moveTo(sx, 0);
+                    ctx.lineTo(sx, h);
+                    ctx.stroke();
+
+                    const step = 20 * opt.scale;
+                    for (let y = 20; y < h; y += step) {
+                        ctx.fillStyle = `rgba(210, 230, 250, ${0.18 * alpha})`;
+                        ctx.fillRect(sx - 5 * opt.scale, y - 5 * opt.scale, 10 * opt.scale, 10 * opt.scale);
+
+                        ctx.strokeStyle = `rgba(170, 200, 230, ${0.12 * alpha})`;
+                        ctx.lineWidth = 2 * opt.scale;
+                        ctx.beginPath();
+                        ctx.moveTo(sx - 5 * opt.scale, y);
+                        ctx.quadraticCurveTo(sx - 24 * opt.scale, y - 10 * opt.scale, sx - 30 * opt.scale, y + 8 * opt.scale);
+                        ctx.stroke();
+
+                        ctx.beginPath();
+                        ctx.moveTo(sx + 5 * opt.scale, y);
+                        ctx.quadraticCurveTo(sx + 80 * opt.scale, y - 14 * opt.scale, sx + 180 * opt.scale, y + 6 * opt.scale);
+                        ctx.stroke();
+                    }
+                }
+            },
+            {
+                id: "09",
+                category: "snake",
+                title: "Ouroboros Gigante en Filigrana de Fondo",
+                badge: "OUROBOROS MÍTICO",
+                desc: [
+                    "<strong>Gran Sello Circular:</strong> Doble serpiente mística formando el símbolo del infinito.",
+                    "<strong>Rotación Hipnótica Lenta:</strong> Giro suave a 0.5 RPM detrás de los botones.",
+                    "<strong>Aura Ancestral:</strong> Símbolo de inmortalidad y ciclos de mazmorra."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040710';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const cx = w / 2, cy = h / 2;
+                    const radius = Math.min(w, h) * 0.42 * opt.scale;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+                    ctx.rotate(t * 0.15);
+
+                    ctx.strokeStyle = opt.themeRgba(0.15 * alpha);
+                    ctx.lineWidth = 5 * opt.scale;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, radius, 0, Math.PI * 2);
+                    ctx.stroke();
+
+                    const count = 40;
+                    for (let i = 0; i < count; i++) {
+                        const ang = (i / count) * Math.PI * 2;
+                        const r1 = radius - 10 * opt.scale;
+                        const r2 = radius + 10 * opt.scale;
+                        ctx.strokeStyle = opt.themeRgba(0.1 * alpha);
+                        ctx.lineWidth = 2 * opt.scale;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+                        ctx.lineTo(Math.cos(ang + 0.08) * r2, Math.sin(ang + 0.08) * r2);
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            },
+            {
+                id: "10",
+                category: "snake",
+                title: "Zarpazos de Hidra a 45° en Gran Formato",
+                badge: "ZARPAZOS HIDRA #06",
+                desc: [
+                    "<strong>Bandas Diagonales a 45°:</strong> Líneas transversales bicolores que continúan el diseño interior del botón #06.",
+                    "<strong>Coherencia Total:</strong> Sincronía visual perfecta entre el panel de fondo y los botones.",
+                    "<strong>Contraste Táctico:</strong> Alternancia sutil de carbón y pizarra espacial."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040710';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const bandW = 20 * opt.scale;
+                    const count = Math.ceil((w + h) / bandW) + 2;
+
+                    for (let i = -count; i < count; i++) {
+                        const offset = (i * bandW + (t * 10) % bandW);
+                        ctx.fillStyle = (i % 2 === 0) ? '#081224' : '#040a14';
+                        ctx.beginPath();
+                        ctx.moveTo(offset, 0);
+                        ctx.lineTo(offset + bandW, 0);
+                        ctx.lineTo(offset + bandW - h, h);
+                        ctx.lineTo(offset - h, h);
+                        ctx.closePath();
+                        ctx.fill();
+
+                        ctx.strokeStyle = opt.themeRgba(0.06 * alpha);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        ctx.moveTo(offset, 0);
+                        ctx.lineTo(offset - h, h);
+                        ctx.stroke();
+                    }
+                }
+            },
+
+            // BLOQUE III: CYBER-GRID, RADAR & HUD (11-15)
+            {
+                id: "11",
+                category: "cyber",
+                title: "Cuadrícula Isométrica Táctica (Blueprint Grid)",
+                badge: "ISOMETRIC BLUEPRINT",
+                desc: [
+                    "<strong>Retícula Isométrica Fina:</strong> Grilla técnica de ingeniería de software a 30°/60°.",
+                    "<strong>Micro-Nodos de Intersección:</strong> Puntos parpadeantes en los vértices de cada celda.",
+                    "<strong>Minimalismo Futurista:</strong> Máxima limpieza y modernidad arcade."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#03060e';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const grid = 28 * opt.scale;
+
+                    ctx.strokeStyle = opt.themeRgba(0.09 * alpha);
+                    ctx.lineWidth = 1;
+
+                    for (let x = -h; x < w + h; x += grid) {
+                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h * 0.866, h); ctx.stroke();
+                    }
+                    for (let x = -h; x < w + h; x += grid) {
+                        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x - h * 0.866, h); ctx.stroke();
+                    }
+                    for (let y = 0; y < h; y += grid / 2) {
+                        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+                    }
+                }
+            },
+            {
+                id: "12",
+                category: "cyber",
+                title: "Pistas de Circuito PCB & Nodos de Energía",
+                badge: "CIRCUITO TESLA",
+                desc: [
+                    "<strong>Pistas Electrónicas PCB a 45°:</strong> Líneas de cobre y plasma que se conectan a cada botón.",
+                    "<strong>Paquetes de Datos de Alta Velocidad:</strong> Pulsos de luz que viajan continuamente por los carriles.",
+                    "<strong>Nodos de Oro 6x6 px:</strong> Soldaduras con destellos de energía en las esquinas."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#030712';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const sc = opt.scale;
+
+                    ctx.strokeStyle = opt.themeRgba(0.18 * alpha);
+                    ctx.lineWidth = 2 * sc;
+
+                    const tracks = [
+                        [[25*sc, 0], [25*sc, 100*sc], [55*sc, 130*sc], [55*sc, 220*sc], [30*sc, 250*sc], [30*sc, h]],
+                        [[w - 25*sc, 0], [w - 25*sc, 80*sc], [w - 55*sc, 110*sc], [w - 55*sc, 260*sc], [w - 20*sc, 300*sc], [w - 20*sc, h]],
+                        [[90*sc, 0], [90*sc, 60*sc], [140*sc, 110*sc], [140*sc, h]],
+                        [[w - 90*sc, 0], [w - 90*sc, 140*sc], [w - 140*sc, 190*sc], [w - 140*sc, h]]
+                    ];
+
+                    for (let track of tracks) {
+                        ctx.beginPath();
+                        ctx.moveTo(track[0][0], track[0][1]);
+                        for (let i = 1; i < track.length; i++) ctx.lineTo(track[i][0], track[i][1]);
+                        ctx.stroke();
+
+                        for (let pt of track) {
+                            ctx.fillStyle = '#FFD700';
+                            ctx.fillRect(pt[0] - 2.5*sc, pt[1] - 2.5*sc, 5*sc, 5*sc);
+                        }
+
+                        const prog = (t * 140) % (h + 100);
+                        ctx.fillStyle = '#FFFFFF';
+                        ctx.fillRect(track[1][0] - 3.5*sc, (prog % h), 7*sc, 7*sc);
+                    }
+                }
+            },
+            {
+                id: "13",
+                category: "cyber",
+                title: "Scanlines CRT con Barrido de Radar",
+                badge: "RADAR CRT",
+                desc: [
+                    "<strong>Líneas CRT Intercaladas:</strong> Trama de monitor arcade retro con fósforo cian sutil.",
+                    "<strong>Haz de Radar Descendente:</strong> Gradiente horizontal que barre toda la pantalla cada 4 segundos.",
+                    "<strong>Terminal Táctica:</strong> Sensación militar de puesto de mando de mazmorra."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#03050d';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    ctx.fillStyle = `rgba(0, 0, 0, ${0.45 * alpha})`;
+                    for (let y = 0; y < h; y += 3) ctx.fillRect(0, y, w, 1);
+
+                    const beamY = (t * 90) % (h + 80) - 40;
+                    const grad = ctx.createLinearGradient(0, beamY - 50, 0, beamY + 50);
+                    grad.addColorStop(0, 'rgba(0, 240, 255, 0)');
+                    grad.addColorStop(0.5, opt.themeRgba(0.22 * alpha));
+                    grad.addColorStop(1, 'rgba(0, 240, 255, 0)');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, beamY - 50, w, 100);
+                }
+            },
+            {
+                id: "14",
+                category: "cyber",
+                title: "Matriz de Puntos HUD (Dot Matrix)",
+                badge: "DOT MATRIX TÁCTICO",
+                desc: [
+                    "<strong>Cuadrícula Uniforme de Micro-LEDs:</strong> Puntos ordenados cada 18 px con espaciado constante.",
+                    "<strong>Onda de Expansión Radial:</strong> Anillos que pulsan desde el centro del panel.",
+                    "<strong>Máxima Claridad:</strong> Fondo ultra-limpio que prioriza al 100% los botones."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#030610';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const gap = 18 * opt.scale;
+                    const cx = w / 2, cy = h / 2;
+
+                    for (let y = 12; y < h; y += gap) {
+                        for (let x = 12; x < w; x += gap) {
+                            const dist = Math.hypot(x - cx, y - cy);
+                            const wave = Math.sin(dist * 0.04 - t * 3);
+                            const ptAlpha = (wave > 0.6) ? 0.38 : 0.08;
+                            ctx.fillStyle = opt.themeRgba(ptAlpha * alpha);
+                            ctx.fillRect(x - 1, y - 1, 2.5 * opt.scale, 2.5 * opt.scale);
+                        }
+                    }
+                }
+            },
+            {
+                id: "15",
+                category: "cyber",
+                title: "Paneles de Titanio Blindado & Chevrons",
+                badge: "TITANIO BLINDADO",
+                desc: [
+                    "<strong>Placas Modulares de Titanio:</strong> 4 cuadrantes pesados con juntas biseladas y remaches.",
+                    "<strong>Chevrons Diagonales a 60°:</strong> Refuerzos acorazados en las 4 esquinas.",
+                    "<strong>Blindaje Extremo:</strong> Aspecto de búnker táctico impenetrable."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040814';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    const pw = (w - 20) / 2;
+                    const ph = (h - 20) / 2;
+
+                    for (let r = 0; r < 2; r++) {
+                        for (let c = 0; c < 2; c++) {
+                            const x = 8 + c * (pw + 4);
+                            const y = 8 + r * (ph + 4);
+
+                            ctx.fillStyle = '#081426';
+                            ctx.fillRect(x, y, pw, ph);
+                            ctx.strokeStyle = opt.themeRgba(0.16 * alpha);
+                            ctx.strokeRect(x, y, pw, ph);
+
+                            ctx.fillStyle = `rgba(220, 240, 255, ${0.4 * alpha})`;
+                            ctx.fillRect(x + 4, y + 4, 4, 4);
+                            ctx.fillRect(x + pw - 8, y + 4, 4, 4);
+                            ctx.fillRect(x + 4, y + ph - 8, 4, 4);
+                            ctx.fillRect(x + pw - 8, y + ph - 8, 4, 4);
+                        }
+                    }
+                }
+            },
+
+            // BLOQUE IV: ARCANO, RUNAS & VACÍO (16-20)
+            {
+                id: "16",
+                category: "arcane",
+                title: "Cascada de Runas Ancestrales Flotantes",
+                badge: "CÓDICE RUNAS MATRIX",
+                desc: [
+                    "<strong>Lluvia de Glifos Nórdicos:</strong> Runas antiguas que descienden en cascada vertical mágica.",
+                    "<strong>Desvanecimiento Gradual:</strong> Cada runa brilla con luz blanca en la cabeza y estela neón.",
+                    "<strong>Misterio Arcano:</strong> Fusiona el estilo Matrix con la fantasía oscura."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#03050c';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const runes = ['ᚠ', 'ᚢ', 'ᚦ', 'ᚨ', 'ᚱ', 'ᚲ', 'ᚷ', 'ᚹ', 'ᚺ', 'ᚾ', 'ᛁ', 'ᛃ', 'ᛈ', 'ᛉ', 'ᛋ', 'ᛏ', 'ᛒ', 'ᛖ', 'ᛗ', 'ᛚ', 'ᛜ', 'ᛞ', 'ᛟ'];
+
+                    ctx.font = `${Math.round(11 * opt.scale)}px 'Press Start 2P', monospace`;
+                    const colStep = 32 * opt.scale;
+                    const cols = Math.floor(w / colStep);
+
+                    for (let c = 0; c < cols; c++) {
+                        const x = 16 + c * colStep;
+                        const speed = 25 + (c % 5) * 10;
+                        const startY = (t * speed + c * 45) % (h + 120) - 20;
+
+                        for (let i = 0; i < 8; i++) {
+                            const y = startY - i * (16 * opt.scale);
+                            if (y > 0 && y < h) {
+                                const rChar = runes[(c * 7 + i) % runes.length];
+                                const runeAlpha = (1 - i / 8) * 0.4 * alpha;
+                                ctx.fillStyle = (i === 0) ? '#FFFFFF' : opt.themeRgba(runeAlpha);
+                                ctx.fillText(rChar, x, y);
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                id: "17",
+                category: "arcane",
+                title: "Círculos de Invocación & Alquimia",
+                badge: "MANDALA ALQUÍMICO",
+                desc: [
+                    "<strong>Sellos Circulares Sagrados:</strong> Diagramas geométricos de transmutación y coordenadas.",
+                    "<strong>Estrella de 6 Puntas Giratoria:</strong> Movimiento etéreo a baja velocidad.",
+                    "<strong>Forja de Reliquias:</strong> Recuerda a los altares mágicos de la mazmorra."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040710';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+                    const cx = w / 2, cy = h / 2;
+
+                    ctx.save();
+                    ctx.translate(cx, cy);
+
+                    [70*opt.scale, 110*opt.scale, 150*opt.scale].forEach((r, idx) => {
+                        ctx.strokeStyle = opt.themeRgba((0.16 - idx * 0.03) * alpha);
+                        ctx.lineWidth = 1.5 * opt.scale;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, 0, Math.PI * 2);
+                        ctx.stroke();
+                    });
+
+                    ctx.rotate(t * 0.1);
+                    ctx.strokeStyle = opt.themeRgba(0.12 * alpha);
+                    for (let rot = 0; rot < 2; rot++) {
+                        ctx.beginPath();
+                        for (let i = 0; i < 3; i++) {
+                            const a = rot * Math.PI + (i * Math.PI * 2 / 3);
+                            const px = Math.cos(a) * 110 * opt.scale;
+                            const py = Math.sin(a) * 110 * opt.scale;
+                            if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+                        }
+                        ctx.closePath();
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+                }
+            },
+            {
+                id: "18",
+                category: "arcane",
+                title: "Arco Eléctrico & Filamentos Tesla",
+                badge: "RAYOS TESLA",
+                desc: [
+                    "<strong>Descargas Eléctricas Aleatorias:</strong> Rayos de plasma que saltan desde el borde divisorio.",
+                    "<strong>Partículas de Chispas Volátiles:</strong> Destellos energéticos vivos en tiempo real.",
+                    "<strong>Dinamismo de Alta Tensión:</strong> Transmite poder y peligro latente."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#03060e';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    ctx.strokeStyle = opt.themeRgba(0.8 * alpha);
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(w - 2, 0); ctx.lineTo(w - 2, h);
+                    ctx.stroke();
+
+                    ctx.strokeStyle = '#FFFFFF';
+                    ctx.lineWidth = 1.5;
+                    for (let r = 0; r < 3; r++) {
+                        const seedY = ((t * 4 + r * 1.7) % 1.0) * h;
+                        ctx.beginPath();
+                        ctx.moveTo(w - 2, seedY);
+                        let curX = w - 2;
+                        let curY = seedY;
+                        for (let seg = 0; seg < 6; seg++) {
+                            curX -= (20 + Math.random() * 25) * opt.scale;
+                            curY += (Math.random() * 30 - 15) * opt.scale;
+                            ctx.lineTo(curX, curY);
+                        }
+                        ctx.stroke();
+                    }
+                }
+            },
+            {
+                id: "19",
+                category: "arcane",
+                title: "Dark Glassmorphism con Polvo Dorado",
+                badge: "OBSIDIANA & POLVO",
+                desc: [
+                    "<strong>Vidrio Ahumado Semitransparente:</strong> Cristal negro obsidiana con viñeteado en los bordes.",
+                    "<strong>Partículas de Oro en Suspensión:</strong> Micro-polvo flotando con física browniana.",
+                    "<strong>Elegancia Prémium:</strong> Gran pureza visual y confort de lectura."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    const grad = ctx.createRadialGradient(w/2, h/2, 20, w/2, h/2, w);
+                    grad.addColorStop(0, '#071020');
+                    grad.addColorStop(1, '#020409');
+                    ctx.fillStyle = grad;
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    for (let i = 0; i < 40; i++) {
+                        const px = ((i * 43 + t * (12 + (i%5)*5)) % w);
+                        const py = ((i * 57 + Math.sin(t + i) * 25 + i * 18) % h);
+                        const sz = (i % 3 === 0) ? 2.5 * opt.scale : 1.5 * opt.scale;
+                        ctx.fillStyle = (i % 2 === 0) ? `rgba(255, 215, 0, ${0.45 * alpha})` : opt.themeRgba(0.4 * alpha);
+                        ctx.fillRect(px, py, sz, sz);
+                    }
+                }
+            },
+            {
+                id: "20",
+                category: "arcane",
+                title: "Master Dungeon Cyber-Chassis (Fusión Maestra)",
+                badge: "FUSIÓN TOTAL #20",
+                desc: [
+                    "<strong>Sillería + Escamas + Circuitos + Nodos:</strong> Fusión integral de todos los sistemas.",
+                    "<strong>Placas Ventrales Centrales:</strong> Base acorazada en el centro y pistas PCB doradas en los bordes.",
+                    "<strong>Equilibrio Definitivo:</strong> Textura rica, profunda y cinematográfica."
+                ],
+                draw: function(ctx, w, h, t, opt) {
+                    ctx.fillStyle = '#040814';
+                    ctx.fillRect(0, 0, w, h);
+                    const alpha = opt.opacity;
+
+                    const bw = 52 * opt.scale, bh = 26 * opt.scale;
+                    for (let y = 0; y < h; y += bh) {
+                        for (let x = 0; x < w; x += bw) {
+                            ctx.fillStyle = ((x + y) % 2 === 0) ? '#081426' : '#050c18';
+                            ctx.fillRect(x + 1, y + 1, bw - 2, bh - 2);
+                        }
+                    }
+
+                    ctx.strokeStyle = opt.themeRgba(0.28 * alpha);
+                    ctx.lineWidth = 2 * opt.scale;
+                    ctx.beginPath();
+                    ctx.moveTo(20 * opt.scale, 0); ctx.lineTo(20 * opt.scale, h);
+                    ctx.moveTo(w - 20 * opt.scale, 0); ctx.lineTo(w - 20 * opt.scale, h);
+                    ctx.stroke();
+
+                    for (let y = 25; y < h; y += 40 * opt.scale) {
+                        ctx.fillStyle = '#FFD700';
+                        ctx.fillRect(17 * opt.scale, y, 6 * opt.scale, 6 * opt.scale);
+                        ctx.fillRect(w - 23 * opt.scale, y, 6 * opt.scale, 6 * opt.scale);
+                    }
+
+                    ctx.strokeStyle = opt.themeRgba(0.85 * alpha);
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(w - 1, 0); ctx.lineTo(w - 1, h);
+                    ctx.stroke();
+                }
+            }
+        ];
+
+        // Paletas de color
+        const themes = {
+            cyan: { base: '#00F0FF', rgba: (a) => `rgba(0, 240, 255, ${a})` },
+            gold: { base: '#FFD700', rgba: (a) => `rgba(255, 215, 0, ${a})` },
+            emerald: { base: '#00FF88', rgba: (a) => `rgba(0, 255, 136, ${a})` },
+            purple: { base: '#C050FF', rgba: (a) => `rgba(192, 80, 255, ${a})` },
+            crimson: { base: '#FF3366', rgba: (a) => `rgba(255, 51, 102, ${a})` },
+            dark: { base: '#8899aa', rgba: (a) => `rgba(140, 160, 180, ${a * 0.7})` }
+        };
+
+        let currentPropIdx = 0;
+        let currentFilter = 'all';
+        let currentTheme = 'cyan';
+        let currentOpacity = 0.7;
+        let currentZoom = 1.0;
+        let btnVisibility = 'ghost'; // 'full', 'ghost', 'none'
+        let isPaused = false;
+        let globalTime = 0;
+
+        // Elementos DOM
+        const simCanvas = document.getElementById('simCanvas');
+        const simCtx = simCanvas.getContext('2d');
+        const gridCardsContainer = document.getElementById('gridCardsContainer');
+
+        const btnVisSelect = document.getElementById('btnVisSelect');
+        const themeSelect = document.getElementById('themeSelect');
+        const opSlider = document.getElementById('opSlider');
+        const opVal = document.getElementById('opVal');
+        const zoomSlider = document.getElementById('zoomSlider');
+        const zoomVal = document.getElementById('zoomVal');
+
+        // Función para cambiar de Vista (Simulador vs Grid)
+        function switchView(view) {
+            document.getElementById('tabSim').classList.toggle('active', view === 'sim');
+            document.getElementById('tabGrid').classList.toggle('active', view === 'grid');
+            document.getElementById('simView').style.display = (view === 'sim') ? 'flex' : 'none';
+            document.getElementById('gridView').style.display = (view === 'grid') ? 'block' : 'none';
+        }
+
+        // Navegación de Propuestas en Simulador
+        function setProposal(idx) {
+            currentPropIdx = (idx + proposals.length) % proposals.length;
+            const prop = proposals[currentPropIdx];
+
+            document.getElementById('curPropNum').textContent = `${prop.id} / ${proposals.length}`;
+            document.getElementById('simTitle').textContent = `${prop.id}. ${prop.title}`;
+            document.getElementById('simBadge').textContent = prop.badge;
+
+            const descEl = document.getElementById('simDesc');
+            descEl.innerHTML = prop.desc.map(d => `<li>${d}</li>`).join('');
+
+            // Marcar activa en grid
+            document.querySelectorAll('.card').forEach((c, i) => {
+                c.classList.toggle('active-card', i === currentPropIdx);
+            });
+        }
+        function nextProposal() { setProposal(currentPropIdx + 1); }
+        function prevProposal() { setProposal(currentPropIdx - 1); }
+
+        // Renderizar Tarjetas en Grid View
+        function renderGridCards() {
+            gridCardsContainer.innerHTML = '';
+            proposals.forEach((prop, idx) => {
+                if (currentFilter !== 'all' && prop.category !== currentFilter) return;
+
+                const card = document.createElement('div');
+                card.className = `card ${idx === currentPropIdx ? 'active-card' : ''}`;
+                card.onclick = () => {
+                    setProposal(idx);
+                    switchView('sim');
+                };
+
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span class="card-title">${prop.id}. ${prop.title}</span>
+                        <span class="card-badge">${prop.badge}</span>
+                    </div>
+                    <div class="card-stage">
+                        <canvas id="gridCanvas-${prop.id}" width="400" height="280"></canvas>
+                    </div>
+                    <ul class="card-desc">
+                        ${prop.desc.map(d => `<li>${d}</li>`).join('')}
+                    </ul>
+                `;
+                gridCardsContainer.appendChild(card);
+            });
+        }
+
+        // Dibujar Botón Cyber-Step #03
+        function drawCyberStepButton(ctx, x, y, w, h, text, isHover, alphaFactor) {
+            if (alphaFactor <= 0) return;
+            const c = 6;
+            ctx.save();
+            ctx.globalAlpha = alphaFactor;
+
+            // Sombra
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(x + c + 2, y + 3); ctx.lineTo(x + w - c + 2, y + 3);
+            ctx.lineTo(x + w + 2, y + c + 3); ctx.lineTo(x + w + 2, y + h - c + 3);
+            ctx.lineTo(x + w - c + 2, y + h + 3); ctx.lineTo(x + c + 2, y + h + 3);
+            ctx.lineTo(x + 2, y + h - c + 3); ctx.lineTo(x + 2, y + c + 3);
+            ctx.closePath();
+            ctx.fill();
+
+            // Chasis Cyber-Step
+            ctx.fillStyle = isHover ? '#091830' : '#050c18';
+            ctx.beginPath();
+            ctx.moveTo(x + c, y); ctx.lineTo(x + w - c, y);
+            ctx.lineTo(x + w, y + c); ctx.lineTo(x + w, y + h - c);
+            ctx.lineTo(x + w - c, y + h); ctx.lineTo(x + c, y + h);
+            ctx.lineTo(x, y + h - c); ctx.lineTo(x, y + c);
+            ctx.closePath();
+            ctx.fill();
+
+            // Borde
+            ctx.strokeStyle = isHover ? '#00F0FF' : 'rgba(0, 240, 255, 0.45)';
+            ctx.lineWidth = isHover ? 2 : 1.2;
+            ctx.stroke();
+
+            // Rombo central
+            const rx = x + w / 2, ry = y + h / 2;
+            ctx.fillStyle = isHover ? '#FFD700' : 'rgba(255, 215, 0, 0.7)';
+            ctx.beginPath();
+            ctx.moveTo(rx, ry - 4); ctx.lineTo(rx + 4, ry);
+            ctx.lineTo(rx, ry + 4); ctx.lineTo(rx - 4, ry);
+            ctx.closePath();
+            ctx.fill();
+
+            // Texto
+            ctx.font = "10px 'Press Start 2P', monospace";
+            ctx.fillStyle = isHover ? '#FFFFFF' : '#d2e2f2';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, rx, ry + 1);
+
+            // Nodos laterales
+            ctx.fillStyle = '#00F0FF';
+            ctx.fillRect(x + 4, ry - 2, 4, 4);
+            ctx.fillRect(x + w - 8, ry - 2, 4, 4);
+
+            ctx.restore();
+        }
+
+        // Simular Logotipo Cian 2.5D Procedural
+        function drawMockLogo(ctx, cx, cy, t) {
+            ctx.save();
+            ctx.font = "28px 'Press Start 2P', monospace";
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            const floatY = Math.sin(t * 1.5) * 4;
+
+            // Extrusión 3D
+            for (let d = 5; d >= 1; d--) {
+                ctx.fillStyle = '#004c59';
+                ctx.fillText("S N A K E", cx - d, cy + floatY + d);
+            }
+
+            // Fachada
+            ctx.fillStyle = '#00F0FF';
+            ctx.fillText("S N A K E", cx, cy + floatY);
+
+            // Bisel superior
+            ctx.fillStyle = '#a6f5ff';
+            ctx.fillText("S N A K E", cx, cy + floatY - 1);
+
+            ctx.restore();
+        }
+
+        // Bucle de Animación Principal (60 FPS)
+        function animate() {
+            if (!isPaused) globalTime += 0.016;
+
+            const opt = {
+                opacity: currentOpacity,
+                scale: currentZoom,
+                themeRgba: themes[currentTheme].rgba,
+                themeHex: themes[currentTheme].base
+            };
+
+            const btnAlpha = (btnVisibility === 'full') ? 1.0 : ((btnVisibility === 'ghost') ? 0.25 : 0.0);
+
+            // ===================================
+            // 1. RENDER SIMULADOR 1:1 (800x600)
+            // ===================================
+            simCtx.clearRect(0, 0, 800, 600);
+
+            // Fondo general del juego
+            simCtx.fillStyle = '#020408';
+            simCtx.fillRect(0, 0, 800, 600);
+
+            // Sector Derecho: Diamante central y Logotipo
+            drawMockLogo(simCtx, 560, 200, globalTime);
+
+            // Diamante central
+            const dcx = 400, dcy = 300;
+            simCtx.fillStyle = 'rgba(0, 240, 255, 0.4)';
+            simCtx.beginPath();
+            simCtx.moveTo(dcx, dcy - 16); simCtx.lineTo(dcx + 16, dcy);
+            simCtx.lineTo(dcx, dcy + 16); simCtx.lineTo(dcx - 16, dcy);
+            simCtx.closePath();
+            simCtx.fill();
+
+            // Tarjeta de perfil en esquina inferior derecha
+            simCtx.strokeStyle = '#00F0FF';
+            simCtx.strokeRect(480, 500, 300, 70);
+            simCtx.fillStyle = '#050c17';
+            simCtx.fillRect(480, 500, 300, 70);
+
+            // Gran Panel Lateral Izquierdo (40% ancho = 320px)
+            const panelW = 320;
+            simCtx.save();
+            simCtx.beginPath();
+            simCtx.rect(0, 0, panelW, 600);
+            simCtx.clip();
+
+            // Dibujar Textura elegida en el Panel
+            proposals[currentPropIdx].draw(simCtx, panelW, 600, globalTime, opt);
+
+            // Borde divisorio derecho de plasma
+            simCtx.strokeStyle = '#000000';
+            simCtx.lineWidth = 3;
+            simCtx.beginPath(); simCtx.moveTo(panelW + 2, 0); simCtx.lineTo(panelW + 2, 600); simCtx.stroke();
+
+            const glow = 0.75 + Math.sin(globalTime * 3) * 0.25;
+            simCtx.strokeStyle = themes[currentTheme].rgba(glow);
+            simCtx.lineWidth = 2;
+            simCtx.beginPath(); simCtx.moveTo(panelW, 0); simCtx.lineTo(panelW, 600); simCtx.stroke();
+
+            // Top y bottom caps de oro
+            simCtx.fillStyle = '#FFD700';
+            simCtx.fillRect(panelW - 2, 0, 4, 14);
+            simCtx.fillRect(panelW - 2, 586, 4, 14);
+            simCtx.restore();
+
+            // Dibujar 4 Botones en el Simulador
+            const btnW = 260, btnH = 40, gap = 14;
+            const bx = (panelW - btnW) / 2;
+            const startY = (600 - (4 * btnH + 3 * gap)) / 2;
+            const labels = ["JUGAR", "PERFILES", "CONFIGURACIÓN", "SALIR"];
+
+            labels.forEach((lbl, i) => {
+                const by = startY + i * (btnH + gap);
+                const isHover = (i === 0);
+                drawCyberStepButton(simCtx, bx, by, btnW, btnH, lbl, isHover, btnAlpha);
+            });
+
+            // ===================================
+            // 2. RENDER GRID CARDS
+            // ===================================
+            proposals.forEach(prop => {
+                const cvs = document.getElementById(`gridCanvas-${prop.id}`);
+                if (!cvs) return;
+                const gCtx = cvs.getContext('2d');
+                const gw = cvs.width, gh = cvs.height;
+
+                gCtx.clearRect(0, 0, gw, gh);
+                prop.draw(gCtx, gw, gh, globalTime, opt);
+
+                // Dibujar botones miniatura
+                const gBtnW = 220, gBtnH = 32, gGap = 10;
+                const gBx = (gw - gBtnW) / 2;
+                const gStartY = (gh - (4 * gBtnH + 3 * gGap)) / 2;
+
+                labels.forEach((lbl, i) => {
+                    const by = gStartY + i * (gBtnH + gGap);
+                    drawCyberStepButton(gCtx, gBx, by, gBtnW, gBtnH, lbl, (i === 0), btnAlpha);
+                });
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        // Manejadores de Eventos
+        btnVisSelect.addEventListener('change', (e) => { btnVisibility = e.target.value; });
+        themeSelect.addEventListener('change', (e) => { currentTheme = e.target.value; });
+        opSlider.addEventListener('input', (e) => {
+            currentOpacity = e.target.value / 100;
+            opVal.textContent = `${e.target.value}%`;
+        });
+        zoomSlider.addEventListener('input', (e) => {
+            currentZoom = e.target.value / 10;
+            zoomVal.textContent = `${currentZoom.toFixed(1)}x`;
+        });
+
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderGridCards();
+            });
+        });
+
+        // Atajos de teclado
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextProposal();
+            if (e.key === 'ArrowLeft') prevProposal();
+            if (e.key === ' ' || e.code === 'Space') {
+                isPaused = !isPaused;
+                e.preventDefault();
+            }
+            if (e.key === 'b' || e.key === 'B') {
+                if (btnVisibility === 'full') btnVisibility = 'ghost';
+                else if (btnVisibility === 'ghost') btnVisibility = 'none';
+                else btnVisibility = 'full';
+                btnVisSelect.value = btnVisibility;
+            }
+        });
+
+        // Inicialización
+        setProposal(0);
+        renderGridCards();
+        animate();
+    </script>
+</body>
+</html>

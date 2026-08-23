@@ -8,6 +8,38 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 23:08:2026
+
+- **feature** (completed - 14:58): Implementado el **Fondo Procedural #14 (Dot Matrix HUD)** con el **Círculo de Invocación Alquímico Rotatorio (#17 Render 1)** en el panel lateral del menú principal:
+  1. `scripts/extract_alchemy_circle.py`: Script para procesar y aislar el círculo mágico de Render 1 con fondo transparente y máscara de brillo, generando `assets/alchemy_circle.png` y `assets/alchemy_circle_glow.png` en $512\times 512\,\text{px}$.
+  2. `ui/ui.lua`: Carga con `pcall` y filtro `nearest` de las texturas del círculo alquímico base y glow.
+  3. `ui/menuUI.lua`: Integrada la matriz de puntos procedural #14 con ondas radiales senoidales expansivas, el círculo alquímico rotatorio a 60 FPS con oscilación angular continua ($t \times 0.20$) y pulso de respiración, y el pase de resplandor bloom en `menu.drawGlow`.
+
+- **feature** (completed - 14:50): Generados **3 Renders en Pixel Art Novato Auténtico** para la **Propuesta #17 (Círculos de Invocación & Diagramas Alquímicos)**:
+  1. `tools/assets/pixel_alchemy_circle_novice.jpg`: Gran círculo de invocación arcano con estrella de seis puntas, serpientes rúnicas y pared de piedra con antorcha en estilo 8-bit/16-bit retro indie.
+  2. `tools/assets/pixel_alchemy_diagrams_novice.jpg`: Muro vertical de mazmorra con diagramas sagrados de alquimia, frascos de pociones, serpiente ouroboros y símbolos planetarios en cian y oro.
+  3. `tools/assets/pixel_alchemy_pillar_seal.jpg`: Portal de piedra gótica con columnas laterales y gran sello alquímico central con cresta de víbora y runas celestiales.
+
+- **feature** (completed - 14:45): Reestructuración integral del taller interactivo **`tools/menu_panel_proposals.html`** con **Simulador 1:1 de Pantalla Completa ($800\times 600$)**:
+  1. `tools/menu_panel_proposals.html`: Añadido simulador 1:1 con viewport real del juego, selector de visibilidad de botones (100% / Translúcidos 25% / Ocultos para inspeccionar la textura 100% limpia), slider de zoom/escala de textura (0.5x a 1.5x), atajos de teclado (Flechas, Tecla B, Espacio) y modo de catálogo en tarjetas ampliadas para inspección rápida a 60 FPS.
+
+- **feature** (completed - 14:40): Creado el catálogo interactivo de **20 Propuestas de Textura para el Panel Lateral del Menú Principal** (40% de ancho de pantalla) en `tools/menu_panel_proposals.html`:
+  1. `tools/menu_panel_proposals.html`: Taller interactivo a 60 FPS con 20 texturas procedurales para el panel de fondo detrás de los botones Cyber-Step #03, con controles de opacidad (10% a 100%), velocidad dinámica (1x a 5x), 5 paletas de color y 4 bloques temáticos estructurados:
+     - **Bloque I (Mazmorra Ancestral & Piedra 01-05):** 01. Sillería de Cripta con Mortero Neón, 02. Losas de Basalto con Fisuras Místicas, 03. Mampostería de Cadenas & Grilletes, 04. Relieve de Columnas & Arcos Ojivales, 05. Pared de Nichos & Micro-Calaveras.
+     - **Bloque II (Escamas & Víbora 06-10):** 06. Malla de Escamas Ventrales (Snake Belly), 07. Piel de Víbora Diamantina (Hexagonal), 08. Esqueleto Vertebral en Relieve Lateral, 09. Ouroboros Gigante en Filigrana de Fondo, 10. Zarpazos de Hidra a 45° en Gran Formato (#06).
+     - **Bloque III (Cyber-Grid, Radar & HUD 11-15):** 11. Cuadrícula Isométrica Táctica (Blueprint Grid), 12. Pistas de Circuito PCB & Nodos de Energía, 13. Scanlines CRT con Barrido de Radar, 14. Matriz de Puntos HUD (Dot Matrix), 15. Paneles de Titanio Blindado & Chevrons.
+     - **Bloque IV (Arcano, Runas & Vacío 16-20):** 16. Cascada de Runas Ancestrales Flotantes, 17. Círculos de Invocación & Alquimia, 18. Arco Eléctrico & Filamentos Tesla, 19. Dark Glassmorphism con Polvo Dorado, 20. Master Dungeon Cyber-Chassis (Fusión Maestra Definitiva).
+
+- **refactor** (completed - 14:27): Limpieza de código — splits y deduplicación — 2026-08-23 14:27 America/Bogota:
+  1. `ui/menuUI.lua` 683 → `ui/menuUI.lua` 205 (facade panel 40% + 4 botones 260×40 gap14) + `ui/menuLogo.lua` 129 (getBounds/draw/drawGlow procedural cian 5 capas) + `ui/menuCard.lua` 214 (tarjeta #11 344×76) — preservadas `menu.getLogoBounds/draw/drawGlow/mousePressed/updateHover` usadas en `ui/ui.lua` y `main.lua`.
+  2. `systems/debugTools.lua` 503 → `systems/debugTools.lua` 196 (Tab + logros) + `systems/debugLogo.lua` 189 (F2 drag bbox/HUD 286×180, atajos, persistencia) — facade delega vía `debugLogo.*`, sin circulares (`menuLogo` no `menuUI`).
+  3. `render/shaders.lua` 535→496: eliminados `SRC_BLUR_H/V` muertos (bug `weights` no usado) conservando `SRC_BLUR_*_FIXED`; `LICENSE` MIT creado (faltante High Priority TODO).
+  4. Verificado `love .` 0 errores, `error.log` vacío tras cada split.
+
+- **docs** (completed - 23:35): Alineación documentación → código del menú principal (Opción A) a implementación procedural cian real — 2026-08-23 23:35 America/Bogota:
+  1. `docs/GDD.md §7` y `docs/TDD.md §5.1`: reemplazada descripción obsoleta `Estilo #12 acero biselado con gemas gemelas + assets/title_style12.png` por pipeline procedural cian neón #00F0FF canónico en `ui/menuUI.lua:16-53,90-169,623-648` — 5 letras matrices 7×7 con pScale/spacing/depth, extrusión isométrica 5 capas (-d,+d) a 45°, sweep continuo t*160, destello cruz blanca 17×3+3×17, flotación sin(t*1.5)*3, glow solo del glint con glowPulse 0.8+sin*0.2; documentados `menu.getLogoBounds(t)`, `persistence.settings.logo={offsetX,offsetY,scale,spacing,depth}` defaults 0,0,6,10,5 en `config/settings.dat` (`systems/persistence.lua:17,20-32`) con rangos scale 2-12 y depth 1-10, y `assets/title_style12.png/glow.png` como fallback histórico vía `loadTitleAssets()` con pcall (no canónico). Corregidas posiciones reales: título vía `rightCenterX-floor(totalW/2)+offsetX` / `h*0.36` y tarjeta #11 Chunky 344×76 en `cardX=rightCenterX-cardW/2+200, cardY=h-cardH-18` (`ui/menuUI.lua:355`) con moneda elipsoidal `coinRx=R*|cos(t*4.5)|` R=5.0 y cinta V+disco oro; documentada herramienta F2 `World.state.debugLogoOpen` (`systems/debugTools.lua:13-501`, post-composite `render/renderMain.lua:261-263`) con drag bbox `bw=totalW+depth+8`, HUD 286×180 y atajos flechas/Shift 10px, [] escala 2-12, -/+ depth 1-10, R reset, Enter/F2 guardar persistente.
+  2. `docs/ROADMAP.md` y `docs/TODO.md`: actualizado hito del título a logo procedural cian 2.5D paramétrico completado (no calca #12 acero), reflejando `getLogoBounds`, `persistence logo` y herramienta F2.
+
 ## 22:08:2026
 
 - **fix** (completed - 22:22): Resolución definitiva de dependencias circulares y validación End-to-End en Love2D:
