@@ -10,6 +10,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 23:08:2026
 
+- **docs** (completed - 16:00): Sincronización integral y actualización de toda la documentación técnica del proyecto:
+  1. `README.md`: Actualizada la visión general, controles de depuración (`Tab`, `F2`), características del menú asimétrico cyberpunk (fondo Dot Matrix #14, círculo alquímico rotatorio #17, logotipo 2.5D cian, tarjeta Chunky #11), desglose de la arquitectura de 45 módulos y referencia a la licencia MIT.
+  2. `AGENTS.md`: Actualizada la arquitectura de 45 módulos y subcarpetas (`ui/menuLogo.lua`, `ui/menuCard.lua`, `systems/debugLogo.lua`, `systems/settingsDraw.lua`, `systems/profilesDraw.lua`), documentada la herramienta de calibración en vivo `F2` y la composición del menú asimétrico.
+  3. `docs/GDD.md`: Sección 7 enriquecida con la especificación completa del panel lateral izquierdo del 40%, fondo procedural de matriz de puntos #14, círculo de invocación alquímico rotatorio #17 en pixel art novato con resplandor bloom shader y tarjeta de perfil #11.
+  4. `docs/TDD.md`: Actualizada la tabla de módulos a 45 archivos, documentado el pipeline procedural del menú asimétrico en `menuUI.lua`, `menuLogo.lua`, `menuCard.lua` y `debugLogo.lua`.
+  5. `docs/ROADMAP.md` y `docs/TODO.md`: Marcadas como concluidas las tareas de rediseño de menú, fondo alquímico, herramienta F2, modularización arquitectónica y creación de archivo `LICENSE`.
+
 - **fix** (completed - 15:42): Corrección de ámbito y resolución de funciones en `systems/settingsDraw.lua`:
   1. `systems/settingsDraw.lua`: Definidos los helpers internos `setFont`, `getFallbackFont`, `drawCheckbox`, `drawSlider`, `drawDropdown`, `drawButton`, `checkboxKeyPath`, `setNested` y `toggleCheckbox` como funciones locales puras con exportación dual hacia `settingsDraw.*`, eliminando el fallo `attempt to call global 'setFont' (a nil value)`.
   2. Validación en Love2D: Verificada la navegación completa por las tres pestañas del panel de ajustes (`Audio`, `Gráficos`, `Accesibilidad`), checkboxes, sliders y el gestor de perfiles con $0$ errores.
