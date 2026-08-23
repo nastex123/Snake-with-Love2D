@@ -10,6 +10,10 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 23:08:2026
 
+- **fix** (completed - 15:42): Corrección de ámbito y resolución de funciones en `systems/settingsDraw.lua`:
+  1. `systems/settingsDraw.lua`: Definidos los helpers internos `setFont`, `getFallbackFont`, `drawCheckbox`, `drawSlider`, `drawDropdown`, `drawButton`, `checkboxKeyPath`, `setNested` y `toggleCheckbox` como funciones locales puras con exportación dual hacia `settingsDraw.*`, eliminando el fallo `attempt to call global 'setFont' (a nil value)`.
+  2. Validación en Love2D: Verificada la navegación completa por las tres pestañas del panel de ajustes (`Audio`, `Gráficos`, `Accesibilidad`), checkboxes, sliders y el gestor de perfiles con $0$ errores.
+
 - **feature** (completed - 14:58): Implementado el **Fondo Procedural #14 (Dot Matrix HUD)** con el **Círculo de Invocación Alquímico Rotatorio (#17 Render 1)** en el panel lateral del menú principal:
   1. `scripts/extract_alchemy_circle.py`: Script para procesar y aislar el círculo mágico de Render 1 con fondo transparente y máscara de brillo, generando `assets/alchemy_circle.png` y `assets/alchemy_circle_glow.png` en $512\times 512\,\text{px}$.
   2. `ui/ui.lua`: Carga con `pcall` y filtro `nearest` de las texturas del círculo alquímico base y glow.
