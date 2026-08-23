@@ -1,21 +1,19 @@
-MIT License
+PROPRIETARY LICENSE — ALL RIGHTS RESERVED
 
-Copyright (c) 2026 Snake with Love2D
+Copyright (c) 2026 Snake with Love2D. Todos los derechos reservados.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+El código fuente, arte, música, efectos de sonido, diseño, documentación y demás recursos contenidos en este repositorio son propiedad intelectual exclusiva de sus autores.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+TÉRMINOS Y CONDICIONES DE USO:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+1. PROHIBICIÓN DE DISTRIBUCIÓN:
+   Queda estrictamente prohibida la redistribución, republicación, sublicenciamiento, venta, cesión, difusión pública o puesta a disposición de terceros (total o parcial) del código fuente, binarios compilados, texturas, sprites, pistas de audio o cualquier material derivado de este proyecto, tanto en su forma original como modificada, a través de cualquier medio físico, digital o en línea, sin el consentimiento previo y explícito por escrito de los titulares de los derechos de autor.
+
+2. USO PERSONAL Y PRIVADO:
+   Se autoriza únicamente la descarga y ejecución local del software para fines estrictamente personales, privados y de evaluación técnica o educativa en el equipo del usuario, sin fines comerciales.
+
+3. DERECHOS SOBRE MODIFICACIONES:
+   Cualquier modificación o trabajo derivado realizado a nivel local permanece sujeto a estas mismas restricciones de no distribución ni explotación comercial.
+
+4. EXENCIÓN DE GARANTÍA:
+   EL SOFTWARE SE PROPORCIONA "TAL CUAL" (AS IS), SIN GARANTÍA DE NINGÚN TIPO, EXPRESA O IMPLÍCITA. EN NINGÚN CASO LOS AUTORES O TITULARES DE LOS DERECHOS DE AUTOR SERÁN RESPONSABLES DE NINGÚN RECLAMO, DAÑO U OTRA RESPONSABILIDAD QUE SURJA DEL USO O LA IMPOSIBILIDAD DE USO DE ESTE SOFTWARE.

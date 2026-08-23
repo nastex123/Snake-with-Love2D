@@ -10,6 +10,10 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 23:08:2026
 
+- **docs** (completed - 16:03): Actualización de la licencia del proyecto a **Licencia Propietaria (All Rights Reserved)** con prohibición expresa de distribución:
+  1. `LICENSE`: Reescrita la licencia estableciendo todos los derechos reservados, prohibición total de redistribución, republicación, venta o cesión a terceros sin autorización escrita, y autorizando exclusivamente el uso personal local.
+  2. `README.md`, `docs/ROADMAP.md`, `docs/TODO.md`: Actualizadas las referencias a la licencia propietaria y términos de no distribución.
+
 - **docs** (completed - 16:00): Sincronización integral y actualización de toda la documentación técnica del proyecto:
   1. `README.md`: Actualizada la visión general, controles de depuración (`Tab`, `F2`), características del menú asimétrico cyberpunk (fondo Dot Matrix #14, círculo alquímico rotatorio #17, logotipo 2.5D cian, tarjeta Chunky #11), desglose de la arquitectura de 45 módulos y referencia a la licencia MIT.
   2. `AGENTS.md`: Actualizada la arquitectura de 45 módulos y subcarpetas (`ui/menuLogo.lua`, `ui/menuCard.lua`, `systems/debugLogo.lua`, `systems/settingsDraw.lua`, `systems/profilesDraw.lua`), documentada la herramienta de calibración en vivo `F2` y la composición del menú asimétrico.
