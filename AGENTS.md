@@ -9,14 +9,14 @@
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (42 módulos + helpers)
+## Arquitectura (45 módulos + helpers)
 Estructura de carpetas por sistema:
 - `main.lua` (loop, 7 estados), `constants.lua` — raíz (constants.lua es shim de `core/config.lua`)
 - `core/` → `config.lua` (config central), `logger.lua` (Log.info/warn/error/debug), `timers.lua` (timer manager con pooling), `world.lua` (World.state, estado global sin globals), `touch.lua` (input táctil), `helpers.lua` (deep_copy, rect/math utils)
 - `entities/` → `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss) + `bossAttacks.lua` (4 ataques) + `enemyHelpers.lua` + `chaserAI.lua` (IA social SOLO/DUPLA/MANADA), `food.lua` (3 tipos), `obstacles.lua`
 - `world/` → `world.lua` (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` (BSP, templates, stage modifiers) + `populate.lua` (población de sala)
-- `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade mouse-only panel, expone `audio`/`graphics`/`accessibility`/`dat`) + `settingsDraw.lua` (render tabs), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render select/input/confirm/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug)
-- `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, accesibilidad) + submódulos `introUI.lua` (intro Balatro + high score), `menuUI.lua` (menu + botones), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug). Delegacion: submódulos reciben `ui` como primer argumento
+- `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade panel ajustes) + `settingsDraw.lua` (render pestañas/controles), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug Tab) + `debugLogo.lua` (calibrador logo F2)
+- `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` (intro Balatro + diamante), `menuUI.lua` (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` (render 2.5D cian isométrico), `menuCard.lua` (tarjeta Chunky perfil #11), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug).
 - `render/` → `shaders.lua` (bloom+CRT+sombra+heat), `particles.lua` (textura 4x4 procedural) + `renderMain.lua` (drawScene) + `enemiesDraw.lua`
 - `audio/` → `sound.lua` (SFX procedural + single .ogg)
 
@@ -59,10 +59,14 @@ Single .ogg, 4 segmentos: intro(1-9s), comboEnter(10-17s), comboLoop(13-17s), bo
 - `sound:update(dt)` se llama al inicio de `love.update()`, ANTES del movimiento
 - SFX procedurales cargados en `sound.load()`: eat/death/buy/shieldBreak/highScore/enemyKill/boss_food_tick/boss_defeated
 
-## Debug menu (Tab)
-Toggle: `debugMenuOpen` (global). Dibujado post-composite en PLAYING/PAUSED.
-Panel 210x250 en x=10,y=50. Botones: Skip Room, Skip Stage, +10 Coins, Inmune, Speed +/-, Racha +/-.
-Click en `love.mousepressed()`. `debugButtons` rebuild cada frame.
+## Debug menu (Tab) & Calibrador Logo (F2)
+- **Tab Debug Menu (`systems/debugTools.lua`)**: Toggle con `Tab`. Dibujado post-composite en PLAYING/PAUSED. Panel 210x250 en x=10,y=50. Botones: Skip Room, Skip Stage, +10 Coins, Inmune, Speed +/-, Racha +/-.
+- **F2 Calibrador de Logo (`systems/debugLogo.lua`)**: Toggle con `F2` en el Menú Principal. Permite arrastrar el bounding box con el ratón o ajustar con flechas, modificar escala (`[` / `]`), profundidad (`-` / `+`), resetear (`R`) y guardar permanentemente con `Enter`/`F2` en `config/settings.dat` vía `persistence.saveLogoConfig()`.
+
+## Menú Principal Asimétrico Cyberpunk (`ui/menuUI.lua`)
+- Panel lateral izquierdo ($40\%$ de ancho de pantalla) con fondo procedural de Matriz de Puntos HUD (#14) y Círculo Alquímico de Invocación (#17 Render 1) rotatorio a 60 FPS con pulso de respiración y pase bloom glow.
+- 4 Botones arcade Cyber-Step #03 de $260\times 40\,\text{px}$ centrados verticalmente.
+- Logotipo 2.5D isométrico cian (`ui/menuLogo.lua`) y tarjeta de perfil Chunky #11 (`ui/menuCard.lua`).
 
 ## Pipeline render (`shaders.lua`)
 `shaders.composite()`: sceneCanvas → (glow → blurH → blurV) bloom additive → shadow blur → CRT sobre canvasFinal.

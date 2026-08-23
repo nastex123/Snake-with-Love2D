@@ -240,39 +240,35 @@ El menú principal opera con una composición asimétrica de alto impacto visual
 └──────────────────────────────────────┴──────────────────┴──────────────────────────────────────┘
 ```
 
-#### Pipeline Procedural Cian Neón (#00F0FF) — `ui/menuUI.lua:16-53,90-169` + `systems/persistence.lua:17,20-32` + `systems/debugTools.lua:13-501`
+#### Pipeline del Menú Principal Asimétrico — `ui/menuUI.lua`, `ui/menuLogo.lua`, `ui/menuCard.lua`, `systems/debugLogo.lua`
 
-1. **Configuración paramétrica (`systems/persistence.lua:17,20-32`)**:
-   - `settingsDefaults.logo = {offsetX=0, offsetY=0, scale=6, spacing=10, depth=5}` persistido en `config/settings.dat` (Lua table via `lua_encode`/`lua_decode`, `deep_merge` contra defaults).
+1. **Panel Lateral Izquierdo (40% ancho) & Fondo Procedural #14 + Círculo Alquímico #17**:
+   - `panelW = math.floor(w * 0.40)` con base oscura `COLOR_BG_BOX` al `0.94` de opacidad.
+   - **Fondo Procedural #14 (Dot Matrix HUD)**: Cuadrícula uniforme de micro-LEDs cian cada $18\,\text{px}$ con ondas senoidales expansivas `sin(dist * 0.04 - t * 2.8)` al `0.38` / `0.08` de intensidad lumínica.
+   - **Círculo de Invocación Alquímico (#17 Render 1)**: Emblema en pixel art novato con transparencia (`assets/alchemy_circle.png`), centrado en `(panelW / 2, h / 2)`, rotando a $t \times 0.20\,\text{rad/s}$ con pulso de respiración $0.85 + 0.15\sin(2.5t)$ y pase de bloom glow (`assets/alchemy_circle_glow.png`) en `menu.drawGlow()`.
+   - Divisoria vertical de plasma cian con terminaciones doradas en los extremos superior e inferior.
+
+2. **Configuración paramétrica del Logotipo (`systems/persistence.lua` & `ui/menuLogo.lua`)**:
+   - `settingsDefaults.logo = {offsetX=0, offsetY=0, scale=6, spacing=10, depth=5}` persistido en `config/settings.dat`.
    - `persistence.getLogoConfig()` lazy-load con `deep_copy` si falta `logo`; `saveLogoConfig(cfg)` escribe `settings.dat` inmediato.
-   - Rangos validados en `systems/debugTools.lua:313-326,472-493`: `scale` 2–12 (`[`/`]`), `depth` 1–10 (`-`/`+`/`kp±`), `offsetX/Y` int vía flechas (±1, Shift ±10) o drag, `spacing` default 10.
-   - **`menu.getLogoBounds(t)` (`ui/menuUI.lua:36-53`)** calcula posición canónica: `panelW=w*0.40`, `rightCenterX=panelW+floor((w-panelW)/2)`, `float=sin(t*1.5)*3`, `totalW=5*(7*pScale)+4*spacing`, `totalH=7*pScale`, `startX=rightCenterX-floor(totalW/2)+offsetX`, `startY=floor(h*0.36-totalH/2)+float+offsetY`. Retorna `startX,startY,totalW,totalH,depth,pScale,spacing,floatOffset`.
+   - **`menuLogo.getBounds(t)`** calcula posición canónica: `panelW=w*0.40`, `rightCenterX=panelW+floor((w-panelW)/2)`, `float=sin(t*1.5)*3`, `totalW=5*(7*pScale)+4*spacing`, `totalH=7*pScale`, `startX=rightCenterX-floor(totalW/2)+offsetX`, `startY=floor(h*0.36-totalH/2)+float+offsetY`. Retorna `startX,startY,totalW,totalH,depth,pScale,spacing,floatOffset`.
 
-2. **Motor procedural (`menu.draw` título, `ui/menuUI.lua:90-169`)**:
-   - 5 letras en matrices $7\times7$ (char `'X'` = bloque $pScale\times pScale$): `titleLetters[1..5]` para S,N,A,K,E (`" XXXXX "`, etc.).
-   - **Extrusión isométrica 3D a $45^\circ$**: `for d=depth..1` con offset `(-d,+d)`, color por profundidad: `d==depth` → sombra negra `{0,0,0,0.95}`, `d>2` → `{0,0.28,0.38}`, else `{0,0.55,0.70}`; dibuja 5×7×7 rects por capa.
-   - **Fachada frontal en 4 tonos cian neón** con bisel platino: si `distToSweep<12` → blanco puro; `elseif r==1||c==1` → platino `{0.70,0.96,1.0}`; `elseif r<=3` → cian neón `COLOR_CYAN`; `elseif r<=5` → `{0,0.72,0.85}`; else `{0,0.45,0.58}`. **Sweep** $sweepX=(t*160)\%(totalW+100)-50$, $distToSweep=|px-(startX+sweepX)|$; float ya aplicado vía `getLogoBounds`.
-   - **Glint cruz blanca (#16)**: `glintX=startX+sweepX` en `[startX,startX+totalW]`, `glintY=startY+12`, rects $17\times3$ + $3\times17$ blancas, halo cian $9\times9$ al 0.85 y núcleo $3\times3$ blanco.
+3. **Motor procedural del Título 2.5D (`ui/menuLogo.lua`)**:
+   - 5 letras en matrices $7\times7$: `titleLetters[1..5]` para S,N,A,K,E.
+   - **Extrusión isométrica 3D a $45^\circ$**: `for d=depth..1` con offset `(-d,+d)` en 5 capas.
+   - **Fachada frontal en 4 tonos cian neón** con bisel platino `#a6f5ff`, sweep continuo $sweepX=(t*160)\%(totalW+100)-50$ y glint en cruz blanca $17\times3 + 3\times17$ con halo cian.
+   - **Glow pass (`menuLogo.drawGlow`)**: Aporta el resplandor pulsante del glint a `shaders.beginGlow()`.
 
-3. **Glow pass (`menu.drawGlow`, `ui/menuUI.lua:623-648`, invocado en `render/renderMain.lua:58-60`)**:
-   - Solo el glint aporta a `shaders.beginGlow()`: rects $21\times5$ + $5\times21$ cian al `glowPulse*0.95` + $5\times5$ blanco al `glowPulse`, con $glowPulse=0.8+\sin(t*3.5)*0.2$.
-   - **Fallback histórico no canónico**: `loadTitleAssets()` (`ui/menuUI.lua:16-34`) mantiene `assets/title_style12.png` / `title_style12_glow.png` vía `pcall` + `filesystem.getInfo` como respaldo heredado; Opción A los deja sin uso canónico.
+4. **Tarjeta #11 Chunky (`ui/menuCard.lua`)**:
+   - Dimensiones $cardW=344, cardH=76$, posición `cardX=rightCenterX-floor(cardW/2)+200`, $cardY=h-cardH-18$.
+   - Chasis: borde chunky 2px cian + delineado 1px negro, 4 condensadores $6\times6\,\text{px}$, fondo izquierdo `#050c17`, derecho `#0c1b2c` a $60^\circ$.
+   - Moneda elipsoidal 3D: $R=5.0$, $coinRx=\max(0.5,R\cdot|\cos(t\cdot4.5)|)$, espesor dinámico y medalla de honor bicolor #01.
 
-4. **Tarjeta #11 Chunky (`ui/menuUI.lua:343-620`)**:
-   - Dimensiones $cardW=344, cardH=76$; **posición real** `cardX=rightCenterX-floor(cardW/2)+200` (`ui/menuUI.lua:355`), $cardY=h-cardH-18$ (corrige docs previos `w-cardW-28`); registrada en `ui.menuButtons` como `card_profile` para hover/click → `profilesMod.open()`.
-   - Chasis: sombra `g=3`, borde chunky 2px cian + delineado 1px negro, filo interior blanco, 4 condensadores $6\times6$ px en `(±g±1)`.
-   - Fondos: izquierdo `#050c17` sólido, derecho `#0c1b2c` a $60^\circ$ vía `splitStartX=cardX+floor(cardW*0.52)` + loop `py` con `currentSplitX=splitStartX+floor(py*0.45)`; divisor cian cada 2px.
-   - Moneda elipsoidal 3D: $R=5.0$, $coinRx=\max(0.5,R\cdot|\cos(t\cdot4.5)|)$, $thickness=\max(1,\lfloor2(1-|\cos|)+0.5\rfloor)$, canto cilíndrico por scanline y disco elíptico $spanW=coinRx\sqrt{1-(py/R)^2}$ con núcleo y sello paramétrico de 10 ptos.
+5. **Herramienta de calibración F2 (`systems/debugLogo.lua`, post-composite `render/renderMain.lua`)**:
+   - Estado `World.state.debugLogoOpen` toggled por `F2`, drag interactivo directo del bounding box, HUD táctico $286\times180$, atajos flechas/Shift, escala `[`/`]`, profundidad `-`/`+`, reset `R`, guardar `Enter`/`F2` en `config/settings.dat`.
 
-5. **Herramienta de calibración F2 (`systems/debugTools.lua:13-501`, post-composite `render/renderMain.lua:261-263`)**:
-   - Estado `World.state.debugLogoOpen` toggled por `F2` (`debugTools.toggleLogoDebug()` / `debugTools.keypressed` + `love.keypressed` en `main.lua`), con toast + `sound.play("buttonClick")` y `persistence.saveLogoConfig()` al cerrar.
-   - **BBox interactivo**: `bx=startX-depth-4, by=startY-4, bw=totalW+depth+8, bh=totalH+depth+8` con fill `pulse*0.4` y line `pulse` donde $pulse=0.7+\sin(t*6)*0.3$, retícula central $(cx,cy)$ y badge `X: startX (Off: offsetX)  Y: startY (Off: offsetY)`.
-   - **HUD $286\times180$** en $(w-286-10,10)$ con header `Offset: X:±d  Y:±d` + `Escala: scale  Espacio: spacing  Prof: depth`, 8 botones `[X-][X+][Y-][Y+]` ($62\times22$), `[Esc-][Esc+][Prof-][Prof+]` y 3 acciones `[RESET]($80\times24$)/[GUARDAR]($94\times24$)/[CERRAR]($82\times24$)`; leyenda `Flechas: Mover (Shift: 10px) / []: Escala | -/+: Prof | R: Reset / Enter/F2: Guardar`.
-   - **Input**: `mousepressed` detecta HUD buttons (actualiza `cfg` y `saveLogoConfig()` inmediato) o hit en bbox inicia drag (`logoDebugDragging=true`, guarda `logoDragStartX/Y` + `logoInitialOffsetX/Y`); `mousemoved` actualiza `offset=floor(initial+delta)`; `mousereleased` guarda; `keypressed` maneja flechas (±1/Shift ±10), `[`/`]` escala 2–12, `-`/`+` depth 1–10, `R` reset a $(0,0,6,10,5)$, `Enter`/`Esc`/`F2` → `toggleLogoDebug()`+save. Persistencia inmediata en cada ajuste.
-   - **Render post-composite** en `renderMain.drawGame()` `if debugTools.isLogoDebugOpen() then drawLogoDebug()` tras `shaders.composite()` + debug menu, para evitar bloom/shadow sobre el HUD.
-
-6. **Panel y botones (hitbox)**:
-   - `ui.menuButtons` registra `x= floor((panelW-bw)/2)` + `slideX=(1-btnAlpha)*-16`, `y= floor((h-totalMenuHeight)/2)+(i-1)*(bh+gap)+yOffset` (hover -2/pressed +2), con $bw=260, bh=40, gap=14$; verificación exacta en `menu.mousePressed()` y `menu.updateHover()` (hover dispara `sound.play("buttonHover")`).
+6. **Botones Arcade Cyber-Step #03 (`ui/menuUI.lua`)**:
+   - 4 botones arcade (JUGAR, PERFILES, CONFIGURACIÓN, SALIR) de $bw=260, bh=40, gap=14$, centrados horizontalmente en el panel izquierdo y verticalmente en pantalla con textura de zarpazos a 45° y micro-nodos de relojería.
 
 ## 6. Persistence Layer
 
