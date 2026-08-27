@@ -10,6 +10,18 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 27:08:2026
 
+- **fix** (completed - 12:20): Corrección de importación de `snakeMod` en `systems/player.lua`:
+  1. `systems/player.lua`: Añadida la importación local `local snakeMod = require("entities.snake")` al inicio del módulo, eliminando el fallo `attempt to index global 'snakeMod' (a nil value)` al consumir la **Baya de Poda** (`slimming_berry`).
+  2. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de ejecución de todas las variantes de comida.
+
+- **feature** (completed - 11:58): Implementación del motor base de Biomas de Mazmorra e integración de la **Etapa 1 — Catacumbas de Piedra**:
+  1. `core/config.lua`: Creado el registro central `config.BIOMES` para las 5 etapas con identificadores, nombres, subtítulos, paletas de cuadrícula (`gridColor`, `gridAccent`, `bgTint`, `wallColor`) y flags mecánicos (`wallWrap`, `isIce`, `hazardLava`, `isSlime`).
+  2. `world/world.lua`: Implementados los métodos facade `world.getBiomeData()`, `world.getBiome()`, `world.getBiomeName()` y `world.hasWallWrap()` para consulta desacoplada desde cualquier subsistema.
+  3. `world/dungeonGen.lua`: Inyectados los metadatos de bioma en `dungeonGen.stageModifiers` para vincular cada etapa con su entorno.
+  4. `systems/gameflow.lua`: Añadido banner emergente al iniciar la sala 1 de cada etapa anunciando el bioma activo (`"ETAPA X: NOMBRE BIOMA"`).
+  5. `ui/hudUI.lua`: Adaptada la función `hud.drawGrid` para renderizar el color de cuadrícula dinámico según el bioma y añadido el badge de bioma activo en la cabecera del HUD junto al indicador de sala.
+  6. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de renderizado correcto de Catacumbas de Piedra.
+
 - **performance** (completed - 11:29): Optimización integral del tiempo de reacción de entrada, buffer inteligente y Corner Buffering:
   1. `entities/snake.lua`: Reestructurada la función `snake.encolarDireccion` para implementar reemplazo dinámico de cola y corrección de intenciones en tiempo real, eliminando el falso bloqueo anti-180° que descartaba giros de 90° durante pulsaciones rápidas consecutivas.
   2. `entities/snake.lua`: Eliminado el descarte rígido por cola llena (`#inputQueue >= 2`), permitiendo sobrescribir la última curva encolada con la intención más reciente del jugador.

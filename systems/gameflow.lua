@@ -91,6 +91,10 @@ function gameflow.iniciarSala(keepInventory)
     worldMod.puntajeSala = 0
     st.puntuacion = 0
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
+    if worldMod.sala == 1 then
+        local bName = worldMod.getBiomeName()
+        uiMod.addPopup("ETAPA " .. worldMod.etapa .. ": " .. string.upper(bName), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 3)
+    end
     if enemiesMod.boss and enemiesMod.boss.alive then
         uiMod.addPopup("Derrota al jefe recogiendo " .. constants.BOSS_FOOD_TARGET .. " comidas", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
     end

@@ -51,6 +51,27 @@ function world.getModifier()
     return dungeonGen.stageModifiers[world.etapa] or dungeonGen.stageModifiers[5]
 end
 
+function world.getBiomeData()
+    local cfg = require("core.config")
+    local stage = math.min(5, math.max(1, world.etapa or 1))
+    return cfg.BIOMES and cfg.BIOMES[stage] or cfg.BIOMES[1]
+end
+
+function world.getBiome()
+    local b = world.getBiomeData()
+    return b and b.id or "catacumbas"
+end
+
+function world.getBiomeName()
+    local b = world.getBiomeData()
+    return b and b.name or "Catacumbas de Piedra"
+end
+
+function world.hasWallWrap()
+    local b = world.getBiomeData()
+    return b and (b.wallWrap ~= false)
+end
+
 function world.esJefe()
     local room = world.getCurrentRoom()
     return room and room.template == "boss"

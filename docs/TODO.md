@@ -52,7 +52,7 @@
 - [ ] **Extended Items Arsenal (51-60)**:
   - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
 - [ ] **Stage Biomes & Hazards**:
-  - [ ] Stage 1: Stone Catacombs (standard solid walls)
+  - [x] Stage 1: Stone Catacombs (framework base de biomas, muros estándar, paleta de mazmorra, banner y badge HUD)
   - [ ] Stage 2: Frozen Crypt (ice tiles with +1 slide momentum on turns)
   - [ ] Stage 3: Volcanic Cavern (timed magma fissure hazards)
   - [ ] Stage 4: Toxic Hive (slime tiles with -20% step speed)

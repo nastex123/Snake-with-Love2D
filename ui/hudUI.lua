@@ -7,7 +7,10 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     local w = anchoGrilla * tam
     local h = altoGrilla * tam
 
-    local baseC = constants.COLOR_ACCENT
+    local worldMod = package.loaded["world.world"]
+    local biome = worldMod and worldMod.getBiomeData and worldMod.getBiomeData()
+
+    local baseC = (biome and biome.gridAccent) or constants.COLOR_ACCENT
     local hotC = constants.COLOR_GRID_HOT_A
 
     local r = baseC[1] + (hotC[1] - baseC[1]) * comboIntensity
@@ -17,7 +20,7 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
 
     love.graphics.setLineWidth(1)
 
-    -- vertical lines
+    -- lineas verticales
     for x = 0, anchoGrilla do
         local px = x * tam
         local wave = math.sin(time * constants.SHIMMER_SPEED + x * 0.5) * 0.02
@@ -30,7 +33,7 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
         love.graphics.line(px, 0, px, h)
     end
 
-    -- horizontal lines
+    -- lineas horizontales
     for y = 0, altoGrilla do
         local py = y * tam
         local wave = math.sin(time * constants.SHIMMER_SPEED + y * 0.3) * 0.02
@@ -43,7 +46,7 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
         love.graphics.line(0, py, w, py)
     end
 
-    -- outer border
+    -- borde exterior
     love.graphics.setColor(r, g, b, math.min(0.5, alpha + 0.2))
     love.graphics.rectangle("line", 0, 0, w, h)
 end
@@ -79,17 +82,25 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
 
     local x = 8 * s                               -- margen izquierdo
 
-    -- Indicador de sala
+    -- Indicador de sala y bioma
     if etapa and sala then
-        local roomText = etapa .. "-" .. sala
+        local worldMod = package.loaded["world.world"]
+        local bData = worldMod and worldMod.getBiomeData and worldMod.getBiomeData()
+        local bName = bData and bData.name and string.upper(bData.name) or "CATACUMBAS"
         local isBoss = sala == 5
+        local roomText = etapa .. "-" .. sala
         if isBoss then
             love.graphics.setColor(1, 0.3, 0.5)
         else
-            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
+            local acc = bData and bData.gridAccent or constants.COLOR_ACCENT
+            love.graphics.setColor(acc[1], acc[2], acc[3])
         end
         love.graphics.print(roomText, x, cy)
-        x = x + font:getWidth(roomText) + 14 * s
+        x = x + font:getWidth(roomText) + 8 * s
+
+        love.graphics.setColor(0.5, 0.6, 0.7, 0.85)
+        love.graphics.print(bName, x, cy)
+        x = x + font:getWidth(bName) + 14 * s
     end
 
     love.graphics.setColor(1, 0.84, 0.0)
