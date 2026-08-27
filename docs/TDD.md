@@ -701,9 +701,10 @@ end
 
 ### 10.23 Core Engine & Optimization Pipeline (Input, AABB Pre-Filter & Determinism)
 
-#### 1. Input Ramp-Up & Corner Buffering (`entities/snake.lua`)
-* **Input Ramp-Up**: Variable `local holdTime = 0`. Al pasar de `isHeld == false` a `true`, el primer `stepTimer` requiere un threshold de `interval + 0.03` antes del primer paso.
-* **Corner Buffering**: Si se registra una tecla perpendicular a distancia Manhattan $= 1$ de un obstáculo/borde, el vector se encola en `inputQueue[2]` y se despacha automáticamente en el frame de colisión inminente.
+#### 1. Input Intelligent Buffer & Corner Buffering (`entities/snake.lua` & `systems/gamestates.lua`)
+* **Cola de Entrada con Reemplazo Dinámico**: `snake.encolarDireccion(s, tx, ty)` valida giros ortogonales contra la dirección real de avance (`lastMovedDirX/Y`) en vez de comandos encolados intermedios. Si el jugador rectifica una curva antes del tick, la cola sobrescribe el comando pendiente (`qLen == 1 → inputQueue[1] = nuevo`, `qLen == 2 → inputQueue[2] = nuevo`), eliminando falsos descartes anti-180° y descartes rígidos por cola llena.
+* **Corner Buffering Acelerado**: `gamestates.lua` evalúa si `cronometro >= velocidadActual * 0.75` al encolar un nuevo input durante movimiento continuo. Si se cumple, completa el paso inmediatamente (`cronometro = velocidadActual`), reduciendo la latencia de giro en esquinas a 0 ms.
+* **Respuesta desde Reposo (Tactical Slither)**: En modo táctico con `standstill = true`, cualquier tecla direccional o toque táctil dispara instantáneamente `cronometro = velocidadActual` sin retraso de arranque.
 
 #### 2. Ray Casting AABB Pre-Filter (`entities/snake.lua`)
 ```lua

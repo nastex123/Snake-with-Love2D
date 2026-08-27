@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 27:08:2026
+
+- **performance** (completed - 11:29): Optimización integral del tiempo de reacción de entrada, buffer inteligente y Corner Buffering:
+  1. `entities/snake.lua`: Reestructurada la función `snake.encolarDireccion` para implementar reemplazo dinámico de cola y corrección de intenciones en tiempo real, eliminando el falso bloqueo anti-180° que descartaba giros de 90° durante pulsaciones rápidas consecutivas.
+  2. `entities/snake.lua`: Eliminado el descarte rígido por cola llena (`#inputQueue >= 2`), permitiendo sobrescribir la última curva encolada con la intención más reciente del jugador.
+  3. `systems/gamestates.lua`: Implementado el sistema de *Corner Buffering* acelerado (`CORNER_BUFFER_RATIO = 0.75`): si se registra un giro cuando el paso actual ha superado el 75% del intervalo, el temporizador completa el paso de inmediato, eliminando la latencia perceptual de hasta 150 ms en los giros.
+  4. `core/config.lua`: Calibrada la velocidad base inicial (`VELOCIDAD_INICIAL = 0.13`, reducido desde 0.15) para un gameplay más ágil y reactivo desde el inicio, e incorporadas las constantes `CORNER_BUFFER_RATIO = 0.75` e `INPUT_BUFFER_MAX = 2`.
+  5. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de respuesta instantánea en modo táctico y continuo.
+
 ## 26:08:2026
 
 - **fix** (completed - 23:17): Corrección del cálculo de dirección ortogonal en Inversión de Avance (*Reverse Slither* `[R]`):

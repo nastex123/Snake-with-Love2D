@@ -79,7 +79,8 @@
   - [ ] 10 Unlockable modes: Endless Abyss, Time Attack, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Loadout Draft, Sudden Death, Maze Runner
   - [ ] Master Snake Skin Catalog (+200 variants, 5 primitive render engines)
 - [ ] **80 Engineering & Gameplay Improvements Suite**:
-  - [ ] Input ramp-up ($0.03\text{s}$ threshold), corner buffering, metrónomo táctico HUD, ghost frame de 3s en revive
+  - [x] Input Buffer Inteligente (2-step con reemplazo dinámico), Corner Buffering acelerado (`0.75` ratio) y calibración de velocidad base (`0.13s`)
+  - [ ] Input ramp-up ($0.03\text{s}$ threshold), metrónomo táctico HUD, ghost frame de 3s en revive
   - [ ] AABB pre-filter para Ray Casting de Constrictor, highlight de lazo cerrado, esquirlas de oro en rocas
   - [ ] Half-res FBO specular reflections ($0.5\times$ canvas), Voronoi glass fracture shader en Game Over
   - [ ] Fixed timestep a 60 ticks desacoplado de Hz, test unitario de memoria zero-allocation (60s constante)

@@ -58,7 +58,8 @@ function snake.reset()
         firePepperTimer = 0,
         fireTrail = {},
         turnHistory = {},
-        standstill = true
+        standstill = true,
+        hasNewInput = false
     }
 end
 
@@ -291,6 +292,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         s.dirX = nextDir.x
         s.dirY = nextDir.y
     end
+    s.hasNewInput = false
 
     s.lastMovedDirX = s.dirX
     s.lastMovedDirY = s.dirY
@@ -667,40 +669,63 @@ function snake.encolarDireccion(s, tx, ty)
     if not s or not tx or not ty then return end
     s.inputQueue = s.inputQueue or {}
 
-    if #s.inputQueue >= 2 then return end
+    local curX = s.lastMovedDirX or s.dirX
+    local curY = s.lastMovedDirY or s.dirY
+    local qLen = #s.inputQueue
 
-    local refX, refY
-    if #s.inputQueue > 0 then
-        local lastQueued = s.inputQueue[#s.inputQueue]
-        refX, refY = lastQueued.x, lastQueued.y
+    if qLen == 0 then
+        if tx == curX and ty == curY then return end
+        if (tx == -curX and curX ~= 0) or (ty == -curY and curY ~= 0) then return end
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            table.insert(s.inputQueue, {x = tx, y = ty})
+            s.hasNewInput = true
+            s.turnHistory = s.turnHistory or {}
+            local now = love.timer.getTime()
+            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
+            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+        end
+    elseif qLen == 1 then
+        local q1 = s.inputQueue[1]
+        if tx == q1.x and ty == q1.y then return end
+
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            s.inputQueue[1] = {x = tx, y = ty}
+            s.hasNewInput = true
+            s.turnHistory = s.turnHistory or {}
+            local now = love.timer.getTime()
+            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
+            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
+            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
+                table.insert(s.inputQueue, {x = tx, y = ty})
+                s.hasNewInput = true
+                s.turnHistory = s.turnHistory or {}
+                local now = love.timer.getTime()
+                table.insert(s.turnHistory, {x = tx, y = ty, fromX = q1.x, fromY = q1.y, time = now})
+                if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+            end
+        end
     else
-        refX = s.lastMovedDirX or s.dirX
-        refY = s.lastMovedDirY or s.dirY
+        local q1 = s.inputQueue[1]
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            s.inputQueue[1] = {x = tx, y = ty}
+            s.inputQueue[2] = nil
+            s.hasNewInput = true
+        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
+            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
+                s.inputQueue[2] = {x = tx, y = ty}
+                s.hasNewInput = true
+            end
+        end
     end
 
-    if tx == refX and ty == refY then
-        return
-    end
-
-    if (tx == -refX and refX ~= 0) or (ty == -refY and refY ~= 0) then
-        return
-    end
-
-    if (refX ~= 0 and ty ~= 0 and tx == 0) or (refY ~= 0 and tx ~= 0 and ty == 0) then
-        table.insert(s.inputQueue, {x = tx, y = ty})
-        s.turnHistory = s.turnHistory or {}
+    if s.turnHistory and #s.turnHistory >= 2 then
         local now = love.timer.getTime()
-        table.insert(s.turnHistory, {x = tx, y = ty, fromX = refX, fromY = refY, time = now})
-        if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
-
-        -- Deteccion de giro en U de 180 grados para Tail Snap
-        if #s.turnHistory >= 2 then
-            local t1 = s.turnHistory[#s.turnHistory - 1]
-            local t2 = s.turnHistory[#s.turnHistory]
-            if now - t1.time <= 0.8 then
-                if (t1.fromX == -t2.x and t1.fromX ~= 0) or (t1.fromY == -t2.y and t1.fromY ~= 0) then
-                    s.pendingTailSnap = true
-                end
+        local t1 = s.turnHistory[#s.turnHistory - 1]
+        local t2 = s.turnHistory[#s.turnHistory]
+        if now - t1.time <= 0.8 then
+            if (t1.fromX == -t2.x and t1.fromX ~= 0) or (t1.fromY == -t2.y and t1.fromY ~= 0) then
+                s.pendingTailSnap = true
             end
         end
     end

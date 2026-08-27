@@ -6,9 +6,11 @@ config.canvasHeight = 360
 config.tileSize = 20
 
 config.TAMANIO_BLOQUE = 20
-config.VELOCIDAD_INICIAL = 0.15
+config.VELOCIDAD_INICIAL = 0.13
 config.VELOCIDAD_MINIMA = 0.05
 config.DURACION_FLASH_COMER = 0.6
+config.CORNER_BUFFER_RATIO = 0.75
+config.INPUT_BUFFER_MAX = 2
 
 config.GAME_STATE_MENU = 0
 config.GAME_STATE_PLAYING = 1
