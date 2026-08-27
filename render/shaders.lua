@@ -2,6 +2,15 @@ local shaders = {}
 local constants = require("constants")
 local Log = require("core.logger")
 
+local uiMod = nil
+local function getUI()
+    if not uiMod then
+        local ok, m = pcall(require, "ui.ui")
+        if ok and m then uiMod = m end
+    end
+    return uiMod
+end
+
 -- ============================================================
 -- Corrección daltonica (Protanopia / Deuteranopia / Tritanopia)
 -- ============================================================
@@ -298,7 +307,7 @@ function shaders.load()
     canvasPost        = newC()
 end
 
--- Recreate canvases and apply filter settings (filter: 'nearest' | 'linear')
+-- Recreate canvases (always linear filtering for smooth CRT/bloom sampling)
 function shaders.recreateCanvases(pixelScale, filter)
     W = love.graphics.getWidth()
     H = love.graphics.getHeight()
@@ -306,8 +315,7 @@ function shaders.recreateCanvases(pixelScale, filter)
     BH = math.max(1, math.floor(H / 2))
     local function newC()
         local c = love.graphics.newCanvas(W, H)
-        local f = filter == 'nearest' and 'nearest' or 'linear'
-        c:setFilter(f, f)
+        c:setFilter("linear", "linear")
         return c
     end
     local function newCLow()
@@ -364,6 +372,7 @@ function shaders.drawBalatroBG(time, intensity)
         local c3_b = 0.2 + i * 0.8
         shBalatro:send("colour_3", {c3_r, c3_g, c3_b, 1})
 
+        local ui = getUI()
         local isHighContrast = ui and ui.highContrast
         local bgContrast = isHighContrast and 1.6 or 1.2
         shBalatro:send("contrast", bgContrast)
@@ -434,6 +443,7 @@ function shaders.composite(time, crtIntensity, isMenu)
     love.graphics.draw(canvasShadowBlur, 5, 7)
 
     -- 5c. Bloom additive (escalado de vuelta a resolución completa)
+    local ui = getUI()
     local isHighContrast = ui and ui.highContrast
     local bloomAlpha = isHighContrast and 0.15 or 0.6
     love.graphics.setBlendMode("add")

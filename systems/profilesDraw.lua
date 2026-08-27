@@ -4,11 +4,6 @@ local constants = require('constants')
 local ui = require('ui.ui')
 local achMod = require('systems.achievements')
 
-local function font(n)
-    local fs = {ui.fontNormal, ui.fontLarge, ui.fontSmall}
-    return fs[n] or ui.fontNormal
-end
-
 function profilesDraw.drawSelect(profilesMod, w, h)
     profilesMod.cardRects = {}
     profilesMod.buttonRects = {}

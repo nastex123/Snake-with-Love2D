@@ -235,29 +235,102 @@ function enemies.onBossDefeatedByFood()
     }
 end
 
+function enemies.applyTailSnap(gx, gy, pushDist, stunDuration, anchoGrilla, altoGrilla, obstaclePos)
+    local tam = constants.TAMANIO_BLOQUE
+    local affected = {}
+    stunDuration = stunDuration or constants.TAIL_SNAP_STUN_DURATION or 0.8
+    anchoGrilla = anchoGrilla or constants.MAX_GRID_COLS
+    altoGrilla = altoGrilla or constants.MAX_GRID_ROWS
+    for _, e in ipairs(enemies.list) do
+        if e.alive then
+            local dist = math.max(math.abs(e.x - gx), math.abs(e.y - gy))
+            if dist <= 2 then
+                e.stunTimer = stunDuration
+                local dx = e.x - gx
+                local dy = e.y - gy
+                if dx ~= 0 then dx = dx > 0 and 1 or -1 end
+                if dy ~= 0 then dy = dy > 0 and 1 or -1 end
+                if dx == 0 and dy == 0 then dx = 1 end
+                local nx = e.x + dx
+                local ny = e.y + dy
+                if nx >= 0 and nx < anchoGrilla and ny >= 0 and ny < altoGrilla then
+                    local blocked = false
+                    if obstaclePos then
+                        for _, obs in ipairs(obstaclePos) do
+                            if obs.x == nx and obs.y == ny then blocked = true; break end
+                        end
+                    end
+                    if not blocked then
+                        e.x = nx
+                        e.y = ny
+                    end
+                end
+                table.insert(affected, {x = e.x, y = e.y, px = e.x * tam + tam/2, py = e.y * tam + tam/2})
+            end
+        end
+    end
+    return affected
+end
+
+function enemies.checkFireTrail(fireTrail)
+    if not fireTrail or #fireTrail == 0 then return nil end
+    local tam = constants.TAMANIO_BLOQUE
+    local killed = {}
+    for i = #enemies.list, 1, -1 do
+        local e = enemies.list[i]
+        if e.alive and (e.type == "chaser" or e.type == "patroller") then
+            for _, ft in ipairs(fireTrail) do
+                if ft.x == e.x and ft.y == e.y then
+                    local res = enemies.killEnemy(i)
+                    if res then
+                        table.insert(killed, res)
+                    end
+                    break
+                end
+            end
+        end
+    end
+    return #killed > 0 and killed or nil
+end
+
 -- ============================================================
 --  Update
 -- ============================================================
 
-function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, etapa, stageModifier)
+function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, etapa, stageModifier, snakeDecoys)
     local now = love.timer.getTime()
+    local world = require("core.world")
+    local freezeTimer = world.get("enemyFreezeTimer") or 0
+    local isFrozen = freezeTimer > 0
+
+    -- Target selection: decoy prioritario sobre cabeza si existe
+    local targetHead = snakeBody[1]
+    if snakeDecoys and #snakeDecoys > 0 then
+        targetHead = {x = snakeDecoys[1].x, y = snakeDecoys[1].y}
+    end
 
     -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
     local ctx = {
         list = enemies.list,
         body = snakeBody,
-        head = snakeBody[1],
+        head = targetHead,
         anchoGrilla = anchoGrilla,
         altoGrilla = altoGrilla,
         obstaclePos = obstaclesMod and obstaclesMod.pos or {},
         etapa = etapa or 1,
         stageModifier = stageModifier or {},
     }
-    chaserAI.updatePack(ctx, dt)
+    if not isFrozen then
+        chaserAI.updatePack(ctx, dt)
+    end
 
     -- Update regular enemies
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
+
+        if e.stunTimer and e.stunTimer > 0 then
+            e.stunTimer = math.max(0, e.stunTimer - dt)
+        end
 
         -- Boss timeout: reds get queued for respawn with alternating flank side, blues vanish
         if enemies.boss and enemies.boss.alive and e.alive then
@@ -277,7 +350,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
 
         if not e.alive then
             table.remove(enemies.list, i)
-        else
+        elseif not isFrozen and (not e.stunTimer or e.stunTimer <= 0) then
             e.moveTimer = e.moveTimer + dt
 
             if e.type == "chaser" then
@@ -366,7 +439,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     end
 
     -- Boss state machine
-    if enemies.boss and enemies.boss.alive then
+    if enemies.boss and enemies.boss.alive and not isFrozen then
         local boss = enemies.boss
 
         -- Update phase based on HP
@@ -380,7 +453,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
         end
 
         local ctx = {
-            snakeHead = snakeBody[1],
+            snakeHead = targetHead,
             anchoGrilla = anchoGrilla,
             altoGrilla = altoGrilla,
             canSpawn = enemies.canSpawn,
@@ -467,7 +540,6 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
         if ao.lifetime <= 0 then
             table.remove(attackObjects, i)
         elseif ao.type == "projectile" then
-            local d = math.sqrt(ao.dx * ao.dx + ao.dy * ao.dy) * dt
             ao.x = ao.x + ao.dx * dt
             ao.y = ao.y + ao.dy * dt
             -- Remove if out of bounds

@@ -100,6 +100,16 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
     love.graphics.print("" .. puntuacion, x, cy)
     x = x + font:getWidth("" .. puntuacion) + 14 * s
 
+    local world = require("core.world")
+    local streak = world.state and world.state.survivalStreak or 1.0
+    if streak > 1.0 then
+        local streakText = string.format("STREAK %.1fx", streak)
+        local sPulse = math.sin(love.timer.getTime() * 8) * 0.2 + 0.8
+        love.graphics.setColor(0.0, 0.94, 1.0, sPulse)
+        love.graphics.print(streakText, x, cy)
+        x = x + font:getWidth(streakText) + 14 * s
+    end
+
     -- Barra de progreso hacia el objetivo de la sala
     if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
         local barW = 50 * s
@@ -182,11 +192,11 @@ end
 function hud.drawSlots(ui, slotDisplay)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
-    local s = math.min(ui and ui.scale or 1.0, w / 420)
-    local slotW = math.floor(120 * s)
-    local slotH = math.floor(26 * s)
-    local gap = math.floor(8 * s)
-    local totalW = slotW * 3 + gap * 2
+    local s = math.min(ui and ui.scale or 1.0, w / 520)
+    local slotW = math.floor(88 * s)
+    local slotH = math.floor(24 * s)
+    local gap = math.floor(5 * s)
+    local totalW = slotW * 5 + gap * 4
     local startX = math.floor((w - totalW) / 2)
     local y = h - slotH - math.floor(6 * s)
 
@@ -195,8 +205,76 @@ function hud.drawSlots(ui, slotDisplay)
     love.graphics.setFont(font)
     local fontH = font:getHeight()
 
+    local world = require("core.world")
+    local player = world.state and world.state.player
+
+    -- Slot [Q] Autotomia
+    if player then
+        local qX = startX
+        local cd = player.autotomyCooldown or 0
+        local maxCd = constants.AUTOTOMY_COOLDOWN or 8.0
+        local canUse = (cd <= 0 and player.body and #player.body >= 4)
+
+        if canUse then
+            local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
+            love.graphics.setColor(0.18, 0.10, 0.30, 0.85)
+            love.graphics.rectangle("fill", qX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.8, 0.3, 1.0, pulse)
+            love.graphics.rectangle("line", qX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.8, 0.4, 1.0)
+            love.graphics.print("[Q]", qX + 3 * s, y + (slotH - fontH) / 2)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print("COLA", qX + 22 * s, y + (slotH - fontH) / 2)
+        else
+            local cdFrac = cd > 0 and (cd / maxCd) or 0
+            love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
+            love.graphics.rectangle("fill", qX, y, slotW, slotH, 3 * s)
+            if cd > 0 then
+                love.graphics.setColor(0.5, 0.2, 0.7, 0.45)
+                love.graphics.rectangle("fill", qX, y, slotW * (1 - cdFrac), slotH, 3 * s)
+            end
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+            love.graphics.rectangle("line", qX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            local txt = cd > 0 and string.format("[Q] %.0fs", cd) or "[Q] COLA"
+            love.graphics.print(txt, qX + 3 * s, y + (slotH - fontH) / 2)
+        end
+
+        -- Slot [R] Inversion
+        local rX = startX + (slotW + gap)
+        local rCd = player.reverseSlitherCooldown or 0
+        local rMaxCd = constants.REVERSE_SLITHER_COOLDOWN or 10.0
+        local rCanUse = (rCd <= 0 and player.body and #player.body >= 2)
+
+        if rCanUse then
+            local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
+            love.graphics.setColor(0.08, 0.18, 0.25, 0.85)
+            love.graphics.rectangle("fill", rX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.0, 0.94, 0.8, pulse)
+            love.graphics.rectangle("line", rX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.0, 0.94, 0.8)
+            love.graphics.print("[R]", rX + 3 * s, y + (slotH - fontH) / 2)
+            love.graphics.setColor(1, 1, 1)
+            love.graphics.print("INVERT", rX + 22 * s, y + (slotH - fontH) / 2)
+        else
+            local rFrac = rCd > 0 and (rCd / rMaxCd) or 0
+            love.graphics.setColor(0.1, 0.15, 0.15, 0.5)
+            love.graphics.rectangle("fill", rX, y, slotW, slotH, 3 * s)
+            if rCd > 0 then
+                love.graphics.setColor(0.1, 0.6, 0.6, 0.45)
+                love.graphics.rectangle("fill", rX, y, slotW * (1 - rFrac), slotH, 3 * s)
+            end
+            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+            love.graphics.rectangle("line", rX, y, slotW, slotH, 3 * s)
+            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+            local txt = rCd > 0 and string.format("[R] %.0fs", rCd) or "[R] INVERT"
+            love.graphics.print(txt, rX + 3 * s, y + (slotH - fontH) / 2)
+        end
+    end
+
+    -- 3 Slots de items (indices 1..3)
     for i = 1, 3 do
-        local x = startX + (i - 1) * (slotW + gap)
+        local x = startX + (i + 1) * (slotW + gap)
         local slot = slotDisplay[i]
 
         if slot then
@@ -205,16 +283,16 @@ function hud.drawSlots(ui, slotDisplay)
             love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.6)
             love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(1, 1, 1, 0.4)
-            love.graphics.print(i .. ".", x + 4 * s, y + (slotH - fontH) / 2)
+            love.graphics.print(i .. ".", x + 3 * s, y + (slotH - fontH) / 2)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(slot.name, x + 18 * s, y + (slotH - fontH) / 2)
+            love.graphics.print(slot.name, x + 15 * s, y + (slotH - fontH) / 2)
         else
             love.graphics.setColor(0.12, 0.12, 0.22, 0.4)
             love.graphics.rectangle("fill", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
             love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
             love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
-            love.graphics.print(i .. ".", x + 4 * s, y + (slotH - fontH) / 2)
+            love.graphics.print(i .. ".", x + 3 * s, y + (slotH - fontH) / 2)
         end
     end
     love.graphics.setFont(ui.fontNormal)

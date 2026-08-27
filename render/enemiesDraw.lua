@@ -197,6 +197,34 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
                 love.graphics.rectangle("line", e.x * tam + 1, e.y * tam + 1, tam - 2, tam - 2, 3, 3)
                 love.graphics.setLineWidth(1)
             end
+
+            -- Efecto visual de aturdimiento (Tail Snap)
+            if e.stunTimer and e.stunTimer > 0 then
+                local cx = e.x * tam + tam / 2
+                local cy = e.y * tam + tam / 2
+                local starRot = time * 8
+                love.graphics.setColor(1.0, 0.9, 0.2, 0.9)
+                for sIdx = 0, 2 do
+                    local sa = starRot + sIdx * (math.pi * 2 / 3)
+                    local sx = cx + math.cos(sa) * 6
+                    local sy = cy - 6 + math.sin(sa) * 3
+                    love.graphics.circle("fill", sx, sy, 1.8)
+                end
+            end
+
+            -- Efecto visual de congelacion global (Frost Berry)
+            local world = require("core.world")
+            local freezeTimer = world.get("enemyFreezeTimer") or 0
+            if freezeTimer > 0 then
+                local cx = e.x * tam + tam / 2
+                local cy = e.y * tam + tam / 2
+                love.graphics.setColor(0.2, 0.85, 1.0, 0.45 + math.sin(time * 6) * 0.15)
+                love.graphics.rectangle("fill", e.x * tam, e.y * tam, tam, tam, 2, 2)
+                love.graphics.setColor(1.0, 1.0, 1.0, 0.7)
+                love.graphics.setLineWidth(1.5)
+                love.graphics.rectangle("line", e.x * tam, e.y * tam, tam, tam, 2, 2)
+                love.graphics.setLineWidth(1)
+            end
         end
     end
 

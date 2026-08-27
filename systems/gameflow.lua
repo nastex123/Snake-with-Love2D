@@ -19,6 +19,9 @@ function gameflow.applyActiveProfile()
     local st = world.state
     st.monedas = profile.monedas
     st.highScore = profile.highScore
+    if profile.stats and profile.stats.highestStreak then
+        st.highestStreak = profile.stats.highestStreak
+    end
     -- Apply persistent passive unlocks to shop inventory
     for id, unlocked in pairs(profile.unlocks or {}) do
         if unlocked and items.registry[id] then
@@ -44,7 +47,12 @@ function gameflow.resetGame(keepShopInventory)
     st.frutasContador = 0
     if not keepShopInventory then
         st.monedas = 0
+        st.survivalStreak = 1.0
     end
+    st.survivalStreak = st.survivalStreak or 1.0
+    st.highestStreak = st.highestStreak or 1.0
+    st.deathModalOpen = false
+    st.roomDamaged = false
     st.deathAnimTimer = 0
     st.lastObstacleScore = 0
     st.magnetRange = 0
@@ -86,6 +94,36 @@ function gameflow.iniciarSala(keepInventory)
     if enemiesMod.boss and enemiesMod.boss.alive then
         uiMod.addPopup("Derrota al jefe recogiendo " .. constants.BOSS_FOOD_TARGET .. " comidas", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
     end
+end
+
+function gameflow.revivePlayer()
+    local st = world.state
+    local cost = constants.REVIVE_COIN_COST or 30
+    if (st.monedas or 0) < cost then return false end
+
+    st.monedas = st.monedas - cost
+    persistence.syncActiveProfile()
+
+    st.deathModalOpen = false
+    st.player = st.player or snakeMod.reset()
+    st.player.ghost = true
+    st.player.ghostTimer = constants.REVIVE_GHOST_DURATION or 3.0
+    st.player.flashTimer = constants.REVIVE_GHOST_DURATION or 3.0
+
+    -- Limpiar enemigos en un radio de 3 casillas de la cabeza de la serpiente
+    local head = st.player.body and st.player.body[1]
+    if head then
+        for i = #enemiesMod.list, 1, -1 do
+            local e = enemiesMod.list[i]
+            if e.alive and math.abs(e.x - head.x) <= 3 and math.abs(e.y - head.y) <= 3 then
+                enemiesMod.killEnemy(i)
+            end
+        end
+    end
+
+    st.gameState = constants.GAME_STATE_PLAYING
+    sound.play("highScore")
+    return true
 end
 
 function gameflow.recalcularGrilla()

@@ -1,13 +1,10 @@
 local profilesMod = {}
 local persistence = require('systems.persistence')
 local constants = require('constants')
-local ui = require('ui.ui')
-local achMod = require('systems.achievements')
 local gameflow = require('systems.gameflow')
 local profilesDraw = require('systems.profilesDraw')
 
 profilesMod.visible = false
-
 profilesMod.state = 'select'
 profilesMod.nameInput = ""
 profilesMod.pendingName = ""
@@ -25,39 +22,10 @@ profilesMod.CARD_W = 460
 profilesMod.CARD_H = 90
 profilesMod.CARD_GAP = 10
 profilesMod.CARD_H_MIN = 64
-profilesMod.panelX, profilesMod.panelY, profilesMod.panelW, profilesMod.panelH, profilesMod.panelPad = 0,0,0,0,16
+profilesMod.panelX, profilesMod.panelY, profilesMod.panelW, profilesMod.panelH, profilesMod.panelPad = 0, 0, 0, 0, 16
 profilesMod.scrollOffset = 0
 profilesMod.maxScroll = 0
 profilesMod.scrollEnabled = false
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 function profilesMod.open()
     profilesMod.visible = true
@@ -74,30 +42,16 @@ end
 
 function profilesMod.close()
     profilesMod.visible = false
-
-profilesMod.state = 'select'
-profilesMod.nameInput = ""
-profilesMod.pendingName = ""
-profilesMod.inputIndex = nil
-profilesMod.confirmIndex = nil
-profilesMod.confirmType = nil
-profilesMod.confirmMsg = ""
-profilesMod.textInputActive = false
-profilesMod.prevActiveProfile = nil
-profilesMod.cardRects = {}
-profilesMod.buttonRects = {}
-profilesMod.backBtn = {}
-profilesMod.inputRect = {}
-profilesMod.CARD_W = 460
-profilesMod.CARD_H = 90
-profilesMod.CARD_GAP = 10
-profilesMod.CARD_H_MIN = 64
-profilesMod.panelX, profilesMod.panelY, profilesMod.panelW, profilesMod.panelH, profilesMod.panelPad = 0,0,0,0,16
-profilesMod.scrollOffset = 0
-profilesMod.maxScroll = 0
-profilesMod.scrollEnabled = false
-
+    profilesMod.state = 'select'
+    profilesMod.nameInput = ""
+    profilesMod.pendingName = ""
+    profilesMod.inputIndex = nil
+    profilesMod.confirmIndex = nil
+    profilesMod.confirmType = nil
+    profilesMod.confirmMsg = ""
     profilesMod.textInputActive = false
+    profilesMod.prevActiveProfile = nil
+    profilesMod.scrollOffset = 0
 end
 
 function profilesMod.draw()

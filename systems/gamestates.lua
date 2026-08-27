@@ -18,11 +18,6 @@ local persistence = require("systems.persistence")
 local gameflow = require("systems.gameflow")
 local playerMod = require("systems.player")
 
--- colores de popup según tipo
-local ENEMY_COLORS = {
-    chaser = "chaser", patroller = "patroller", spawner = "spawner"
-}
-
 function states.overlaysOpen()
     local profilesMod = require("systems.profiles")
     local settingsMod = require("systems.settings")
@@ -167,9 +162,84 @@ end
 -- Retorna true si cambió state a muerte
 function states.updatePlaying(dt)
     local st = world.state
-    enemiesMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod, worldMod.etapa, worldMod.getModifier())
+    if st.deathModalOpen then return end
+
+    if st.enemyFreezeTimer and st.enemyFreezeTimer > 0 then
+        st.enemyFreezeTimer = math.max(0, st.enemyFreezeTimer - dt)
+    end
+
+    if snakeMod.update then snakeMod.update(st.player, dt) end
+
+    foodMod.onBombExpired = function(bx, by)
+        obstaclesMod.agregar(bx, by)
+        local tam = constants.TAMANIO_BLOQUE
+        table.insert(st.activePS, { ps = particles.bombExplosion(bx * tam + tam / 2, by * tam + tam / 2) })
+        sound.play("enemyKill")
+        uiMod.addPopup("BOMBA DETONADA!", bx, by)
+        foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+    end
+
+    if foodMod.update then
+        foodMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+    end
+
+    enemiesMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod, worldMod.etapa, worldMod.getModifier(), st.player.decoys)
     if st.player.flashTimer > 0 then
         st.player.flashTimer = st.player.flashTimer - dt
+    end
+
+    -- Comprobacion de incineracion por rastro de fuego
+    if st.player.fireTrail and #st.player.fireTrail > 0 then
+        local fireKills = enemiesMod.checkFireTrail(st.player.fireTrail)
+        if fireKills and #fireKills > 0 then
+            local streak = st.survivalStreak or 1.0
+            for _, fk in ipairs(fireKills) do
+                local earnedCoins = math.floor((fk.coins or 1) * streak)
+                st.monedas = st.monedas + earnedCoins
+                uiMod.addPopup("FUEGO +" .. earnedCoins .. "$", fk.gx, fk.gy)
+                table.insert(st.activePS, {
+                    ps = particles.fireTrail(fk.px, fk.py)
+                })
+                sound.play("enemyKill")
+                achievementsMod.check("enemyKilled")
+                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+            end
+        end
+    end
+
+    -- Comprobacion de Tail Snap (Onda en giro en U)
+    if snakeMod.checkTailSnap then
+        local snap = snakeMod.checkTailSnap(st.player)
+        if snap then
+            local affected = enemiesMod.applyTailSnap(snap.gx, snap.gy, constants.TAIL_SNAP_PUSH_DIST, constants.TAIL_SNAP_STUN_DURATION, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+            table.insert(st.activePS, { ps = particles.tailSnapShockwave(snap.px, snap.py) })
+            sound.play("shieldBreak")
+            uiMod.addPopup("TAIL SNAP!", snap.gx, snap.gy)
+        end
+    end
+
+    -- Comprobación del lazo constrictor
+    if snakeMod.checkConstrictorLoop then
+        local loopKills = snakeMod.checkConstrictorLoop(st.player, enemiesMod.list)
+        if loopKills and #loopKills > 0 then
+            sound.play("highScore")
+            local streak = st.survivalStreak or 1.0
+            for _, lk in ipairs(loopKills) do
+                local res = enemiesMod.killEnemy(lk.index)
+                if res then
+                    local earnedCoins = math.floor((res.coins or 1) * 2 * streak)
+                    st.monedas = st.monedas + earnedCoins
+                    uiMod.addPopup("CONSTRICTOR +" .. earnedCoins .. "$", res.gx, res.gy)
+                    table.insert(st.activePS, {
+                        ps = particles.constrictorBurst(res.px, res.py)
+                    })
+                    achievementsMod.check("enemyKilled")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
+            end
+            st.comboCount = st.comboCount + 2
+            st.comboFlashTimer = 0.3
+        end
     end
 
     if shop.magnetTimer > 0 then
@@ -181,21 +251,39 @@ function states.updatePlaying(dt)
         end
     end
 
+    -- En modo tactico: respuesta instantanea si se presiona direccion tras reposo
+    local controlMode = world.get("controlMode") or "tactical"
+    if controlMode == "tactical" and st.player.standstill then
+        local isInputActive = (#st.player.inputQueue > 0)
+        if not isInputActive and love.keyboard and love.keyboard.isDown then
+            isInputActive = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
+        end
+        local touchMod = package.loaded["core.touch"]
+        if not isInputActive and touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
+            isInputActive = true
+        end
+        if isInputActive then
+            st.cronometro = st.velocidadActual
+        end
+    end
+
     st.cronometro = st.cronometro + dt
 
     if st.cronometro >= st.velocidadActual then
         st.cronometro = 0
         local shieldBefore = shop.shieldActive
-        local vivo, comio, enemyKilled, bossResult, attackHit = snakeMod.mover(st.player, foodMod.pos, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, st.magnetRange)
+        local vivo, comio, enemyKilled, bossResult, attackHit, comioTwin = snakeMod.mover(st.player, foodMod.pos, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, st.magnetRange, foodMod.twinPos)
 
         if attackHit then
+            st.roomDamaged = true
             st.shakeTimer = 0.15
             shadersMod.triggerDamage(0.7, 0.5)
         end
 
         if enemyKilled then
-            st.monedas = st.monedas + enemyKilled.coins
-            uiMod.addPopup("+" .. enemyKilled.coins .. "$", enemyKilled.gx, enemyKilled.gy)
+            local earnedCoins = math.floor((enemyKilled.coins or 1) * (st.survivalStreak or 1.0))
+            st.monedas = st.monedas + earnedCoins
+            uiMod.addPopup("+" .. earnedCoins .. "$", enemyKilled.gx, enemyKilled.gy)
             local cols = {
                 chaser = constants.COLOR_ENEMY_CHASER,
                 patroller = constants.COLOR_ENEMY_PATROLLER,
@@ -217,8 +305,9 @@ function states.updatePlaying(dt)
                 st.bossHealthDisplay = bossResult
                 sound.play("enemyKill")
             elseif bossResult.type == "boss" then
-                st.monedas = st.monedas + bossResult.coins
-                uiMod.addPopup("+" .. bossResult.coins .. "$", bossResult.gx, bossResult.gy)
+                local earnedCoins = math.floor((bossResult.coins or 5) * (st.survivalStreak or 1.0))
+                st.monedas = st.monedas + earnedCoins
+                uiMod.addPopup("+" .. earnedCoins .. "$", bossResult.gx, bossResult.gy)
                 table.insert(st.activePS, {
                     ps = particles.enemyKill(bossResult.px, bossResult.py, 1, 0.4, 0.6)
                 })
@@ -237,36 +326,13 @@ function states.updatePlaying(dt)
         end
 
         if not vivo then
-            love.timer.sleep(0.08)
-            st.shakeTimer = constants.SHAKE_DURATION
-            shadersMod.triggerDamage(1.0, 0.9)
-            st.fadeDir = 1
-            st.gameState = constants.GAME_STATE_DEATH_ANIMATION
-            local oldHighScore = st.highScore
-            st.highScore = persistence.guardar(st.puntuacion, st.highScore)
-            persistence.syncActiveProfile()
-            achievementsMod.check("scoreReached", {score = st.highScore})
-            st.nuevoHighScore = st.highScore > oldHighScore
-            if st.nuevoHighScore then
-                local cx = love.graphics.getWidth() / 2
-                local cy = love.graphics.getHeight() / 2
-                table.insert(st.activePS, {
-                    ps = particles.highScore(cx, cy)
-                })
-                sound.play("highScore")
-            end
-            st.deathAnimTimer = 0
-            local tam = constants.TAMANIO_BLOQUE
-            for _, seg in ipairs(st.player.body) do
-                table.insert(st.activePS, {
-                    ps = particles.muerte(seg.x * tam + tam / 2, seg.y * tam + tam / 2)
-                })
-            end
-            sound.play("death")
+            st.roomDamaged = true
+            st.deathModalOpen = true
             return true
         end
 
         if shieldBefore and not shop.shieldActive then
+            st.roomDamaged = true
             sound.play("shieldBreak")
             shadersMod.triggerDamage(0.5, 0.5)
         end
@@ -274,53 +340,74 @@ function states.updatePlaying(dt)
         if comio then
             sound.play("eat")
             local tipo = foodMod.tipo
-            local puntosBase, monedasExtra, textPopup
-            if tipo == constants.FOOD_GOLD then
-                puntosBase = 25
-                monedasExtra = 2
-                textPopup = "+25"
-            elseif tipo == constants.FOOD_COIN then
-                puntosBase = 5
-                monedasExtra = 3
-                textPopup = "+5$"
-            else
-                puntosBase = 10
-                monedasExtra = constants.COINS_PER_FRUIT
-                textPopup = "+10"
-            end
+            local streak = st.survivalStreak or 1.0
 
-            if st.time - st.lastEatTime <= constants.COMBO_WINDOW then
-                st.comboCount = st.comboCount + 1
-                st.comboFlashTimer = 0.3
-                if st.comboCount >= 4 then
-                    achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+            local isSpecial = (tipo == "fire_pepper" or tipo == "frost_berry" or tipo == "constrictor_berry" or
+                               tipo == "slimming_berry" or tipo == "repelling_orbit" or tipo == "bomb" or
+                               tipo == "prismatic" or tipo == "streak_diamond" or tipo == "twin")
+
+            if isSpecial then
+                playerMod.aplicarComida(tipo)
+                if tipo == "twin" then
+                    if comioTwin then
+                        foodMod.twinPos = nil
+                    else
+                        if foodMod.twinPos then
+                            foodMod.pos.x = foodMod.twinPos.x
+                            foodMod.pos.y = foodMod.twinPos.y
+                            foodMod.twinPos = nil
+                        end
+                    end
                 end
             else
-                st.comboCount = 0
-            end
-            st.lastEatTime = st.time
-            local comboMult = 1 + st.comboCount * constants.COMBO_MULTIPLIER
-            local total = math.floor(puntosBase * comboMult * st.scoreMultiplier)
+                local puntosBase, monedasExtra, textPopup
+                if tipo == constants.FOOD_GOLD then
+                    puntosBase = 25
+                    monedasExtra = 2
+                    textPopup = "+25"
+                elseif tipo == constants.FOOD_COIN then
+                    puntosBase = 5
+                    monedasExtra = 3
+                    textPopup = "+5$"
+                else
+                    puntosBase = 10
+                    monedasExtra = constants.COINS_PER_FRUIT
+                    textPopup = "+10"
+                end
 
-            st.puntuacion = st.puntuacion + total
-            st.frutasContador = st.frutasContador + 1
-            st.monedas = st.monedas + monedasExtra + st.coinBonus
-            st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
-            st.player.flashTimer = constants.DURACION_FLASH_COMER
+                if st.time - st.lastEatTime <= constants.COMBO_WINDOW then
+                    st.comboCount = st.comboCount + 1
+                    st.comboFlashTimer = 0.3
+                    if st.comboCount >= 4 then
+                        achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                    end
+                else
+                    st.comboCount = 0
+                end
+                st.lastEatTime = st.time
+                local comboMult = 1 + st.comboCount * constants.COMBO_MULTIPLIER
+                local total = math.floor(puntosBase * comboMult * (st.scoreMultiplier or 1) * streak)
 
-            local tam = constants.TAMANIO_BLOQUE
-            local fx = foodMod.pos.x * tam + tam / 2
-            local fy = foodMod.pos.y * tam + tam / 2
-            table.insert(st.activePS, {
-                ps = particles.comer(fx, fy)
-            })
+                st.puntuacion = st.puntuacion + total
+                st.frutasContador = st.frutasContador + 1
+                st.monedas = st.monedas + math.floor((monedasExtra + st.coinBonus) * streak)
+                st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
+                st.player.flashTimer = constants.DURACION_FLASH_COMER
 
-            table.insert(st.shockwaves, {x = fx, y = fy, radio = 0, alpha = 1, timer = 0})
+                local tam = constants.TAMANIO_BLOQUE
+                local fx = foodMod.pos.x * tam + tam / 2
+                local fy = foodMod.pos.y * tam + tam / 2
+                table.insert(st.activePS, {
+                    ps = particles.comer(fx, fy)
+                })
 
-            if st.comboCount > 0 then
-                uiMod.addPopup(textPopup .. " x" .. (st.comboCount + 1), foodMod.pos.x, foodMod.pos.y)
-            else
-                uiMod.addPopup(textPopup, foodMod.pos.x, foodMod.pos.y)
+                table.insert(st.shockwaves, {x = fx, y = fy, radio = 0, alpha = 1, timer = 0})
+
+                if st.comboCount > 0 then
+                    uiMod.addPopup(textPopup .. " x" .. (st.comboCount + 1), foodMod.pos.x, foodMod.pos.y)
+                else
+                    uiMod.addPopup(textPopup, foodMod.pos.x, foodMod.pos.y)
+                end
             end
 
             -- Boss food counter
@@ -336,7 +423,7 @@ function states.updatePlaying(dt)
                 if enemiesMod.boss.foodCollected >= enemiesMod.boss.foodTarget then
                     local bossResult = enemiesMod.onBossDefeatedByFood()
                     if bossResult then
-                        st.monedas = st.monedas + bossResult.coins
+                        st.monedas = st.monedas + math.floor(bossResult.coins * (st.survivalStreak or 1.0))
                         uiMod.addPopup("+" .. bossResult.coins .. "$", bossResult.gx, bossResult.gy)
                         table.insert(st.activePS, {
                             ps = particles.bossDeath(bossResult.px, bossResult.py)
@@ -357,7 +444,10 @@ function states.updatePlaying(dt)
                 end
             end
 
-            foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+            -- Spawn siguiente comida (si no quedan gemelas pendientes)
+            if tipo ~= "twin" or not foodMod.twinPos then
+                foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+            end
 
             if st.puntuacion >= st.lastObstacleScore + constants.OBSTACLE_SPAWN_INTERVAL then
                 st.lastObstacleScore = math.floor(st.puntuacion / constants.OBSTACLE_SPAWN_INTERVAL) * constants.OBSTACLE_SPAWN_INTERVAL
@@ -435,6 +525,13 @@ end
 function states.updateTransition(dt)
     local st = world.state
     if st.transitionPhase == 1 and st.fadeAlpha >= 1 then
+        if not st.roomDamaged then
+            st.survivalStreak = (st.survivalStreak or 1.0) + (constants.SURVIVAL_STREAK_INCREMENT or 0.1)
+            st.highestStreak = math.max(st.highestStreak or 1.0, st.survivalStreak)
+            persistence.syncActiveProfile()
+        end
+        st.roomDamaged = false
+
         if st.transitionTarget == "siguienteSala" then
             worldMod.avanzarSala()
         elseif st.transitionTarget == "siguienteEtapa" then
