@@ -1,5 +1,4 @@
 local world = {}
-local constants = require("constants")
 local coreWorld = require("core.world")
 local dungeonGen = require("world.dungeonGen")
 local populate = require("world.populate")

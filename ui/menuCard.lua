@@ -23,24 +23,12 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
     ui.menuButtons[#ui.menuButtons + 1] = {id = 'card_profile', x = cardX, y = cardY, w = cardW, h = cardH}
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
     love.graphics.rectangle("fill", cardX - g + 4, cardY - g + 4, cardW + g * 2, cardH + g * 2)
-    love.graphics.setColor(0.02, 0.05, 0.09, cardAlpha * 0.96)
-    love.graphics.rectangle("fill", cardX, cardY, cardW, cardH)
-    love.graphics.setColor(isCardHover and 0.07 or 0.05, isCardHover and 0.14 or 0.11, isCardHover and 0.22 or 0.17, cardAlpha * 0.96)
-    local splitStartX = cardX + math.floor(cardW * 0.52)
-    for py = 0, cardH - 1 do
-        local currentSplitX = splitStartX + math.floor(py * 0.45)
-        love.graphics.rectangle("fill", currentSplitX, cardY + py, (cardX + cardW) - currentSplitX, 1)
-    end
-    love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], cardAlpha * (isCardHover and 0.9 or 0.45))
-    for py = 0, cardH - 1, 2 do
-        local currentSplitX = splitStartX + math.floor(py * 0.45)
-        love.graphics.rectangle("fill", currentSplitX, cardY + py, 2, 2)
-    end
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.98)
     love.graphics.rectangle("fill", cardX - g - 1, cardY - g - 1, cardW + g * 2 + 2, cardH + g * 2 + 2)
     love.graphics.setColor(0.02, 0.05, 0.09, cardAlpha * 0.96)
     love.graphics.rectangle("fill", cardX, cardY, cardW, cardH)
     love.graphics.setColor(isCardHover and 0.07 or 0.05, isCardHover and 0.14 or 0.11, isCardHover and 0.22 or 0.17, cardAlpha * 0.96)
+    local splitStartX = cardX + math.floor(cardW * 0.52)
     for py = 0, cardH - 1 do
         local currentSplitX = splitStartX + math.floor(py * 0.45)
         love.graphics.rectangle("fill", currentSplitX, cardY + py, (cardX + cardW) - currentSplitX, 1)

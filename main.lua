@@ -1,26 +1,23 @@
 local constants = require("constants")
 local world = require("core.world")
-local snakeMod  = require("entities.snake")
-local foodMod   = require("entities.food")
-local uiMod     = require("ui.ui")
+local snakeMod = require("entities.snake")
+local uiMod = require("ui.ui")
 local persistenceMod = require("systems.persistence")
-local shop      = require("systems.shop")
-local obstaclesMod = require("entities.obstacles")
+local shop = require("systems.shop")
 local particles = require("render.particles")
 local sound = require("audio.sound")
 local shadersMod = require("render.shaders")
 local itemsMod = require("systems.items")
-local enemiesMod = require("entities.enemies")
 local worldMod = require("world.world")
 local settingsMod = require('systems.settings')
 local profilesMod = require('systems.profiles')
-local achievementsMod = require('systems.achievements')
 local gameflow = require('systems.gameflow')
 local playerMod = require('systems.player')
 local states = require('systems.gamestates')
 local debugTools = require('systems.debugTools')
 local renderMain = require('render.renderMain')
 local touch = require('core.touch')
+local achievementsMod = require('systems.achievements')
 
 -- pending achievements queue (global) - populated by achievementsMod
 world.state.pendingAchievements = world.state.pendingAchievements or {}
@@ -38,6 +35,37 @@ end
 
 local function recalcularGrilla()
     gameflow.recalcularGrilla()
+end
+
+local function triggerDeathAnimation()
+    local st = world.state
+    st.deathModalOpen = false
+    love.timer.sleep(0.08)
+    st.shakeTimer = constants.SHAKE_DURATION
+    shadersMod.triggerDamage(1.0, 0.9)
+    st.fadeDir = 1
+    st.gameState = constants.GAME_STATE_DEATH_ANIMATION
+    local oldHighScore = st.highScore
+    st.highScore = persistenceMod.guardar(st.puntuacion, st.highScore)
+    persistenceMod.syncActiveProfile()
+    achievementsMod.check("scoreReached", {score = st.highScore})
+    st.nuevoHighScore = st.highScore > oldHighScore
+    if st.nuevoHighScore then
+        local cx = love.graphics.getWidth() / 2
+        local cy = love.graphics.getHeight() / 2
+        table.insert(st.activePS, {
+            ps = particles.highScore(cx, cy)
+        })
+        sound.play("highScore")
+    end
+    st.deathAnimTimer = 0
+    local tam = constants.TAMANIO_BLOQUE
+    for _, seg in ipairs(st.player.body) do
+        table.insert(st.activePS, {
+            ps = particles.muerte(seg.x * tam + tam / 2, seg.y * tam + tam / 2)
+        })
+    end
+    sound.play("death")
 end
 
 function love.load()
@@ -94,6 +122,7 @@ function love.load()
     world.state.debugImmune = false
     world.state.debugAchievementsOpen = false
     world.state.debugDungeonOverlay = false
+    world.state.controlMode = world.state.controlMode or "tactical"
     world.state.scheduledToasts = world.state.scheduledToasts or {}
     world.state.scheduledIndex = world.state.scheduledIndex or {}
 end
@@ -128,6 +157,20 @@ function love.resize(w, h)
 end
 
 function love.mousepressed(x, y, button)
+    -- Si el modal de muerte está abierto, capturar clicks
+    if world.state.deathModalOpen then
+        local action = uiMod.deathMousePressed(x, y)
+        if action == "revive" then
+            gameflow.revivePlayer()
+            return
+        elseif action == "accept" then
+            world.state.survivalStreak = 1.0
+            triggerDeathAnimation()
+            return
+        end
+        return
+    end
+
     -- Update menu button pressed state for visuals
     if world.state.gameState == constants.GAME_STATE_MENU then
         local hit = uiMod.menuMousePressed(x,y)
@@ -272,6 +315,20 @@ function love.keypressed(tecla)
         return
     end
 
+    -- Si el modal de muerte está abierto, capturar teclas
+    if world.state.deathModalOpen then
+        if tecla == "1" or tecla == "return" or tecla == "kpenter" then
+            if gameflow.revivePlayer() then
+                return
+            end
+        elseif tecla == "2" or tecla == "escape" then
+            world.state.survivalStreak = 1.0
+            triggerDeathAnimation()
+            return
+        end
+        return
+    end
+
     if tecla == "tab" then
         world.state.debugMenuOpen = not world.state.debugMenuOpen
         return
@@ -297,6 +354,32 @@ function love.keypressed(tecla)
     elseif world.state.gameState == constants.GAME_STATE_PLAYING then
         if tecla == "space" or tecla == "escape" then
             world.state.gameState = constants.GAME_STATE_PAUSED
+            return
+        end
+
+        if tecla == "q" then
+            local ok, pos = snakeMod.triggerAutotomy(world.state.player)
+            if ok then
+                local tam = constants.TAMANIO_BLOQUE
+                table.insert(world.state.activePS, {
+                    ps = particles.autotomyDecoy(pos.x * tam + tam / 2, pos.y * tam + tam / 2)
+                })
+                sound.play("buy")
+                uiMod.addPopup("AUTOTOMÍA", pos.x, pos.y)
+            end
+            return
+        end
+
+        if tecla == "r" then
+            local ok, pos = snakeMod.triggerReverseSlither(world.state.player)
+            if ok then
+                local tam = constants.TAMANIO_BLOQUE
+                table.insert(world.state.activePS, {
+                    ps = particles.tailSnapShockwave(pos.x * tam + tam / 2, pos.y * tam + tam / 2)
+                })
+                sound.play("buy")
+                uiMod.addPopup("INVERSIÓN!", pos.x, pos.y)
+            end
             return
         end
 

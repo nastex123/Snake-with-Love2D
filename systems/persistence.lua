@@ -10,9 +10,9 @@ end
 
 local settingsDefaults = {
     audio = { master = 1.0, music = true, sfx = true },
-    controls = { inputType = 'autodetect', sensitivity = 1.0 },
-    graphics = { pixelScale = 2, filter = 'nearest', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
-    gameplay = { difficulty = 'normal', tutorials = true, tradeKill = true },
+    controls = { inputType = 'autodetect', sensitivity = 1.0, controlMode = 'tactical' },
+    graphics = { pixelScale = 2, filter = 'linear', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
+    gameplay = { difficulty = 'normal', tutorials = true, tradeKill = true, controlMode = 'tactical' },
     accessibility = { uiScale = 1.0, highContrast = false, colorblind = 'off' },
     logo = { offsetX = 0, offsetY = 0, scale = 6, spacing = 10, depth = 5 }
 }
@@ -257,6 +257,9 @@ function persistence.syncActiveProfile()
     if not profile then return false end
     profile.monedas = world.get("monedas") or 0
     profile.highScore = world.get("highScore") or 0
+    profile.stats = profile.stats or {}
+    local curStreak = world.get("highestStreak") or 1.0
+    profile.stats.highestStreak = math.max(profile.stats.highestStreak or 1.0, curStreak)
     persistence.saveProfiles()
     return true
 end
@@ -328,9 +331,19 @@ function persistence.applySettings(settings)
     end
     if type(settings.accessibility) == 'table' then
         local a = settings.accessibility
-        pcall(function() ui.setScale(a.uiScale) end)
-        pcall(function() ui.applyHighContrast(a.highContrast) end)
-        pcall(function() ui.applyColorblind(a.colorblind) end)
+        local ok, ui = pcall(require, 'ui.ui')
+        if ok and ui then
+            pcall(function() ui.setScale(a.uiScale) end)
+            pcall(function() ui.applyHighContrast(a.highContrast) end)
+            pcall(function() ui.applyColorblind(a.colorblind) end)
+        end
+    end
+    if type(settings.gameplay) == 'table' and settings.gameplay.controlMode then
+        world.state.controlMode = settings.gameplay.controlMode
+    elseif type(settings.controls) == 'table' and settings.controls.controlMode then
+        world.state.controlMode = settings.controls.controlMode
+    else
+        world.state.controlMode = 'tactical'
     end
     persistence.settings = settings
 end
