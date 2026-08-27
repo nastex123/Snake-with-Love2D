@@ -75,7 +75,7 @@
 **Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
 - [x] Asymmetric Main Menu UI Redesign & Procedural Cyan Isometric Title 2.5D (Left vertical panel 40% with Dot Matrix #14 procedural background and rotating novice pixel art Alchemy Sigil #17, 4 centered Cyber-Step #03 buttons, central diamond emblem at w/2,h/2, right procedural cyan neon logo 2.5D #00F0FF via ui/menuLogo.lua with real-time F2 calibrator systems/debugLogo.lua, and Chunky Profile & High Score #11 card via ui/menuCard.lua).
-- [ ] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
+- [x] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
 - [ ] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
 - [ ] Elite Encounters & 5 Mini-Bosses (Mid-stage room 3 challenges with guaranteed golden rewards)

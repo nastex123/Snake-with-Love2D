@@ -138,4 +138,105 @@ function player.aplicarItem(itemId)
     end
 end
 
+function player.aplicarComida(tipo)
+    local st = world.state
+    local streak = st.survivalStreak or 1.0
+    local p = st.player.body[1]
+    if not p then return end
+    local tam = constants.TAMANIO_BLOQUE
+    local cx = p.x * tam + tam / 2
+    local cy = p.y * tam + tam / 2
+
+    if tipo == "fire_pepper" then
+        st.player.firePepperTimer = constants.FIRE_PEPPER_DURATION or 3.5
+        table.insert(st.activePS, { ps = particles.fireTrail(cx, cy) })
+        uiMod.addPopup("FUEGO INCENDIARIO!", p.x, p.y)
+        sound.play("eat")
+
+    elseif tipo == "frost_berry" then
+        st.enemyFreezeTimer = constants.FROST_BERRY_DURATION or 2.5
+        table.insert(st.activePS, { ps = particles.frostFreeze(cx, cy) })
+        uiMod.addPopup("CONGELACIÓN!", p.x, p.y)
+        sound.play("shieldBreak")
+
+    elseif tipo == "constrictor_berry" then
+        st.player.constrictorBuffTimer = constants.CONSTRICTOR_BUFF_DURATION or 5.0
+        table.insert(st.activePS, { ps = particles.streakDiamond(cx, cy) })
+        uiMod.addPopup("LAZO CONSTRICTOR!", p.x, p.y)
+        sound.play("highScore")
+
+    elseif tipo == "slimming_berry" then
+        local cut = snakeMod.applySlimming(st.player)
+        if cut then
+            table.insert(st.activePS, { ps = particles.slimmingBurst(cx, cy) })
+            uiMod.addPopup("PODA -50%", p.x, p.y)
+            sound.play("buy")
+        else
+            uiMod.addPopup("+15 PTS", p.x, p.y)
+            sound.play("eat")
+        end
+
+    elseif tipo == "repelling_orbit" then
+        local pts = math.floor(35 * (st.scoreMultiplier or 1) * streak)
+        local coins = math.floor(3 * streak)
+        st.puntuacion = st.puntuacion + pts
+        st.monedas = st.monedas + coins
+        uiMod.addPopup("+" .. pts .. " +" .. coins .. "$", p.x, p.y)
+        sound.play("eat")
+
+    elseif tipo == "bomb" then
+        local r = 4
+        table.insert(st.activePS, { ps = particles.bombExplosion(cx, cy) })
+        sound.play("enemyKill")
+
+        for i = #enemiesMod.list, 1, -1 do
+            local e = enemiesMod.list[i]
+            if e.alive and math.abs(e.x - p.x) <= r and math.abs(e.y - p.y) <= r then
+                local result = enemiesMod.killEnemy(i)
+                if result then
+                    local earnedCoins = math.floor((result.coins or 1) * streak)
+                    st.monedas = st.monedas + earnedCoins
+                    uiMod.addPopup("+" .. earnedCoins .. "$", result.gx, result.gy)
+                    achievementsMod.check("enemyKilled")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
+            end
+        end
+        local pts = math.floor(30 * (st.scoreMultiplier or 1) * streak)
+        st.puntuacion = st.puntuacion + pts
+        uiMod.addPopup("+" .. pts .. " (BOMBA)", p.x, p.y)
+
+    elseif tipo == "prismatic" then
+        local buff = foodMod.getPrismaticBuff()
+        if buff == "speed" then
+            player.aplicarItem("turbo")
+            uiMod.addPopup("TURBO PRISMA", p.x, p.y)
+        elseif buff == "shield" then
+            player.aplicarItem("shield")
+            uiMod.addPopup("ESCUDO PRISMA", p.x, p.y)
+        elseif buff == "magnet" then
+            player.aplicarItem("magnet")
+            uiMod.addPopup("IMÁN PRISMA", p.x, p.y)
+        elseif buff == "ghost" then
+            player.aplicarItem("ghost")
+            uiMod.addPopup("FANTASMA PRISMA", p.x, p.y)
+        end
+
+    elseif tipo == "streak_diamond" then
+        st.survivalStreak = (st.survivalStreak or 1.0) + 0.5
+        st.highestStreak = math.max(st.highestStreak or 1.0, st.survivalStreak)
+        local cGains = math.floor(15 * streak)
+        st.monedas = st.monedas + cGains
+        table.insert(st.activePS, { ps = particles.streakDiamond(cx, cy) })
+        uiMod.addPopup("+0.5x RACHA +" .. cGains .. "$", p.x, p.y)
+        sound.play("highScore")
+
+    elseif tipo == "twin" then
+        local pts = math.floor(50 * (st.scoreMultiplier or 1) * streak)
+        st.puntuacion = st.puntuacion + pts
+        uiMod.addPopup("+" .. pts .. " (GEMELAS)", p.x, p.y)
+        sound.play("eat")
+    end
+end
+
 return player

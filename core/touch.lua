@@ -7,9 +7,13 @@ local snakeMod = require("entities.snake")
 local constants = require("constants")
 
 local SWIPE_MIN = 18
-local SWIPE_REGION = 0.15
 
 local activeTouches = {}
+
+function touch.hasActiveTouch()
+    for _ in pairs(activeTouches) do return true end
+    return false
+end
 
 function touch.touchpressed(id, x, y)
     activeTouches[id] = {x = x, y = y, moved = false}

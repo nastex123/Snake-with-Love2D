@@ -4,24 +4,6 @@ local persistence = require("systems.persistence")
 
 local COLOR_CYAN = {0.0, 0.94, 1.0}
 
--- Fallback assets (histórico Estilo #12, no canónico)
-local titleLoaded = false
-
-local function loadTitleAssets()
-    if titleLoaded then return end
-    titleLoaded = true
-    pcall(function()
-        if love.filesystem.getInfo("assets/title_style12.png") then
-            local img = love.graphics.newImage("assets/title_style12.png")
-            img:setFilter("linear", "linear")
-        end
-        if love.filesystem.getInfo("assets/title_style12_glow.png") then
-            local img2 = love.graphics.newImage("assets/title_style12_glow.png")
-            img2:setFilter("linear", "linear")
-        end
-    end)
-end
-
 function menuLogo.getBounds(t)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
@@ -41,7 +23,6 @@ end
 
 function menuLogo.draw(titleAlpha, t)
     if titleAlpha <= 0 then return end
-    loadTitleAssets()
     local startX, startY, totalW, totalH, depth, pScale, spacing = menuLogo.getBounds(t)
     local titleLetters = {
         {" XXXXX ", "XX   XX", "XX     ", " XXXXX ", "     XX", "XX   XX", " XXXXX "},

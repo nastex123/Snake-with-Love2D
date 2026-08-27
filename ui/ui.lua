@@ -12,7 +12,6 @@ local overlays = require("ui.overlaysUI")
 
 -- Estado
 ui.popups = {}
-ui.toasts = ui.toasts or {}
 ui._toastQueue = ui._toastQueue or {}
 ui.menuButtons = {}
 ui.menuHoverId = nil
@@ -68,7 +67,6 @@ function ui.load()
     ui.btnTexHover = tryLoad("assets/ui_button_hover.png")
     ui.btnTexPress = tryLoad("assets/ui_button_press.png")
     ui.gearTexture = tryLoad("assets/ui_gear_node.png")
-    ui.reticleTexture = tryLoad("assets/ui_reticle_corner.png")
     ui.eyeIrisTexture = tryLoad("assets/ui_eye_iris.png")
     ui.alchemyCircleTex = tryLoad("assets/alchemy_circle.png")
     ui.alchemyCircleGlow = tryLoad("assets/alchemy_circle_glow.png")
@@ -170,6 +168,14 @@ end
 -- Overlays
 function ui.drawPauseOverlay()
     overlays.drawPause(ui)
+end
+
+function ui.drawDeathModal()
+    overlays.drawDeathModal(ui)
+end
+
+function ui.deathMousePressed(x, y)
+    return overlays.deathMousePressed(x, y)
 end
 
 function ui.drawDungeonMap(dungeonData)

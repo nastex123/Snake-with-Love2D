@@ -47,13 +47,229 @@ function snake.reset()
         },
         trail = {},
         ghost = false,
+        ghostTimer = 0,
         armor = 0,
-        flashTimer = 0
+        flashTimer = 0,
+        autotomyCooldown = 0,
+        decoys = {},
+        constrictorBuffTimer = 0,
+        reverseSlitherTimer = 0,
+        reverseSlitherCooldown = 0,
+        firePepperTimer = 0,
+        fireTrail = {},
+        turnHistory = {},
+        standstill = true,
+        hasNewInput = false
     }
 end
 
-function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange)
+function snake.update(s, dt)
+    if not s then return end
+    if s.flashTimer and s.flashTimer > 0 then
+        s.flashTimer = math.max(0, s.flashTimer - dt)
+    end
+    if s.ghostTimer and s.ghostTimer > 0 then
+        s.ghostTimer = math.max(0, s.ghostTimer - dt)
+        if s.ghostTimer <= 0 and not shop.ghostActive then
+            s.ghost = false
+        end
+    end
+    if s.autotomyCooldown and s.autotomyCooldown > 0 then
+        s.autotomyCooldown = math.max(0, s.autotomyCooldown - dt)
+    end
+    if s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
+        s.reverseSlitherTimer = math.max(0, s.reverseSlitherTimer - dt)
+    end
+    if s.reverseSlitherCooldown and s.reverseSlitherCooldown > 0 then
+        s.reverseSlitherCooldown = math.max(0, s.reverseSlitherCooldown - dt)
+    end
+    if s.constrictorBuffTimer and s.constrictorBuffTimer > 0 then
+        s.constrictorBuffTimer = math.max(0, s.constrictorBuffTimer - dt)
+    end
+    if s.firePepperTimer and s.firePepperTimer > 0 then
+        s.firePepperTimer = math.max(0, s.firePepperTimer - dt)
+    end
+    if s.fireTrail then
+        for i = #s.fireTrail, 1, -1 do
+            local ft = s.fireTrail[i]
+            ft.timer = ft.timer - dt
+            if ft.timer <= 0 then
+                table.remove(s.fireTrail, i)
+            end
+        end
+    end
+    if s.decoys then
+        for i = #s.decoys, 1, -1 do
+            local dec = s.decoys[i]
+            dec.timer = dec.timer - dt
+            if dec.timer <= 0 then
+                table.remove(s.decoys, i)
+            end
+        end
+    end
+end
+
+function snake.triggerReverseSlither(s)
+    if not s or not s.body or #s.body < 2 then return false end
+    s.reverseSlitherCooldown = s.reverseSlitherCooldown or 0
+    if s.reverseSlitherCooldown > 0 then return false end
+
+    local n = #s.body
+    for i = 1, math.floor(n / 2) do
+        s.body[i], s.body[n - i + 1] = s.body[n - i + 1], s.body[i]
+    end
+
+    local h = s.body[1]
+    local neck = s.body[2]
+    local dx = h.x - neck.x
+    local dy = h.y - neck.y
+    if math.abs(dx) > 1 then dx = dx > 0 and -1 or 1 end
+    if math.abs(dy) > 1 then dy = dy > 0 and -1 or 1 end
+
+    if dx ~= 0 and dy == 0 then
+        s.dirX = dx
+        s.dirY = 0
+    elseif dy ~= 0 and dx == 0 then
+        s.dirX = 0
+        s.dirY = dy
+    elseif dx ~= 0 then
+        s.dirX = dx
+        s.dirY = 0
+    elseif dy ~= 0 then
+        s.dirX = 0
+        s.dirY = dy
+    else
+        s.dirX = -s.dirX
+        s.dirY = -s.dirY
+    end
+
+    s.lastMovedDirX = s.dirX
+    s.lastMovedDirY = s.dirY
+    s.inputQueue = {}
+
+    s.ghost = true
+    s.ghostTimer = 1.2
+    s.reverseSlitherTimer = constants.REVERSE_SLITHER_DURATION or 3.0
+    s.reverseSlitherCooldown = constants.REVERSE_SLITHER_COOLDOWN or 10.0
+
+    s.prevBody = {}
+    for i, seg in ipairs(s.body) do
+        s.prevBody[i] = {x = seg.x, y = seg.y}
+    end
+    return true, h
+end
+
+function snake.applySlimming(s)
+    if not s or not s.body then return false end
+    local minLen = constants.SLIMMING_MIN_LENGTH or 12
+    if #s.body >= minLen then
+        local factor = constants.SLIMMING_FACTOR or 0.5
+        local target = math.max(3, math.floor(#s.body * factor))
+        while #s.body > target do
+            table.remove(s.body)
+        end
+        return true
+    end
+    return false
+end
+
+function snake.triggerAutotomy(s)
+    if not s or not s.body then return false end
+    s.autotomyCooldown = s.autotomyCooldown or 0
+    s.decoys = s.decoys or {}
+
+    if s.autotomyCooldown <= 0 and #s.body >= 4 then
+        local r1 = table.remove(s.body)
+        local r2 = table.remove(s.body)
+        local decoyPos = r1 or r2
+        table.insert(s.decoys, {
+            x = decoyPos.x,
+            y = decoyPos.y,
+            timer = constants.AUTOTOMY_DECOY_DURATION or 4.0,
+            maxTimer = constants.AUTOTOMY_DECOY_DURATION or 4.0
+        })
+        s.ghost = true
+        s.ghostTimer = constants.AUTOTOMY_GHOST_DURATION or 1.5
+        s.autotomyCooldown = constants.AUTOTOMY_COOLDOWN or 8.0
+        return true, decoyPos
+    end
+    return false
+end
+
+local function pointInPolygon(px, py, poly)
+    local inside = false
+    local n = #poly
+    if n < 4 then return false end
+    local j = n
+    for i = 1, n do
+        local xi, yi = poly[i].x + 0.5, poly[i].y + 0.5
+        local xj, yj = poly[j].x + 0.5, poly[j].y + 0.5
+        if ((yi > py) ~= (yj > py)) and (px < (xj - xi) * (py - yi) / ((yj - yi) + 1e-9) + xi) then
+            inside = not inside
+        end
+        j = i
+    end
+    return inside
+end
+
+function snake.checkConstrictorLoop(s, enemiesList)
+    if not s or not s.body or #s.body < 8 or not enemiesList then return nil end
+    local killed = {}
+    for i = #enemiesList, 1, -1 do
+        local e = enemiesList[i]
+        if e.alive then
+            local onBody = false
+            for _, seg in ipairs(s.body) do
+                if seg.x == e.x and seg.y == e.y then
+                    onBody = true
+                    break
+                end
+            end
+            if not onBody and pointInPolygon(e.x + 0.5, e.y + 0.5, s.body) then
+                table.insert(killed, {
+                    index = i,
+                    enemy = e,
+                    x = e.x,
+                    y = e.y,
+                    type = e.type,
+                    coins = (e.dropCoins or 1) * 2
+                })
+            end
+        end
+    end
+    if #killed > 0 then
+        s.constrictorBuffTimer = constants.CONSTRICTOR_BUFF_DURATION or 5.0
+        return killed
+    end
+    return nil
+end
+
+function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange, twinPos)
     s.inputQueue = s.inputQueue or {}
+
+    -- Modo de control táctico: requiere tecla direccional sostenida para avanzar
+    local controlMode = world.get("controlMode") or "tactical"
+    if controlMode == "tactical" then
+        local isHeld = false
+        if love.keyboard and love.keyboard.isDown then
+            isHeld = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
+        end
+        local touchMod = package.loaded["core.touch"]
+        if touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
+            isHeld = true
+        end
+        if #s.inputQueue > 0 then isHeld = true end
+
+        if not isHeld then
+            s.standstill = true
+            s.prevBody = {}
+            for i, segment in ipairs(s.body) do
+                s.prevBody[i] = {x = segment.x, y = segment.y}
+            end
+            return true, false
+        end
+        s.standstill = false
+    end
 
     -- Si la cola está vacía, revisar si el jugador mantiene pulsada una tecla perpendicular válida
     if #s.inputQueue == 0 and love.keyboard and love.keyboard.isDown then
@@ -76,6 +292,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         s.dirX = nextDir.x
         s.dirY = nextDir.y
     end
+    s.hasNewInput = false
 
     s.lastMovedDirX = s.dirX
     s.lastMovedDirY = s.dirY
@@ -96,7 +313,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     elseif nuevaCabezaY >= altoGrilla then nuevaCabezaY = 0
     end
 
-    -- VerificaciÃ³n de colisiones con el cuerpo
+    -- Verificación de colisiones con el cuerpo
     for _, segmento in ipairs(s.body) do
         if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
             if s.ghost or immune() then
@@ -112,7 +329,7 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         end
     end
 
-    -- VerificaciÃ³n de colisiones con obstÃ¡culos
+    -- Verificación de colisiones con obstáculos
     if obstaclePos then
         for _, obs in ipairs(obstaclePos) do
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
@@ -197,8 +414,9 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
 
     table.insert(s.body, 1, {x = nuevaCabezaX, y = nuevaCabezaY})
 
-    -- Verificar si come con rango normal o de imÃ¡n
+    -- Verificar si come comida primaria o gemela (con o sin iman)
     local comio = false
+    local comioTwin = false
     if magnetRange and magnetRange > 0 then
         for dy = -magnetRange, magnetRange do
             for dx = -magnetRange, magnetRange do
@@ -207,6 +425,10 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
                 if checkX == foodPos.x and checkY == foodPos.y then
                     comio = true
                     break
+                elseif twinPos and checkX == twinPos.x and checkY == twinPos.y then
+                    comio = true
+                    comioTwin = true
+                    break
                 end
             end
             if comio then break end
@@ -214,17 +436,43 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     else
         if nuevaCabezaX == foodPos.x and nuevaCabezaY == foodPos.y then
             comio = true
+        elseif twinPos and nuevaCabezaX == twinPos.x and nuevaCabezaY == twinPos.y then
+            comio = true
+            comioTwin = true
         end
     end
 
     if comio then
-        return true, true
+        return true, true, nil, nil, nil, comioTwin
     else
         local removed = table.remove(s.body)
         table.insert(s.trail, {x = removed.x, y = removed.y, alpha = 0.5})
         if #s.trail > 6 then table.remove(s.trail, 1) end
+
+        if s.firePepperTimer and s.firePepperTimer > 0 then
+            table.insert(s.fireTrail, {
+                x = removed.x,
+                y = removed.y,
+                timer = constants.FIRE_TRAIL_LIFETIME or 1.8,
+                maxTimer = constants.FIRE_TRAIL_LIFETIME or 1.8
+            })
+        end
+
         return true, false
     end
+end
+
+function snake.checkTailSnap(s)
+    if not s or not s.pendingTailSnap or not s.body or #s.body == 0 then return nil end
+    s.pendingTailSnap = false
+    local tail = s.body[#s.body]
+    local tam = constants.TAMANIO_BLOQUE
+    return {
+        gx = tail.x,
+        gy = tail.y,
+        px = tail.x * tam + tam / 2,
+        py = tail.y * tam + tam / 2
+    }
 end
 
 function snake.draw(s, alpha)
@@ -232,8 +480,21 @@ function snake.draw(s, alpha)
     if numSegments == 0 then return end
     local tam = constants.TAMANIO_BLOQUE
     local size = tam
+    local time = love.timer.getTime()
 
-    -- Easing cÃºbico: suaviza arranque y frenado de cada paso
+    -- Dibujar rastro de fuego de Fire Pepper
+    if s.fireTrail and #s.fireTrail > 0 then
+        for _, ft in ipairs(s.fireTrail) do
+            local frac = math.max(0, ft.timer / (ft.maxTimer or 1.8))
+            local fPulse = math.sin(time * 15 + ft.x * 3) * 0.2 + 0.8
+            love.graphics.setColor(1.0, 0.4 * frac, 0.0, frac * fPulse * 0.7)
+            love.graphics.rectangle("fill", ft.x * tam + 1, ft.y * tam + 1, tam - 2, tam - 2, 3, 3)
+            love.graphics.setColor(1.0, 0.9, 0.2, frac * fPulse * 0.9)
+            love.graphics.rectangle("fill", ft.x * tam + 3, ft.y * tam + 3, tam - 6, tam - 6, 2, 2)
+        end
+    end
+
+    -- Easing cubico: suaviza arranque y frenado de cada paso
     local easedAlpha = alpha * alpha * (3 - 2 * alpha)
 
     local positions = {}
@@ -243,7 +504,6 @@ function snake.draw(s, alpha)
         if s.prevBody[i] then
             local rawDx = segmento.x - s.prevBody[i].x
             local rawDy = segmento.y - s.prevBody[i].y
-            -- Si el delta supera 1 celda es un wrap: no interpolar ese segmento
             if math.abs(rawDx) > 1 or math.abs(rawDy) > 1 then
                 dx = segmento.x
                 dy = segmento.y
@@ -261,12 +521,18 @@ function snake.draw(s, alpha)
         local sat = 0.7 + t * 0.3
         local val = 0.5 + (1 - t) * 0.4
         local r, g, b = hsv2rgb(hue, sat, val)
+        if s.firePepperTimer and s.firePepperTimer > 0 then
+            r, g, b = 1.0, 0.3 + t * 0.4, 0.1
+        elseif s.constrictorBuffTimer and s.constrictorBuffTimer > 0 then
+            r, g, b = 0.6 + t * 0.3, 0.1, 0.9
+        elseif s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
+            r, g, b = 0.0, 0.94, 0.8 + t * 0.2
+        end
         colors[i] = {r, g, b, 1.0 - t * 0.4}
     end
 
     for i = 1, numSegments - 1 do
         local p1, p2 = positions[i], positions[i + 1]
-        -- Si los segmentos estÃ¡n separados mÃ¡s de 1 celda es un wrap: no dibujar conector
         if math.abs(p1.x - p2.x) <= 1 and math.abs(p1.y - p2.y) <= 1 then
             local c1, c2 = colors[i], colors[i + 1]
             love.graphics.setColor(
@@ -291,13 +557,10 @@ function snake.draw(s, alpha)
             local b = 0.3 + ti * 0.2
             love.graphics.setColor(r, g, b, t.alpha * 0.3)
             love.graphics.rectangle("fill", t.x * tam + 4, t.y * tam + 4, tam - 8, tam - 8, 2, 2)
+        else
+            table.remove(s.trail, i)
         end
     end
-    for i = #s.trail, 1, -1 do
-        if s.trail[i].alpha <= 0 then table.remove(s.trail, i) end
-    end
-
-    local time = love.timer.getTime()
 
     for i, segmento in ipairs(s.body) do
         local px = positions[i].x * tam
@@ -363,7 +626,8 @@ function snake.draw(s, alpha)
                     local ey = py + eyeOff.y + e * eyeGap.y
                     love.graphics.setColor(1, 1, 1)
                     love.graphics.rectangle("fill", ex, ey, 3, 3)
-                    love.graphics.setColor(0, 0, 0)
+                    local pupilCol = s.standstill and {0.0, 0.94, 1.0} or {0, 0, 0}
+                    love.graphics.setColor(pupilCol[1], pupilCol[2], pupilCol[3])
                     love.graphics.rectangle("fill", ex + 1, ey + 1, 1, 1)
                 end
 
@@ -385,38 +649,85 @@ function snake.draw(s, alpha)
             end
         end
     end
+
+    -- Dibujar señuelos de autotomia activos
+    if s.decoys and #s.decoys > 0 then
+        for _, dec in ipairs(s.decoys) do
+            local dFrac = math.max(0, dec.timer / (dec.maxTimer or 4.0))
+            local pulse = math.sin(time * 12) * 0.2 + 0.8
+            love.graphics.setColor(0.7, 0.2, 0.9, dFrac * pulse * 0.8)
+            love.graphics.rectangle("fill", dec.x * tam + 2, dec.y * tam + 2, tam - 4, tam - 4, 3, 3)
+            love.graphics.setColor(0.0, 0.94, 1.0, dFrac * pulse)
+            love.graphics.setLineWidth(1.5)
+            love.graphics.rectangle("line", dec.x * tam + 1, dec.y * tam + 1, tam - 2, tam - 2, 3, 3)
+            love.graphics.setLineWidth(1)
+        end
+    end
 end
 
 function snake.encolarDireccion(s, tx, ty)
     if not s or not tx or not ty then return end
     s.inputQueue = s.inputQueue or {}
 
-    -- Máximo 2 giros en cola (el siguiente inmediato + 1 giro anticipado de esquina)
-    if #s.inputQueue >= 2 then return end
+    local curX = s.lastMovedDirX or s.dirX
+    local curY = s.lastMovedDirY or s.dirY
+    local qLen = #s.inputQueue
 
-    -- Determinar dirección de referencia (la última en cola o la última ejecutada)
-    local refX, refY
-    if #s.inputQueue > 0 then
-        local lastQueued = s.inputQueue[#s.inputQueue]
-        refX, refY = lastQueued.x, lastQueued.y
+    if qLen == 0 then
+        if tx == curX and ty == curY then return end
+        if (tx == -curX and curX ~= 0) or (ty == -curY and curY ~= 0) then return end
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            table.insert(s.inputQueue, {x = tx, y = ty})
+            s.hasNewInput = true
+            s.turnHistory = s.turnHistory or {}
+            local now = love.timer.getTime()
+            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
+            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+        end
+    elseif qLen == 1 then
+        local q1 = s.inputQueue[1]
+        if tx == q1.x and ty == q1.y then return end
+
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            s.inputQueue[1] = {x = tx, y = ty}
+            s.hasNewInput = true
+            s.turnHistory = s.turnHistory or {}
+            local now = love.timer.getTime()
+            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
+            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
+            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
+                table.insert(s.inputQueue, {x = tx, y = ty})
+                s.hasNewInput = true
+                s.turnHistory = s.turnHistory or {}
+                local now = love.timer.getTime()
+                table.insert(s.turnHistory, {x = tx, y = ty, fromX = q1.x, fromY = q1.y, time = now})
+                if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
+            end
+        end
     else
-        refX = s.lastMovedDirX or s.dirX
-        refY = s.lastMovedDirY or s.dirY
+        local q1 = s.inputQueue[1]
+        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
+            s.inputQueue[1] = {x = tx, y = ty}
+            s.inputQueue[2] = nil
+            s.hasNewInput = true
+        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
+            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
+                s.inputQueue[2] = {x = tx, y = ty}
+                s.hasNewInput = true
+            end
+        end
     end
 
-    -- Descartar si es la misma dirección (no-op)
-    if tx == refX and ty == refY then
-        return
-    end
-
-    -- Descartar dirección opuesta (anti-suicidio 180° instantáneo)
-    if (tx == -refX and refX ~= 0) or (ty == -refY and refY ~= 0) then
-        return
-    end
-
-    -- Debe ser un giro perpendicular válido (90°)
-    if (refX ~= 0 and ty ~= 0 and tx == 0) or (refY ~= 0 and tx ~= 0 and ty == 0) then
-        table.insert(s.inputQueue, {x = tx, y = ty})
+    if s.turnHistory and #s.turnHistory >= 2 then
+        local now = love.timer.getTime()
+        local t1 = s.turnHistory[#s.turnHistory - 1]
+        local t2 = s.turnHistory[#s.turnHistory]
+        if now - t1.time <= 0.8 then
+            if (t1.fromX == -t2.x and t1.fromX ~= 0) or (t1.fromY == -t2.y and t1.fromY ~= 0) then
+                s.pendingTailSnap = true
+            end
+        end
     end
 end
 

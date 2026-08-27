@@ -6,9 +6,11 @@ config.canvasHeight = 360
 config.tileSize = 20
 
 config.TAMANIO_BLOQUE = 20
-config.VELOCIDAD_INICIAL = 0.15
+config.VELOCIDAD_INICIAL = 0.13
 config.VELOCIDAD_MINIMA = 0.05
 config.DURACION_FLASH_COMER = 0.6
+config.CORNER_BUFFER_RATIO = 0.75
+config.INPUT_BUFFER_MAX = 2
 
 config.GAME_STATE_MENU = 0
 config.GAME_STATE_PLAYING = 1
@@ -180,5 +182,30 @@ config.BOSS_HEALTH_BAR = {
     borderColor = {0, 0, 0, 1},
     lerpSpeed = 6.0,
 }
+
+-- Fase 8: Combate y Supervivencia (Combat & Survival Package)
+config.AUTOTOMY_COOLDOWN = 8.0
+config.AUTOTOMY_GHOST_DURATION = 1.5
+config.AUTOTOMY_DECOY_DURATION = 4.0
+config.CONSTRICTOR_BUFF_DURATION = 5.0
+config.REVIVE_COIN_COST = 30
+config.REVIVE_GHOST_DURATION = 3.0
+config.SURVIVAL_STREAK_INCREMENT = 0.1
+
+config.FIRE_PEPPER_DURATION = 3.5
+config.FIRE_TRAIL_LIFETIME = 1.8
+config.FROST_BERRY_DURATION = 2.5
+config.SLIMMING_MIN_LENGTH = 12
+config.SLIMMING_FACTOR = 0.5
+
+config.REVERSE_SLITHER_DURATION = 3.0
+config.REVERSE_SLITHER_COOLDOWN = 10.0
+config.TAIL_SNAP_STUN_DURATION = 0.8
+config.TAIL_SNAP_PUSH_DIST = 1
+
+config.REPELLING_MOVE_INTERVAL = 1.5
+config.FOOD_COUNTDOWN_TIMER = 5.0
+config.FOOD_TWIN_TIMER = 4.0
+config.FOOD_TWIN_WINDOW = 4.0
 
 return config

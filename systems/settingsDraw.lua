@@ -1,7 +1,6 @@
 -- systems/settingsDraw.lua — Submódulo de renderizado y controles para el panel de ajustes
 local settingsDraw = {}
 local ui = require('ui.ui')
-local helpers = require('core.helpers')
 
 local fallbackFonts = {}
 
@@ -226,6 +225,13 @@ function settingsDraw.drawAccessibilityTab(settings, cx, cy, cw)
     local cbLabel = settings.editing.accessibility.colorblind or 'off'
     local cbx, cby, cbw, cbh = drawDropdown(settings, cx, cy + 72, cw, 'Daltonismo', cbLabel)
     settings.g.colorblindDrop = {cbx, cby, cbw, cbh, key = 'accessibility.colorblind'}
+
+    -- Control Mode dropdown
+    local curMode = (settings.editing.gameplay and settings.editing.gameplay.controlMode)
+        or (settings.editing.controls and settings.editing.controls.controlMode) or 'classic'
+    local modeLabel = curMode == 'tactical' and 'Táctico (Sostener)' or 'Clásico (Auto)'
+    local cmx, cmy, cmw, cmh = drawDropdown(settings, cx, cy + 104, cw, 'Modo Control', modeLabel)
+    settings.g.controlModeDrop = {cmx, cmy, cmw, cmh, key = 'gameplay.controlMode'}
 end
 
 function settingsDraw.drawDropdownList(settings)
