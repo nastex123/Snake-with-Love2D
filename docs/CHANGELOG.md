@@ -8,7 +8,110 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 27:08:2026
+
+- **performance** (completed - 11:29): Optimización integral del tiempo de reacción de entrada, buffer inteligente y Corner Buffering:
+  1. `entities/snake.lua`: Reestructurada la función `snake.encolarDireccion` para implementar reemplazo dinámico de cola y corrección de intenciones en tiempo real, eliminando el falso bloqueo anti-180° que descartaba giros de 90° durante pulsaciones rápidas consecutivas.
+  2. `entities/snake.lua`: Eliminado el descarte rígido por cola llena (`#inputQueue >= 2`), permitiendo sobrescribir la última curva encolada con la intención más reciente del jugador.
+  3. `systems/gamestates.lua`: Implementado el sistema de *Corner Buffering* acelerado (`CORNER_BUFFER_RATIO = 0.75`): si se registra un giro cuando el paso actual ha superado el 75% del intervalo, el temporizador completa el paso de inmediato, eliminando la latencia perceptual de hasta 150 ms en los giros.
+  4. `core/config.lua`: Calibrada la velocidad base inicial (`VELOCIDAD_INICIAL = 0.13`, reducido desde 0.15) para un gameplay más ágil y reactivo desde el inicio, e incorporadas las constantes `CORNER_BUFFER_RATIO = 0.75` e `INPUT_BUFFER_MAX = 2`.
+  5. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de respuesta instantánea en modo táctico y continuo.
+
+## 26:08:2026
+
+- **fix** (completed - 23:17): Corrección del cálculo de dirección ortogonal en Inversión de Avance (*Reverse Slither* `[R]`):
+  1. `entities/snake.lua`: Reemplazada la lógica ternaria condicional en `snake.triggerReverseSlither` por una resolución ortogonal estricta de eje primario, eliminando el error por el cual `dx == 0` forzaba `dirX = 1` y generaba un vector diagonal erróneo (`{1, -1}`) al invertir en vertical.
+  2. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de inversión en línea recta perfecta sobre los 4 ejes cardinales.
+
+- **fix** (completed - 22:17): Activación por defecto de Held-Key Tactical Slither y corrección del bug visual del shader CRT al cerrar ajustes:
+  1. `render/shaders.lua`: Forzado el filtrado `c:setFilter("linear", "linear")` de forma permanente en todos los canvases de escena y post-procesado (`canvasScene`, `canvasFinal`, `canvasGlow`, `canvasPost`, `canvasShadow`), eliminando la degradación a `nearest` al cerrar o guardar Ajustes que destruía la suavidad analógica de las scanlines CRT y el resplandor de las fuentes.
+  2. `systems/persistence.lua`: Establecido `controlMode = 'tactical'` y `filter = 'linear'` por defecto en `settingsDefaults` y en el fallback de `applySettings`, asegurando que la serpiente inicie en modo táctico por defecto sin moverse sola.
+  3. `entities/snake.lua`: Inicializado `standstill = true` en `snake.reset()`, deteniendo a la serpiente en el centro de la sala hasta que el jugador presione una tecla direccional, e integrado `touch.hasActiveTouch()` en la detección de avance sostenido.
+  4. `systems/gamestates.lua`: Optimizado el despacho desde reposo en `updatePlaying` para acelerar `cronometro = velocidadActual` inmediatamente al detectar inputs direccionales o encolados, eliminando cualquier latencia de arranque.
+  5. `core/touch.lua`: Implementada la función `touch.hasActiveTouch()` para soportar avance sostenido en dispositivos táctiles.
+  6. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y preservación impecable del shader CRT.
+
+- **fix** (completed - 21:52): Corrección integral de enrutamiento de alimentos y seguridad de límites:
+  1. `systems/gamestates.lua`: Corregida la condición en `comio` para despachar todas las 9 comidas especiales y dinámicas a `playerMod.aplicarComida` (anteriormente solo se procesaban 4 alimentos dinámicos y los 5 especiales se trataban erróneamente como fruta básica).
+  2. `entities/snake.lua` & `systems/gamestates.lua`: Agregado soporte en `snake.mover` para detectar colisiones tanto con `food.pos` como con `food.twinPos` (Manzanas Gemelas), gestionando el consumo secuencial y el duplicado de combo al completar la pareja.
+  3. `entities/enemies.lua`: Incorporadas comprobaciones de límites de grilla (`anchoGrilla`, `altoGrilla`) y obstáculos sólidos en `enemies.applyTailSnap`, evitando que los enemigos empujados salgan del mapa o queden atrapados dentro de muros.
+  4. `entities/snake.lua`: Re-inicialización de `s.prevBody` al ejecutar *Reverse Slither* `[R]` para evitar saltos o artefactos de interpolación gráfica durante la inversión.
+  5. Verificación: Ejecución limpia con `love .` y confirmación de 0 errores en `error.log`.
+
+- **feature** (completed - 21:44): Finalización integral del **Paquete de Combate y Supervivencia (Fase 8)**:
+  1. `core/config.lua`: Incorporadas constantes de balance para comidas especiales, frutas dinámicas y combate táctico (`FIRE_PEPPER_DURATION = 3.5`, `FIRE_TRAIL_LIFETIME = 1.8`, `FROST_BERRY_DURATION = 2.5`, `CONSTRICTOR_BUFF_DURATION = 5.0`, `SLIMMING_MIN_LENGTH = 12`, `SLIMMING_FACTOR = 0.5`, `REVERSE_SLITHER_DURATION = 3.0`, `REVERSE_SLITHER_COOLDOWN = 10.0`, `TAIL_SNAP_STUN_DURATION = 0.8`, `TAIL_SNAP_PUSH_DIST = 1`, `REPELLING_MOVE_INTERVAL = 1.5`, `FOOD_TWIN_WINDOW = 4.0`).
+  2. `entities/snake.lua`:
+     - **Inversión de Avance (*Reverse Slither* `[R]`)**: Intercambia instantáneamente los roles de cabeza y cola con 1.2s de intangibilidad contra el cuello y 10s de recarga.
+     - **Onda de Expulsión (*Tail Snap*)**: Detección de giros en "U" de 180° en dos ticks consecutivos en $\le 0.8\text{s}$, emitiendo una micro-onda que empuja a los enemigos adyacentes 1 celda y los aturde 0.8s.
+     - **Rastro de Fuego (*Fire Trail*)**: Despliegue de baldosas de fuego incandescente tras la cola durante la Guindilla Picante, incinerando a los Chasers que lo crucen.
+     - **Poda Corporal (*Slimming*)**: Recorta la longitud del cuerpo al 50% si mide $\ge 12$ segmentos al comer la Baya de Poda.
+     - **Motor de Movimiento Táctico (*Held-Key Slither*)**: Respuesta instantánea sin input lag al pulsar teclas direccionales desde reposo y renderizado de postura de alerta en la cabeza.
+  3. `entities/food.lua`:
+     - **4 Comidas Especiales**: Guindilla Picante (`fire_pepper`), Fruta Helada (`frost_berry`), Baya Constrictora (`constrictor_berry`) y Baya de Poda (`slimming_berry`).
+     - **5 Frutas Dinámicas**: Comida Errante (`repelling_orbit`, huye de la cabeza cada 1.5s), Bomba con caducidad/obstáculo (`bomb`), Prisma cambiante (`prismatic`), Manzanas Gemelas (`twin`) y Diamante de Racha (`streak_diamond`).
+     - Renderizado procedural dedicado con shaders y destellos para cada tipo de alimento.
+  4. `entities/enemies.lua` & `entities/chaserAI.lua`:
+     - Soporte de congelación global (`world.state.enemyFreezeTimer > 0`), pausando movimiento, ataques del Boss y spawners.
+     - Temporizadores de aturdimiento (`e.stunTimer`) e incineración inmediata al pisar fuego de la cola.
+     - Retargeting prioritario de Chasers hacia señuelos de Autotomía activos.
+  5. `render/enemiesDraw.lua` & `render/particles.lua`:
+     - Emisores de partículas: `particles.fireTrail`, `particles.frostFreeze`, `particles.tailSnapShockwave` y `particles.slimmingBurst`.
+     - Overlays visuales de congelación cian y estrellas giratorias de aturdimiento sobre los enemigos y el Boss.
+  6. `systems/player.lua` & `systems/gamestates.lua`:
+     - Enrutamiento de todos los efectos de alimentos especiales y frutas dinámicas en `player.aplicarComida`.
+     - Callback de caducidad de bomba para generar obstáculos permanentes de piedra y detonación de partículas.
+     - Comprobación en tiempo real de colisiones de fuego y activación de Tail Snap.
+  7. `ui/hudUI.lua` & `main.lua`:
+     - Slots tácticos adaptativos en el HUD para `[Q] COLA` y `[R] INVERT` junto a los 3 slots de ítems de la tienda.
+     - Enrutamiento de tecla `R` para la activación de Inversión de Avance.
+  8. Verificación: Ejecución limpia con `love .`, validación de 0 errores y confirmación de ausencia total de `error.log`.
+
 ## 23:08:2026
+
+- **feature** (completed - 20:05): Implementación integral de la **Fase 8 — Paquete 1: Combate y Supervivencia**:
+  1. `core/config.lua`: Agregadas constantes de balance y temporizadores (`AUTOTOMY_COOLDOWN = 8.0`, `AUTOTOMY_GHOST_DURATION = 1.5`, `AUTOTOMY_DECOY_DURATION = 4.0`, `CONSTRICTOR_BUFF_DURATION = 5.0`, `REVIVE_COIN_COST = 30`, `REVIVE_GHOST_DURATION = 3.0`, `SURVIVAL_STREAK_INCREMENT = 0.1`, `FOOD_COUNTDOWN_TIMER = 5.0`, `FOOD_TWIN_TIMER = 3.0`).
+  2. `entities/snake.lua`:
+     - **Motor de Movimiento Táctico (*Held-Key Slither*)**: Si `controlMode == "tactical"`, la serpiente solo avanza cuando se mantiene pulsada una tecla direccional, manteniendo el mundo y los enemigos en tiempo real.
+     - **Habilidad de Autotomía `[Q]`**: Sacrifica 2 segmentos de cola, despliega un señuelo holográfico con temporizador y otorga 1.5s de intangibilidad fantasma con 8s de recarga.
+     - **Mecánica Lazo Constrictor (*Constrictor Loop*)**: Algoritmo de punto en polígono que detecta enemigos rodeados por el cuerpo de la serpiente, aniquilándolos instantáneamente con doble recompensa de oro/puntos y activación de estallido de partículas.
+     - Renderizado de señuelos activos con desvanecimiento alfa y pulso de neón.
+  3. `entities/food.lua`:
+     - **4 Comidas Dinámicas**: Bomba de cuenta regresiva (`bomb`, 5s), Fruta Prisma cambiante (`prismatic`, ciclo continuo de 4 bufos), Diamante de Racha (`streak_diamond`, +0.5x racha y +15$) y Manzanas Gemelas enlazadas (`twin`, bono +50 pts).
+     - Temporizadores de actualización y renderizado visual distintivo para cada fruto especial.
+  4. `systems/player.lua`: Manejador `player.aplicarComida(tipo)` con integración del multiplicador de racha de supervivencia a la puntuación y economía.
+  5. `systems/gameflow.lua` & `systems/gamestates.lua`:
+     - **Racha de Supervivencia (*Survival Streak*)**: +0.1x acumulativo por cada sala completada sin recibir daño, multiplicando recompensas y persistiendo la mejor racha en `profile.stats.highestStreak`.
+     - **Modal Interactivo de Muerte**: Al recibir daño letal, despliega el modal táctico con resumen de run y opciones de `[1 / ENTER] Revivir (-30$)` (limpieza de radio 3 y 3s de invulnerabilidad) o `[2 / ESC] Aceptar Muerte`.
+  6. `ui/hudUI.lua` & `ui/overlaysUI.lua`:
+     - Badge HUD interactivo de `STREAK 1.0x` con destellos cian.
+     - Slot táctico de habilidad `[Q] COLA` con indicador de enfriamiento visual.
+     - Interfaz modal cyberpunk de muerte con soporte para ratón y teclado.
+  7. `systems/settings.lua` & `systems/settingsDraw.lua`:
+     - Opción de `Modo de Control` (`Clásico (Auto)` vs `Táctico (Sostener)`) añadida al panel de ajustes con guardado persistente.
+  8. `render/particles.lua`: Emisores para `bombExplosion`, `constrictorBurst`, `streakDiamond` y `autotomyDecoy`.
+  9. Verificación: Ejecución limpia con `love .`, validación de 0 errores y confirmación de funcionamiento sin warnings.
+
+- **fix** (completed - 19:49): Resolución de la dependencia circular entre `render/shaders.lua` y `ui/ui.lua`:
+  1. `render/shaders.lua`: Reemplazado el `require("ui.ui")` en tiempo de carga por una resolución diferida (`getUI()` con lazy evaluation y `pcall`), evitando el error de inicialización `loop or previous error loading module 'ui.ui'`.
+  2. Verificación: Ejecución limpia y confirmación de funcionamiento sin errores ni warnings.
+
+- **refactor** (completed - 18:18): Auditoría integral y limpieza profunda del código base y activos huérfanos:
+  1. `assets/`: Eliminados activos huérfanos y residuales no utilizados: `assets/title_style12.png` y `assets/title_style12_glow.png` (~1.74 MB), `assets/snake_novice_pixelart.jpg` (30.8 KB) y `assets/ui_reticle_corner.png`.
+  2. Raíz del proyecto: Eliminados archivos temporales y accesos directos obsoletos (`smoke_ui_dbg.txt`, `love.exe - Acceso directo (2).lnk`).
+  3. `core/helpers.lua`: Eliminadas funciones matemáticas y de rectángulos no referenciadas (`rectsOverlap`, `rectContains`, `rectCenter`, `distance`, `manhattan`, `clamp`, `seedRandom`), conservando `deep_copy`.
+  4. `core/touch.lua`: Eliminada la constante huérfana `SWIPE_REGION`.
+  5. `render/particles.lua`: Eliminados generadores no llamados (`particles.compra`, `particles.fondo`) y la variable no utilizada `t` en `menuFondo`.
+  6. `render/shaders.lua`: Inyectada la referencia estricta a `local ui = require("ui.ui")` para la aplicación correcta y sin lookups globales de alto contraste y corrección daltoniana.
+  7. `ui/ui.lua` & `ui/menuLogo.lua`: Eliminadas la tabla `ui.toasts` no utilizada, la carga de `ui.reticleTexture` y la función residual `loadTitleAssets()`.
+  8. `ui/menuCard.lua`: Eliminada la duplicación de renderizado donde el fondo y barrido diagonal de la tarjeta de perfil se dibujaban dos veces por frame de forma redundante.
+  9. `entities/snake.lua`: Consolidado el ciclo de actualización y renderizado de la estela `s.trail` en una sola pasada eficiente.
+  10. `entities/enemies.lua`: Eliminado el cálculo de la variable huérfana `d` en la actualización de proyectiles.
+  11. `systems/profiles.lua` & `systems/profilesDraw.lua`: Eliminados reseteos duplicados en `profilesMod.close()`, requires redundantes y la función `font(n)` huérfana.
+  12. `systems/settings.lua` & `systems/settingsDraw.lua`: Eliminados requires innecesarios (`ui`, `shaders`, `helpers`) y bloques de comentarios residuales.
+  13. `systems/persistence.lua`: Enlazado seguro a `ui.ui` en `applySettings` para garantizar la persistencia de configuraciones de accesibilidad.
+  14. `systems/gamestates.lua` & `world/world.lua`: Eliminada la tabla sin uso `ENEMY_COLORS` y el require innecesario `constants`.
+  15. `main.lua`: Eliminados los requires huérfanos a nivel superior (`foodMod`, `obstaclesMod`, `enemiesMod`, `achievementsMod`).
+  16. Verificación: Ejecución limpia con `love .`, validación de 0 errores y confirmación de ausencia total de `error.log`.
 
 - **docs** (completed - 16:03): Actualización de la licencia del proyecto a **Licencia Propietaria (All Rights Reserved)** con prohibición expresa de distribución:
   1. `LICENSE`: Reescrita la licencia estableciendo todos los derechos reservados, prohibición total de redistribución, republicación, venta o cesión a terceros sin autorización escrita, y autorizando exclusivamente el uso personal local.

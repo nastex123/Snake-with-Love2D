@@ -3,6 +3,16 @@
 ## Completed (Documentación - 17:08:2026)
 - [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
 
+## Completed (Auditoría Integral & Limpieza de Código Muerto - 23:08:2026)
+- [x] **Auditoría Documental y de Código Base (Limpieza Integral)**:
+  - [x] Eliminados activos huérfanos (`title_style12.png`, `title_style12_glow.png`, `snake_novice_pixelart.jpg`, `ui_reticle_corner.png`, `smoke_ui_dbg.txt`, accesos directos).
+  - [x] Limpieza de funciones y variables muertas en `core/helpers.lua`, `core/touch.lua`, `render/particles.lua`, `entities/enemies.lua`, `systems/profilesDraw.lua`, `systems/gamestates.lua`.
+  - [x] Optimización de renderizado en `ui/menuCard.lua` (eliminado doble renderizado de fondo y split diagonal por frame).
+  - [x] Consolidación del bucle de estela de serpiente en `entities/snake.lua`.
+  - [x] Inyección segura de `ui.ui` en `render/shaders.lua` y `systems/persistence.lua` para filtros y accesibilidad.
+  - [x] Limpieza de requires no utilizados en `main.lua`, `systems/settings.lua`, `systems/settingsDraw.lua`, `systems/profiles.lua` y `world/world.lua`.
+  - [x] Verificación completa con `love .` sin errores ni advertencias.
+
 ## Completed (Menú Principal Asimétrico, Textura Alquímica & Modularización - 23:08:2026)
 - [x] **Rediseño del Menú Principal (Distribución Asimétrica, Título Procedural Cian & Círculo Alquímico)**:
   - [x] **Panel Lateral Izquierdo (40% ancho)**: Fondo procedural de Matriz de Puntos HUD (#14) con ondas radiales senoidales expansivas en `ui/menuUI.lua`.
@@ -16,15 +26,29 @@
   - [x] **Corrección de Ámbitos y Estabilidad**: Resuelto el scope de funciones locales en `systems/settingsDraw.lua` (`attempt to call global 'setFont'`) y eliminadas referencias circulares huérfanas.
   - [x] **Limpieza & Licencia**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD") y configurado el archivo `LICENSE` (Propietario / All Rights Reserved — Sin permiso de distribución).
 
+## Completed (Phase 8: Paquete 1 - Combate y Supervivencia - 26:08:2026)
+- [x] **Combat & Survival Package (100% Completado)**:
+  - [x] **Held-Key Tactical Slither Movement Engine**: Respuesta instantánea sin latencia al presionar teclas direccionales desde reposo, mundo y enemigos en tiempo real a 60 FPS, postura de guardia con ojos alertas en la cabeza, y conmutador en panel de Ajustes.
+  - [x] **Inversión de Avance (*Reverse Slither* `[R]`)**: Inversión instantánea de roles de cabeza y cola con 1.2s de intangibilidad contra el cuello, 10s de recarga y visualizador en el HUD.
+  - [x] **Onda de Expulsión (*Tail Snap*)**: Detección de giros en "U" de 180° en dos ticks consecutivos en $\le 0.8\text{s}$, emitiendo una micro-onda que empuja a los enemigos adyacentes 1 celda y los aturde 0.8s con estrellas giratorias.
+  - [x] **Habilidad de Autotomía `[Q]`**: Sacrificio de 2 segmentos de cola, señuelo holográfico con temporizador que atrae a los Chasers e intangibilidad fantasma de 1.5s.
+  - [x] **Mecánica Lazo Constrictor (*Constrictor Loop*)**: Algoritmo de punto en polígono que aniquila enemigos rodeados por el cuerpo de la serpiente con doble recompensa de oro/puntos y activación temporal vía Baya Constrictora o encierros directos.
+  - [x] **4 Comidas Especiales de Combate**:
+    - [x] Guindilla Picante (`fire_pepper`): 3.5s de rastro de fuego incandescente tras la cola que incinera Chasers.
+    - [x] Fruta Helada (`frost_berry`): 2.5s de congelación global de enemigos y Boss con overlays de escarcha.
+    - [x] Baya Constrictora (`constrictor_berry`): 5.0s de buff de lazo constrictor activo.
+    - [x] Baya de Poda (`slimming_berry`): Reduce la longitud del cuerpo al 50% si mide $\ge 12$ segmentos.
+  - [x] **5 Frutas Dinámicas Avanzadas**:
+    - [x] Comida Errante (`repelling_orbit`): Se desplaza 1 casilla cada 1.5s alejándose de la cabeza y acercándose a la cola (+35 pts, +3$).
+    - [x] Bomba con caducidad (`bomb`): Cuenta regresiva de 5.0s; si expira, explota y deja un obstáculo sólido permanente.
+    - [x] Prisma cambiante (`prismatic`): Ciclo de 4 bufos temporales (Velocidad, Escudo, Imán, Fantasma) cada 1.8s.
+    - [x] Manzanas Gemelas (`twin`): Par de frutos con ventana de 4.0s para capturar ambas y activar combo x2.
+    - [x] Diamante de Racha (`streak_diamond`): Incrementa la Racha de Supervivencia en +0.5x de golpe y +15$.
+  - [x] **Racha de Supervivencia (*Survival Streak*)**: +0.1x acumulativo por sala completada sin recibir daño, multiplicando recompensas y persistiendo `highestStreak` en el perfil.
+  - [x] **Pantalla Interactiva de Muerte**: Modal táctico cyberpunk con resumen de run y botones "Revivir (-30$)" vs "Aceptar Muerte".
+  - [x] **Emisores de Partículas Dedicados**: `fireTrail`, `frostFreeze`, `tailSnapShockwave`, `slimmingBurst`, `bombExplosion`, `constrictorBurst`, `streakDiamond`, `autotomyDecoy`.
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
-- [ ] **Combat & Survival Package**:
-  - [ ] Held-Key Tactical Slither Movement Engine (`snake.isDirectionHeld()`, real-time world, classic auto-slither toggle in settings)
-  - [ ] Survival Streak multiplier (+0.1x per cleared room) in `world.state.survivalStreak` & HUD
-  - [ ] Interactive Death Screen: "Continue / Revive" [30$] vs "Accept Death" (-30% coins & reset streak)
-  - [ ] Tactical Snake Abilities: Autotomy (Q/L2 tail sacrifice), Reverse Slither, Tail Snap (180° turn pushback)
-  - [ ] Constrictor Loop mechanic: 5s timed buff destroying encircled enemies with combo bonus
-  - [ ] 4 Special Foods + 5 Dynamic Fruits (Repelling Orbit, Countdown Bomb, Prismatic Shifter, Twin Apples, Streak Diamond)
-  - [ ] Persistent `highestStreak` metric in `persistence.lua` and `profiles.lua`
 - [ ] **Extended Items Arsenal (51-60)**:
   - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
 - [ ] **Stage Biomes & Hazards**:
@@ -55,7 +79,8 @@
   - [ ] 10 Unlockable modes: Endless Abyss, Time Attack, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Loadout Draft, Sudden Death, Maze Runner
   - [ ] Master Snake Skin Catalog (+200 variants, 5 primitive render engines)
 - [ ] **80 Engineering & Gameplay Improvements Suite**:
-  - [ ] Input ramp-up ($0.03\text{s}$ threshold), corner buffering, metrónomo táctico HUD, ghost frame de 3s en revive
+  - [x] Input Buffer Inteligente (2-step con reemplazo dinámico), Corner Buffering acelerado (`0.75` ratio) y calibración de velocidad base (`0.13s`)
+  - [ ] Input ramp-up ($0.03\text{s}$ threshold), metrónomo táctico HUD, ghost frame de 3s en revive
   - [ ] AABB pre-filter para Ray Casting de Constrictor, highlight de lazo cerrado, esquirlas de oro en rocas
   - [ ] Half-res FBO specular reflections ($0.5\times$ canvas), Voronoi glass fracture shader en Game Over
   - [ ] Fixed timestep a 60 ticks desacoplado de Hz, test unitario de memoria zero-allocation (60s constante)

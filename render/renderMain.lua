@@ -261,6 +261,9 @@ function renderMain.drawGame(dt)
     if debugTools and debugTools.isLogoDebugOpen and debugTools.isLogoDebugOpen() then
         debugTools.drawLogoDebug()
     end
+    if st.deathModalOpen and uiMod.drawDeathModal then
+        uiMod.drawDeathModal()
+    end
     -- draw toasts on top of everything
     if uiMod.drawToasts then uiMod.drawToasts() end
 end

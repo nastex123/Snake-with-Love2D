@@ -1,8 +1,6 @@
 local settings = {}
 local persistence = require('systems.persistence')
 local helpers = require('core.helpers')
-local ui = require('ui.ui')
-local shaders = require('render.shaders')
 local settingsDraw = require('systems.settingsDraw')
 
 -- State
@@ -24,19 +22,6 @@ settings.PH = 380
 settings.audio = {}
 settings.graphics = {}
 settings.accessibility = {}
-
--- Panel dimensions (fixed)
-
-
-
-
-
-
--- Panel dimensions (fixed)
-
-
-
-
 
 -- Public API ----------------------------------------------------------------
 
@@ -70,25 +55,6 @@ function settings.update(dt)
         if settings.toastTimer < 0 then settings.toastTimer = 0 end
     end
 end
-
--- Widget helpers for hit areas (populated during draw, consumed by mousepressed)
-
-
-
-
-
-
-
--- Content drawing per tab -----------------------------------------------
-
-
-
-
--- Dropdown list drawing -------------------------------------------------
-
-
--- Toast drawing ---------------------------------------------------------
-
 
 -- Main draw -------------------------------------------------------------
 
@@ -318,6 +284,17 @@ function settings.mousepressed(x, y, button)
             }
             return true
         end
+        -- Control Mode dropdown
+        if settings.g.controlModeDrop and settingsDraw.hitTest(settings, x, y, unpack(settings.g.controlModeDrop)) then
+            local bx, by, bw, bh = unpack(settings.g.controlModeDrop)
+            local items = {{label='Clásico (Auto)', value='classic'},{label='Táctico (Sostener)', value='tactical'}}
+            settings.openDropdown = {
+                key = settings.g.controlModeDrop.key,
+                items = items, current = (settings.editing.gameplay and settings.editing.gameplay.controlMode) or 'classic',
+                x = bx, y = by + bh + 2, w = bw, h = #items * 28, itemH = 28
+            }
+            return true
+        end
     end
 
     -- Bottom buttons
@@ -364,10 +341,4 @@ function settings.mousemoved(x, y, dx, dy)
     end
 end
 
--- No keyboard handling needed (mouse-only)
-
 return settings
-
-
-
-
