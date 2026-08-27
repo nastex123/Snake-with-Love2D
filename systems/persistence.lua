@@ -19,15 +19,21 @@ local settingsDefaults = {
 
 function persistence.getLogoConfig()
     if not persistence.settings then persistence.loadSettings() end
-    if not persistence.settings.logo then
+    if not persistence.settings.logo or type(persistence.settings.logo) ~= 'table' then
         persistence.settings.logo = helpers.deep_copy(settingsDefaults.logo)
     end
     return persistence.settings.logo
 end
 
+persistence.loadLogoConfig = persistence.getLogoConfig
+
 function persistence.saveLogoConfig(cfg)
     if not persistence.settings then persistence.loadSettings() end
-    persistence.settings.logo = cfg or persistence.settings.logo
+    if cfg and type(cfg) == 'table' then
+        persistence.settings.logo = cfg
+    elseif not persistence.settings.logo or type(persistence.settings.logo) ~= 'table' then
+        persistence.settings.logo = helpers.deep_copy(settingsDefaults.logo)
+    end
     return persistence.saveSettings(persistence.settings)
 end
 
@@ -41,7 +47,9 @@ local function deep_merge(dest, src)
             if type(dest[k]) ~= 'table' then dest[k] = {} end
             deep_merge(dest[k], v)
         else
-            if dest[k] == nil then dest[k] = v end
+            if dest[k] == nil or type(dest[k]) ~= type(v) then
+                dest[k] = v
+            end
         end
     end
     return dest
@@ -50,8 +58,17 @@ end
 -- We save settings in Lua table format so that load() can read them directly
 -- without any JSON-to-Lua conversion. This avoids fragility with gsub/load.
 
+local LUA_KEYWORDS = {
+    ["and"] = true, ["break"] = true, ["do"] = true, ["else"] = true,
+    ["elseif"] = true, ["end"] = true, ["false"] = true, ["for"] = true,
+    ["function"] = true, ["goto"] = true, ["if"] = true, ["in"] = true,
+    ["local"] = true, ["nil"] = true, ["not"] = true, ["or"] = true,
+    ["repeat"] = true, ["return"] = true, ["then"] = true, ["true"] = true,
+    ["until"] = true, ["while"] = true
+}
+
 local function isIdentifier(s)
-    return type(s) == 'string' and s:match('^[a-zA-Z_][a-zA-Z0-9_]*$')
+    return type(s) == 'string' and s:match('^[a-zA-Z_][a-zA-Z0-9_]*$') and not LUA_KEYWORDS[s]
 end
 
 local function lua_encode(val)
@@ -95,13 +112,27 @@ local function lua_encode(val)
 end
 
 local function lua_decode(text)
-    if type(text) ~= 'string' or #text == 0 then return nil end
-    local fn, err = load('return ' .. text)
+    if type(text) ~= 'string' or #text == 0 then return nil, "empty input" end
+    if text:match('^%s*$') then return nil, "whitespace only" end
+    local loader = loadstring or load
+    local fn, err
+    if _VERSION == "Lua 5.1" or (jit and type(setfenv) == "function") then
+        fn, err = loader('return ' .. text)
+        if fn then
+            setfenv(fn, {}) -- empty sandbox environment
+        end
+    else
+        fn, err = loader('return ' .. text, "=(safe_load)", "t", {})
+    end
     if not fn then return nil, err end
     local ok, res = pcall(fn)
     if not ok then return nil, res end
     return res
 end
+
+-- Export encoding/decoding helpers for unit testing
+persistence._lua_encode = lua_encode
+persistence._lua_decode = lua_decode
 
 local settingsPath = 'config/settings.dat'
 local profilesPath = 'config/profiles.dat'
@@ -109,6 +140,8 @@ local profilesPath = 'config/profiles.dat'
 -- ============================================================
 -- Profiles system (max 3 profiles, per-profile data)
 -- ============================================================
+
+local MAX_NAME_LENGTH = 14
 
 function persistence.initProfiles()
     persistence.profilesData = nil
@@ -118,11 +151,37 @@ function persistence.initProfiles()
             local decoded = lua_decode(contents)
             if decoded and type(decoded) == 'table' then
                 persistence.profilesData = decoded
-                if not persistence.profilesData.profiles then
-                    persistence.profilesData.profiles = {nil, nil, nil}
+                if type(persistence.profilesData.profiles) ~= 'table' then
+                    persistence.profilesData.profiles = {}
                 end
-                for i = #persistence.profilesData.profiles + 1, 3 do
-                    persistence.profilesData.profiles[i] = nil
+                for k, p in pairs(persistence.profilesData.profiles) do
+                    if type(k) ~= 'number' or k < 1 or k > 3 or type(p) ~= 'table' then
+                        persistence.profilesData.profiles[k] = nil
+                    else
+                        p.name = (type(p.name) == 'string' and #p.name > 0) and p.name or ("Jugador " .. k)
+                        p.monedas = (type(p.monedas) == 'number' and p.monedas >= 0) and p.monedas or 0
+                        p.highScore = (type(p.highScore) == 'number' and p.highScore >= 0) and p.highScore or 0
+                        p.achievements = type(p.achievements) == 'table' and p.achievements or {}
+                        p.unlocks = type(p.unlocks) == 'table' and p.unlocks or {}
+                        p.stats = type(p.stats) == 'table' and p.stats or {
+                            kills = 0,
+                            bossesKilled = 0,
+                            highestStage = 1,
+                            highestScore = 0,
+                            totalCoins = 0,
+                            highestStreak = 1.0
+                        }
+                    end
+                end
+                local act = persistence.profilesData.activeProfileIndex
+                if act and (type(act) ~= 'number' or act < 1 or act > 3 or not persistence.profilesData.profiles[act]) then
+                    persistence.profilesData.activeProfileIndex = nil
+                    for i = 1, 3 do
+                        if persistence.profilesData.profiles[i] then
+                            persistence.profilesData.activeProfileIndex = i
+                            break
+                        end
+                    end
                 end
                 return
             end
@@ -131,7 +190,7 @@ function persistence.initProfiles()
     persistence.profilesData = {
         version = 1,
         activeProfileIndex = nil,
-        profiles = {nil, nil, nil}
+        profiles = {}
     }
 end
 
@@ -151,12 +210,15 @@ function persistence.saveProfiles()
 end
 
 function persistence.getProfiles()
-    return persistence.profilesData and persistence.profilesData.profiles or {nil, nil, nil}
+    if not persistence.profilesData or type(persistence.profilesData.profiles) ~= 'table' then
+        return {}
+    end
+    return persistence.profilesData.profiles
 end
 
 function persistence.getActiveProfile()
     local idx = persistence.getActiveProfileIndex()
-    if idx then
+    if idx and persistence.profilesData and persistence.profilesData.profiles then
         local p = persistence.profilesData.profiles[idx]
         if p then return p end
     end
@@ -166,22 +228,42 @@ end
 function persistence.getActiveProfileIndex()
     if not persistence.profilesData then return nil end
     local idx = persistence.profilesData.activeProfileIndex
-    if idx and idx >= 1 and idx <= 3 then return idx end
+    if idx and type(idx) == 'number' and idx >= 1 and idx <= 3 then
+        if persistence.profilesData.profiles and persistence.profilesData.profiles[idx] then
+            return idx
+        end
+    end
     return nil
 end
 
 function persistence.createProfile(name)
+    if not persistence.profilesData then persistence.initProfiles() end
     local profiles = persistence.profilesData.profiles
     for i = 1, 3 do
         if profiles[i] == nil then
+            local cleanName = name
+            if cleanName then
+                cleanName = tostring(cleanName):gsub("^%s*(.-)%s*$", "%1")
+                if #cleanName > MAX_NAME_LENGTH then cleanName = cleanName:sub(1, MAX_NAME_LENGTH) end
+            end
+            if not cleanName or #cleanName == 0 then
+                cleanName = "Jugador " .. i
+            end
             profiles[i] = {
-                name = name or ("Jugador " .. i),
+                name = cleanName,
                 createdAt = os.time(),
                 monedas = 0,
                 highScore = 0,
                 achievements = {},
                 unlocks = {},
-                stats = {}
+                stats = {
+                    kills = 0,
+                    bossesKilled = 0,
+                    highestStage = 1,
+                    highestScore = 0,
+                    totalCoins = 0,
+                    highestStreak = 1.0
+                }
             }
             persistence.profilesData.activeProfileIndex = i
             persistence.saveProfiles()
@@ -192,7 +274,8 @@ function persistence.createProfile(name)
 end
 
 function persistence.selectProfile(index)
-    if index < 1 or index > 3 then
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then
         return false, "Índice inválido"
     end
     if not persistence.profilesData.profiles[index] then
@@ -204,17 +287,22 @@ function persistence.selectProfile(index)
 end
 
 function persistence.renameProfile(index, newName)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
     local profile = persistence.profilesData.profiles[index]
     if not profile then return false, "Perfil vacío" end
-    profile.name = newName
+    local cleanName = newName and tostring(newName):gsub("^%s*(.-)%s*$", "%1") or ""
+    if #cleanName > MAX_NAME_LENGTH then cleanName = cleanName:sub(1, MAX_NAME_LENGTH) end
+    if #cleanName == 0 then cleanName = "Jugador " .. index end
+    profile.name = cleanName
     persistence.saveProfiles()
     return true
 end
 
 function persistence.deleteProfile(index)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
-    if not persistence.profilesData.profiles[index] then
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData.profiles or not persistence.profilesData.profiles[index] then
         return false, "Perfil vacío"
     end
     persistence.profilesData.profiles[index] = nil
@@ -236,7 +324,8 @@ function persistence.deleteProfile(index)
 end
 
 function persistence.resetProfile(index)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
     local old = persistence.profilesData.profiles[index]
     if not old then return false, "Perfil vacío" end
     persistence.profilesData.profiles[index] = {
@@ -246,7 +335,14 @@ function persistence.resetProfile(index)
         highScore = 0,
         achievements = {},
         unlocks = {},
-        stats = {}
+        stats = {
+            kills = 0,
+            bossesKilled = 0,
+            highestStage = 1,
+            highestScore = 0,
+            totalCoins = 0,
+            highestStreak = 1.0
+        }
     }
     persistence.saveProfiles()
     return true
@@ -255,11 +351,18 @@ end
 function persistence.syncActiveProfile()
     local profile = persistence.getActiveProfile()
     if not profile then return false end
-    profile.monedas = world.get("monedas") or 0
-    profile.highScore = world.get("highScore") or 0
-    profile.stats = profile.stats or {}
-    local curStreak = world.get("highestStreak") or 1.0
-    profile.stats.highestStreak = math.max(profile.stats.highestStreak or 1.0, curStreak)
+    if world and world.get then
+        local wMonedas = world.get("monedas")
+        if wMonedas ~= nil then profile.monedas = wMonedas end
+        local wHighScore = world.get("highScore")
+        if wHighScore ~= nil then profile.highScore = wHighScore end
+        profile.stats = profile.stats or {}
+        local curStreak = world.get("highestStreak") or 1.0
+        profile.stats.highestStreak = math.max(profile.stats.highestStreak or 1.0, curStreak)
+        local curHighScore = world.get("highScore") or profile.highScore or 0
+        profile.stats.highestScore = math.max(profile.stats.highestScore or 0, curHighScore)
+        profile.stats.totalCoins = math.max(profile.stats.totalCoins or 0, profile.monedas)
+    end
     persistence.saveProfiles()
     return true
 end
@@ -289,6 +392,7 @@ function persistence.loadSettings()
 end
 
 function persistence.saveSettings(tbl)
+    tbl = tbl or persistence.settings or persistence.defaults()
     local encoded = lua_encode(tbl)
     if type(encoded) ~= 'string' or #encoded == 0 then
         return false, 'encode failed'
@@ -304,6 +408,7 @@ function persistence.saveSettings(tbl)
 end
 
 function persistence.applySettings(settings)
+    if not settings or type(settings) ~= 'table' then return end
     if type(settings.audio) == 'table' then
         pcall(function() sound.setMasterVolume(settings.audio.master) end)
         pcall(function() sound.enableMusic(settings.audio.music) end)
@@ -359,12 +464,15 @@ end
 function persistence.cargar()
     local f = 'highscore.txt'
     if love.filesystem.getInfo(f) then
-        return tonumber(love.filesystem.read(f)) or 0
+        local content = love.filesystem.read(f)
+        return tonumber(content) or 0
     end
     return 0
 end
 
 function persistence.guardar(puntajeActual, recordActual)
+    puntajeActual = puntajeActual or 0
+    recordActual = recordActual or 0
     if puntajeActual > recordActual then
         love.filesystem.write('highscore.txt', tostring(puntajeActual))
         return puntajeActual

@@ -1,21 +1,30 @@
 local constants = require("constants")
 local populate = {}
 
-local function buildAvoidList(snakeBody, obstaclesPos, enemiesList, foodPos)
+local function buildAvoidList(snakeBody, obstaclesPos, enemiesList, foodPos, twinPos)
     local list = {}
-    for _, s in ipairs(snakeBody) do
-        list[#list + 1] = {x = s.x, y = s.y, radius = 0}
-    end
-    for _, o in ipairs(obstaclesPos) do
-        list[#list + 1] = {x = o.x, y = o.y, radius = 0}
-    end
-    for _, e in ipairs(enemiesList) do
-        if e.alive then
-            list[#list + 1] = {x = e.x, y = e.y, radius = 1}
+    if snakeBody then
+        for _, s in ipairs(snakeBody) do
+            list[#list + 1] = {x = s.x, y = s.y, radius = 0}
         end
     end
-    if foodPos then
+    if obstaclesPos then
+        for _, o in ipairs(obstaclesPos) do
+            list[#list + 1] = {x = o.x, y = o.y, radius = 0}
+        end
+    end
+    if enemiesList then
+        for _, e in ipairs(enemiesList) do
+            if e.alive then
+                list[#list + 1] = {x = e.x, y = e.y, radius = 1}
+            end
+        end
+    end
+    if foodPos and foodPos.x and foodPos.y then
         list[#list + 1] = {x = foodPos.x, y = foodPos.y, radius = 0}
+    end
+    if twinPos and twinPos.x and twinPos.y then
+        list[#list + 1] = {x = twinPos.x, y = twinPos.y, radius = 0}
     end
     return list
 end
@@ -29,7 +38,8 @@ local function samplePosition(ancho, alto, avoidList, attempts, minDist)
         local valid = true
         for _, a in ipairs(avoidList) do
             local dist = math.abs(gx - a.x) + math.abs(gy - a.y)
-            if dist < (a.radius or minDist) then
+            local reqDist = math.max(a.radius or 0, minDist)
+            if dist < reqDist then
                 valid = false
                 break
             end
@@ -46,8 +56,16 @@ end
 local function placeNEntities(spawnFn, count, ancho, alto, avoidList, params)
     params = params or {}
     local placed = 0
+    local initialMinDist = params.minDist or 1
+    local minFallback = 1
     for _ = 1, count do
-        local gx, gy = samplePosition(ancho, alto, avoidList, params.attempts or 60, params.minDist or 1)
+        local gx, gy
+        local curMinDist = initialMinDist
+        while curMinDist >= minFallback do
+            gx, gy = samplePosition(ancho, alto, avoidList, params.attempts or 60, curMinDist)
+            if gx then break end
+            curMinDist = math.floor(curMinDist / 2)
+        end
         if gx then
             spawnFn(gx, gy)
             reservePosition(avoidList, gx, gy, params.avoidRadius or 2)
@@ -59,42 +77,70 @@ local function placeNEntities(spawnFn, count, ancho, alto, avoidList, params)
     return placed
 end
 
-function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstaclesList, foodMod, enemiesMod, obstaclesMod)
-    local room = world.getCurrentRoom()
+function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, foodOrEnemies, enemiesOrObsMod, optObsMod)
+    local world, snakeBody, anchoGrilla, altoGrilla, obstaclesList, foodMod, enemiesMod, obstaclesMod
+    if type(snakeOrW) == "number" and type(wOrH) == "number" then
+        world = require("world.world")
+        snakeBody = worldOrSnake
+        anchoGrilla = snakeOrW
+        altoGrilla = wOrH
+        obstaclesList = hOrObs
+        foodMod = obsOrFood
+        enemiesMod = foodOrEnemies
+        obstaclesMod = enemiesOrObsMod
+    else
+        world = worldOrSnake or require("world.world")
+        snakeBody = snakeOrW
+        anchoGrilla = wOrH
+        altoGrilla = hOrObs
+        obstaclesList = obsOrFood
+        foodMod = foodOrEnemies
+        enemiesMod = enemiesOrObsMod
+        obstaclesMod = optObsMod
+    end
+
+    local room = world.getCurrentRoom and world.getCurrentRoom()
     if not room then
-        foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
-        enemiesMod.generar(snakeBody, foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier())
+        if foodMod and foodMod.generar then
+            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
+        end
+        if enemiesMod and enemiesMod.generar then
+            enemiesMod.generar(snakeBody, foodMod and foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier and world.getModifier() or {})
+        end
         return
     end
 
-    local template = world.roomTemplates[room.template]
+    local template = world.roomTemplates and world.roomTemplates[room.template]
     if not template then
-        foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
-        enemiesMod.generar(snakeBody, foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier())
+        if foodMod and foodMod.generar then
+            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesList)
+        end
+        if enemiesMod and enemiesMod.generar then
+            enemiesMod.generar(snakeBody, foodMod and foodMod.pos, obstaclesList, anchoGrilla, altoGrilla, world.getModifier and world.getModifier() or {})
+        end
         return
     end
 
-    local rules = template.spawnRules
-    local stageMod = world.getStageMod()
+    local rules = template.spawnRules or {}
+    local stageMod = (world.getStageMod and world.getStageMod()) or { countMult = 1.0, hpMult = 1.0 }
     local enemiesRules = rules.enemies or {}
     local foodRule = rules.food or {baseCount = 1}
     local obstaclesRule = rules.obstacles or {baseCount = 0}
     local bossRule = rules.boss
+    local isBossRoom = (bossRule ~= nil) or (world.esJefe and world.esJefe())
 
-    -- Build avoid list from snake body + existing obstacles + existing enemies
-    local avoidList = buildAvoidList(snakeBody, obstaclesMod.pos, enemiesMod.list, foodMod.pos)
+    -- Build avoid list from snake body + existing obstacles + existing enemies + food
+    local avoidList = buildAvoidList(
+        snakeBody,
+        (obstaclesMod and obstaclesMod.pos) or obstaclesList,
+        enemiesMod and enemiesMod.list,
+        foodMod and foodMod.pos,
+        foodMod and foodMod.twinPos
+    )
 
-    -- Place obstacles first (so food/enemies can avoid them)
-    local obsCount = math.max(1, math.floor(obstaclesRule.baseCount * stageMod.countMult))
-    if obsCount > 0 then
-        placeNEntities(function(gx, gy)
-            obstaclesMod.spawnAt(gx, gy)
-        end, obsCount, anchoGrilla, altoGrilla, avoidList, {avoidRadius = 1, minDist = 1})
-    end
-
-    -- Si es sala de jefe, reservar centro + 8 celdas adyacentes para evitar que comida
-    -- o enemigos aparezcan sobre el boss
-    if bossRule and world.esJefe() then
+    -- 1. Si es sala de jefe, reservar PRIMERO el centro + 8 celdas adyacentes (área 3x3)
+    -- para evitar que obstáculos, comida o adds aparezcan sobre el boss
+    if isBossRoom then
         local cx = math.floor(anchoGrilla / 2)
         local cy = math.floor(altoGrilla / 2)
         for dx = -1, 1 do
@@ -107,7 +153,16 @@ function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstac
         end
     end
 
-    -- Place food (one item; type based on room template odds)
+    -- 2. Place obstacles (respetando baseCount = 0 cuando no deben haber obstáculos)
+    local obsBase = obstaclesRule.baseCount or 0
+    local obsCount = (obsBase > 0) and math.max(1, math.floor(obsBase * stageMod.countMult)) or 0
+    if obsCount > 0 and obstaclesMod and obstaclesMod.spawnAt then
+        placeNEntities(function(gx, gy)
+            obstaclesMod.spawnAt(gx, gy)
+        end, obsCount, anchoGrilla, altoGrilla, avoidList, {avoidRadius = 1, minDist = 1})
+    end
+
+    -- 3. Place food (one item; type based on room template odds)
     local foodType
     local r = love.math.random()
     if r < (foodRule.coinChance or 0.15) then
@@ -120,15 +175,15 @@ function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstac
     do
         local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 2)
         if gx then
-            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesMod.pos, foodType, gx, gy)
+            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, (obstaclesMod and obstaclesMod.pos) or obstaclesList, foodType, gx, gy)
             reservePosition(avoidList, gx, gy, 1)
         else
-            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, obstaclesMod.pos, foodType)
+            foodMod.generar(snakeBody, anchoGrilla, altoGrilla, (obstaclesMod and obstaclesMod.pos) or obstaclesList, foodType)
         end
     end
 
-    -- Place enemies using spawnAt and placement helpers
-    local stageModifier = world.getModifier()
+    -- 4. Place enemies using spawnAt and placement helpers
+    local stageModifier = (world.getModifier and world.getModifier()) or {}
     local speedMult = stageModifier.enemySpeed or 1.0
     for _, erule in ipairs(enemiesRules) do
         local base = erule.baseCount or 1
@@ -144,7 +199,7 @@ function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstac
                                 local cx, cy = gx + dx * dist, gy + dy * dist
                                 if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then break end
                                 local blocked = false
-                                for _, o in ipairs(obstaclesMod.pos or {}) do
+                                for _, o in ipairs((obstaclesMod and obstaclesMod.pos) or obstaclesList or {}) do
                                     if o.x == cx and o.y == cy then blocked = true; break end
                                 end
                                 if blocked then break end
@@ -171,7 +226,9 @@ function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstac
                         dirX = pDirX,
                         dirY = pDirY,
                     }
-                    enemiesMod.spawnAt(erule.type, gx, gy, params)
+                    if enemiesMod and enemiesMod.spawnAt then
+                        enemiesMod.spawnAt(erule.type, gx, gy, params)
+                    end
                 end
                 placeNEntities(spawnFn, 1, anchoGrilla, altoGrilla, avoidList, {
                     avoidRadius = 3,
@@ -182,12 +239,18 @@ function populate.populateRoom(world, snakeBody, anchoGrilla, altoGrilla, obstac
         end
     end
 
-    -- Boss room
-    if bossRule and world.esJefe() then
-        local hp = math.floor((bossRule.baseHP or 3) * stageMod.hpMult)
-        local coins = (bossRule.dropCoins or 5) + world.etapa * 2
-        enemiesMod.spawnBoss(world.etapa, anchoGrilla, altoGrilla, hp, coins)
+    -- 5. Boss room spawn
+    if isBossRoom and enemiesMod and enemiesMod.spawnBoss then
+        local hp = math.floor(((bossRule and bossRule.baseHP) or 3) * stageMod.hpMult)
+        local coins = ((bossRule and bossRule.dropCoins) or 5) + (world.etapa or 1) * 2
+        enemiesMod.spawnBoss(world.etapa or 1, anchoGrilla, altoGrilla, hp, coins)
     end
 end
+
+-- Export helpers for testing
+populate.buildAvoidList = buildAvoidList
+populate.samplePosition = samplePosition
+populate.reservePosition = reservePosition
+populate.placeNEntities = placeNEntities
 
 return populate

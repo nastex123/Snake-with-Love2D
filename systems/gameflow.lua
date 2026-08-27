@@ -12,15 +12,24 @@ local enemiesMod = require("entities.enemies")
 local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local uiMod = require("ui.ui")
+local sound = require("audio.sound")
 
 function gameflow.applyActiveProfile()
     local profile = persistence.getActiveProfile()
-    if not profile then return end
     local st = world.state
-    st.monedas = profile.monedas
-    st.highScore = profile.highScore
+    shop.reset(false)
+    if not profile then
+        st.monedas = 0
+        st.highScore = persistence.cargar() or 0
+        st.highestStreak = 1.0
+        return
+    end
+    st.monedas = profile.monedas or 0
+    st.highScore = profile.highScore or 0
     if profile.stats and profile.stats.highestStreak then
         st.highestStreak = profile.stats.highestStreak
+    else
+        st.highestStreak = 1.0
     end
     -- Apply persistent passive unlocks to shop inventory
     for id, unlocked in pairs(profile.unlocks or {}) do
@@ -61,6 +70,9 @@ function gameflow.resetGame(keepShopInventory)
     st.coinBonus = 0
     st.timeScale = 1
     st.activePS = {}
+    st.transitionTarget = nil
+    st.transitionPhase = nil
+    st.transitionHoldTimer = 0
     obstaclesMod.init()
     enemiesMod.init()
     uiMod.resetPopups()
@@ -87,6 +99,9 @@ end
 
 function gameflow.iniciarSala(keepInventory)
     local st = world.state
+    if not st.anchoGrilla or st.anchoGrilla == 0 or not st.altoGrilla or st.altoGrilla == 0 then
+        gameflow.recalcularGrilla()
+    end
     gameflow.resetGame(keepInventory)
     worldMod.puntajeSala = 0
     st.puntuacion = 0
@@ -132,8 +147,8 @@ end
 
 function gameflow.recalcularGrilla()
     local st = world.state
-    local w = love.graphics.getWidth()
-    local h = love.graphics.getHeight()
+    local w = (love.graphics and love.graphics.getWidth and love.graphics.getWidth()) or 640
+    local h = (love.graphics and love.graphics.getHeight and love.graphics.getHeight()) or 360
     local rawCols = math.floor(w / constants.TAMANIO_BLOQUE)
     local rawRows = math.floor((h - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
     st.anchoGrilla = math.min(rawCols, constants.MAX_GRID_COLS)
@@ -142,6 +157,48 @@ function gameflow.recalcularGrilla()
     st.gridOffsetX = math.floor((w - st.anchoGrilla * constants.TAMANIO_BLOQUE) / 2)
     st.gridOffsetY = constants.GRID_OFFSET_Y
     st.gameOffsetY = math.floor(math.max(0, h - gameH) / 2)
+end
+
+function gameflow.startRun()
+    local st = world.state
+    worldMod.init()
+    st.mundoCompletado = false
+    gameflow.iniciarSala(false)
+    st.fadeAlpha = 0
+    st.fadeDir = 0
+    st.gameState = constants.GAME_STATE_PLAYING
+end
+
+function gameflow.transitionToShop()
+    local st = world.state
+    persistence.syncActiveProfile()
+    st.gameState = constants.GAME_STATE_SHOP
+    sound.playSegment("intro")
+    shop.abrir(st.monedas)
+end
+
+function gameflow.returnToMenu()
+    local st = world.state
+    persistence.syncActiveProfile()
+    shop.reset()
+    st.fadeDir = -1
+    st.gameState = constants.GAME_STATE_MENU
+    st.introTimer = 0
+    st.pendingAchievements = {}
+end
+
+function gameflow.continueFromShop()
+    local st = world.state
+    persistence.syncActiveProfile()
+    st.fadeAlpha = 1
+    st.fadeDir = -1
+    local monedasGuardadas = st.monedas
+    gameflow.iniciarSala(true)
+    st.monedas = monedasGuardadas
+    persistence.syncActiveProfile()
+    st.bossHealthDisplay = nil
+    st.gameState = constants.GAME_STATE_PLAYING
+    st.pendingAchievements = {}
 end
 
 return gameflow

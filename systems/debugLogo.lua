@@ -17,6 +17,22 @@ function debugLogo.isOpen()
     return world.state.debugLogoOpen == true
 end
 
+function debugLogo.isDragging()
+    return dragging == true
+end
+
+function debugLogo.open()
+    if not world.state.debugLogoOpen then
+        debugLogo.toggle()
+    end
+end
+
+function debugLogo.close()
+    if world.state.debugLogoOpen then
+        debugLogo.toggle()
+    end
+end
+
 function debugLogo.toggle()
     world.state.debugLogoOpen = not world.state.debugLogoOpen
     if world.state.debugLogoOpen then

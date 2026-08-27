@@ -5,6 +5,11 @@ config.canvasWidth = 640
 config.canvasHeight = 360
 config.tileSize = 20
 
+-- Compatibility aliases
+config.GRID_SIZE = config.tileSize
+config.ANCHO = config.canvasWidth
+config.ALTO = config.canvasHeight
+
 config.TAMANIO_BLOQUE = 20
 config.VELOCIDAD_INICIAL = 0.13
 config.VELOCIDAD_MINIMA = 0.05

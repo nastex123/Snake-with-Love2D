@@ -9,6 +9,14 @@ local worldMod = require("world.world")
 local gameflow = require("systems.gameflow")
 local debugLogo = require("systems.debugLogo")
 
+function debugTools.isMenuOpen() return world.state.debugMenuOpen == true end
+function debugTools.toggleMenu()
+    world.state.debugMenuOpen = not world.state.debugMenuOpen
+    return world.state.debugMenuOpen
+end
+function debugTools.openMenu() world.state.debugMenuOpen = true end
+function debugTools.closeMenu() world.state.debugMenuOpen = false end
+
 function debugTools.isLogoDebugOpen() return debugLogo.isOpen() end
 function debugTools.toggleLogoDebug() return debugLogo.toggle() end
 function debugTools.drawLogoDebug() return debugLogo.draw() end
@@ -53,10 +61,11 @@ function debugTools.dibujarDebugMenu()
     local pad = 8
     local bw = pw - pad * 2
     local halfW = (bw - gap) / 2
+    local fontS = uiMod.fontSmall or love.graphics.getFont()
     love.graphics.setColor(0.08, 0.08, 0.15, 0.88)
     love.graphics.rectangle("fill", px, py, pw, 300, 6)
     love.graphics.setColor(0, 0.85, 1, 1)
-    love.graphics.setFont(uiMod.fontSmall)
+    love.graphics.setFont(fontS)
     love.graphics.print("DEBUG", px + pad, py + 6)
     local y = py + 26
     st.debugButtons = {}
@@ -66,8 +75,8 @@ function debugTools.dibujarDebugMenu()
         love.graphics.rectangle("fill", x, y, w, bh, 4)
         table.insert(st.debugButtons, {x = x, y = y, w = w, h = bh, action = action})
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.setFont(uiMod.fontSmall)
-        love.graphics.print(label, x + 6, y + (bh - uiMod.fontSmall:getHeight()) / 2)
+        love.graphics.setFont(fontS)
+        love.graphics.print(label, x + 6, y + (bh - fontS:getHeight()) / 2)
     end
     addBtn("[K] Skip Room", "skip", px + pad, bw)
     y = y + bh + gap
@@ -89,8 +98,8 @@ function debugTools.dibujarDebugMenu()
     addBtn("Mapa", "dungeonMap", px + pad, bw, st.debugDungeonOverlay and {0.5, 0.1, 0.5, 1} or nil)
     y = y + bh + gap
     love.graphics.setColor(0.6, 0.6, 0.6, 1)
-    love.graphics.setFont(uiMod.fontSmall)
-    love.graphics.print("Vel: " .. string.format("%.3f", st.baseSpeed), px + pad, y + 4)
+    love.graphics.setFont(fontS)
+    love.graphics.print("Vel: " .. string.format("%.3f", st.baseSpeed or constants.VELOCIDAD_INICIAL), px + pad, y + 4)
     love.graphics.print("Racha: " .. (st.comboCount or 0), px + pad + 100, y + 4)
 end
 
@@ -101,22 +110,24 @@ function debugTools.drawDebugAchievementsModal()
     local mw, mh = 440, math.min(360, h - 80)
     local mx = (w - mw) / 2
     local my = 30
+    local fontL = uiMod.fontLarge or love.graphics.getFont()
+    local fontS = uiMod.fontSmall or love.graphics.getFont()
     love.graphics.setColor(0.08, 0.08, 0.15, 0.95)
     love.graphics.rectangle("fill", mx, my, mw, mh, 8)
     love.graphics.setColor(0, 0.85, 1, 0.5)
     love.graphics.setLineWidth(1)
     love.graphics.rectangle("line", mx, my, mw, mh, 8)
     love.graphics.setColor(1, 1, 1, 1)
-    love.graphics.setFont(uiMod.fontLarge)
+    love.graphics.setFont(fontL)
     love.graphics.printf("LOGROS (DEBUG)", mx, my + 8, mw, "center")
-    love.graphics.setFont(uiMod.fontSmall)
+    love.graphics.setFont(fontS)
     local ry = my + 40
     local rowH = 26
     local pad = 8
     local btnW = 100
     local textX = mx + pad
     local btnX = mx + mw - pad - btnW
-    local lineH = love.graphics.getFont():getHeight()
+    local lineH = fontS:getHeight()
     st.debugAchievementModalButtons = {}
     local ordered = {"first_kill","enemy_25","enemy_100","combo_5","combo_10","coins_100","coins_500","stage_3","boss_kill","score_1000","score_5000"}
     for _, id in ipairs(ordered) do
@@ -147,19 +158,46 @@ function debugTools.mousepressed(x, y, button)
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if btn.action == "skip" then
                     if not st.transitionTarget then
-                        if worldMod.esJefe() then st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa" else st.transitionTarget = "siguienteSala" end
-                        st.transitionPhase = 1; st.fadeDir = 1; st.gameState = constants.GAME_STATE_TRANSITION
+                        if worldMod.esJefe() then
+                            st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
+                        else
+                            st.transitionTarget = "siguienteSala"
+                        end
+                        st.transitionPhase = 1
+                        st.fadeDir = 1
+                        st.gameState = constants.GAME_STATE_TRANSITION
                     end
                 elseif btn.action == "skipStage" then
-                    if not st.transitionTarget then st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"; st.transitionPhase = 1; st.fadeDir = 1; st.gameState = constants.GAME_STATE_TRANSITION end
-                elseif btn.action == "coins" then st.monedas = st.monedas + 10
-                elseif btn.action == "immune" then st.debugImmune = not st.debugImmune
-                elseif btn.action == "speedUp" then st.baseSpeed = math.max(constants.MIN_BASE_SPEED, st.baseSpeed - constants.SPEED_ADJUST_INCREMENT); st.velocidadActual = gameflow.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
-                elseif btn.action == "speedDown" then st.baseSpeed = math.min(constants.MAX_BASE_SPEED, st.baseSpeed + constants.SPEED_ADJUST_INCREMENT); st.velocidadActual = gameflow.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
-                elseif btn.action == "comboUp" then st.comboCount = (st.comboCount or 0) + 1
-                elseif btn.action == "comboDown" then st.comboCount = math.max(0, (st.comboCount or 0) - 1)
-                elseif btn.action == "achievements" then st.debugAchievementsOpen = not st.debugAchievementsOpen
-                elseif btn.action == "dungeonMap" then st.debugDungeonOverlay = not st.debugDungeonOverlay
+                    if not st.transitionTarget then
+                        st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
+                        st.transitionPhase = 1
+                        st.fadeDir = 1
+                        st.gameState = constants.GAME_STATE_TRANSITION
+                    end
+                elseif btn.action == "coins" then
+                    st.monedas = (st.monedas or 0) + 10
+                    if achievementsMod and achievementsMod.check then
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    end
+                elseif btn.action == "immune" then
+                    st.debugImmune = not st.debugImmune
+                elseif btn.action == "speedUp" then
+                    st.baseSpeed = math.max(constants.MIN_BASE_SPEED, (st.baseSpeed or constants.VELOCIDAD_INICIAL) - constants.SPEED_ADJUST_INCREMENT)
+                    st.velocidadActual = gameflow.calculateCurrentSpeed(st.baseSpeed, st.frutasContador or 0)
+                elseif btn.action == "speedDown" then
+                    st.baseSpeed = math.min(constants.MAX_BASE_SPEED, (st.baseSpeed or constants.VELOCIDAD_INICIAL) + constants.SPEED_ADJUST_INCREMENT)
+                    st.velocidadActual = gameflow.calculateCurrentSpeed(st.baseSpeed, st.frutasContador or 0)
+                elseif btn.action == "comboUp" then
+                    st.comboCount = (st.comboCount or 0) + 1
+                    if st.comboCount >= 4 and achievementsMod and achievementsMod.check then
+                        achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                    end
+                elseif btn.action == "comboDown" then
+                    st.comboCount = math.max(0, (st.comboCount or 0) - 1)
+                elseif btn.action == "achievements" then
+                    st.debugAchievementsOpen = not st.debugAchievementsOpen
+                elseif btn.action == "dungeonMap" then
+                    st.debugDungeonOverlay = not st.debugDungeonOverlay
                 end
                 return true
             end
@@ -167,13 +205,19 @@ function debugTools.mousepressed(x, y, button)
     end
     if st.debugAchievementsOpen and button == 1 then
         for _, abtn in ipairs(st.debugAchievementModalButtons or {}) do
-            if x >= abtn.x and x <= abtn.x + abtn.w and y >= abtn.y and y <= abtn.y + abtn.h then debugTools.toggleDebugAchievement(abtn.id); return true end
+            if x >= abtn.x and x <= abtn.x + abtn.w and y >= abtn.y and y <= abtn.y + abtn.h then
+                debugTools.toggleDebugAchievement(abtn.id)
+                return true
+            end
         end
         local w, h = love.graphics.getDimensions()
         local mw, mh = 440, math.min(360, h - 80)
         local mx = (w - mw) / 2
         local my = 30
-        if x < mx or x > mx + mw or y < my or y > my + mh then st.debugAchievementsOpen = false; return true end
+        if x < mx or x > mx + mw or y < my or y > my + mh then
+            st.debugAchievementsOpen = false
+            return true
+        end
     end
     return false
 end
@@ -190,6 +234,10 @@ end
 
 function debugTools.keypressed(tecla)
     if debugLogo.keypressed(tecla) then return true end
+    if tecla == "tab" then
+        debugTools.toggleMenu()
+        return true
+    end
     return false
 end
 

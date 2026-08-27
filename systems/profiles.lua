@@ -80,8 +80,10 @@ function profilesMod.draw()
     love.graphics.setLineWidth(1)
 
     -- clip all content inside panel
-    local oldSc = {love.graphics.getScissor()}
-    love.graphics.setScissor(profilesMod.panelX, profilesMod.panelY, profilesMod.panelW, profilesMod.panelH)
+    local oldSc = (love.graphics.getScissor and {love.graphics.getScissor()}) or {}
+    if love.graphics.setScissor then
+        love.graphics.setScissor(profilesMod.panelX, profilesMod.panelY, profilesMod.panelW, profilesMod.panelH)
+    end
 
     if profilesMod.state == 'select' then
         profilesDraw.drawSelect(profilesMod, w, h)
@@ -96,17 +98,22 @@ function profilesMod.draw()
     end
 
     -- restore scissor
-    if oldSc[1] then
-        love.graphics.setScissor(oldSc[1], oldSc[2], oldSc[3], oldSc[4])
-    else
-        love.graphics.setScissor()
+    if love.graphics.setScissor then
+        if oldSc[1] then
+            love.graphics.setScissor(oldSc[1], oldSc[2], oldSc[3], oldSc[4])
+        else
+            love.graphics.setScissor()
+        end
     end
 end
 
 
 
 
+profilesMod.MAX_NAME_LENGTH = 14
+
 function profilesMod.buttonHover(x, y, w, h, mx, my)
+    if not x or not y or not w or not h or not mx or not my then return false end
     return mx >= x and mx <= x + w and my >= y and my <= y + h
 end
 
@@ -117,7 +124,7 @@ function profilesMod.mousepressed(x, y, button)
     -- check modals first
     if profilesMod.state == 'input' then
         -- check text input click
-        if profilesMod.inputRect and profilesMod.buttonHover(profilesMod.inputRect.x, profilesMod.inputRect.y, profilesMod.inputRect.w, profilesMod.inputRect.h, x, y) then
+        if profilesMod.inputRect and profilesMod.inputRect.x and profilesMod.buttonHover(profilesMod.inputRect.x, profilesMod.inputRect.y, profilesMod.inputRect.w, profilesMod.inputRect.h, x, y) then
             profilesMod.textInputActive = true
             return
         end
@@ -225,8 +232,11 @@ end
 
 function profilesMod.handleInputConfirm()
     local text = profilesMod.nameInput:gsub("^%s*(.-)%s*$", "%1")
+    if #text > profilesMod.MAX_NAME_LENGTH then
+        text = text:sub(1, profilesMod.MAX_NAME_LENGTH)
+    end
     if #text == 0 then
-        text = "Jugador " .. profilesMod.inputIndex
+        text = "Jugador " .. (profilesMod.inputIndex or 1)
     end
     if profilesMod.confirmType == "create" then
         local ok, msg = persistence.createProfile(text)
@@ -246,9 +256,7 @@ end
 function profilesMod.handleConfirmYes()
     if profilesMod.confirmType == "delete" then
         persistence.deleteProfile(profilesMod.confirmIndex)
-        if persistence.getActiveProfile() then
-            gameflow.applyActiveProfile()
-        end
+        gameflow.applyActiveProfile()
     elseif profilesMod.confirmType == "reset" then
         persistence.resetProfile(profilesMod.confirmIndex)
         gameflow.applyActiveProfile()
@@ -261,7 +269,9 @@ end
 function profilesMod.textinput(text)
     if not profilesMod.visible then return end
     if profilesMod.state == 'input' and profilesMod.textInputActive then
-        profilesMod.nameInput = profilesMod.nameInput .. text
+        if #profilesMod.nameInput < profilesMod.MAX_NAME_LENGTH then
+            profilesMod.nameInput = profilesMod.nameInput .. text
+        end
     end
 end
 
@@ -276,14 +286,36 @@ function profilesMod.keypressed(key)
             profilesMod.state = 'select'
             profilesMod.textInputActive = false
             profilesMod.nameInput = ""
+            profilesMod.confirmType = nil
+            profilesMod.inputIndex = nil
+        end
+    elseif profilesMod.state == 'confirm' then
+        if key == "return" or key == "kpenter" or key == "y" then
+            profilesMod.handleConfirmYes()
+        elseif key == "escape" or key == "n" then
+            profilesMod.state = 'select'
+            profilesMod.confirmIndex = nil
+            profilesMod.confirmType = nil
         end
     elseif profilesMod.state == 'achievements' then
-        if key == "escape" then
+        if key == "escape" or key == "return" or key == "space" then
             profilesMod.state = 'select'
         end
     elseif profilesMod.state == 'select' then
         if key == "escape" then
             profilesMod.close()
+        elseif key == "1" or key == "2" or key == "3" then
+            local slot = tonumber(key)
+            local profiles = persistence.getProfiles()
+            if profiles and profiles[slot] then
+                profilesMod.handleSelect(slot)
+            else
+                profilesMod.state = 'input'
+                profilesMod.confirmType = "create"
+                profilesMod.inputIndex = slot
+                profilesMod.nameInput = ""
+                profilesMod.textInputActive = true
+            end
         end
     end
 end
