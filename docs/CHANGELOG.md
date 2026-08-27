@@ -10,6 +10,10 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 26:08:2026
 
+- **fix** (completed - 23:17): Corrección del cálculo de dirección ortogonal en Inversión de Avance (*Reverse Slither* `[R]`):
+  1. `entities/snake.lua`: Reemplazada la lógica ternaria condicional en `snake.triggerReverseSlither` por una resolución ortogonal estricta de eje primario, eliminando el error por el cual `dx == 0` forzaba `dirX = 1` y generaba un vector diagonal erróneo (`{1, -1}`) al invertir en vertical.
+  2. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de inversión en línea recta perfecta sobre los 4 ejes cardinales.
+
 - **fix** (completed - 22:17): Activación por defecto de Held-Key Tactical Slither y corrección del bug visual del shader CRT al cerrar ajustes:
   1. `render/shaders.lua`: Forzado el filtrado `c:setFilter("linear", "linear")` de forma permanente en todos los canvases de escena y post-procesado (`canvasScene`, `canvasFinal`, `canvasGlow`, `canvasPost`, `canvasShadow`), eliminando la degradación a `nearest` al cerrar o guardar Ajustes que destruía la suavidad analógica de las scanlines CRT y el resplandor de las fuentes.
   2. `systems/persistence.lua`: Establecido `controlMode = 'tactical'` y `filter = 'linear'` por defecto en `settingsDefaults` y en el fallback de `applySettings`, asegurando que la serpiente inicie en modo táctico por defecto sin moverse sola.

@@ -125,8 +125,23 @@ function snake.triggerReverseSlither(s)
     if math.abs(dx) > 1 then dx = dx > 0 and -1 or 1 end
     if math.abs(dy) > 1 then dy = dy > 0 and -1 or 1 end
 
-    s.dirX = dx ~= 0 and dx or 1
-    s.dirY = dx ~= 0 and 0 or (dy ~= 0 and dy or 0)
+    if dx ~= 0 and dy == 0 then
+        s.dirX = dx
+        s.dirY = 0
+    elseif dy ~= 0 and dx == 0 then
+        s.dirX = 0
+        s.dirY = dy
+    elseif dx ~= 0 then
+        s.dirX = dx
+        s.dirY = 0
+    elseif dy ~= 0 then
+        s.dirX = 0
+        s.dirY = dy
+    else
+        s.dirX = -s.dirX
+        s.dirY = -s.dirY
+    end
+
     s.lastMovedDirX = s.dirX
     s.lastMovedDirY = s.dirY
     s.inputQueue = {}
