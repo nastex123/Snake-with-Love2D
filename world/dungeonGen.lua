@@ -2,11 +2,11 @@ local constants = require("constants")
 local dungeonGen = {}
 
 dungeonGen.stageModifiers = {
-    [1] = { spawnRate = 1.0, enemySpeed = 1.0, chaserWeight = 0.40, patrollerWeight = 0.35, spawnerWeight = 0.25, targetMult = 1.0, bossVida = 3 },
-    [2] = { spawnRate = 1.2, enemySpeed = 1.15, chaserWeight = 0.50, patrollerWeight = 0.30, spawnerWeight = 0.20, targetMult = 1.3, bossVida = 4 },
-    [3] = { spawnRate = 1.4, enemySpeed = 1.3, chaserWeight = 0.35, patrollerWeight = 0.30, spawnerWeight = 0.35, targetMult = 1.6, bossVida = 5 },
-    [4] = { spawnRate = 1.6, enemySpeed = 1.5, chaserWeight = 0.50, patrollerWeight = 0.20, spawnerWeight = 0.30, targetMult = 2.0, bossVida = 6 },
-    [5] = { spawnRate = 2.0, enemySpeed = 1.8, chaserWeight = 0.40, patrollerWeight = 0.25, spawnerWeight = 0.35, targetMult = 2.5, bossVida = 8 },
+    [1] = { biome = "catacumbas", name = "Catacumbas de Piedra", wallWrap = true, spawnRate = 1.0, enemySpeed = 1.0, chaserWeight = 0.40, patrollerWeight = 0.35, spawnerWeight = 0.25, targetMult = 1.0, bossVida = 3 },
+    [2] = { biome = "hielo", name = "Cripta Helada", wallWrap = true, isIce = true, spawnRate = 1.2, enemySpeed = 1.15, chaserWeight = 0.50, patrollerWeight = 0.30, spawnerWeight = 0.20, targetMult = 1.3, bossVida = 4 },
+    [3] = { biome = "volcan", name = "Caverna Volcánica", wallWrap = true, hazardLava = true, spawnRate = 1.4, enemySpeed = 1.3, chaserWeight = 0.35, patrollerWeight = 0.30, spawnerWeight = 0.35, targetMult = 1.6, bossVida = 5 },
+    [4] = { biome = "colmena", name = "Colmena Tóxica", wallWrap = true, isSlime = true, spawnRate = 1.6, enemySpeed = 1.5, chaserWeight = 0.50, patrollerWeight = 0.20, spawnerWeight = 0.30, targetMult = 2.0, bossVida = 6 },
+    [5] = { biome = "vacio", name = "Santuario del Vacío", wallWrap = false, spawnRate = 2.0, enemySpeed = 1.8, chaserWeight = 0.40, patrollerWeight = 0.25, spawnerWeight = 0.35, targetMult = 2.5, bossVida = 8 },
 }
 
 -- Stage modifiers map (countMult, hpMult, spawnMult, objectiveMult)

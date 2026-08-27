@@ -208,4 +208,73 @@ config.FOOD_COUNTDOWN_TIMER = 5.0
 config.FOOD_TWIN_TIMER = 4.0
 config.FOOD_TWIN_WINDOW = 4.0
 
+-- Registro de Biomas de Mazmorra (Fase 8)
+config.BIOMES = {
+    [1] = {
+        id = "catacumbas",
+        name = "Catacumbas de Piedra",
+        subtitle = "Muros Sólidos & Mazmorra Clásica",
+        wallWrap = true,
+        gridColor = {0.18, 0.22, 0.30},
+        gridAccent = {0.0, 0.85, 1.0},
+        bgTint = {0.05, 0.07, 0.11},
+        wallColor = {0.45, 0.48, 0.55},
+        isIce = false,
+        hazardLava = false,
+        isSlime = false
+    },
+    [2] = {
+        id = "hielo",
+        name = "Cripta Helada",
+        subtitle = "Suelo Resbaladizo & Escarcha",
+        wallWrap = true,
+        gridColor = {0.15, 0.35, 0.50},
+        gridAccent = {0.20, 0.90, 1.0},
+        bgTint = {0.04, 0.08, 0.14},
+        wallColor = {0.30, 0.60, 0.80},
+        isIce = true,
+        hazardLava = false,
+        isSlime = false
+    },
+    [3] = {
+        id = "volcan",
+        name = "Caverna Volcánica",
+        subtitle = "Fisuras de Magma & Baldosas Ardientes",
+        wallWrap = true,
+        gridColor = {0.35, 0.15, 0.10},
+        gridAccent = {1.0, 0.45, 0.10},
+        bgTint = {0.10, 0.04, 0.04},
+        wallColor = {0.55, 0.25, 0.15},
+        isIce = false,
+        hazardLava = true,
+        isSlime = false
+    },
+    [4] = {
+        id = "colmena",
+        name = "Colmena Tóxica",
+        subtitle = "Suelo Viscoso & Enjambre Ácido",
+        wallWrap = true,
+        gridColor = {0.20, 0.35, 0.15},
+        gridAccent = {0.20, 0.90, 0.40},
+        bgTint = {0.05, 0.09, 0.04},
+        wallColor = {0.40, 0.55, 0.25},
+        isIce = false,
+        hazardLava = false,
+        isSlime = true
+    },
+    [5] = {
+        id = "vacio",
+        name = "Santuario del Vacío",
+        subtitle = "Abismo Cósmico - Caída Mortal Sin Wall-Wrap",
+        wallWrap = false,
+        gridColor = {0.25, 0.10, 0.35},
+        gridAccent = {0.85, 0.30, 1.0},
+        bgTint = {0.03, 0.02, 0.06},
+        wallColor = {0.60, 0.40, 0.80},
+        isIce = false,
+        hazardLava = false,
+        isSlime = false
+    }
+}
+
 return config
