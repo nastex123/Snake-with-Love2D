@@ -251,18 +251,25 @@ function states.updatePlaying(dt)
         end
     end
 
-    -- En modo tactico: respuesta instantanea si se presiona direccion tras reposo
+    -- Respuesta reactiva inmediata y buffer de esquina (Corner Buffering)
     local controlMode = world.get("controlMode") or "tactical"
+    local isInputActive = (#st.player.inputQueue > 0)
+    if not isInputActive and love.keyboard and love.keyboard.isDown then
+        isInputActive = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
+    end
+    local touchMod = package.loaded["core.touch"]
+    if not isInputActive and touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
+        isInputActive = true
+    end
+
     if controlMode == "tactical" and st.player.standstill then
-        local isInputActive = (#st.player.inputQueue > 0)
-        if not isInputActive and love.keyboard and love.keyboard.isDown then
-            isInputActive = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
-        end
-        local touchMod = package.loaded["core.touch"]
-        if not isInputActive and touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
-            isInputActive = true
-        end
         if isInputActive then
+            st.cronometro = st.velocidadActual
+        end
+    elseif isInputActive and st.player.hasNewInput then
+        st.player.hasNewInput = false
+        local bufferRatio = constants.CORNER_BUFFER_RATIO or 0.75
+        if st.cronometro >= st.velocidadActual * bufferRatio then
             st.cronometro = st.velocidadActual
         end
     end
