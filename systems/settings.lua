@@ -332,13 +332,32 @@ function settings.mousereleased(x, y, button)
 end
 
 function settings.mousemoved(x, y, dx, dy)
-    if not settings.dragState then return end
+    if not settings.dragState or not settings.editing then return end
     local rel = math.max(0, math.min(1, (x - settings.dragState.bx) / settings.dragState.bw))
     if settings.dragState.type == 'master' then
-        settings.editing.audio.master = rel
+        if settings.editing.audio then
+            settings.editing.audio.master = rel
+        end
     elseif settings.dragState.type == 'uiScale' then
-        settings.editing.accessibility.uiScale = settings.dragState.min + rel * (settings.dragState.max - settings.dragState.min)
+        if settings.editing.accessibility then
+            local minS = settings.dragState.min or 0.8
+            local maxS = settings.dragState.max or 1.5
+            settings.editing.accessibility.uiScale = minS + rel * (maxS - minS)
+        end
     end
+end
+
+function settings.keypressed(key)
+    if not settings.visible then return false end
+    if key == 'escape' then
+        if settings.lastSaved then
+            settings.editing = helpers.deep_copy(settings.lastSaved)
+            persistence.applySettings(settings.lastSaved)
+        end
+        settings.close()
+        return true
+    end
+    return false
 end
 
 return settings

@@ -36,28 +36,48 @@ sound.fragments = {
     boss       = { start = 18, finish = 24 }
 }
 
+local function releaseSrc(src)
+    if src then
+        pcall(function() src:stop() end)
+        if src.release then
+            pcall(function() src:release() end)
+        end
+    end
+end
+
 local function isSeamless(name)
     return name == "comboLoop"
 end
 
 local function makeSrc()
-    local s = love.audio.newSource(ambientFile, "stream")
-    s:setLooping(false)
-    s:setVolume(sound.baseVolume)
-    return s
+    local ok, s = pcall(love.audio.newSource, ambientFile, "stream")
+    if ok and s then
+        s:setLooping(false)
+        s:setVolume(sound.baseVolume)
+        return s
+    end
+    return nil
 end
 
 local function startSegment(name)
     if not sound.musicEnabled then return end
     local seg = sound.fragments[name]
     if not seg then return end
-    if activeSource then activeSource:stop() end
+    if activeSource then
+        releaseSrc(activeSource)
+        activeSource = nil
+    end
     activeSource = makeSrc()
-    activeSource:seek(seg.start)
-    activeSource:play()
+    if activeSource then
+        activeSource:seek(seg.start)
+        activeSource:play()
+    end
     currentSegment = name
     segmentEnd = seg.finish
-    if nextLoopSource then nextLoopSource:stop(); nextLoopSource = nil end
+    if nextLoopSource then
+        releaseSrc(nextLoopSource)
+        nextLoopSource = nil
+    end
     nextLoopReady = false
 end
 
@@ -65,11 +85,11 @@ function sound:playSegment(name)
     if not sound.musicEnabled then return end
     if sound.fading then
         if oldSource then
-            oldSource:stop()
+            releaseSrc(oldSource)
             oldSource = nil
         end
         if fadeSource and fadeSource ~= activeSource then
-            fadeSource:stop()
+            releaseSrc(fadeSource)
             fadeSource = nil
         end
         sound.fading = false
@@ -89,11 +109,11 @@ function sound:crossfadeTo(name)
     -- Cancel previous crossfade cleanly if already in progress
     if sound.fading then
         if oldSource then
-            oldSource:stop()
+            releaseSrc(oldSource)
             oldSource = nil
         end
         if fadeSource then
-            fadeSource:stop()
+            releaseSrc(fadeSource)
             fadeSource = nil
         end
         sound.fading = false
@@ -103,10 +123,16 @@ function sound:crossfadeTo(name)
     if activeSource and activeSource:isPlaying() then
         oldSource = activeSource
     else
+        if activeSource then
+            releaseSrc(activeSource)
+        end
         oldSource = nil
     end
 
     fadeSource = makeSrc()
+    if not fadeSource then
+        return
+    end
     fadeSource:setVolume(0)
     fadeSource:seek(seg.start)
     fadeSource:play()
@@ -118,28 +144,34 @@ function sound:crossfadeTo(name)
     activeSource = fadeSource
     currentSegment = name
     segmentEnd = seg.finish
-    if nextLoopSource then nextLoopSource:stop(); nextLoopSource = nil end
+    if nextLoopSource then
+        releaseSrc(nextLoopSource)
+        nextLoopSource = nil
+    end
     nextLoopReady = false
 end
 
 function sound:stop()
     if activeSource then
-        activeSource:stop()
+        releaseSrc(activeSource)
         activeSource = nil
     end
     if oldSource then
-        oldSource:stop()
+        releaseSrc(oldSource)
         oldSource = nil
     end
+    if fadeSource then
+        releaseSrc(fadeSource)
+        fadeSource = nil
+    end
     if nextLoopSource then
-        nextLoopSource:stop()
+        releaseSrc(nextLoopSource)
         nextLoopSource = nil
     end
     currentSegment = nil
     segmentEnd = nil
     sound.fading = false
     sound.fadeTimer = 0
-    fadeSource = nil
     targetSegment = nil
     nextLoopReady = false
 end
@@ -171,18 +203,22 @@ function sound:update(dt)
         if oldSource and oldSource:isPlaying() then
             oldSource:setVolume((1 - prog) * base)
         end
-        activeSource:setVolume(prog * base)
+        if activeSource then
+            activeSource:setVolume(prog * base)
+        end
 
         if prog >= 1 then
             if oldSource then
-                oldSource:stop()
+                releaseSrc(oldSource)
                 oldSource = nil
             end
             sound.fading = false
             sound.fadeTimer = 0
             fadeSource = nil
             targetSegment = nil
-            activeSource:setVolume(base)
+            if activeSource then
+                activeSource:setVolume(base)
+            end
         end
         return
     end
@@ -201,10 +237,12 @@ function sound:update(dt)
 
         if pos >= loopZone and not nextLoopReady then
             nextLoopSource = makeSrc()
-            nextLoopSource:setVolume(0)
-            nextLoopSource:seek(seg.start)
-            nextLoopSource:play()
-            nextLoopReady = true
+            if nextLoopSource then
+                nextLoopSource:setVolume(0)
+                nextLoopSource:seek(seg.start)
+                nextLoopSource:play()
+                nextLoopReady = true
+            end
         end
 
         if nextLoopReady and nextLoopSource and pos >= loopZone then
@@ -215,7 +253,7 @@ function sound:update(dt)
 
         if pos >= segmentEnd then
             if nextLoopReady and nextLoopSource then
-                activeSource:stop()
+                releaseSrc(activeSource)
                 activeSource = nextLoopSource
                 activeSource:setVolume(sound.baseVolume)
                 nextLoopSource = nil
@@ -248,6 +286,26 @@ end
 
 function sound:getCurrentSegment()
     return currentSegment
+end
+
+function sound.getActiveSource()
+    return activeSource
+end
+
+function sound.getOldSource()
+    return oldSource
+end
+
+function sound.getFadeSource()
+    return fadeSource
+end
+
+function sound.getNextLoopSource()
+    return nextLoopSource
+end
+
+function sound.getSources()
+    return sources
 end
 
 -- ==================================================================
@@ -294,19 +352,37 @@ local function makeNoise(duration, amp)
     return sd
 end
 
+function sound.getMakeSine() return makeSine end
+function sound.getMakeSweep() return makeSweep end
+function sound.getMakeNoise() return makeNoise end
+
 function sound.load()
     math.randomseed(os.time())
 
-    sources.eat = love.audio.newSource(makeSweep(600, 900, 0.08, 0.3), "static")
-    sources.death = love.audio.newSource(makeSweep(200, 40, 0.3, 0.4), "static")
-    sources.buy = love.audio.newSource(makeSine(550, 0.12, 0.25), "static")
-    sources.shieldBreak = love.audio.newSource(makeNoise(0.05, 0.2), "static")
-    sources.highScore = love.audio.newSource(makeSweep(440, 880, 0.3, 0.3), "static")
-    sources.enemyKill = love.audio.newSource(makeSweep(800, 400, 0.1, 0.25), "static")
-    sources.boss_food_tick = love.audio.newSource(makeSine(880, 0.08, 0.2), "static")
-    sources.boss_defeated = love.audio.newSource(makeSweep(440, 1320, 0.4, 0.3), "static")
-    sources.buttonHover = love.audio.newSource(makeSine(660, 0.04, 0.15), "static")
-    sources.buttonClick = love.audio.newSource(makeSweep(440, 880, 0.08, 0.25), "static")
+    for k, src in pairs(sources) do
+        releaseSrc(src)
+    end
+    sources = {}
+
+    local function createStatic(sd)
+        if not sd then return nil end
+        local ok, src = pcall(love.audio.newSource, sd, "static")
+        if sd.release then
+            pcall(function() sd:release() end)
+        end
+        return ok and src or nil
+    end
+
+    sources.eat = createStatic(makeSweep(600, 900, 0.08, 0.3))
+    sources.death = createStatic(makeSweep(200, 40, 0.3, 0.4))
+    sources.buy = createStatic(makeSine(550, 0.12, 0.25))
+    sources.shieldBreak = createStatic(makeNoise(0.05, 0.2))
+    sources.highScore = createStatic(makeSweep(440, 880, 0.3, 0.3))
+    sources.enemyKill = createStatic(makeSweep(800, 400, 0.1, 0.25))
+    sources.boss_food_tick = createStatic(makeSine(880, 0.08, 0.2))
+    sources.boss_defeated = createStatic(makeSweep(440, 1320, 0.4, 0.3))
+    sources.buttonHover = createStatic(makeSine(660, 0.04, 0.15))
+    sources.buttonClick = createStatic(makeSweep(440, 880, 0.08, 0.25))
 end
 
 function sound.play(name)
@@ -323,6 +399,7 @@ function sound.setMasterVolume(v)
     pcall(function() love.audio.setVolume(sound.baseVolume) end)
     if activeSource then activeSource:setVolume(sound.baseVolume) end
     if nextLoopSource then nextLoopSource:setVolume(sound.baseVolume) end
+    if fadeSource and not sound.fading then fadeSource:setVolume(sound.baseVolume) end
 end
 
 function sound.enableMusic(flag)

@@ -15,37 +15,121 @@ food.onBombExpired = nil
 
 local SPAWN_DURATION = 0.18
 
-function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, gx, gy)
-    local function findFreeTile()
-        local attempts = 0
-        local nx, ny, hit
-        repeat
-            nx = love.math.random(0, anchoGrilla - 1)
-            ny = love.math.random(0, altoGrilla - 1)
-            hit = false
-            attempts = attempts + 1
-            if snake then
-                for _, seg in ipairs(snake) do
-                    if nx == seg.x and ny == seg.y then hit = true; break end
-                end
-            end
-            if not hit and obstaclePos then
-                for _, obs in ipairs(obstaclePos) do
-                    if nx == obs.x and ny == obs.y then hit = true; break end
-                end
-            end
-        until not hit or attempts > 500
-        if not hit then return nx, ny end
-        return nil, nil
+function food.reset()
+    food.pos = {x = 0, y = 0}
+    food.twinPos = nil
+    food.tipo = constants.FOOD_NORMAL
+    food.spawnTimer = 0
+    food.bombTimer = 0
+    food.prismaticTimer = 0
+    food.prismaticBuffs = {"speed", "shield", "magnet", "ghost"}
+    food.prismaticIndex = 1
+    food.twinTimer = 0
+    food.orbitTimer = 0
+    food.onBombExpired = nil
+    food.onTwinExpired = nil
+end
+food.init = food.reset
+
+local function findFreeTile(snake, anchoGrilla, altoGrilla, obstaclePos, extraAvoid)
+    if type(anchoGrilla) == "table" and type(altoGrilla) == "table" and type(obstaclePos) == "number" then
+        local fPos = anchoGrilla
+        local oPos = altoGrilla
+        local w = obstaclePos
+        local h = type(extraAvoid) == "number" and extraAvoid or 18
+        anchoGrilla = w
+        altoGrilla = h
+        obstaclePos = oPos
+        extraAvoid = { fPos }
     end
+    anchoGrilla = (type(anchoGrilla) == "number" and anchoGrilla > 0) and anchoGrilla or 32
+    altoGrilla = (type(altoGrilla) == "number" and altoGrilla > 0) and altoGrilla or 18
+
+    local function isBlocked(x, y)
+        if snake then
+            for _, seg in ipairs(snake) do
+                if x == seg.x and y == seg.y then return true end
+            end
+        end
+        if obstaclePos then
+            for _, obs in ipairs(obstaclePos) do
+                if x == obs.x and y == obs.y then return true end
+            end
+        end
+        if extraAvoid then
+            for _, pt in ipairs(extraAvoid) do
+                if type(pt) == "table" and x == pt.x and y == pt.y then return true end
+            end
+        end
+        return false
+    end
+
+    local attempts = 0
+    local nx, ny
+    repeat
+        nx = love.math.random(0, anchoGrilla - 1)
+        ny = love.math.random(0, altoGrilla - 1)
+        attempts = attempts + 1
+        if not isBlocked(nx, ny) then
+            return nx, ny
+        end
+    until attempts >= 500
+
+    for x = 0, anchoGrilla - 1 do
+        for y = 0, altoGrilla - 1 do
+            if not isBlocked(x, y) then
+                return x, y
+            end
+        end
+    end
+
+    return nil, nil
+end
+
+function food.posicion()
+    return food.pos
+end
+
+function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, gx, gy)
+    -- Soporte para firma legacy food.generar(snake, obstacles, ancho, alto)
+    if type(anchoGrilla) == "table" and type(altoGrilla) == "number" then
+        local actualObs = anchoGrilla
+        local actualAncho = altoGrilla
+        local actualAlto = obstaclePos
+        local actualForced = forcedType
+        local actualGx = gx
+        local actualGy = gy
+        obstaclePos = actualObs
+        anchoGrilla = actualAncho
+        altoGrilla = actualAlto
+        forcedType = actualForced
+        gx = actualGx
+        gy = actualGy
+    end
+
+    if type(anchoGrilla) == "table" and type(altoGrilla) == "table" and type(obstaclePos) == "number" then
+        local fPos = anchoGrilla
+        local oPos = altoGrilla
+        local w = obstaclePos
+        local h = type(forcedType) == "number" and forcedType or 18
+        anchoGrilla = w
+        altoGrilla = h
+        obstaclePos = oPos
+        forcedType = gx
+        gx = gy
+        gy = nil
+    end
+    anchoGrilla = (type(anchoGrilla) == "number" and anchoGrilla > 0) and anchoGrilla or 32
+    altoGrilla = (type(altoGrilla) == "number" and altoGrilla > 0) and altoGrilla or 18
+    food.pos = food.pos or {x = 0, y = 0}
 
     local nuevaX, nuevaY
     if gx ~= nil and gy ~= nil then
         nuevaX = gx
         nuevaY = gy
     else
-        nuevaX, nuevaY = findFreeTile()
-        if not nuevaX then return end
+        nuevaX, nuevaY = findFreeTile(snake, anchoGrilla, altoGrilla, obstaclePos)
+        if not nuevaX then return false end
     end
 
     food.pos.x = nuevaX
@@ -58,6 +142,15 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
         food.tipo = forcedType
         if forcedType == "bomb" then
             food.bombTimer = constants.FOOD_COUNTDOWN_TIMER or 5.0
+        elseif forcedType == "prismatic" then
+            food.prismaticTimer = 0
+            food.prismaticIndex = 1
+        elseif forcedType == "twin" then
+            food.twinTimer = constants.FOOD_TWIN_TIMER or 4.0
+            local tx, ty = findFreeTile(snake, anchoGrilla, altoGrilla, obstaclePos, {{x = nuevaX, y = nuevaY}})
+            if tx and ty then
+                food.twinPos = {x = tx, y = ty}
+            end
         end
     else
         local r = love.math.random()
@@ -87,7 +180,7 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
         elseif r < 0.70 then
             food.tipo = "twin"
             food.twinTimer = constants.FOOD_TWIN_TIMER or 4.0
-            local tx, ty = findFreeTile()
+            local tx, ty = findFreeTile(snake, anchoGrilla, altoGrilla, obstaclePos, {{x = nuevaX, y = nuevaY}})
             if tx and ty then
                 food.twinPos = {x = tx, y = ty}
             end
@@ -95,12 +188,16 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
             food.tipo = constants.FOOD_NORMAL
         end
     end
+    return true
 end
 
 local tipoGlow = {
     [constants.FOOD_NORMAL] = {1.0, 0.3, 0.3},
     [constants.FOOD_GOLD]   = {1.0, 0.84, 0.0},
     [constants.FOOD_COIN]   = {0.2, 0.6, 1.0},
+    ["normal"]              = {1.0, 0.3, 0.3},
+    ["gold"]                = {1.0, 0.84, 0.0},
+    ["coin"]                = {0.2, 0.6, 1.0},
     ["fire_pepper"]         = {1.0, 0.25, 0.0},
     ["frost_berry"]         = {0.2, 0.85, 1.0},
     ["constrictor_berry"]   = {0.7, 0.2, 0.9},
@@ -112,7 +209,43 @@ local tipoGlow = {
     ["twin"]                = {0.3, 0.9, 0.4}
 }
 
+function food.getTypeGlow(tipo)
+    return tipoGlow[tipo] or {1.0, 0.3, 0.3}
+end
+
+function food.isBossFood(tipo)
+    tipo = tipo or food.tipo
+    return tipo ~= constants.FOOD_COIN and tipo ~= "coin"
+end
+
+function food.checkCollision(headX, headY, magnetRange, anchoGrilla, altoGrilla)
+    magnetRange = magnetRange or 0
+    if not headX or not headY then return false, false end
+    
+    if magnetRange > 0 and anchoGrilla and altoGrilla then
+        for dy = -magnetRange, magnetRange do
+            for dx = -magnetRange, magnetRange do
+                local cx = (headX + dx) % anchoGrilla
+                local cy = (headY + dy) % altoGrilla
+                if food.pos and cx == food.pos.x and cy == food.pos.y then
+                    return true, false
+                elseif food.twinPos and cx == food.twinPos.x and cy == food.twinPos.y then
+                    return true, true
+                end
+            end
+        end
+    else
+        if food.pos and headX == food.pos.x and headY == food.pos.y then
+            return true, false
+        elseif food.twinPos and headX == food.twinPos.x and headY == food.twinPos.y then
+            return true, true
+        end
+    end
+    return false, false
+end
+
 function food.update(dt, snake, anchoGrilla, altoGrilla, obstaclePos)
+    dt = dt or 0
     if food.spawnTimer > 0 then
         food.spawnTimer = math.max(0, food.spawnTimer - dt)
     end
@@ -126,10 +259,24 @@ function food.update(dt, snake, anchoGrilla, altoGrilla, obstaclePos)
         end
     elseif food.tipo == "prismatic" then
         food.prismaticTimer = food.prismaticTimer + dt
-        food.prismaticIndex = (math.floor(food.prismaticTimer / 1.8) % #food.prismaticBuffs) + 1
+        local numBuffs = #food.prismaticBuffs
+        if numBuffs > 0 then
+            food.prismaticIndex = (math.floor(food.prismaticTimer / 1.8) % numBuffs) + 1
+        end
     elseif food.tipo == "twin" then
         if food.twinTimer > 0 then
             food.twinTimer = math.max(0, food.twinTimer - dt)
+        end
+        if food.twinTimer <= 0 then
+            if food.twinPos ~= nil then
+                food.twinPos = nil
+                food.tipo = constants.FOOD_NORMAL
+                if food.onTwinExpired then
+                    food.onTwinExpired(food.pos.x, food.pos.y)
+                end
+            elseif food.tipo == "twin" then
+                food.tipo = constants.FOOD_NORMAL
+            end
         end
     elseif food.tipo == "repelling_orbit" and snake and #snake > 0 and anchoGrilla and altoGrilla then
         food.orbitTimer = food.orbitTimer - dt
@@ -171,7 +318,8 @@ function food.update(dt, snake, anchoGrilla, altoGrilla, obstaclePos)
 end
 
 function food.getPrismaticBuff()
-    return food.prismaticBuffs[food.prismaticIndex] or "speed"
+    local idx = food.prismaticIndex or 1
+    return food.prismaticBuffs[idx] or "speed"
 end
 
 function food.draw(time, dt)

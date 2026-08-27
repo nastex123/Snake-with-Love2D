@@ -1,5 +1,5 @@
 -- =============================================================================
--- MÃ“DULO DE ENEMIGOS
+-- MÓDULO DE ENEMIGOS
 -- Sistema de enemigos: chasers, patrollers, spawners y boss.
 -- La lógica de ataques del boss vive en entities/bossAttacks.lua,
 -- los helpers de posicionamiento en entities/enemyHelpers.lua y
@@ -31,12 +31,28 @@ function enemies.addProjectile(gx, gy, dx, dy, lifetime, damage)
     table.insert(attackObjects, {x=gx, y=gy, dx=dx, dy=dy, lifetime=lifetime or 3.0, maxLifetime=lifetime or 3.0, damage=damage or 1, type="projectile"})
 end
 
-function enemies.addRadialPulse(cx, cy, maxRadius, speed, damage)
-    table.insert(attackObjects, {cx=cx, cy=cy, px=cx, py=cy, radius=0, maxRadius=maxRadius or 8, speed=speed or 3, damage=damage or 1, type="radial_pulse"})
+function enemies.addRadialPulse(cx, cy, maxRadius, speed, damage, lifetime)
+    local r = maxRadius or 8
+    local s = speed or 3
+    local lt = lifetime or (r / s)
+    table.insert(attackObjects, {
+        cx = cx, cy = cy, px = cx, py = cy,
+        radius = 0, maxRadius = r, speed = s,
+        lifetime = lt, maxLifetime = lt,
+        damage = damage or 1, type = "radial_pulse"
+    })
 end
 
 function enemies.getAttackObjects()
     return attackObjects
+end
+
+function enemies.getTelegraphs()
+    return telegraphs
+end
+
+function enemies.getPendingRespawns()
+    return pendingRespawns
 end
 
 function enemies.clearAttackObjects()
@@ -68,6 +84,9 @@ function enemies.init()
     pendingRespawns = {}
     chaserAI.reset()
 end
+
+enemies.limpiar = enemies.init
+enemies.clear = enemies.init
 
 -- ============================================================
 --  Spawn API
@@ -154,7 +173,7 @@ function enemies.generar(snake, foodPos, obstacles, anchoGrilla, altoGrilla, sta
     local etapa = (mod and mod.stage) or 1
     local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapa) - 1)))
 
-    enemies.spawnAt(eType, x, y, {
+    return enemies.spawnAt(eType, x, y, {
         moveInterval = (eType == "chaser" and chaserInterval)
             or (eType == "patroller" and constants.ENEMY_PATROLLER_SPEED / speedMult)
             or nil
@@ -186,12 +205,14 @@ function enemies.spawnBoss(etapa, anchoGrilla, altoGrilla, bossVida, dropCoins)
         foodCollected = 0,
         foodTarget = constants.BOSS_FOOD_TARGET,
         invulnerable = true,
+        enraged = false,
         _uiBarFill = 1.0,
         _uiBarTarget = 1.0,
     }
     telegraphs = {}
     attackObjects = {}
     pendingRespawns = {}
+    return enemies.boss
 end
 
 -- ============================================================
@@ -206,6 +227,9 @@ function enemies.hitBoss()
     enemies.boss.vida = enemies.boss.vida - 1
     if enemies.boss.vida <= 0 then
         enemies.boss.alive = false
+        telegraphs = {}
+        attackObjects = {}
+        pendingRespawns = {}
         local tam = constants.TAMANIO_BLOQUE
         return {
             px = enemies.boss.x * tam + tam / 2,
@@ -256,8 +280,9 @@ function enemies.applyTailSnap(gx, gy, pushDist, stunDuration, anchoGrilla, alto
                 if nx >= 0 and nx < anchoGrilla and ny >= 0 and ny < altoGrilla then
                     local blocked = false
                     if obstaclePos then
-                        for _, obs in ipairs(obstaclePos) do
-                            if obs.x == nx and obs.y == ny then blocked = true; break end
+                        local obs = obstaclePos.pos or obstaclePos
+                        for _, obsItem in ipairs(obs) do
+                            if obsItem.x == nx and obsItem.y == ny then blocked = true; break end
                         end
                     end
                     if not blocked then
@@ -274,11 +299,10 @@ end
 
 function enemies.checkFireTrail(fireTrail)
     if not fireTrail or #fireTrail == 0 then return nil end
-    local tam = constants.TAMANIO_BLOQUE
     local killed = {}
     for i = #enemies.list, 1, -1 do
         local e = enemies.list[i]
-        if e.alive and (e.type == "chaser" or e.type == "patroller") then
+        if e.alive and (e.type == "chaser" or e.type == "patroller" or e.type == "spawner") then
             for _, ft in ipairs(fireTrail) do
                 if ft.x == e.x and ft.y == e.y then
                     local res = enemies.killEnemy(i)
@@ -298,6 +322,9 @@ end
 -- ============================================================
 
 function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, etapa, stageModifier, snakeDecoys)
+    snakeBody = snakeBody or {}
+    anchoGrilla = anchoGrilla or constants.MAX_GRID_COLS or 32
+    altoGrilla = altoGrilla or constants.MAX_GRID_ROWS or 18
     local now = love.timer.getTime()
     local world = require("core.world")
     local freezeTimer = world.get("enemyFreezeTimer") or 0
@@ -312,12 +339,12 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
     local ctx = {
         list = enemies.list,
-        body = snakeBody,
+        body = snakeBody or {},
         head = targetHead,
         anchoGrilla = anchoGrilla,
         altoGrilla = altoGrilla,
-        obstaclePos = obstaclesMod and obstaclesMod.pos or {},
-        etapa = etapa or 1,
+        obstaclePos = obstaclesMod and (obstaclesMod.pos or obstaclesMod) or {},
+        etapa = (type(etapa) == "number") and etapa or 1,
         stageModifier = stageModifier or {},
     }
     if not isFrozen then
@@ -367,11 +394,12 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                         if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then
                             return true
                         end
-                        for _, s in ipairs(snakeBody) do
+                        for _, s in ipairs(snakeBody or {}) do
                             if s.x == cx and s.y == cy then return true end
                         end
-                        if obstaclesMod and obstaclesMod.pos then
-                            for _, o in ipairs(obstaclesMod.pos) do
+                        if obstaclesMod then
+                            local obs = obstaclesMod.pos or obstaclesMod
+                            for _, o in ipairs(obs) do
                                 if o.x == cx and o.y == cy then return true end
                             end
                         end
@@ -419,15 +447,24 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                         local ny = e.y + d[2]
                         if nx >= 0 and nx < anchoGrilla and ny >= 0 and ny < altoGrilla then
                             local occupied = false
-                            for _, s in ipairs(snakeBody) do
+                            for _, s in ipairs(snakeBody or {}) do
                                 if s.x == nx and s.y == ny then occupied = true; break end
                             end
-                            if not occupied then
-                                for _, o in ipairs(obstaclesMod.pos) do
+                            if not occupied and obstaclesMod then
+                                local obs = obstaclesMod.pos or obstaclesMod
+                                for _, o in ipairs(obs) do
                                     if o.x == nx and o.y == ny then occupied = true; break end
                                 end
                             end
                             if not occupied then
+                                for _, oe in ipairs(enemies.list) do
+                                    if oe.alive and oe.x == nx and oe.y == ny then occupied = true; break end
+                                end
+                                if enemies.boss and enemies.boss.alive and enemies.boss.x == nx and enemies.boss.y == ny then
+                                    occupied = true
+                                end
+                            end
+                            if not occupied and obstaclesMod and obstaclesMod.agregar then
                                 obstaclesMod.agregar(nx, ny)
                                 break
                             end
@@ -442,8 +479,14 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     if enemies.boss and enemies.boss.alive and not isFrozen then
         local boss = enemies.boss
 
-        -- Update phase based on HP
-        local vidaFrac = boss.vida / boss.vidaMax
+        -- Update phase based on HP or Food progress
+        local vidaFrac
+        if boss.foodTarget and boss.foodTarget > 0 then
+            vidaFrac = math.max(0, 1 - (boss.foodCollected or 0) / boss.foodTarget)
+        else
+            vidaFrac = (boss.vidaMax and boss.vidaMax > 0) and (boss.vida / boss.vidaMax) or 1.0
+        end
+
         if vidaFrac <= 0.30 then
             boss.phase = 3
         elseif vidaFrac <= 0.60 then
@@ -452,13 +495,24 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
             boss.phase = 1
         end
 
+        if boss.foodTarget and (boss.foodCollected or 0) >= (boss.foodTarget - 3) then
+            boss.enraged = true
+        else
+            boss.enraged = false
+        end
+
+        local speedMult = 1.0 + (boss.phase - 1) * 0.2
+        if boss.enraged then
+            speedMult = speedMult * 1.35
+        end
+
         local ctx = {
             snakeHead = targetHead,
             anchoGrilla = anchoGrilla,
             altoGrilla = altoGrilla,
             canSpawn = enemies.canSpawn,
             enemies = enemies,
-            speedMult = 1.0 + (boss.phase - 1) * 0.2,
+            speedMult = speedMult,
         }
 
         if boss.state == "idle" then
@@ -484,7 +538,9 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                 bossAttacks.execute(boss, boss.currentAttack.name, dt, ctx)
                 telegraphs = {}
                 boss.state = "cooldown"
-                boss.stateTimer = boss.currentAttack.cooldown * (boss.phase == 3 and 0.7 or 1.0)
+                local cd = boss.currentAttack.cooldown * (boss.phase == 3 and 0.7 or 1.0)
+                if boss.enraged then cd = cd / 1.35 end
+                boss.stateTimer = cd
             end
 
         elseif boss.state == "cooldown" then
@@ -511,7 +567,8 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                 local gx, gy = enemyHelpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, enemies.list, 6, p.attempts)
                 if gx then
                     local speedMult = (stageModifier and stageModifier.enemySpeed) or 1.0
-                    local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapa or 1) - 1)))
+                    local etapaVal = (type(etapa) == "number") and etapa or 1
+                    local chaserInterval = math.max(0.15, (constants.ENEMY_CHASER_SPEED / speedMult) * (0.90 ^ (math.max(1, etapaVal) - 1)))
                     local spawned = enemies.spawnAt("chaser", gx, gy, {
                         moveInterval = chaserInterval,
                     })
@@ -536,8 +593,13 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     -- Update attack objects
     for i = #attackObjects, 1, -1 do
         local ao = attackObjects[i]
-        ao.lifetime = ao.lifetime - dt
-        if ao.lifetime <= 0 then
+        local expired = false
+        if ao.lifetime then
+            ao.lifetime = ao.lifetime - dt
+            if ao.lifetime <= 0 then expired = true end
+        end
+
+        if expired then
             table.remove(attackObjects, i)
         elseif ao.type == "projectile" then
             ao.x = ao.x + ao.dx * dt
@@ -568,15 +630,20 @@ end
 --  Kill enemy
 -- ============================================================
 
-function enemies.killEnemy(idx)
-    local e = enemies.list[idx]
+function enemies.killEnemy(target)
+    local e
+    if type(target) == "number" then
+        e = enemies.list[target]
+    elseif type(target) == "table" then
+        e = target
+    end
     if not e or not e.alive then return nil end
     local tam = constants.TAMANIO_BLOQUE
     local result = {
         px = e.x * tam + tam / 2,
         py = e.y * tam + tam / 2,
         gx = e.x, gy = e.y,
-        coins = e.dropCoins, type = e.type
+        coins = e.dropCoins or 0, type = e.type
     }
     e.alive = false
     return result

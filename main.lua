@@ -128,21 +128,8 @@ function love.load()
 end
 
 function love.update(dt)
-    dt = dt * world.state.timeScale
-    states.updateCommon(dt)
-
-    local g = world.state.gameState
-    if g == constants.GAME_STATE_MENU then
-        states.updateMenu(dt)
-    elseif g == constants.GAME_STATE_PLAYING then
-        states.updatePlaying(dt)
-    elseif g == constants.GAME_STATE_DEATH_ANIMATION then
-        states.updateDeath(dt)
-    elseif g == constants.GAME_STATE_HIGH_SCORE then
-        states.updateHighScore(dt)
-    elseif g == constants.GAME_STATE_TRANSITION then
-        states.updateTransition(dt)
-    end
+    dt = dt * (world.state.timeScale or 1)
+    states.update(dt)
 end
 
 function love.draw()
@@ -302,6 +289,15 @@ function love.quit()
     if persistenceMod then
         persistenceMod.syncActiveProfile()
     end
+    if sound and sound.stop then
+        sound:stop()
+    end
+    if shadersMod and shadersMod.releaseCanvases then
+        shadersMod.releaseCanvases()
+    end
+    if particles and particles.release then
+        particles.release()
+    end
 end
 
 function love.textinput(text)
@@ -332,6 +328,11 @@ function love.keypressed(tecla)
     if tecla == "tab" then
         world.state.debugMenuOpen = not world.state.debugMenuOpen
         return
+    end
+
+    -- Route to settings manager first
+    if settingsMod and settingsMod.visible then
+        if settingsMod.keypressed and settingsMod.keypressed(tecla) then return end
     end
 
     -- Route to profiles manager first

@@ -66,7 +66,7 @@ items.registry = {
         id = "extraCoin", name = "MONEDA EXTRA",
         desc = "+1 moneda/fruta", desc2 = "permanente",
         cost = constants.EXTRA_COIN_COST, icon = "extraCoin",
-        category = "score", type = "timer", duration = constants.EXTRA_COIN_DURATION, itemType = "passive"
+        category = "score", type = "instant", duration = constants.EXTRA_COIN_DURATION, itemType = "passive"
     },
     star = {
         id = "star", name = "ESTRELLA",
@@ -76,19 +76,67 @@ items.registry = {
     }
 }
 
+-- Aliases for snake_case and compatibility
+items.registry.speed_reducer = items.registry.speedReducer
+items.registry.extra_coin = items.registry.extraCoin
+
+items.canonicalKeys = {
+    "shield", "armor", "ghost",
+    "magnet", "bomb", "hunger",
+    "speedReducer", "turbo", "slow",
+    "doubler", "extraCoin", "star"
+}
+
 items.categories = {"defense", "food", "speed", "score"}
+
+function items.get(id)
+    if not id then return nil end
+    if items.registry[id] then return items.registry[id] end
+    local aliases = {
+        speed_reducer = "speedReducer",
+        extra_coin = "extraCoin",
+        speedreducer = "speedReducer",
+        extracoin = "extraCoin"
+    }
+    local mapped = aliases[id] or aliases[string.lower(tostring(id))]
+    if mapped and items.registry[mapped] then
+        return items.registry[mapped]
+    end
+    return nil
+end
 
 function items.getByCategory(cat)
     local result = {}
-    for _, def in pairs(items.registry) do
-        if def.category == cat then
+    for _, key in ipairs(items.canonicalKeys) do
+        local def = items.registry[key]
+        if def and def.category == cat then
             table.insert(result, def)
         end
     end
     return result
 end
 
--- Flatten categories into pages of 3 items
+function items.isPassive(id)
+    local def = items.get(id)
+    return def ~= nil and def.itemType == "passive"
+end
+
+function items.isActive(id)
+    local def = items.get(id)
+    return def ~= nil and def.itemType == "active"
+end
+
+function items.getDuration(id)
+    local def = items.get(id)
+    return (def and def.duration) or 0
+end
+
+function items.getCost(id)
+    local def = items.get(id)
+    return (def and def.cost) or 0
+end
+
+-- Flatten canonical items into pages of 3 items (4 pages total)
 items.pages = {}
 for _, cat in ipairs(items.categories) do
     local catItems = items.getByCategory(cat)

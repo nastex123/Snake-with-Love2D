@@ -159,7 +159,7 @@ function renderMain.drawGame(dt)
         enemiesMod.draw(st.player and st.player.body and st.player.body[1])
         foodMod.draw(st.time, dt)
         local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         snakeMod.draw(st.player, alpha)
 
         if st.magnetRange > 0 and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
@@ -278,7 +278,7 @@ function renderMain.drawGameGlow(dt)
     end
     if st.gameState ~= constants.GAME_STATE_SHOP then
         local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
         if fadeFactor > 0.001 then
             love.graphics.push()
@@ -305,7 +305,7 @@ function renderMain.drawGameShadow(dt)
     end
     if st.gameState ~= constants.GAME_STATE_SHOP then
         local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
         if fadeFactor > 0.001 then
             love.graphics.push()

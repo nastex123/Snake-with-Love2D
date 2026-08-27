@@ -260,6 +260,56 @@ function shaders.getFX()
     return fx
 end
 
+local function releaseCanvas(c)
+    if c and (type(c) == "userdata" or type(c) == "table") then
+        if c.release then
+            pcall(function() c:release() end)
+        end
+    end
+end
+
+function shaders.releaseCanvases()
+    releaseCanvas(canvasScene)
+    releaseCanvas(canvasGlow)
+    releaseCanvas(canvasGlowLow)
+    releaseCanvas(canvasBlurH)
+    releaseCanvas(canvasBlurV)
+    releaseCanvas(canvasShadow)
+    releaseCanvas(canvasShadowBlur)
+    releaseCanvas(canvasFinal)
+    releaseCanvas(canvasPost)
+    canvasScene, canvasGlow, canvasGlowLow = nil, nil, nil
+    canvasBlurH, canvasBlurV = nil, nil
+    canvasShadow, canvasShadowBlur = nil, nil
+    canvasFinal, canvasPost = nil, nil
+end
+
+function shaders.getCanvases()
+    return {
+        scene = canvasScene,
+        glow = canvasGlow,
+        glowLow = canvasGlowLow,
+        blurH = canvasBlurH,
+        blurV = canvasBlurV,
+        shadow = canvasShadow,
+        shadowBlur = canvasShadowBlur,
+        final = canvasFinal,
+        post = canvasPost
+    }
+end
+
+function shaders.getShaders()
+    return {
+        crt = shCRT,
+        blurH = shBlurH,
+        blurV = shBlurV,
+        shadow = shShadow,
+        heat = shHeat,
+        balatro = shBalatro,
+        colorblind = shColorblind
+    }
+end
+
 local function tryShader(src)
     local ok, s = pcall(love.graphics.newShader, src)
     if not ok then
@@ -269,6 +319,8 @@ local function tryShader(src)
 end
 
 function shaders.load()
+    shaders.releaseCanvases()
+
     W = love.graphics.getWidth()
     H = love.graphics.getHeight()
     BW = math.max(1, math.floor(W / 2))
@@ -309,6 +361,8 @@ end
 
 -- Recreate canvases (always linear filtering for smooth CRT/bloom sampling)
 function shaders.recreateCanvases(pixelScale, filter)
+    shaders.releaseCanvases()
+
     W = love.graphics.getWidth()
     H = love.graphics.getHeight()
     BW = math.max(1, math.floor(W / 2))

@@ -73,7 +73,6 @@ function states.updateCommon(dt)
 
     timers.update(dt)
     shadersMod.update(dt)
-    foodMod.update(dt)
     processToasts()
 
     -- Música ambiental
@@ -143,7 +142,7 @@ function states.updateCommon(dt)
 
     for i = #st.activeTimers, 1, -1 do
         local t = st.activeTimers[i]
-        t.remaining = t.remaining - dt
+        t.remaining = math.max(0, t.remaining - dt)
         if t.remaining <= 0 then
             if t.onEnd then
                 t.onEnd()
@@ -562,6 +561,34 @@ function states.updateTransition(dt)
         st.gameState = constants.GAME_STATE_SHOP
         sound:playSegment("intro")
         shop.abrir(st.monedas)
+    end
+end
+
+function states.updateShop(dt)
+    shop.update(dt)
+end
+
+function states.updatePaused(dt)
+    -- Paused state (no gameplay progression)
+end
+
+function states.update(dt)
+    states.updateCommon(dt)
+    local g = world.state.gameState
+    if g == constants.GAME_STATE_MENU then
+        return states.updateMenu(dt)
+    elseif g == constants.GAME_STATE_PLAYING then
+        return states.updatePlaying(dt)
+    elseif g == constants.GAME_STATE_DEATH_ANIMATION then
+        return states.updateDeath(dt)
+    elseif g == constants.GAME_STATE_HIGH_SCORE then
+        return states.updateHighScore(dt)
+    elseif g == constants.GAME_STATE_SHOP then
+        return states.updateShop(dt)
+    elseif g == constants.GAME_STATE_PAUSED then
+        return states.updatePaused(dt)
+    elseif g == constants.GAME_STATE_TRANSITION then
+        return states.updateTransition(dt)
     end
 end
 
