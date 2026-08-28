@@ -21,6 +21,7 @@ function food.reset()
     food.tipo = constants.FOOD_NORMAL
     food.spawnTimer = 0
     food.bombTimer = 0
+    food._bombHandled = nil
     food.prismaticTimer = 0
     food.prismaticBuffs = {"speed", "shield", "magnet", "ghost"}
     food.prismaticIndex = 1
@@ -221,15 +222,29 @@ end
 function food.checkCollision(headX, headY, magnetRange, anchoGrilla, altoGrilla)
     magnetRange = magnetRange or 0
     if not headX or not headY then return false, false end
-    
+    local function hasWrapF()
+        local wf = package.loaded["world.world"]
+        if wf and wf.hasWallWrap then return wf.hasWallWrap() end
+        return true
+    end
+    local wrap = hasWrapF()
     if magnetRange > 0 and anchoGrilla and altoGrilla then
         for dy = -magnetRange, magnetRange do
             for dx = -magnetRange, magnetRange do
-                local cx = (headX + dx) % anchoGrilla
-                local cy = (headY + dy) % altoGrilla
-                if food.pos and cx == food.pos.x and cy == food.pos.y then
+                local cx, cy
+                if wrap then
+                    cx = (headX + dx) % anchoGrilla
+                    cy = (headY + dy) % altoGrilla
+                else
+                    cx = headX + dx
+                    cy = headY + dy
+                    if cx<0 or cx>=anchoGrilla or cy<0 or cy>=altoGrilla then
+                        cx=nil; cy=nil
+                    end
+                end
+                if cx and food.pos and cx == food.pos.x and cy == food.pos.y then
                     return true, false
-                elseif food.twinPos and cx == food.twinPos.x and cy == food.twinPos.y then
+                elseif cx and food.twinPos and cx == food.twinPos.x and cy == food.twinPos.y then
                     return true, true
                 end
             end
@@ -253,9 +268,18 @@ function food.update(dt, snake, anchoGrilla, altoGrilla, obstaclePos)
     if food.tipo == "bomb" then
         food.bombTimer = food.bombTimer - dt
         if food.bombTimer <= 0 then
+            food.bombTimer = 0
+            if food._bombHandled then return end
+            food._bombHandled = true
             if food.onBombExpired then
                 food.onBombExpired(food.pos.x, food.pos.y)
+            else
+                food.tipo = constants.FOOD_NORMAL
+                food.generar(snake, anchoGrilla, altoGrilla, obstaclePos)
             end
+            return
+        else
+            food._bombHandled = nil
         end
     elseif food.tipo == "prismatic" then
         food.prismaticTimer = food.prismaticTimer + dt

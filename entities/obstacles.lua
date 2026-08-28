@@ -384,6 +384,9 @@ function obstacles.damageAt(x, y, dmg, force)
         return false, 0, nil
     end
 
+    if not obs.destructible and not force then
+        return false, obs.hp, obs
+    end
     local amount = (dmg and dmg > 0) and dmg or 1
     obs.hp = obs.hp - amount
 

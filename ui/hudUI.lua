@@ -143,7 +143,7 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         x = x + font:getWidth("S") + 6 * s
     end
 
-    if magnetTimer > 0 then
+    if magnetTimer and magnetDuration and magnetTimer > 0 and magnetDuration > 0 then
         local frac = magnetTimer / magnetDuration
         love.graphics.setColor(1, 0.5, 0)
         love.graphics.print("M", x, cy)
@@ -190,7 +190,8 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 love.graphics.setColor(0.25, 0.25, 0.25)
                 love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
-                love.graphics.rectangle("fill", x, barY, 20 * s * (t.remaining / 10), 6 * s, 2 * s, 2 * s)
+                local dur = t.duration or constants.TURBO_DURATION or 10
+                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, t.remaining / dur), 6 * s, 2 * s, 2 * s)
                 x = x + 26 * s
             end
         end
