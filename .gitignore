@@ -1,2 +1,20 @@
 Snake.love
 *.love
+# Snake Love2D — config saves
+config/*.dat
+*.log
+error.log
+# Opencode
+.opencode/node_modules/
+# Temp
+tmp_*
+scratch_*.lua
+# OS
+.DS_Store
+__pycache__/
+Thumbs.db
+# Backups
+gemini_skills_backup.zip.bak*
+*.bak
+AGENTS.gemini.md.bak*
+

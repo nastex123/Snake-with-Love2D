@@ -48,11 +48,20 @@
   - [x] **Pantalla Interactiva de Muerte**: Modal táctico cyberpunk con resumen de run y botones "Revivir (-30$)" vs "Aceptar Muerte".
   - [x] **Emisores de Partículas Dedicados**: `fireTrail`, `frostFreeze`, `tailSnapShockwave`, `slimmingBurst`, `bombExplosion`, `constrictorBurst`, `streakDiamond`, `autotomyDecoy`.
 
+## Completed (Menú Configuraciones — Mejora Interacción/Estética 27:08:2026 18:36)
+- [x] **Settings Redesign — Live Preview & Anti-Recarga + Estética Cyberpunk (verificado 2026-08-27 18:36 America/Bogota)**:
+  - [x] Live preview volumen `0.5->0.8` y `uiScale` vía drag con `applyLivePreview()` sin guardar; diff `_graphicsDiff/_audioDiff` en `persistence.applySettings` evita `setMode/recreateCanvases` innecesarios.
+  - [x] Filtro live (`nearest`/`linear`) aplica inmediato con `setDefaultFilter` + `recreateCanvases` sin recarga ventana; verificado sin heavy.
+  - [x] Resolución preview 5s con `previewTimer`/`previewOriginal` y auto-revert si no se guarda (`Preview 5s` toast).
+  - [x] Estética cyberpunk: panel doble borde cian, matriz puntos HUD #14, header glow, tabs 🔊/🖥/♿ con subrayado, hover pulse, scrollbar anti-overflow.
+  - [x] Anti-overflow: dropdowns clamp 240px + scroll wheel, `panelXY` responsivo, hitboxes `settings.g.*` recalculadas y validadas, sin tablas por frame excesivas (`g={}` único por draw).
+  - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [ ] **Extended Items Arsenal (51-60)**:
   - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
 - [ ] **Stage Biomes & Hazards**:
-  - [ ] Stage 1: Stone Catacombs (standard solid walls)
+  - [x] Stage 1: Stone Catacombs (framework base de biomas, muros estándar, paleta de mazmorra, banner y badge HUD)
   - [ ] Stage 2: Frozen Crypt (ice tiles with +1 slide momentum on turns)
   - [ ] Stage 3: Volcanic Cavern (timed magma fissure hazards)
   - [ ] Stage 4: Toxic Hive (slime tiles with -20% step speed)
@@ -168,4 +177,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 23:08:2026 (Limpieza recomendada — menuUI/debugLogo/shaders + LICENSE)*
+*Last updated: 2026-08-27 18:36 (Menú Configuraciones — live preview/diff/filtro live/resolución preview 5s/cyberpunk/anti-overflow verificado + love . 0 errores + settings suites PASS)*

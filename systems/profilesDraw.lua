@@ -71,21 +71,27 @@ function profilesDraw.drawSelect(profilesMod, w, h)
         if profile then
             love.graphics.setFont(ui.fontNormal)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(profile.name, innerX + 56, cy + 6)
+            local pName = tostring(profile.name or ("Jugador " .. i))
+            if #pName > 14 then pName = pName:sub(1, 14) end
+            love.graphics.print(pName, innerX + 56, cy + 6)
 
             love.graphics.setFont(ui.fontSmall)
             love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-            love.graphics.print("$" .. profile.monedas, innerX + 56, cy + 26)
+            love.graphics.print("$" .. (profile.monedas or 0), innerX + 56, cy + 26)
             love.graphics.setColor(1, 1, 1, 0.7)
-            love.graphics.print("SCORE: " .. profile.highScore, innerX + 56, cy + 36)
+            love.graphics.print("SCORE: " .. (profile.highScore or 0), innerX + 56, cy + 36)
 
             local aCount = 0
-            for _, v in pairs(profile.achievements) do
-                if v.done then aCount = aCount + 1 end
+            if type(profile.achievements) == 'table' then
+                for _, v in pairs(profile.achievements) do
+                    if v and (v == true or (type(v) == 'table' and v.done)) then aCount = aCount + 1 end
+                end
             end
             local uCount = 0
-            for _, v in pairs(profile.unlocks) do
-                if v then uCount = uCount + 1 end
+            if type(profile.unlocks) == 'table' then
+                for _, v in pairs(profile.unlocks) do
+                    if v then uCount = uCount + 1 end
+                end
             end
             love.graphics.setColor(0.6, 0.6, 0.8, 0.5)
             local statY = (cardH >= 90) and (cy + 46) or (cy + cardH - 28)
@@ -408,78 +414,79 @@ function profilesDraw.drawAchievements(profilesMod)
 
     for i, id in ipairs(orderedIds) do
         local def = registry[id]
-        if not def then break end
-        local col = (i - 1) % cols
-        local row = math.floor((i - 1) / cols)
-        local tx = gridStartX + col * (tileW + gapX)
-        local ty = gridStartY + row * (tileH + gapY)
+        if def then
+            local col = (i - 1) % cols
+            local row = math.floor((i - 1) / cols)
+            local tx = gridStartX + col * (tileW + gapX)
+            local ty = gridStartY + row * (tileH + gapY)
 
-        if ty + tileH > cy + ch - 40 then break end
+            if ty + tileH <= cy + ch - 40 then
+                local isUnlocked = aDone[id]
 
-        local isUnlocked = aDone[id]
+                if isUnlocked then
+                    love.graphics.setColor(0.12, 0.2, 0.34, 0.92)
+                else
+                    love.graphics.setColor(0.09, 0.09, 0.16, 0.75)
+                end
+                love.graphics.rectangle("fill", tx, ty, tileW, tileH, 6)
 
-        if isUnlocked then
-            love.graphics.setColor(0.12, 0.2, 0.34, 0.92)
-        else
-            love.graphics.setColor(0.09, 0.09, 0.16, 0.75)
-        end
-        love.graphics.rectangle("fill", tx, ty, tileW, tileH, 6)
+                if isUnlocked then
+                    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.5)
+                else
+                    love.graphics.setColor(0.2, 0.22, 0.25, 0.3)
+                end
+                love.graphics.setLineWidth(1)
+                love.graphics.rectangle("line", tx, ty, tileW, tileH, 6)
 
-        if isUnlocked then
-            love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.5)
-        else
-            love.graphics.setColor(0.2, 0.22, 0.25, 0.3)
-        end
-        love.graphics.setLineWidth(1)
-        love.graphics.rectangle("line", tx, ty, tileW, tileH, 6)
+                local iconSize = math.min(28, math.floor(tileH * 0.3))
+                local iconX = tx + 8
+                local iconY = ty + (tileH - iconSize) / 2
 
-        local iconSize = math.min(28, math.floor(tileH * 0.3))
-        local iconX = tx + 8
-        local iconY = ty + (tileH - iconSize) / 2
+                if isUnlocked then
+                    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.85)
+                    love.graphics.rectangle("fill", iconX, iconY, iconSize, iconSize, 4)
+                    love.graphics.setColor(0.08, 0.08, 0.16, 0.6)
+                    love.graphics.setFont(ui.fontSmall)
+                    love.graphics.printf("*", iconX, iconY + math.floor((iconSize - 8) / 2), iconSize, "center")
+                else
+                    love.graphics.setColor(0.25, 0.25, 0.28, 0.5)
+                    love.graphics.rectangle("fill", iconX, iconY, iconSize, iconSize, 4)
+                    love.graphics.setColor(0.35, 0.35, 0.38, 0.5)
+                    love.graphics.setFont(ui.fontSmall)
+                    love.graphics.printf("?", iconX, iconY + math.floor((iconSize - 8) / 2), iconSize, "center")
+                end
 
-        if isUnlocked then
-            love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3], 0.85)
-            love.graphics.rectangle("fill", iconX, iconY, iconSize, iconSize, 4)
-            love.graphics.setColor(0.08, 0.08, 0.16, 0.6)
-            love.graphics.setFont(ui.fontSmall)
-            love.graphics.printf("*", iconX, iconY + math.floor((iconSize - 8) / 2), iconSize, "center")
-        else
-            love.graphics.setColor(0.25, 0.25, 0.28, 0.5)
-            love.graphics.rectangle("fill", iconX, iconY, iconSize, iconSize, 4)
-            love.graphics.setColor(0.35, 0.35, 0.38, 0.5)
-            love.graphics.setFont(ui.fontSmall)
-            love.graphics.printf("?", iconX, iconY + math.floor((iconSize - 8) / 2), iconSize, "center")
-        end
+                local textX = iconX + iconSize + 6
+                local textW = tileW - textX + tx - 6
 
-        local textX = iconX + iconSize + 6
-        local textW = tileW - textX + tx - 6
+                if isUnlocked then
+                    love.graphics.setColor(1, 1, 1, 0.92)
+                else
+                    love.graphics.setColor(0.45, 0.45, 0.48, 0.6)
+                end
+                love.graphics.setFont(ui.fontSmall)
+                love.graphics.printf(def.title or id, textX, ty + 10, textW, "left")
 
-        if isUnlocked then
-            love.graphics.setColor(1, 1, 1, 0.92)
-        else
-            love.graphics.setColor(0.45, 0.45, 0.48, 0.6)
-        end
-        love.graphics.setFont(ui.fontSmall)
-        love.graphics.printf(def.title or id, textX, ty + 10, textW, "left")
+                if isUnlocked then
+                    love.graphics.setColor(0.65, 0.65, 0.78, 0.65)
+                else
+                    love.graphics.setColor(0.35, 0.35, 0.38, 0.4)
+                end
+                love.graphics.setFont(ui.fontSmall)
+                love.graphics.printf(def.desc or "", textX, ty + tileH - 22, textW, "left")
 
-        if isUnlocked then
-            love.graphics.setColor(0.65, 0.65, 0.78, 0.65)
-        else
-            love.graphics.setColor(0.35, 0.35, 0.38, 0.4)
-        end
-        love.graphics.setFont(ui.fontSmall)
-        love.graphics.printf(def.desc or "", textX, ty + tileH - 22, textW, "left")
-
-        if not isUnlocked then
-            love.graphics.setColor(0.15, 0.15, 0.15, 0.18)
-            love.graphics.rectangle("fill", tx, ty, tileW, tileH, 6)
-            local lx = tx + tileW - 18
-            local ly = ty + 5
-            love.graphics.setColor(0.5, 0.5, 0.5, 0.45)
-            love.graphics.setLineWidth(2)
-            love.graphics.rectangle("line", lx, ly + 4, 10, 8, 2)
-            love.graphics.arc("line", "open", lx + 5, ly + 4, 4, math.pi, 0)
-            love.graphics.setLineWidth(1)
+                if not isUnlocked then
+                    love.graphics.setColor(0.15, 0.15, 0.15, 0.18)
+                    love.graphics.rectangle("fill", tx, ty, tileW, tileH, 6)
+                    local lx = tx + tileW - 18
+                    local ly = ty + 5
+                    love.graphics.setColor(0.5, 0.5, 0.5, 0.45)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.rectangle("line", lx, ly + 4, 10, 8, 2)
+                    love.graphics.arc("line", "open", lx + 5, ly + 4, 4, math.pi, 0)
+                    love.graphics.setLineWidth(1)
+                end
+            end
         end
     end
 

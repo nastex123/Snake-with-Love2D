@@ -73,7 +73,6 @@ function states.updateCommon(dt)
 
     timers.update(dt)
     shadersMod.update(dt)
-    foodMod.update(dt)
     processToasts()
 
     -- Música ambiental
@@ -129,7 +128,7 @@ function states.updateCommon(dt)
     end
 
     obstaclesMod.update(dt)
-    st.menuPS:update(dt)
+    if st.menuPS and st.menuPS.update then st.menuPS:update(dt) end
 
     for i = #st.shockwaves, 1, -1 do
         local sw = st.shockwaves[i]
@@ -143,7 +142,7 @@ function states.updateCommon(dt)
 
     for i = #st.activeTimers, 1, -1 do
         local t = st.activeTimers[i]
-        t.remaining = t.remaining - dt
+        t.remaining = math.max(0, t.remaining - dt)
         if t.remaining <= 0 then
             if t.onEnd then
                 t.onEnd()
@@ -152,7 +151,9 @@ function states.updateCommon(dt)
         end
     end
 
-    shop.update(dt)
+    if world.state.gameState ~= constants.GAME_STATE_SHOP then
+        shop.update(dt)
+    end
 end
 
 function states.updateMenu(dt)
@@ -451,9 +452,25 @@ function states.updatePlaying(dt)
                 end
             end
 
-            -- Spawn siguiente comida (si no quedan gemelas pendientes)
+            -- Spawn siguiente comida (si no quedan gemelas pendientes) - evita boss y enemigos
             if tipo ~= "twin" or not foodMod.twinPos then
-                foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+                local avoid = {}
+                if enemiesMod.boss and enemiesMod.boss.alive then avoid[#avoid+1]=enemiesMod.boss end
+                for _,e in ipairs(enemiesMod.list) do if e.alive then avoid[#avoid+1]=e end end
+                local extra = (#avoid>0) and avoid or nil
+                -- usar find via generar con extraAvoid: pasar avoid como 6to param si generar soporta extraAvoid
+                local ok = foodMod.generar(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, nil, nil, nil)
+                -- si comida cayó sobre boss/enemigo, reintentar con avoid
+                if ok and extra then
+                    local blocked=false
+                    for _,a in ipairs(extra) do if foodMod.pos.x==a.x and foodMod.pos.y==a.y then blocked=true; break end end
+                    if blocked then
+                        for attempt=1,20 do
+                            local nx, ny = require("entities.enemyHelpers").sampleFreeTile(st.anchoGrilla, st.altoGrilla, st.player.body, obstaclesMod, enemiesMod.list, 2, 30)
+                            if nx and ny then foodMod.pos.x=nx; foodMod.pos.y=ny; break end
+                        end
+                    end
+                end
             end
 
             if st.puntuacion >= st.lastObstacleScore + constants.OBSTACLE_SPAWN_INTERVAL then
@@ -562,6 +579,34 @@ function states.updateTransition(dt)
         st.gameState = constants.GAME_STATE_SHOP
         sound:playSegment("intro")
         shop.abrir(st.monedas)
+    end
+end
+
+function states.updateShop(dt)
+    shop.update(dt)
+end
+
+function states.updatePaused(dt)
+    -- Paused state (no gameplay progression)
+end
+
+function states.update(dt)
+    states.updateCommon(dt)
+    local g = world.state.gameState
+    if g == constants.GAME_STATE_MENU then
+        return states.updateMenu(dt)
+    elseif g == constants.GAME_STATE_PLAYING then
+        return states.updatePlaying(dt)
+    elseif g == constants.GAME_STATE_DEATH_ANIMATION then
+        return states.updateDeath(dt)
+    elseif g == constants.GAME_STATE_HIGH_SCORE then
+        return states.updateHighScore(dt)
+    elseif g == constants.GAME_STATE_SHOP then
+        return states.updateShop(dt)
+    elseif g == constants.GAME_STATE_PAUSED then
+        return states.updatePaused(dt)
+    elseif g == constants.GAME_STATE_TRANSITION then
+        return states.updateTransition(dt)
     end
 end
 

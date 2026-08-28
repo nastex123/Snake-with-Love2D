@@ -1,6 +1,6 @@
--- render/enemiesDraw.lua — Dibujo de enemigos, telegraphs, objetos de ataque y boss
 local draw = {}
 local constants = require("constants")
+local world = require("core.world")
 
 local TAU = math.pi * 2
 
@@ -213,7 +213,6 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
             end
 
             -- Efecto visual de congelacion global (Frost Berry)
-            local world = require("core.world")
             local freezeTimer = world.get("enemyFreezeTimer") or 0
             if freezeTimer > 0 then
                 local cx = e.x * tam + tam / 2
@@ -299,7 +298,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
         love.graphics.setLineWidth(1)
         love.graphics.rectangle("line", bx - 1, by - 1, cfg.width + 2, cfg.height + 2)
         -- Foreground fill
-        local fillW = math.floor(math.max(0, math.min(1, boss._uiBarFill)) * cfg.width)
+        local fillW = math.floor(math.max(0, math.min(1, boss._uiBarFill or 1)) * cfg.width)
         love.graphics.setColor(cfg.fgColor)
         love.graphics.rectangle("fill", bx, by, fillW, cfg.height)
         -- Counter text
