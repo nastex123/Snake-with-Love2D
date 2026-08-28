@@ -123,17 +123,28 @@ function renderMain.drawGame(dt)
     end
 
     -- centrar verticalmente el bloque de juego (grilla + separador + overlays internos)
-    love.graphics.push()
-    love.graphics.translate(0, st.gameOffsetY)
+    -- Fallback defensivo si offsets aún no calculados (ej. primera frame antes de recalcularGrilla)
+    local w = love.graphics.getWidth()
+    local h = love.graphics.getHeight()
+    local gridW = (st.anchoGrilla or constants.MAX_GRID_COLS) * constants.TAMANIO_BLOQUE
+    local gridH = (st.altoGrilla or constants.MAX_GRID_ROWS) * constants.TAMANIO_BLOQUE
+    local fallbackOX = math.floor((w - gridW) / 2)
+    local fallbackOY = math.floor(math.max(0, h - (constants.GRID_OFFSET_Y + gridH)) / 2)
+    local ox = st.gridOffsetX
+    local oy = st.gameOffsetY
+    if type(ox) ~= "number" then ox = fallbackOX end
+    if type(oy) ~= "number" then oy = fallbackOY end
 
-    -- separador visual HUD / gameplay
+    love.graphics.push()
+    love.graphics.translate(0, oy)
+
+    -- separador visual HUD / gameplay (centrado horizontal con grid)
     love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.25)
     love.graphics.setLineWidth(1)
-    love.graphics.line(0, constants.GRID_OFFSET_Y - 1, love.graphics.getWidth(), constants.GRID_OFFSET_Y - 1)
+    love.graphics.line(ox, constants.GRID_OFFSET_Y - 1, ox + gridW, constants.GRID_OFFSET_Y - 1)
 
     -- Boss health bar (encima de la grilla, dentro del bloque de juego)
     if st.bossHealthDisplay and st.gameState == constants.GAME_STATE_PLAYING then
-        local w = love.graphics.getWidth()
         local barW = 160
         local barH = 8
         local bx = (w - barW) / 2
@@ -148,9 +159,9 @@ function renderMain.drawGame(dt)
         love.graphics.rectangle("line", bx, by, barW, barH, 4, 4)
     end
 
-    -- offset de grilla
+    -- offset de grilla (centrado horizontal)
     love.graphics.push()
-    love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y)
+    love.graphics.translate(ox, constants.GRID_OFFSET_Y)
 
     uiMod.drawGrid(st.anchoGrilla, st.altoGrilla, st.time, st.comboIntensity)
 
@@ -159,7 +170,7 @@ function renderMain.drawGame(dt)
         enemiesMod.draw(st.player and st.player.body and st.player.body[1])
         foodMod.draw(st.time, dt)
         local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         snakeMod.draw(st.player, alpha)
 
         if st.magnetRange > 0 and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
@@ -278,11 +289,19 @@ function renderMain.drawGameGlow(dt)
     end
     if st.gameState ~= constants.GAME_STATE_SHOP then
         local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
         if fadeFactor > 0.001 then
+            local w = love.graphics.getWidth()
+            local h = love.graphics.getHeight()
+            local gridW = (st.anchoGrilla or constants.MAX_GRID_COLS) * constants.TAMANIO_BLOQUE
+            local gridH = (st.altoGrilla or constants.MAX_GRID_ROWS) * constants.TAMANIO_BLOQUE
+            local ox = st.gridOffsetX
+            local oy = st.gameOffsetY
+            if type(ox) ~= "number" then ox = math.floor((w - gridW)/2) end
+            if type(oy) ~= "number" then oy = math.floor(math.max(0, h - (constants.GRID_OFFSET_Y + gridH))/2) end
             love.graphics.push()
-            love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y + st.gameOffsetY)
+            love.graphics.translate(ox, constants.GRID_OFFSET_Y + oy)
             love.graphics.setColor(1, 1, 1, fadeFactor)
             snakeMod.draw(st.player, moveAlpha)
             foodMod.draw(st.time, dt)
@@ -305,11 +324,19 @@ function renderMain.drawGameShadow(dt)
     end
     if st.gameState ~= constants.GAME_STATE_SHOP then
         local moveAlpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
-            and (st.cronometro / st.velocidadActual) or 1
+            and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         local fadeFactor = 1 - math.max(0, math.min(1, st.fadeAlpha or 0))
         if fadeFactor > 0.001 then
+            local w = love.graphics.getWidth()
+            local h = love.graphics.getHeight()
+            local gridW = (st.anchoGrilla or constants.MAX_GRID_COLS) * constants.TAMANIO_BLOQUE
+            local gridH = (st.altoGrilla or constants.MAX_GRID_ROWS) * constants.TAMANIO_BLOQUE
+            local ox = st.gridOffsetX
+            local oy = st.gameOffsetY
+            if type(ox) ~= "number" then ox = math.floor((w - gridW)/2) end
+            if type(oy) ~= "number" then oy = math.floor(math.max(0, h - (constants.GRID_OFFSET_Y + gridH))/2) end
             love.graphics.push()
-            love.graphics.translate(st.gridOffsetX, constants.GRID_OFFSET_Y + st.gameOffsetY)
+            love.graphics.translate(ox, constants.GRID_OFFSET_Y + oy)
             love.graphics.setColor(1, 1, 1, fadeFactor)
             snakeMod.draw(st.player, moveAlpha)
             love.graphics.pop()
