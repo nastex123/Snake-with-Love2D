@@ -359,8 +359,38 @@ function shaders.load()
     canvasPost        = newC()
 end
 
--- Recreate canvases (always linear filtering for smooth CRT/bloom sampling)
+function shaders.setFilter(filter)
+    local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
+    if canvasScene and canvasScene.setFilter then pcall(function() canvasScene:setFilter(f, f) end) end
+    if canvasGlow and canvasGlow.setFilter then pcall(function() canvasGlow:setFilter(f, f) end) end
+    if canvasGlowLow and canvasGlowLow.setFilter then pcall(function() canvasGlowLow:setFilter(f, f) end) end
+    if canvasBlurH and canvasBlurH.setFilter then pcall(function() canvasBlurH:setFilter(f, f) end) end
+    if canvasBlurV and canvasBlurV.setFilter then pcall(function() canvasBlurV:setFilter(f, f) end) end
+    if canvasShadow and canvasShadow.setFilter then pcall(function() canvasShadow:setFilter(f, f) end) end
+    if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter(f, f) end) end
+    if canvasFinal and canvasFinal.setFilter then pcall(function() canvasFinal:setFilter(f, f) end) end
+    if canvasPost and canvasPost.setFilter then pcall(function() canvasPost:setFilter(f, f) end) end
+end
+
+function shaders.needsRecreate(oldG, newG)
+    if not oldG or not newG then return true end
+    if oldG.pixelScale ~= newG.pixelScale then return true end
+    if oldG.fullscreen ~= newG.fullscreen then return true end
+    if oldG.vsync ~= newG.vsync then return true end
+    local ra, rb = oldG.resolution, newG.resolution
+    local resEq = false
+    if ra == rb then resEq = true
+    elseif ra == nil and rb == nil then resEq = true
+    elseif ra == nil or rb == nil then resEq = false
+    elseif ra.width == rb.width and ra.height == rb.height then resEq = true end
+    if not resEq then return true end
+    if oldG.filter ~= newG.filter then return false end
+    return false
+end
+
+-- Recreate canvases (respeta filter param; evita recreate si solo cambia filter via setFilter)
 function shaders.recreateCanvases(pixelScale, filter)
+    local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
     shaders.releaseCanvases()
 
     W = love.graphics.getWidth()
@@ -369,7 +399,7 @@ function shaders.recreateCanvases(pixelScale, filter)
     BH = math.max(1, math.floor(H / 2))
     local function newC()
         local c = love.graphics.newCanvas(W, H)
-        c:setFilter("linear", "linear")
+        c:setFilter(f, f)
         return c
     end
     local function newCLow()

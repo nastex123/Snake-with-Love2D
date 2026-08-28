@@ -76,10 +76,6 @@ items.registry = {
     }
 }
 
--- Aliases for snake_case and compatibility
-items.registry.speed_reducer = items.registry.speedReducer
-items.registry.extra_coin = items.registry.extraCoin
-
 items.canonicalKeys = {
     "shield", "armor", "ghost",
     "magnet", "bomb", "hunger",

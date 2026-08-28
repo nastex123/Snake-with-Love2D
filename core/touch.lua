@@ -65,7 +65,6 @@ function touch.reset()
 end
 touch.load = touch.reset
 touch.clear = touch.reset
-touch.load = function() end
 
 --- Retorna la información de un toque activo específico.
 -- @param id any Identificador del toque.
@@ -201,8 +200,8 @@ function touch.touchreleased(id, x, y)
     local totalDistSq = (vx - t.startX) * (vx - t.startX) + (vy - t.startY) * (vy - t.startY)
     local isTap = (totalDistSq <= TAP_DEADZONE * TAP_DEADZONE) or (startInBtn and releaseInBtn)
 
-    -- Botón de pausa: toque en esquina inferior derecha
-    if isTap and (startInBtn or releaseInBtn) then
+    -- Botón de pausa: toque en esquina inferior derecha (requiere tap completo dentro)
+    if isTap and startInBtn and releaseInBtn then
         if st.gameState == constants.GAME_STATE_PLAYING then
             st.gameState = constants.GAME_STATE_PAUSED
         elseif st.gameState == constants.GAME_STATE_PAUSED then

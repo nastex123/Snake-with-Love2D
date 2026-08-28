@@ -57,11 +57,11 @@ function helpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod
     minDist = minDist or 6
     attempts = attempts or constants.BOSS_RESPAWN_RETRY or 40
     local head = snakeBody and snakeBody[1]
-    local maxGX = math.max(1, anchoGrilla - 2)
-    local maxGY = math.max(1, altoGrilla - 2)
+    local maxGX = math.max(0, anchoGrilla - 1)
+    local maxGY = math.max(0, altoGrilla - 1)
     for _ = 1, attempts do
-        local gx = love.math.random(1, maxGX)
-        local gy = love.math.random(1, maxGY)
+        local gx = love.math.random(0, maxGX)
+        local gy = love.math.random(0, maxGY)
         local valid = true
         if head then
             if math.abs(gx - head.x) + math.abs(gy - head.y) < minDist then valid = false end
@@ -71,8 +71,9 @@ function helpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod
                 if gx == s.x and gy == s.y then valid = false; break end
             end
         end
-        if valid and obstaclesMod and obstaclesMod.pos then
-            for _, o in ipairs(obstaclesMod.pos) do
+        if valid and obstaclesMod then
+            local obs = obstaclesMod.pos or obstaclesMod
+            for _, o in ipairs(obs) do
                 if gx == o.x and gy == o.y then valid = false; break end
             end
         end

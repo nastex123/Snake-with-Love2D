@@ -304,15 +304,15 @@ function sound.getNextLoopSource()
     return nextLoopSource
 end
 
-function sound.getSources()
-    return sources
-end
-
 -- ==================================================================
 --  Efectos de sonido (SFX) – generacion procedural
 -- ==================================================================
 local SAMPLE_RATE = 44100
 local sources = {}
+
+function sound.getSources()
+    return sources
+end
 
 local function makeSine(freq, duration, amp)
     local samples = math.floor(SAMPLE_RATE * duration)
@@ -357,7 +357,7 @@ function sound.getMakeSweep() return makeSweep end
 function sound.getMakeNoise() return makeNoise end
 
 function sound.load()
-    math.randomseed(os.time())
+    -- no reseed global math.random (dungeonGen/persistence usan love.math)
 
     for k, src in pairs(sources) do
         releaseSrc(src)

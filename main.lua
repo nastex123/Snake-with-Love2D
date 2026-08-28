@@ -40,8 +40,8 @@ end
 local function triggerDeathAnimation()
     local st = world.state
     st.deathModalOpen = false
-    love.timer.sleep(0.08)
     st.shakeTimer = constants.SHAKE_DURATION
+    st.hitPause = 0.08
     shadersMod.triggerDamage(1.0, 0.9)
     st.fadeDir = 1
     st.gameState = constants.GAME_STATE_DEATH_ANIMATION
@@ -91,7 +91,6 @@ function love.load()
     -- Cargar y aplicar configuración DESPUÉS de inicializar subsistemas (sound/shaders/ui)
     persistenceMod.loadSettings()
     persistenceMod.applySettings(persistenceMod.settings)
-    shadersMod.recreateCanvases()
     recalcularGrilla()
 
     world.state.menuPS = particles.menuFondo()
@@ -261,6 +260,9 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
 end
 
 function love.mousereleased(x,y,button)
+    if world.state and world.state.gameState == constants.GAME_STATE_MENU and uiMod and uiMod.clearMenuPressed then
+        uiMod.clearMenuPressed()
+    end
     if debugTools.mousereleased and debugTools.mousereleased(x,y,button) then
         return
     end
@@ -280,6 +282,9 @@ function love.mousemoved(x,y,dx,dy)
 end
 
 function love.wheelmoved(dx, dy)
+    if settingsMod and settingsMod.visible and settingsMod.wheelmoved then
+        if settingsMod.wheelmoved(dx, dy) then return end
+    end
     if profilesMod and profilesMod.visible and profilesMod.wheelmoved then
         profilesMod.wheelmoved(dx, dy)
     end
@@ -322,11 +327,6 @@ function love.keypressed(tecla)
             triggerDeathAnimation()
             return
         end
-        return
-    end
-
-    if tecla == "tab" then
-        world.state.debugMenuOpen = not world.state.debugMenuOpen
         return
     end
 

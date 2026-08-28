@@ -86,7 +86,8 @@ function gameflow.resetGame(keepShopInventory)
         for id, owned in pairs(shop.inventory) do
             if owned then
                 if id == "speedReducer" then
-                    st.velocidadActual = math.max(constants.VELOCIDAD_MINIMA, st.velocidadActual - constants.SPEED_REDUCER_AMOUNT)
+                    st.baseSpeed = math.min(constants.MAX_BASE_SPEED, (st.baseSpeed or constants.VELOCIDAD_INICIAL) + constants.SPEED_REDUCER_AMOUNT)
+                    st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador or 0)
                 elseif id == "extraCoin" then
                     st.coinBonus = 1
                 end
@@ -147,16 +148,34 @@ end
 
 function gameflow.recalcularGrilla()
     local st = world.state
-    local w = (love.graphics and love.graphics.getWidth and love.graphics.getWidth()) or 640
-    local h = (love.graphics and love.graphics.getHeight and love.graphics.getHeight()) or 360
+    local w, h = 640, 360
+    if love.graphics and love.graphics.getWidth and love.graphics.getHeight then
+        w = love.graphics.getWidth() or 640
+        h = love.graphics.getHeight() or 360
+        -- Fallback to getDimensions for high-DPI correctness
+        if love.graphics.getDimensions then
+            local gw, gh = love.graphics.getDimensions()
+            if gw and gh and gw > 0 and gh > 0 then w, h = gw, gh end
+        end
+    elseif love.window and love.window.getMode then
+        local ww, wh = love.window.getMode()
+        if ww and wh then w, h = ww, wh end
+    end
     local rawCols = math.floor(w / constants.TAMANIO_BLOQUE)
     local rawRows = math.floor((h - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
-    st.anchoGrilla = math.min(rawCols, constants.MAX_GRID_COLS)
-    st.altoGrilla  = math.min(rawRows, constants.MAX_GRID_ROWS)
-    local gameH = constants.GRID_OFFSET_Y + st.altoGrilla * constants.TAMANIO_BLOQUE
-    st.gridOffsetX = math.floor((w - st.anchoGrilla * constants.TAMANIO_BLOQUE) / 2)
+    st.anchoGrilla = math.max(10, math.min(rawCols, constants.MAX_GRID_COLS))
+    st.altoGrilla  = math.max(10, math.min(rawRows, constants.MAX_GRID_ROWS))
+    local gridW = st.anchoGrilla * constants.TAMANIO_BLOQUE
+    local gridH = st.altoGrilla * constants.TAMANIO_BLOQUE
+    local gameH = constants.GRID_OFFSET_Y + gridH
+    -- Centrado horizontal perfecto (floor para pixel-perfect)
+    st.gridOffsetX = math.floor((w - gridW) / 2)
     st.gridOffsetY = constants.GRID_OFFSET_Y
+    -- Centrado vertical del bloque completo (HUD+grid) en ventana
     st.gameOffsetY = math.floor(math.max(0, h - gameH) / 2)
+    -- Clamp para evitar offsets negativos si ventana muy pequeña
+    if st.gridOffsetX < 0 then st.gridOffsetX = 0 end
+    if st.gameOffsetY < 0 then st.gameOffsetY = 0 end
 end
 
 function gameflow.startRun()

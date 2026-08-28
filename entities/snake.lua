@@ -463,14 +463,24 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
     local comio = false
     local comioTwin = false
     if magnetRange and magnetRange > 0 and anchoGrilla and altoGrilla then
+        local wrap = hasWrap()
         for dy = -magnetRange, magnetRange do
             for dx = -magnetRange, magnetRange do
-                local checkX = (nuevaCabezaX + dx) % anchoGrilla
-                local checkY = (nuevaCabezaY + dy) % altoGrilla
-                if foodPos and checkX == foodPos.x and checkY == foodPos.y then
+                local checkX, checkY
+                if wrap then
+                    checkX = (nuevaCabezaX + dx) % anchoGrilla
+                    checkY = (nuevaCabezaY + dy) % altoGrilla
+                else
+                    checkX = nuevaCabezaX + dx
+                    checkY = nuevaCabezaY + dy
+                    if checkX <0 or checkX>=anchoGrilla or checkY<0 or checkY>=altoGrilla then
+                        checkX=nil; checkY=nil
+                    end
+                end
+                if checkX and foodPos and checkX == foodPos.x and checkY == foodPos.y then
                     comio = true
                     break
-                elseif twinPos and checkX == twinPos.x and checkY == twinPos.y then
+                elseif checkX and twinPos and checkX == twinPos.x and checkY == twinPos.y then
                     comio = true
                     comioTwin = true
                     break

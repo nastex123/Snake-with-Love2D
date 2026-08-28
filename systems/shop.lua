@@ -344,13 +344,14 @@ end
 
 function shop.isOwned(itemId)
     if not itemId then return false end
-    local def = items.registry[itemId]
+    local def = items.get(itemId)
     if not def then return false end
+    local canon = def.id
     if def.itemType == "passive" then
-        return shop.inventory[itemId] == true
+        return shop.inventory[canon] == true
     else
         for i = 1, 3 do
-            if shop.slots[i] == itemId then return true end
+            if shop.slots[i] == canon then return true end
         end
         return false
     end
@@ -367,21 +368,22 @@ end
 function shop.procesarCompra(monedas, itemId, costo)
     monedas = monedas or 0
     if not itemId then return nil end
-    local def = items.registry[itemId]
+    local def = items.get(itemId)
     if not def then return nil end
+    local canon = def.id
     costo = costo or def.cost or 0
 
     if monedas < costo then return nil end
-    if shop.isOwned(itemId) then return nil end
+    if shop.isOwned(canon) then return nil end
 
     if def.itemType == "passive" then
-        shop.inventory[itemId] = true
-        return {item = itemId, costo = costo}
+        shop.inventory[canon] = true
+        return {item = canon, costo = costo}
     else
         for i = 1, 3 do
             if shop.slots[i] == nil then
-                shop.slots[i] = itemId
-                return {item = itemId, costo = costo, slot = i}
+                shop.slots[i] = canon
+                return {item = canon, costo = costo, slot = i}
             end
         end
         return nil
@@ -406,14 +408,16 @@ end
 function shop.reset(keepInventory)
     shop.slots = {nil, nil, nil}
     if not keepInventory then
-        shop.inventory = {
-            speedReducer = false, extraCoin = false
-        }
-        for k, def in pairs(items.registry) do
-            if def.itemType == "passive" then
-                shop.inventory[k] = false
+        shop.inventory = {}
+        for _, key in ipairs(items.canonicalKeys or {}) do
+            local def = items.registry[key]
+            if def and def.itemType == "passive" then
+                shop.inventory[key] = false
             end
         end
+        -- ensure at least speedReducer/extraCoin exist even if canonicalKeys empty
+        if shop.inventory.speedReducer == nil then shop.inventory.speedReducer = false end
+        if shop.inventory.extraCoin == nil then shop.inventory.extraCoin = false end
     end
     shop.magnetTimer = 0
     shop.shieldActive = false

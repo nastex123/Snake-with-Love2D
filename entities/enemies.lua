@@ -563,7 +563,9 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     for i = #pendingRespawns, 1, -1 do
         local p = pendingRespawns[i]
         if p.respawnAt <= nowRespawn then
-            if enemies.canSpawn("chaser") then
+            if not enemies.canSpawn("chaser") then
+                p.respawnAt = nowRespawn + 0.25
+            elseif enemies.canSpawn("chaser") then
                 local gx, gy = enemyHelpers.sampleFreeTile(anchoGrilla, altoGrilla, snakeBody, obstaclesMod, enemies.list, 6, p.attempts)
                 if gx then
                     local speedMult = (stageModifier and stageModifier.enemySpeed) or 1.0
@@ -590,7 +592,10 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
         end
     end
 
-    -- Update attack objects
+    -- Update attack objects (frozen during enemyFreeze)
+    if isFrozen then
+        -- skip attack/telegraph ticks while frozen
+    else
     for i = #attackObjects, 1, -1 do
         local ao = attackObjects[i]
         local expired = false
@@ -623,6 +628,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
         if t.timer <= 0 then
             table.remove(telegraphs, i)
         end
+    end
     end
 end
 
