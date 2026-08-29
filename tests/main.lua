@@ -27,6 +27,7 @@ if pcall(require, "tests.test_scope_10_chaserAI") then end
 if pcall(require, "tests.test_scope_13_worldFacade") then end
 if pcall(require, "tests.test_scope_16_profiles") then end
 if pcall(require, "tests.test_scope_18_gamestatesDebug") then end
+if pcall(require, "tests.test_scope_19_biomes_hazards") then end
 
 -- Source files for full coverage reporting
 local source_files = {
