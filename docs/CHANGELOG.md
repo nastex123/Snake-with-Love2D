@@ -8,6 +8,20 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-28 21:27
+
+- **Feature** (completed - 2026-08-28 21:27): Renderizado de Textura Procedural 5x5 Píxeles para el Enemigo Patroller (America/Bogota):
+  1. **QUÉ — Textura y Matriz 5x5 "Interceptor Delta"**:
+     - Implementada matriz de diseño $5\times 5$ píxeles en `render/enemiesDraw.lua` (`drawPatroller`), reemplazando el polígono triangular básico previo.
+     - Paleta de color arcade cyberpunk: Blindaje base azul cobalto (`#0077B6`), bisel cian neón (`#00F0FF`), ápice frontal de titanio y núcleo fotónico pulsante blanco/cian a $60\,\text{FPS}$.
+     - Sombra direccional suave 2D bajo el chasis del dron.
+     - Micro-llama de propulsión de plasma dinámica en la parte trasera sincronizada con el movimiento.
+     - Orientación y rotación angular suave continua con base en el vector de avance (`dirX`, `dirY` o `visRot`).
+  2. **QUÉ — Concepto de Asset**:
+     - Generado asset de referencia en `assets/patroller_5x5_concept.jpg`.
+  3. **POR QUÉ**: Mejorar la fidelidad visual pixel-art del enemigo Patroller acorde a la estética general del juego y al diseño de estrellas de espinas del Chaser.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas unitarias ejecutada con 519 tests en PASS.
+
 ## 2026-08-28 20:55
 
 - **Feature** (completed - 2026-08-28 20:55): Implementación de Fase 8 — Biomas de Mazmorra y Peligros Ambientales (America/Bogota):
