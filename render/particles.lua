@@ -264,6 +264,66 @@ function particles.slimmingBurst(x, y)
     return ps
 end
 
+function particles.iceSlip(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 12)
+    ps:setEmissionRate(0)
+    ps:setSpeed(20, 60)
+    ps:setLinearAcceleration(0, 10)
+    ps:setColors(0.4, 0.9, 1.0, 0.9,  0.8, 0.98, 1.0, 0.6,  1.0, 1.0, 1.0, 0)
+    ps:setSizes(1.2, 0.2)
+    ps:setParticleLifetime(0.25, 0.5)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(12)
+    return ps
+end
+
+function particles.magmaEmbers(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 18)
+    ps:setEmissionRate(0)
+    ps:setSpeed(25, 75)
+    ps:setLinearAcceleration(0, -60)
+    ps:setColors(1.0, 0.5, 0.1, 1,  1.0, 0.2, 0.05, 0.8,  0.5, 0.05, 0.0, 0)
+    ps:setSizes(1.4, 0.2)
+    ps:setParticleLifetime(0.4, 0.8)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(18)
+    return ps
+end
+
+function particles.toxicBubbles(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 15)
+    ps:setEmissionRate(0)
+    ps:setSpeed(15, 45)
+    ps:setLinearAcceleration(0, -25)
+    ps:setColors(0.3, 0.95, 0.2, 0.9,  0.6, 1.0, 0.4, 0.7,  0.1, 0.4, 0.1, 0)
+    ps:setSizes(1.3, 0.3)
+    ps:setParticleLifetime(0.35, 0.7)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(15)
+    return ps
+end
+
+function particles.voidDust(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 20)
+    ps:setEmissionRate(0)
+    ps:setSpeed(20, 50)
+    ps:setLinearAcceleration(0, 0)
+    ps:setColors(0.8, 0.3, 1.0, 0.9,  0.2, 0.8, 1.0, 0.7,  1.0, 1.0, 1.0, 0)
+    ps:setSizes(1.4, 0.2)
+    ps:setParticleLifetime(0.4, 0.8)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(20)
+    return ps
+end
+
 function particles.menuFondo()
     local tex = ensureTexture()
     local ps = love.graphics.newParticleSystem(tex, 80)
