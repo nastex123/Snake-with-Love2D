@@ -138,6 +138,75 @@ local function drawChaser(e, tam, time, head)
     end
 end
 
+-- Matriz 5x5 para el Patroller (Interceptor Delta)
+-- Coordenadas locales centradas (-2..2)
+local PATROLLER_MATRIX_5X5 = {
+    {-2, -1, "B"}, {-1, -1, "B"},
+    {-2,  0, "T"}, {-1,  0, "B"}, {0, 0, "*"}, {1, 0, "C"}, {2, 0, "A"},
+    {-2,  1, "B"}, {-1,  1, "B"},
+    {-1, -2, "B"}, { 0, -2, "B"},
+    {-1,  2, "B"}, { 0,  2, "B"},
+    { 0, -1, "C"}, { 1, -1, "B"},
+    { 0,  1, "C"}, { 1,  1, "B"},
+}
+
+local function drawPatroller(e, tam, time)
+    local cx = e.x * tam + tam / 2
+    local cy = e.y * tam + tam / 2
+    local angle = e.visRot or math.atan2(e.dirY or 0, e.dirX or 1)
+    local k = tam / 5.5
+    local pulse = 0.5 + 0.5 * math.sin(time * 8 + (e.seed or 0))
+
+    love.graphics.push()
+    love.graphics.translate(cx, cy)
+    love.graphics.rotate(angle)
+
+    -- Sombra direccional suave bajo el drone
+    love.graphics.setColor(0, 0, 0, 0.35)
+    love.graphics.rectangle("fill", -2.5 * k + 1, -2.5 * k + 1, 5 * k, 5 * k, 2)
+
+    -- Dibujo de cada pixel de la matriz 5x5
+    for _, px in ipairs(PATROLLER_MATRIX_5X5) do
+        local xOff, yOff, pType = px[1] * k, px[2] * k, px[3]
+        if pType == "B" then
+            -- Blindaje azul cobalto
+            love.graphics.setColor(0.05, 0.45, 0.85, 0.95)
+        elseif pType == "C" then
+            -- Bisel cian neón
+            love.graphics.setColor(0.00, 0.94, 1.00, 0.95)
+        elseif pType == "*" then
+            -- Núcleo fotónico pulsante blanco/cian
+            love.graphics.setColor(1.0, 1.0, 1.0, 0.85 + 0.15 * pulse)
+        elseif pType == "A" then
+            -- Ápice de titanio frontal
+            love.graphics.setColor(0.90, 0.98, 1.00, 1.0)
+        elseif pType == "T" then
+            -- Propulsor de plasma
+            love.graphics.setColor(0.30, 0.85, 1.00, 0.70 + 0.30 * pulse)
+        end
+        love.graphics.rectangle("fill", xOff - k/2, yOff - k/2, k, k)
+    end
+
+    -- Borde exterior de definición pixel-art
+    love.graphics.setColor(0.0, 0.94, 1.0, 0.45)
+    love.graphics.setLineWidth(1)
+    love.graphics.polygon("line", 
+        2.5 * k, 0,
+        0, -2.5 * k,
+        -2.5 * k, -1.5 * k,
+        -1.5 * k, 0,
+        -2.5 * k, 1.5 * k,
+        0, 2.5 * k
+    )
+
+    -- Micro-llama de plasma del propulsor
+    local thrusterLen = (1.2 + 0.8 * pulse) * k
+    love.graphics.setColor(0.2, 0.90, 1.0, 0.6 * pulse)
+    love.graphics.polygon("fill", -2.5 * k, -0.8 * k, -2.5 * k - thrusterLen, 0, -2.5 * k, 0.8 * k)
+
+    love.graphics.pop()
+end
+
 function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
     local tam = constants.TAMANIO_BLOQUE
     local time = love.timer.getTime()
@@ -165,24 +234,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
                 drawChaser(e, tam, time, snakeHead)
 
             elseif e.type == "patroller" then
-                local pulse = math.sin(time * 5) * 0.1 + 0.9
-                love.graphics.setColor(
-                    constants.COLOR_ENEMY_PATROLLER[1] * pulse,
-                    constants.COLOR_ENEMY_PATROLLER[2] * pulse,
-                    constants.COLOR_ENEMY_PATROLLER[3] * pulse
-                )
-                local angle = e.visRot or math.atan2(e.dirY or 0, e.dirX or 1)
-                local r = tam * 0.45
-                local pts = {
-                    cx + math.cos(angle) * r, cy + math.sin(angle) * r,
-                    cx + math.cos(angle + 2.5) * r, cy + math.sin(angle + 2.5) * r,
-                    cx + math.cos(angle - 2.5) * r, cy + math.sin(angle - 2.5) * r
-                }
-                love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.4)
-                love.graphics.setLineWidth(1.5)
-                love.graphics.polygon("line", pts)
-                love.graphics.setLineWidth(1)
+                drawPatroller(e, tam, time)
 
             elseif e.type == "spawner" then
                 local pulse = math.sin(time * 2) * 0.2 + 0.8
