@@ -171,9 +171,8 @@ function settings.draw()
     love.graphics.printf('X', cx, cy + 4, 24, 'center')
     settings.g.closeBtn = {cx, cy, 24, 24}
 
-    -- Tabs con iconos (🔊/🖥/♿) e indicador activo subrayado cyan + hover pulse
+    -- Tabs e indicador activo subrayado cyan + hover pulse
     local tabs = {'Audio', 'Gráficos', 'Accesibilidad'}
-    local icons = {'🔊', '🖥', '♿'}
     local tabW = math.floor((settings.PW - 44) / 3)
     local tabY = py + 56
     local tx = px + 22
@@ -198,18 +197,14 @@ function settings.draw()
         -- hover pulse glow
         if isHover and not isActive then
             local pulse = 0.5 + math.sin(love.timer.getTime() * 6 + i) * 0.35
-            love.graphics.setColor(0, 0.94, 1.0, 0.18 * pulse)
+            love.graphics.setColor(0, 0.94, 1.0, 0.16 * pulse)
             love.graphics.rectangle('line', tx - 1, tabY - 1, tabW + 2, 32, 8)
         end
-        -- texto centrado con icono
-        love.graphics.setColor(1, 1, 1)
+        -- texto tab
+        love.graphics.setColor(isActive and {1, 1, 1} or {0.70, 0.75, 0.82})
         settingsDraw.setFont(settings, 'Normal')
-        local label = icons[i] .. '  ' .. tname
-        -- fallback si emoji no renderiza (width 0), usar solo texto
-        local font = love.graphics.getFont()
-        if font:getWidth(icons[i]) < 4 then label = tname end
-        love.graphics.printf(label, tx, tabY + 7, tabW, 'center')
-        -- indicador activo subrayado cyan + glow
+        love.graphics.printf(tname, tx, tabY + 7, tabW, 'center')
+        -- indicador subrayado activo
         if isActive then
             love.graphics.setColor(0, 0.94, 1.0, 1)
             love.graphics.rectangle('fill', tx + 8, tabY + 27, tabW - 16, 2.5, 1)
@@ -244,9 +239,10 @@ function settings.draw()
     if needScissor then love.graphics.setScissor() end
 
     -- Bottom buttons (estilo Cyber-Step, Guardar deshabilitado gris si diff empty)
-    settings.g.resetBtn = {settingsDraw.drawButton(settings, px + 18, by, 116, 34, 'Restablecer', {0.10, 0.22, 0.16})}
-    settings.g.cancelBtn = {settingsDraw.drawButton(settings, px + settings.PW / 2 - 65, by, 130, 34, 'Cancelar', {0.38, 0.12, 0.14})}
-    settings.g.saveBtn = {settingsDraw.drawButton(settings, px + settings.PW - 148, by, 130, 34, 'Guardar', {0.08, 0.32, 0.22})}
+    local btnW = math.floor((settings.PW - 56) / 3)
+    settings.g.resetBtn = {settingsDraw.drawButton(settings, px + 18, by, btnW, 34, 'Restablecer', {0.10, 0.22, 0.16})}
+    settings.g.cancelBtn = {settingsDraw.drawButton(settings, px + 22 + btnW, by, btnW, 34, 'Cancelar', {0.38, 0.12, 0.14})}
+    settings.g.saveBtn = {settingsDraw.drawButton(settings, px + 26 + btnW * 2, by, btnW, 34, 'Guardar', {0.08, 0.32, 0.22})}
 
     -- Dropdown list on top of everything (ya con clamp anti-overflow)
     if settings.openDropdown then

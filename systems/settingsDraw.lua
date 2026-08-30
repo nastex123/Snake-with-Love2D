@@ -129,10 +129,12 @@ local function drawCheckbox(settings, x, y, label, value)
     love.graphics.setColor(1, 1, 1, 0.55)
     love.graphics.circle('fill', thumbX + 6, by + 8, 2.2)
     if value then
-        love.graphics.setColor(0, 0, 0, 0.9)
-        setFont('Small')
-        -- mini check dentro del thumb
-        love.graphics.print('✓', thumbX + 4, by + 3)
+        -- Dibujo procedural de checkmark (compatible con cualquier fuente pixel art)
+        love.graphics.setColor(0.02, 0.14, 0.18, 1)
+        love.graphics.setLineWidth(1.8)
+        love.graphics.line(thumbX + 5, by + 10, thumbX + 7.5, by + 13)
+        love.graphics.line(thumbX + 7.5, by + 13, thumbX + 11.5, by + 7)
+        love.graphics.setLineWidth(1)
     end
     return bx, by, bw, bh
 end
@@ -141,13 +143,13 @@ end
 local function drawSlider(settings, x, y, w, label, val)
     setFont('Normal')
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(label, x, y + 2, math.max(80, w - 110), 'left')
+    love.graphics.printf(label, x, y + 2, 170, 'left')
     local badgeW = 44
-    local bx = x + 150
-    local bw = w - 150 - badgeW - 8
+    local bx = x + 176
+    local bw = w - 176 - badgeW - 8
     if bw < 60 then
-        bx = x + 120
-        bw = w - 120 - badgeW - 8
+        bx = x + 140
+        bw = w - 140 - badgeW - 8
     end
     local trackY = y + 8
     local trackH = 10
@@ -205,12 +207,12 @@ end
 local function drawDropdown(settings, x, y, w, label, valueLabel)
     setFont('Normal')
     love.graphics.setColor(1, 1, 1)
-    love.graphics.printf(label, x, y + 2, math.max(80, w - 130), 'left')
-    local bx = x + 150
-    local bw = w - 150
+    love.graphics.printf(label, x, y + 2, 170, 'left')
+    local bx = x + 176
+    local bw = w - 176
     if bw < 80 then
-        bx = x + 120
-        bw = w - 120
+        bx = x + 140
+        bw = w - 140
     end
     local mx, my = love.mouse.getPosition()
     local isHover = mx and my and hitTest(settings, mx, my, bx, y, bw, 24)

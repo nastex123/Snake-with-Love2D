@@ -153,12 +153,26 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
         end
     end
 
-    -- 2. Place obstacles (respetando baseCount = 0 cuando no deben haber obstáculos)
+    -- 2. Place obstacles y peligros ambientales de bioma
     local obsBase = obstaclesRule.baseCount or 0
     local obsCount = (obsBase > 0) and math.max(1, math.floor(obsBase * stageMod.countMult)) or 0
     if obsCount > 0 and obstaclesMod and obstaclesMod.spawnAt then
+        local biomeIndex = world.etapa or 1
         placeNEntities(function(gx, gy)
-            obstaclesMod.spawnAt(gx, gy)
+            local rnd = love.math.random()
+            local obsType = "wall"
+            if biomeIndex == 2 then -- Cripta Helada
+                obsType = (rnd < 0.70) and "ice" or "wall"
+            elseif biomeIndex == 3 then -- Caverna Volcánica
+                obsType = (rnd < 0.65) and "lava" or "wall"
+            elseif biomeIndex == 4 then -- Colmena Tóxica
+                obsType = (rnd < 0.65) and "slime" or "wall"
+            elseif biomeIndex == 5 then -- Santuario del Vacío
+                obsType = (rnd < 0.50) and "pressure_spike" or ((rnd < 0.75) and "trap" or "wall")
+            else -- Catacumbas de Piedra
+                obsType = (rnd < 0.25) and "trap" or "wall"
+            end
+            obstaclesMod.spawnAt(gx, gy, obsType)
         end, obsCount, anchoGrilla, altoGrilla, avoidList, {avoidRadius = 1, minDist = 1})
     end
 

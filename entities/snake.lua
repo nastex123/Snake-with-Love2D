@@ -370,19 +370,48 @@ function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRan
         end
     end
 
-    -- Verificación de colisiones con obstáculos
+    -- Verificación de colisiones con obstáculos y peligros ambientales
+    local obstaclesMod = package.loaded["entities.obstacles"]
+    if not obstaclesMod then
+        local ok, res = pcall(require, "entities.obstacles")
+        if ok then obstaclesMod = res end
+    end
+
+    if obstaclesMod then
+        -- Armar trampas de presión al pasar sobre ellas
+        obstaclesMod.triggerPressureSpike(nuevaCabezaX, nuevaCabezaY)
+
+        -- Verificar si el obstáculo en esa posición es un peligro letal activo (lava ardiente, púas extendidas, trampa)
+        local isLethal, hazardObs = obstaclesMod.isHazardLethal(nuevaCabezaX, nuevaCabezaY)
+        if isLethal and not s.ghost and not immune() then
+            if shop.shieldActive then
+                shop.shieldActive = false
+                return true, false
+            elseif s.armor and s.armor > 0 then
+                s.armor = s.armor - 1
+                return true, false
+            else
+                return false, false
+            end
+        end
+    end
+
     if obstaclePos then
         for _, obs in ipairs(obstaclePos) do
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
-                if immune() then
-                elseif shop.shieldActive then
-                    shop.shieldActive = false
-                    return true, false
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                    return true, false
-                else
-                    return false, false
+                -- Losetas transitables (hielo, slime, lava en cooldown/warning, púa retraída)
+                local isPassable = (obs.type == "ice" or obs.type == "slime" or (obs.type == "lava" and obs.state ~= "active") or (obs.type == "pressure_spike" and obs.state ~= "extended"))
+                if not isPassable then
+                    if immune() then
+                    elseif shop.shieldActive then
+                        shop.shieldActive = false
+                        return true, false
+                    elseif s.armor and s.armor > 0 then
+                        s.armor = s.armor - 1
+                        return true, false
+                    else
+                        return false, false
+                    end
                 end
             end
         end

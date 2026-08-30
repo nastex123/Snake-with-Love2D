@@ -213,6 +213,15 @@ config.FOOD_COUNTDOWN_TIMER = 5.0
 config.FOOD_TWIN_TIMER = 4.0
 config.FOOD_TWIN_WINDOW = 4.0
 
+-- Parámetros de Biomas y Peligros Ambientales (Fase 8)
+config.ICE_SLIP_DISTANCE = 1
+config.MAGMA_WARNING_TIME = 1.2
+config.MAGMA_ACTIVE_TIME = 1.5
+config.MAGMA_COOLDOWN_TIME = 2.5
+config.SLIME_SPEED_PENALTY = 0.80 -- -20% velocidad de paso
+config.PRESSURE_SPIKE_TRIGGER_DELAY = 0.5
+config.PRESSURE_SPIKE_ACTIVE_DURATION = 1.2
+
 -- Registro de Biomas de Mazmorra (Fase 8)
 config.BIOMES = {
     [1] = {
