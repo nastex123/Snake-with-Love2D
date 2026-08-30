@@ -124,15 +124,56 @@ function love.load()
     world.state.controlMode = world.state.controlMode or "tactical"
     world.state.scheduledToasts = world.state.scheduledToasts or {}
     world.state.scheduledIndex = world.state.scheduledIndex or {}
+
+    -- Check for screenshot suite automation argument
+    if arg then
+        for _, a in ipairs(arg) do
+            if a == "--screenshot-suite" then
+                world.state.screenshotSuite = {frame = 0}
+            end
+        end
+    end
 end
 
 function love.update(dt)
     dt = dt * (world.state.timeScale or 1)
     states.update(dt)
+
+    -- Screenshot suite automation
+    if world.state.screenshotSuite then
+        local ss = world.state.screenshotSuite
+        ss.frame = ss.frame + 1
+        if ss.frame == 10 then
+            world.state.introTimer = 4.5
+        elseif ss.frame == 15 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_menu.png")
+            end)
+        elseif ss.frame == 20 then
+            settingsMod.open()
+        elseif ss.frame == 30 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_settings.png")
+            end)
+        elseif ss.frame == 35 then
+            settingsMod.close()
+            gameflow.iniciarSala(false)
+            world.state.gameState = constants.GAME_STATE_PLAYING
+        elseif ss.frame == 50 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_gameplay.png")
+            end)
+        elseif ss.frame >= 60 then
+            love.event.quit()
+        end
+    end
 end
 
 function love.draw()
     renderMain.drawScene(love.timer.getDelta())
+    if settingsMod and settingsMod.visible then
+        settingsMod.draw()
+    end
 end
 
 function love.resize(w, h)
@@ -312,6 +353,15 @@ function love.textinput(text)
 end
 
 function love.keypressed(tecla)
+    if tecla == "f12" then
+        love.graphics.captureScreenshot(function(imgData)
+            local filename = "screenshot_" .. os.date("%Y%m%d_%H%M%S") .. ".png"
+            imgData:encode("png", filename)
+            uiMod.showToast({title = "Captura Guardada", subtitle = filename})
+        end)
+        return
+    end
+
     if debugTools.keypressed and debugTools.keypressed(tecla) then
         return
     end

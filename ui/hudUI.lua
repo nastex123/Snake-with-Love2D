@@ -49,6 +49,18 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     -- borde exterior
     love.graphics.setColor(r, g, b, math.min(0.5, alpha + 0.2))
     love.graphics.rectangle("line", 0, 0, w, h)
+
+    -- Alerta perimetral para Santuario del Vacío (sin Wall-Wrap / caída mortal)
+    if biome and biome.wallWrap == false then
+        local warnP = 0.5 + math.sin(time * 8) * 0.4
+        love.graphics.setColor(1.0, 0.2, 0.8, warnP * 0.85)
+        love.graphics.setLineWidth(2.5)
+        love.graphics.rectangle("line", -2, -2, w + 4, h + 4, 2, 2)
+        love.graphics.setColor(1.0, 0.4, 0.2, warnP * 0.5)
+        love.graphics.setLineWidth(1.0)
+        love.graphics.rectangle("line", -4, -4, w + 8, h + 8, 4, 4)
+        love.graphics.setLineWidth(1)
+    end
 end
 
 local fontCache = {}

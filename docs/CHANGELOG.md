@@ -1,4 +1,4 @@
-﻿# Changelog — Snake Dungeon Crawler
+# Changelog — Snake Dungeon Crawler
 
 All notable changes to this project will be documented here.
 
@@ -7,6 +7,40 @@ Format: `DD:MM:YYYY (category - HH:MM): description`
 Categories: feature, fix, refactor, docs, balance, polish
 
 ---
+
+## 2026-08-28 21:27
+
+- **Feature** (completed - 2026-08-28 21:27): Renderizado de Textura Procedural 5x5 Píxeles para el Enemigo Patroller (America/Bogota):
+  1. **QUÉ — Textura y Matriz 5x5 "Interceptor Delta"**:
+     - Implementada matriz de diseño $5\times 5$ píxeles en `render/enemiesDraw.lua` (`drawPatroller`), reemplazando el polígono triangular básico previo.
+     - Paleta de color arcade cyberpunk: Blindaje base azul cobalto (`#0077B6`), bisel cian neón (`#00F0FF`), ápice frontal de titanio y núcleo fotónico pulsante blanco/cian a $60\,\text{FPS}$.
+     - Sombra direccional suave 2D bajo el chasis del dron.
+     - Micro-llama de propulsión de plasma dinámica en la parte trasera sincronizada con el movimiento.
+     - Orientación y rotación angular suave continua con base en el vector de avance (`dirX`, `dirY` o `visRot`).
+  2. **QUÉ — Concepto de Asset**:
+     - Generado asset de referencia en `assets/patroller_5x5_concept.jpg`.
+  3. **POR QUÉ**: Mejorar la fidelidad visual pixel-art del enemigo Patroller acorde a la estética general del juego y al diseño de estrellas de espinas del Chaser.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas unitarias ejecutada con 519 tests en PASS.
+
+## 2026-08-28 20:55
+
+- **Feature** (completed - 2026-08-28 20:55): Implementación de Fase 8 — Biomas de Mazmorra y Peligros Ambientales (America/Bogota):
+  1. **QUÉ — Biomas y Mecánicas de Terreno**:
+     - **Stage 1 (Catacumbas de Piedra)**: Muros clásicos, desplazamiento estándar con wall-wrap activo.
+     - **Stage 2 (Cripta Helada)**: Losetas de hielo (`isIce=true`, `slip=1`) con inercia de patinaje al girar y partículas de escarcha (`particles.iceSlip`).
+     - **Stage 3 (Caverna Volcánica)**: Fisuras de magma con ciclo de estados autónomo (`cooldown` 2.5s $\to$ `telegraph/warning` 1.2s $\to$ `active` 1.5s mortal con daño ígneo), partículas de brasas flotantes (`particles.magmaEmbers`).
+     - **Stage 4 (Colmena Tóxica)**: Charcos de baba ácida viscosa (`isSlime=true`, `slowFactor=0.80`, penalización de -20% en velocidad de paso), partículas de burbujas ácidas (`particles.toxicBubbles`).
+     - **Stage 5 (Santuario del Vacío)**: Abismo cósmico sin wall-wrap (`wallWrap=false`, bordes mortales de caída libre), trampas de placas de presión (`pressure_spike`: `idle` $\to$ `warning` 0.5s al pisar $\to$ `extended` 1.2s letal $\to$ `retracting` 0.4s), advertencia visual perimetral de vacío neón en HUD/grid, partículas cósmicas (`particles.voidDust`).
+  2. **QUÉ — Generación de Assets 16-bit Cyberpunk**:
+     - Generadas hojas de sprites e imágenes conceptuales de tilesets retro para cada bioma (`biome_frozen_crypt_tiles`, `biome_volcanic_tiles`, `biome_toxic_tiles`, `biome_void_tiles`, `hazard_sprites`) alojadas en `assets/`.
+  3. **QUÉ — Pulido de Interfaz y Corrección de Glitches**:
+     - Corregido salto de línea en el botón "Restablecer" del panel de ajustes.
+     - Ajustado espaciado horizontal de etiquetas y barras deslizantes ("Volumen Maestro", "Escala UI").
+     - Reemplazados glifos Unicode ausentes en la fuente `PressStart2P` por dibujo procedural nativo de checks en switches.
+  4. **QUÉ — Suite de Pruebas Unitarias**:
+     - Creado archivo de pruebas unitarias `tests/test_scope_19_biomes_hazards.lua` con cobertura completa para definiciones de biomas, máquinas de estados de fisuras de magma y trampas de presión, consultas de letalidad (`isHazardLethal`), modificadores de terreno (`getTileModifier`) y generadores de partículas.
+  5. **POR QUÉ**: Completar la Fase 8 del GDD proporcionando variedad táctica profunda, peligro ambiental dinámico y ambientación visual cyberpunk arcade única en cada etapa de la mazmorra.
+  6. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas `lovec tests --console` ejecutada con 519/534 tests pasando (todas las suites de biomas y obstáculos en PASS).
 
 ## 2026-08-27 19:02
 
