@@ -72,7 +72,8 @@ function snake.reset()
         turnHistory = {},
         pendingTailSnap = false,
         standstill = true,
-        hasNewInput = false
+        hasNewInput = false,
+        sliceGraceTimer = 0
     }
 end
 
@@ -80,6 +81,9 @@ function snake.update(s, dt)
     if not s then return end
     if s.flashTimer and s.flashTimer > 0 then
         s.flashTimer = math.max(0, s.flashTimer - dt)
+    end
+    if s.sliceGraceTimer and s.sliceGraceTimer > 0 then
+        s.sliceGraceTimer = math.max(0, s.sliceGraceTimer - dt)
     end
     if s.ghostTimer and s.ghostTimer > 0 then
         s.ghostTimer = math.max(0, s.ghostTimer - dt)
@@ -215,6 +219,48 @@ function snake.triggerAutotomy(s)
         return true, decoyPos
     end
     return false
+end
+
+function snake.checkPatrollerSlice(s, enemiesList)
+    if not s or not s.body or #s.body < (constants.PATROLLER_SLICE_MIN_LEN or 5) or not enemiesList then
+        return nil
+    end
+    if s.ghost or immune() or (s.sliceGraceTimer and s.sliceGraceTimer > 0) then
+        return nil
+    end
+
+    local sliced = nil
+    for _, e in ipairs(enemiesList) do
+        if e.alive and e.type == "patroller" then
+            -- Verificar si el patroller choca con los segmentos 4 en adelante
+            for segIdx = 4, #s.body do
+                local seg = s.body[segIdx]
+                if seg and seg.x == e.x and seg.y == e.y then
+                    sliced = {
+                        fromIndex = segIdx,
+                        gx = seg.x,
+                        gy = seg.y,
+                        removedCount = #s.body - segIdx + 1
+                    }
+                    break
+                end
+            end
+            if sliced then break end
+        end
+    end
+
+    if sliced then
+        while #s.body >= sliced.fromIndex do
+            table.remove(s.body)
+        end
+        s.prevBody = {}
+        for i, seg in ipairs(s.body) do
+            s.prevBody[i] = {x = seg.x, y = seg.y}
+        end
+        s.sliceGraceTimer = constants.PATROLLER_SLICE_GRACE_TIME or 1.0
+        return sliced
+    end
+    return nil
 end
 
 local function pointInPolygon(px, py, poly)
