@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patroller 5x5 Texture Showcase — Pixi.js 20 Cards</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #030712;
+      color: #F3F4F6;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .pixel-font {
+      font-family: 'Press Start 2P', monospace;
+    }
+    .cyber-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(3, 7, 18, 0.95) 100%);
+      border: 1px solid rgba(0, 240, 255, 0.25);
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.08);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cyber-card:hover {
+      border-color: rgba(0, 240, 255, 0.8);
+      box-shadow: 0 0 25px rgba(0, 240, 255, 0.3), inset 0 0 15px rgba(0, 240, 255, 0.1);
+      transform: translateY(-4px);
+    }
+    .hud-grid {
+      background-size: 20px 20px;
+      background-image: 
+        linear-gradient(to right, rgba(0, 240, 255, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(0, 240, 255, 0.05) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="hud-grid min-h-screen pb-16">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-cyan-500/30 px-6 py-4 mb-8">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="inline-block w-3 h-3 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00F0FF]"></span>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-wider text-cyan-400 font-mono">PATROLLER 5x5 SHOWCASE</h1>
+          <span class="text-xs bg-cyan-950 text-cyan-300 border border-cyan-500/50 px-2 py-0.5 rounded">PIXI.JS ENGINE</span>
+        </div>
+        <p class="text-sm text-slate-400 mt-1">Catálogo de 20 propuestas visuales con renderizado dinámico a 60 FPS</p>
+      </div>
+
+      <!-- Global Controls -->
+      <div class="flex items-center gap-4 bg-slate-900/80 px-4 py-2 rounded-xl border border-cyan-500/20">
+        <label class="text-xs font-semibold text-cyan-300">ROTACIÓN GLOBAL:</label>
+        <button id="btn-rot-0" class="px-2.5 py-1 text-xs rounded bg-cyan-950 border border-cyan-500 hover:bg-cyan-800 text-cyan-200">0° →</button>
+        <button id="btn-rot-90" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">90° ↓</button>
+        <button id="btn-rot-180" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">180° ←</button>
+        <button id="btn-rot-270" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">270° ↑</button>
+        <button id="btn-rot-spin" class="px-3 py-1 text-xs rounded bg-cyan-500/20 border border-cyan-400 hover:bg-cyan-500/40 text-cyan-300 font-bold animate-pulse">SPIN 360°</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cards Grid Container -->
+  <main class="max-w-7xl mx-auto px-6">
+    <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Generated via JavaScript / Pixi.js -->
+    </div>
+  </main>
+
+  <script>
+    // Paletas temáticas
+    const PALETTES = {
+      CYBER_BLUE: { ARMOR: 0x0077B6, CYAN: 0x00F0FF, CORE: 0xFFFFFF, APEX: 0xE0F7FA, THRUST: 0x38B6FF, DARK: 0x03045E },
+      NEON_PURPLE: { ARMOR: 0x7209B7, CYAN: 0xF72585, CORE: 0xFFFFFF, APEX: 0x4CC9F0, THRUST: 0x480CA8, DARK: 0x240046 },
+      VOLCANIC_RED: { ARMOR: 0x9D0208, CYAN: 0xFFBA08, CORE: 0xFFFFFF, APEX: 0xFF5400, THRUST: 0xD00000, DARK: 0x370617 },
+      TOXIC_EMERALD: { ARMOR: 0x1B4332, CYAN: 0x74C69D, CORE: 0xD8F3DC, APEX: 0x95D5B2, THRUST: 0x2D6A4F, DARK: 0x081C15 },
+      STEALTH_OBSIDIAN: { ARMOR: 0x1E293B, CYAN: 0x38BDF8, CORE: 0xF8FAFC, APEX: 0x94A3B8, THRUST: 0x0284C7, DARK: 0x0F172A }
+    };
+
+    // 20 Diseños de matrices 5x5
+    const PROPOSALS = [
+      {
+        id: 1,
+        name: "Interceptor Delta",
+        tag: "AERODINÁMICO / ESTÁNDAR",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Caza de asalto angular con alerones estabilizadores y ápice frontal de titanio.",
+        matrix: [
+          [-2, -1, 'ARMOR'], [-1, -1, 'ARMOR'],
+          [-2,  0, 'THRUST'],[-1,  0, 'ARMOR'], [0, 0, 'CORE'], [1, 0, 'CYAN'], [2, 0, 'APEX'],
+          [-2,  1, 'ARMOR'], [-1,  1, 'ARMOR'],
+          [-1, -2, 'ARMOR'], [ 0, -2, 'ARMOR'],
+          [-1,  2, 'ARMOR'], [ 0,  2, 'ARMOR'],
+          [ 0, -1, 'CYAN'],  [ 1, -1, 'ARMOR'],
+          [ 0,  1, 'CYAN'],  [ 1,  1, 'ARMOR']
+        ]
+      },
+      {
+        id: 2,
+        name: "Cyber Wasp",
+        tag: "KINETIC AGUIJÓN",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Silueta esbelta con alas abiertas a 45° y aguijón penetrante de 2 píxeles.",
+        matrix: [
+          [-2, -2, 'CYAN'], [-1, -1, 'ARMOR'],
+          [-2,  2, 'CYAN'], [-1,  1, 'ARMOR'],
+          [-2,  0, 'THRUST'],[ 0, 0, 'CORE'], [1, 0, 'APEX'], [2, 0, 'APEX'],
+          [-1,  0, 'ARMOR'], [ 0, -1, 'ARMOR'], [ 0, 1, 'ARMOR']
+        ]
+      },
+      {
+        id: 3,
+        name: "Diamond Vanguard",
+        tag: "DEFENSIVO ROMBO",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Estructura simétrica en diamante con 4 condensadores perimetrales y ojo central.",
+        matrix: [
+          [ 0, -2, 'CYAN'],
+          [-1, -1, 'ARMOR'], [ 0, -1, 'CYAN'], [ 1, -1, 'ARMOR'],
+          [-2,  0, 'THRUST'],[-1,  0, 'ARMOR'], [ 0,  0, 'CORE'], [ 1, 0, 'ARMOR'], [ 2, 0, 'APEX'],
+          [-1,  1, 'ARMOR'], [ 0,  1, 'CYAN'], [ 1,  1, 'ARMOR'],
+          [ 0,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 4,
+        name: "Stealth Razor",
+        tag: "CUCHILLA FURTIVA",
+        palette: PALETTES.STEALTH_OBSIDIAN,
+        desc: "Perfil afilado en cuña con bordes biselados oscuros y línea de pulso celeste.",
+        matrix: [
+          [-2, -1, 'DARK'], [-1, -1, 'ARMOR'], [ 0, -1, 'CYAN'],
+          [-2,  0, 'THRUST'],[-1, 0, 'ARMOR'], [ 0, 0, 'CORE'], [ 1, 0, 'CYAN'], [ 2, 0, 'APEX'],
+          [-2,  1, 'DARK'], [-1,  1, 'ARMOR'], [ 0,  1, 'CYAN']
+        ]
+      },
+      {
+        id: 5,
+        name: "Ion Pulsar",
+        tag: "BALIZA DE ENERGÍA",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Núcleo brillante cruciforme con micro-estabilizadores magnéticos flotantes.",
+        matrix: [
+          [ 0, -2, 'THRUST'],
+          [-1, -1, 'CYAN'], [ 0, -1, 'ARMOR'], [ 1, -1, 'CYAN'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 2,  0, 'APEX'],
+          [-1,  1, 'CYAN'], [ 0,  1, 'ARMOR'], [ 1,  1, 'CYAN'],
+          [ 0,  2, 'THRUST']
+        ]
+      },
+      {
+        id: 6,
+        name: "Heavy Dreadnought",
+        tag: "BLINDADO DE ASALTO",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Chasis macizo y compacto con propulsor triple trasero y frente plano de choque.",
+        matrix: [
+          [-2, -2, 'THRUST'],[-1, -2, 'ARMOR'], [ 0, -2, 'ARMOR'], [ 1, -2, 'CYAN'],
+          [-2, -1, 'ARMOR'], [ 0, -1, 'CYAN'],  [ 1, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[-1,  0, 'ARMOR'], [ 0,  0, 'CORE'],  [ 1,  0, 'APEX'], [ 2, 0, 'APEX'],
+          [-2,  1, 'ARMOR'], [ 0,  1, 'CYAN'],  [ 1,  1, 'APEX'],
+          [-2,  2, 'THRUST'],[-1,  2, 'ARMOR'], [ 0,  2, 'ARMOR'], [ 1,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 7,
+        name: "Glitch Phantom",
+        tag: "HOLOGRAMA ANÓMALO",
+        palette: PALETTES.NEON_PURPLE,
+        desc: "Píxeles desfasados asimétricos con barrido cromático magenta y cian.",
+        matrix: [
+          [-2, -2, 'CYAN'], [-1, -1, 'ARMOR'], [ 1, -2, 'APEX'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 2,  0, 'CYAN'],
+          [-1,  1, 'ARMOR'], [ 1,  1, 'CYAN'],  [-2,  2, 'ARMOR'], [ 0, 2, 'APEX']
+        ]
+      },
+      {
+        id: 8,
+        name: "Cryo Stalker",
+        tag: "CRISTAL GÉLIDO",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Cuerpo con facetas de hielo tallado y destellos especulares geométricos.",
+        matrix: [
+          [-1, -2, 'APEX'],  [ 1, -1, 'CYAN'],
+          [-2, -1, 'CYAN'],  [-1, -1, 'ARMOR'], [ 0, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 1,  0, 'APEX'], [ 2, 0, 'APEX'],
+          [-2,  1, 'CYAN'],  [-1,  1, 'ARMOR'], [ 0,  1, 'APEX'],
+          [-1,  2, 'APEX'],  [ 1,  1, 'CYAN']
+        ]
+      },
+      {
+        id: 9,
+        name: "Void Needle",
+        tag: "AGUJA DEL VACÍO",
+        palette: PALETTES.NEON_PURPLE,
+        desc: "Chasis ultra-aerodinámico con morro afilado extendido y aletas de vacío.",
+        matrix: [
+          [-2, -2, 'ARMOR'], [-2, 2, 'ARMOR'],
+          [-1, -1, 'CYAN'],  [-1, 1, 'CYAN'],
+          [-2,  0, 'THRUST'],[-1, 0, 'ARMOR'], [0, 0, 'CORE'], [1, 0, 'CYAN'], [2, 0, 'APEX']
+        ]
+      },
+      {
+        id: 10,
+        name: "Biomech Scarab",
+        tag: "ESCARABAJO TÓXICO",
+        palette: PALETTES.TOXIC_EMERALD,
+        desc: "Caparazón curvo con tenazas frontales dobles y núcleo esmeralda pulsante.",
+        matrix: [
+          [-1, -2, 'ARMOR'], [ 0, -2, 'CYAN'],  [ 2, -1, 'APEX'],
+          [-2, -1, 'ARMOR'], [-1, -1, 'CYAN'],  [ 0, -1, 'ARMOR'], [ 1, -1, 'CYAN'],
+          [-2,  0, 'THRUST'],[-1,  0, 'ARMOR'], [ 0,  0, 'CORE'],
+          [-2,  1, 'ARMOR'], [-1,  1, 'CYAN'],  [ 0,  1, 'ARMOR'], [ 1,  1, 'CYAN'],
+          [-1,  2, 'ARMOR'], [ 0,  2, 'CYAN'],  [ 2,  1, 'APEX']
+        ]
+      },
+      {
+        id: 11,
+        name: "Tri-Force Jet",
+        tag: "TRIMOTOR PESADO",
+        palette: PALETTES.VOLCANIC_RED,
+        desc: "3 toberas de plasma independientes traseras formando un vector de empuje masivo.",
+        matrix: [
+          [-2, -2, 'THRUST'],[-1, -2, 'ARMOR'], [ 0, -1, 'CYAN'],
+          [-1, -1, 'ARMOR'], [ 1, -1, 'CYAN'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 2,  0, 'APEX'],
+          [-1,  1, 'ARMOR'], [ 1,  1, 'CYAN'],
+          [-2,  2, 'THRUST'],[-1,  2, 'ARMOR'], [ 0,  1, 'CYAN']
+        ]
+      },
+      {
+        id: 12,
+        name: "Kinetic Hammer",
+        tag: "ARIETE DE IMPACTO",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Placa frontal reforzada verticalmente de 3 píxeles diseñada para absorber choques.",
+        matrix: [
+          [-2, -1, 'ARMOR'], [-1, -1, 'ARMOR'], [ 1, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 1,  0, 'APEX'], [ 2, 0, 'CYAN'],
+          [-2,  1, 'ARMOR'], [-1,  1, 'ARMOR'], [ 1,  1, 'APEX'],
+          [ 0, -2, 'CYAN'],  [ 0,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 13,
+        name: "Solar Flare",
+        tag: "NÚCLEO FOTÓNICO 2x2",
+        palette: PALETTES.VOLCANIC_RED,
+        desc: "Centro de energía hiper-concentrado con 4 deflectores perimetrales en cruz.",
+        matrix: [
+          [ 0, -2, 'CYAN'],
+          [-1, -1, 'CORE'], [ 0, -1, 'CORE'], [ 1, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[-1, 0, 'CORE'], [ 0, 0, 'CORE'], [ 2, 0, 'APEX'],
+          [ 0,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 14,
+        name: "Nanotech Swarmlet",
+        tag: "NANO-ENJAMBRE",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Píxeles desacoplados magnéticamente que respiran al ritmo del desplazamiento.",
+        matrix: [
+          [-2, -2, 'CYAN'],  [ 0, -2, 'ARMOR'], [ 2, -2, 'CYAN'],
+          [-1, -1, 'ARMOR'], [ 1, -1, 'ARMOR'],
+          [ 0,  0, 'CORE'],
+          [-1,  1, 'ARMOR'], [ 1,  1, 'ARMOR'],
+          [-2,  2, 'CYAN'],  [ 0,  2, 'ARMOR'], [ 2,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 15,
+        name: "Arrowhead X",
+        tag: "FLECHA CRUZADA",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Forma de flecha doble con estabilizadores traseros en 'X' y núcleo encapsulado.",
+        matrix: [
+          [-2, -2, 'ARMOR'], [ 0, -1, 'CYAN'],
+          [-1, -1, 'ARMOR'], [ 1, -1, 'ARMOR'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 2, 0, 'APEX'],
+          [-1,  1, 'ARMOR'], [ 1,  1, 'ARMOR'],
+          [-2,  2, 'ARMOR'], [ 0,  1, 'CYAN']
+        ]
+      },
+      {
+        id: 16,
+        name: "Cyber Trident",
+        tag: "TRIDENTE TRIPUNTAL",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "3 cuchillas frontales convergentes alimentadas por un reactor trasero central.",
+        matrix: [
+          [-2, -1, 'ARMOR'], [-1, -1, 'CYAN'], [ 1, -1, 'APEX'], [ 2, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'], [ 2,  0, 'CYAN'],
+          [-2,  1, 'ARMOR'], [-1,  1, 'CYAN'], [ 1,  1, 'APEX'], [ 2,  1, 'APEX']
+        ]
+      },
+      {
+        id: 17,
+        name: "Chrono Dial",
+        tag: "BRÚJULA CINÉTICA",
+        palette: PALETTES.STEALTH_OBSIDIAN,
+        desc: "Anillo exterior octogonal con aguja direccional central sincronizada al giro.",
+        matrix: [
+          [-1, -2, 'CYAN'], [ 0, -2, 'CYAN'], [ 1, -2, 'CYAN'],
+          [-2, -1, 'CYAN'], [ 2, -1, 'CYAN'],
+          [-2,  0, 'THRUST'],[ 0, 0, 'CORE'], [ 1, 0, 'APEX'], [ 2, 0, 'APEX'],
+          [-2,  1, 'CYAN'], [ 2,  1, 'CYAN'],
+          [-1,  2, 'CYAN'], [ 0,  2, 'CYAN'], [ 1,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 18,
+        name: "Overclocked Wyrm",
+        tag: "MICRO-VÍBORA MECHA",
+        palette: PALETTES.VOLCANIC_RED,
+        desc: "Chasis serpentino segmentado de asalto con ojos bicolores frontales.",
+        matrix: [
+          [-2, -1, 'ARMOR'], [-1, -1, 'CYAN'], [ 1, -1, 'CORE'],
+          [-2,  0, 'THRUST'],[-1,  0, 'ARMOR'],[ 0,  0, 'ARMOR'], [ 2, 0, 'APEX'],
+          [-2,  1, 'ARMOR'], [-1,  1, 'CYAN'], [ 1,  1, 'CORE']
+        ]
+      },
+      {
+        id: 19,
+        name: "Aegis Shield",
+        tag: "ESCUDO DEFLECTOR",
+        palette: PALETTES.CYBER_BLUE,
+        desc: "Frente curvado parabólico que repele impactos y deflecta proyectiles menores.",
+        matrix: [
+          [-1, -2, 'ARMOR'], [ 1, -2, 'CYAN'],
+          [-2, -1, 'THRUST'],[-1, -1, 'ARMOR'], [ 0, -1, 'CYAN'],  [ 2, -1, 'APEX'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'],  [ 2,  0, 'APEX'],
+          [-2,  1, 'THRUST'],[-1,  1, 'ARMOR'], [ 0,  1, 'CYAN'],  [ 2,  1, 'APEX'],
+          [-1,  2, 'ARMOR'], [ 1,  2, 'CYAN']
+        ]
+      },
+      {
+        id: 20,
+        name: "Quantum Singularity",
+        tag: "SINGULARIDAD VACÍO",
+        palette: PALETTES.NEON_PURPLE,
+        desc: "4 electrodos de confinamiento magnético que retienen un micro-agujero negro blanco.",
+        matrix: [
+          [-2, -2, 'CYAN'], [ 2, -2, 'CYAN'],
+          [-1, -1, 'ARMOR'],[ 1, -1, 'ARMOR'],
+          [-2,  0, 'THRUST'],[ 0,  0, 'CORE'], [ 2, 0, 'APEX'],
+          [-1,  1, 'ARMOR'],[ 1,  1, 'ARMOR'],
+          [-2,  2, 'CYAN'], [ 2,  2, 'CYAN']
+        ]
+      }
+    ];
+
+    // Estado global de rotación
+    let currentAngle = 0;
+    let isSpinning = false;
+    const activeApps = [];
+
+    const gridEl = document.getElementById('cards-grid');
+
+    PROPOSALS.forEach((prop, idx) => {
+      // 1. Crear Tarjeta HTML
+      const card = document.createElement('div');
+      card.className = "cyber-card rounded-2xl p-5 flex flex-col justify-between";
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-mono font-bold text-cyan-400">#${String(prop.id).padStart(2, '0')}</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30">${prop.tag}</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 tracking-wide">${prop.name}</h3>
+          <p class="text-xs text-slate-400 mt-1 min-h-[32px]">${prop.desc}</p>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="my-4 flex items-center justify-center p-3 bg-slate-950/80 rounded-xl border border-cyan-500/20 relative overflow-hidden">
+          <div class="absolute inset-0 bg-radial from-cyan-500/10 via-transparent to-transparent"></div>
+          <canvas id="canvas-card-${prop.id}" width="140" height="140" class="w-[140px] h-[140px] block"></canvas>
+        </div>
+
+        <!-- Card Footer Info -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+          <span>PIXELS: ${prop.matrix.length}/25</span>
+          <span class="text-cyan-400">60 FPS LIVE</span>
+        </div>
+      `;
+
+      gridEl.appendChild(card);
+
+      const canvas = document.getElementById(`canvas-card-${prop.id}`);
+      const ctx = canvas.getContext('2d');
+      activeApps.push({ canvas, ctx, prop, idx, currentRot: 0 });
+    });
+
+    // Bucle principal de animación a 60 FPS (Canvas 2D / Zero WebGL context limit)
+    const k = 10; // 10px por micro-píxel (5x5 = 50x50 centrado en 140x140)
+    let lastTime = performance.now();
+
+    function hexToRgba(hex, alpha = 1.0) {
+      const r = (hex >> 16) & 255;
+      const g = (hex >> 8) & 255;
+      const b = hex & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function animate(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      if (isSpinning) {
+        currentAngle += dt * 2.5;
+      }
+
+      activeApps.forEach((item) => {
+        const { ctx, prop, idx } = item;
+        const localTime = now * 0.005 + idx * 0.4;
+        const pulse = 0.5 + 0.5 * Math.sin(localTime * 4);
+
+        // Suavizado de rotación hacia el objetivo
+        if (isSpinning) {
+          item.currentRot = currentAngle;
+        } else {
+          item.currentRot += (currentAngle - item.currentRot) * 0.2;
+        }
+
+        ctx.clearRect(0, 0, 140, 140);
+        ctx.save();
+        ctx.translate(70, 70);
+        ctx.rotate(item.currentRot);
+
+        // Sombra proyectada 2D
+        ctx.fillStyle = "rgba(0, 0, 0, 0.45)";
+        ctx.beginPath();
+        ctx.roundRect(-2.5 * k + 2, -2.5 * k + 4, 5 * k, 5 * k, 4);
+        ctx.fill();
+
+        // Píxeles de la matriz
+        for (const [px, py, type] of prop.matrix) {
+          let hexColor = prop.palette[type] || prop.palette.ARMOR;
+          let alpha = 1.0;
+
+          if (type === 'CORE') {
+            alpha = 0.85 + 0.15 * pulse;
+          } else if (type === 'THRUST') {
+            alpha = 0.6 + 0.4 * pulse;
+          }
+
+          ctx.fillStyle = hexToRgba(hexColor, alpha);
+          ctx.fillRect(px * k - k / 2, py * k - k / 2, k, k);
+        }
+
+        // Micro-llama de propulsión de plasma trasera
+        const flameLen = (1.4 + pulse * 1.4) * k;
+        ctx.fillStyle = hexToRgba(prop.palette.CYAN || 0x00F0FF, 0.75 * pulse);
+        ctx.beginPath();
+        ctx.moveTo(-2.5 * k, -0.8 * k);
+        ctx.lineTo(-2.5 * k - flameLen, 0);
+        ctx.lineTo(-2.5 * k, 0.8 * k);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.restore();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+
+    // Control Handlers
+    document.getElementById('btn-rot-0').addEventListener('click', () => { isSpinning = false; currentAngle = 0; });
+    document.getElementById('btn-rot-90').addEventListener('click', () => { isSpinning = false; currentAngle = Math.PI / 2; });
+    document.getElementById('btn-rot-180').addEventListener('click', () => { isSpinning = false; currentAngle = Math.PI; });
+    document.getElementById('btn-rot-270').addEventListener('click', () => { isSpinning = false; currentAngle = Math.PI * 1.5; });
+    document.getElementById('btn-rot-spin').addEventListener('click', () => { isSpinning = !isSpinning; });
+  </script>
+</body>
+</html>
