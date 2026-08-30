@@ -339,15 +339,25 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     end
 
     -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
+    local worldFacade = package.loaded["world.world"]
+    local currRoom = worldFacade and worldFacade.getCurrentRoom and worldFacade.getCurrentRoom()
+    local roomType = currRoom and currRoom.type or "corridor"
+
     local ctx = {
         list = enemies.list,
+        enemiesList = enemies.list,
         body = snakeBody or {},
+        snake = { body = snakeBody or {} },
         head = targetHead,
         anchoGrilla = anchoGrilla,
         altoGrilla = altoGrilla,
+        obstacles = obstaclesMod,
         obstaclePos = obstaclesMod and (obstaclesMod.pos or obstaclesMod) or {},
+        boss = enemies.boss,
+        roomType = roomType,
         etapa = (type(etapa) == "number") and etapa or 1,
         stageModifier = stageModifier or {},
+        dt = dt,
     }
     if not isFrozen then
         chaserAI.updatePack(ctx, dt)
