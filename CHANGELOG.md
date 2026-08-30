@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-29 20:25
+
+- **Docs** (completed - 2026-08-29 20:25): Estandarización de Pull Requests detallados en la skill `git-workflow` (America/Bogota):
+  1. **QUÉ**: Actualizado el paso 9 de `git-workflow/SKILL.md` (tanto global en `~/.gemini/config/skills/` como local en `.opencode/skills/`) estableciendo como obligatorio que todo Pull Request generado vía GitHub CLI cuente con título convencional descriptivo, resumen ejecutivo en viñetas, desglose técnico por sistema, tabla de módulos afectados y checklist de Definition of Done (DoD).
+  2. **POR QUÉ**: Asegurar máxima transparencia, trazabilidad y rigor técnico en las revisiones de código y fusiones de ramas en GitHub.
+  3. **Verificación**: Archivos sincronizados en ambos scopes y confirmados en el repositorio.
+
 ## 2026-08-29 20:16
 
 - **Config** (completed - 2026-08-29 20:16): Despliegue de la skill `git-workflow` a nivel global (America/Bogota):
