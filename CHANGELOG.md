@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-29 20:30
+
+- **Chore** (completed - 2026-08-29 20:30): Higiene de ramas Git en local y remoto (America/Bogota):
+  1. **QUÉ**: Eliminadas las ramas obsoletas/fusionadas `auditoria` y `feature/phase-8-biomes-hazards` tanto a nivel local (`git branch -d`) como en el repositorio remoto `origin` (`git push origin --delete`).
+  2. **POR QUÉ**: Mantener el árbol de ramas limpio, ordenado y libre de ramas integradas conforme a las buenas prácticas de `git-workflow`.
+  3. **Verificación**: `git branch -a` confirmado sin referencias a las ramas eliminadas.
+
 ## 2026-08-29 20:25
 
 - **Docs** (completed - 2026-08-29 20:25): Estandarización de Pull Requests detallados en la skill `git-workflow` (America/Bogota):
