@@ -5,6 +5,11 @@ config.canvasWidth = 640
 config.canvasHeight = 360
 config.tileSize = 20
 
+-- Compatibility aliases
+config.GRID_SIZE = config.tileSize
+config.ANCHO = config.canvasWidth
+config.ALTO = config.canvasHeight
+
 config.TAMANIO_BLOQUE = 20
 config.VELOCIDAD_INICIAL = 0.13
 config.VELOCIDAD_MINIMA = 0.05
@@ -143,7 +148,7 @@ config.BOSS_COLORS = {
 }
 
 config.ENEMY_CHASER_SPEED = 0.3
-config.ENEMY_PATROLLER_SPEED = 0.2
+config.ENEMY_PATROLLER_SPEED = 0.35
 config.ENEMY_SPAWNER_INTERVAL = 3
 
 config.ENEMY_DROP_CHASER = 3
@@ -168,6 +173,15 @@ config.CHASER_RING_CYCLE = 8
 config.CHASER_IDLE_SPIN = 0.7
 config.CHASER_CLOSE_SPIN = 10
 config.CHASER_ROT_LERP = 7
+
+-- Patroller AI tactico (GDD seccion 3 & PATROLLER-DESIGN-NOTE.md)
+config.PATROLLER_LOS_RANGE       = 6      -- Rango maximo de linea de vision para intercepcion
+config.PATROLLER_ALERT_TIME      = 0.25   -- Tiempo de telegrafiado alert antes de dash (s)
+config.PATROLLER_DASH_TILES      = 3      -- Celdas recorridas a velocidad turbo
+config.PATROLLER_DASH_SPEED_MULT = 2.0    -- Multiplicador de velocidad en dash
+config.PATROLLER_DASH_COOLDOWN   = 3.0    -- Cooldown entre embestidas (s)
+config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para corte de cola
+config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
 config.MAX_GRID_COLS = 40
@@ -207,5 +221,83 @@ config.REPELLING_MOVE_INTERVAL = 1.5
 config.FOOD_COUNTDOWN_TIMER = 5.0
 config.FOOD_TWIN_TIMER = 4.0
 config.FOOD_TWIN_WINDOW = 4.0
+
+-- Parámetros de Biomas y Peligros Ambientales (Fase 8)
+config.ICE_SLIP_DISTANCE = 1
+config.MAGMA_WARNING_TIME = 1.2
+config.MAGMA_ACTIVE_TIME = 1.5
+config.MAGMA_COOLDOWN_TIME = 2.5
+config.SLIME_SPEED_PENALTY = 0.80 -- -20% velocidad de paso
+config.PRESSURE_SPIKE_TRIGGER_DELAY = 0.5
+config.PRESSURE_SPIKE_ACTIVE_DURATION = 1.2
+
+-- Registro de Biomas de Mazmorra (Fase 8)
+config.BIOMES = {
+    [1] = {
+        id = "catacumbas",
+        name = "Catacumbas de Piedra",
+        subtitle = "Muros Sólidos & Mazmorra Clásica",
+        wallWrap = true,
+        gridColor = {0.18, 0.22, 0.30},
+        gridAccent = {0.0, 0.85, 1.0},
+        bgTint = {0.05, 0.07, 0.11},
+        wallColor = {0.45, 0.48, 0.55},
+        isIce = false,
+        hazardLava = false,
+        isSlime = false
+    },
+    [2] = {
+        id = "hielo",
+        name = "Cripta Helada",
+        subtitle = "Suelo Resbaladizo & Escarcha",
+        wallWrap = true,
+        gridColor = {0.15, 0.35, 0.50},
+        gridAccent = {0.20, 0.90, 1.0},
+        bgTint = {0.04, 0.08, 0.14},
+        wallColor = {0.30, 0.60, 0.80},
+        isIce = true,
+        hazardLava = false,
+        isSlime = false
+    },
+    [3] = {
+        id = "volcan",
+        name = "Caverna Volcánica",
+        subtitle = "Fisuras de Magma & Baldosas Ardientes",
+        wallWrap = true,
+        gridColor = {0.35, 0.15, 0.10},
+        gridAccent = {1.0, 0.45, 0.10},
+        bgTint = {0.10, 0.04, 0.04},
+        wallColor = {0.55, 0.25, 0.15},
+        isIce = false,
+        hazardLava = true,
+        isSlime = false
+    },
+    [4] = {
+        id = "colmena",
+        name = "Colmena Tóxica",
+        subtitle = "Suelo Viscoso & Enjambre Ácido",
+        wallWrap = true,
+        gridColor = {0.20, 0.35, 0.15},
+        gridAccent = {0.20, 0.90, 0.40},
+        bgTint = {0.05, 0.09, 0.04},
+        wallColor = {0.40, 0.55, 0.25},
+        isIce = false,
+        hazardLava = false,
+        isSlime = true
+    },
+    [5] = {
+        id = "vacio",
+        name = "Santuario del Vacío",
+        subtitle = "Abismo Cósmico - Caída Mortal Sin Wall-Wrap",
+        wallWrap = false,
+        gridColor = {0.25, 0.10, 0.35},
+        gridAccent = {0.85, 0.30, 1.0},
+        bgTint = {0.03, 0.02, 0.06},
+        wallColor = {0.60, 0.40, 0.80},
+        isIce = false,
+        hazardLava = false,
+        isSlime = false
+    }
+}
 
 return config

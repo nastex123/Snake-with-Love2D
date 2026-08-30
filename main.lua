@@ -40,8 +40,8 @@ end
 local function triggerDeathAnimation()
     local st = world.state
     st.deathModalOpen = false
-    love.timer.sleep(0.08)
     st.shakeTimer = constants.SHAKE_DURATION
+    st.hitPause = 0.08
     shadersMod.triggerDamage(1.0, 0.9)
     st.fadeDir = 1
     st.gameState = constants.GAME_STATE_DEATH_ANIMATION
@@ -91,7 +91,6 @@ function love.load()
     -- Cargar y aplicar configuración DESPUÉS de inicializar subsistemas (sound/shaders/ui)
     persistenceMod.loadSettings()
     persistenceMod.applySettings(persistenceMod.settings)
-    shadersMod.recreateCanvases()
     recalcularGrilla()
 
     world.state.menuPS = particles.menuFondo()
@@ -125,28 +124,56 @@ function love.load()
     world.state.controlMode = world.state.controlMode or "tactical"
     world.state.scheduledToasts = world.state.scheduledToasts or {}
     world.state.scheduledIndex = world.state.scheduledIndex or {}
+
+    -- Check for screenshot suite automation argument
+    if arg then
+        for _, a in ipairs(arg) do
+            if a == "--screenshot-suite" then
+                world.state.screenshotSuite = {frame = 0}
+            end
+        end
+    end
 end
 
 function love.update(dt)
-    dt = dt * world.state.timeScale
-    states.updateCommon(dt)
+    dt = dt * (world.state.timeScale or 1)
+    states.update(dt)
 
-    local g = world.state.gameState
-    if g == constants.GAME_STATE_MENU then
-        states.updateMenu(dt)
-    elseif g == constants.GAME_STATE_PLAYING then
-        states.updatePlaying(dt)
-    elseif g == constants.GAME_STATE_DEATH_ANIMATION then
-        states.updateDeath(dt)
-    elseif g == constants.GAME_STATE_HIGH_SCORE then
-        states.updateHighScore(dt)
-    elseif g == constants.GAME_STATE_TRANSITION then
-        states.updateTransition(dt)
+    -- Screenshot suite automation
+    if world.state.screenshotSuite then
+        local ss = world.state.screenshotSuite
+        ss.frame = ss.frame + 1
+        if ss.frame == 10 then
+            world.state.introTimer = 4.5
+        elseif ss.frame == 15 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_menu.png")
+            end)
+        elseif ss.frame == 20 then
+            settingsMod.open()
+        elseif ss.frame == 30 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_settings.png")
+            end)
+        elseif ss.frame == 35 then
+            settingsMod.close()
+            gameflow.iniciarSala(false)
+            world.state.gameState = constants.GAME_STATE_PLAYING
+        elseif ss.frame == 50 then
+            love.graphics.captureScreenshot(function(imgData)
+                imgData:encode("png", "screenshot_gameplay.png")
+            end)
+        elseif ss.frame >= 60 then
+            love.event.quit()
+        end
     end
 end
 
 function love.draw()
     renderMain.drawScene(love.timer.getDelta())
+    if settingsMod and settingsMod.visible then
+        settingsMod.draw()
+    end
 end
 
 function love.resize(w, h)
@@ -274,6 +301,9 @@ function love.touchreleased(id, x, y, dx, dy, pressure)
 end
 
 function love.mousereleased(x,y,button)
+    if world.state and world.state.gameState == constants.GAME_STATE_MENU and uiMod and uiMod.clearMenuPressed then
+        uiMod.clearMenuPressed()
+    end
     if debugTools.mousereleased and debugTools.mousereleased(x,y,button) then
         return
     end
@@ -293,6 +323,9 @@ function love.mousemoved(x,y,dx,dy)
 end
 
 function love.wheelmoved(dx, dy)
+    if settingsMod and settingsMod.visible and settingsMod.wheelmoved then
+        if settingsMod.wheelmoved(dx, dy) then return end
+    end
     if profilesMod and profilesMod.visible and profilesMod.wheelmoved then
         profilesMod.wheelmoved(dx, dy)
     end
@@ -301,6 +334,15 @@ end
 function love.quit()
     if persistenceMod then
         persistenceMod.syncActiveProfile()
+    end
+    if sound and sound.stop then
+        sound:stop()
+    end
+    if shadersMod and shadersMod.releaseCanvases then
+        shadersMod.releaseCanvases()
+    end
+    if particles and particles.release then
+        particles.release()
     end
 end
 
@@ -311,6 +353,15 @@ function love.textinput(text)
 end
 
 function love.keypressed(tecla)
+    if tecla == "f12" then
+        love.graphics.captureScreenshot(function(imgData)
+            local filename = "screenshot_" .. os.date("%Y%m%d_%H%M%S") .. ".png"
+            imgData:encode("png", filename)
+            uiMod.showToast({title = "Captura Guardada", subtitle = filename})
+        end)
+        return
+    end
+
     if debugTools.keypressed and debugTools.keypressed(tecla) then
         return
     end
@@ -329,9 +380,9 @@ function love.keypressed(tecla)
         return
     end
 
-    if tecla == "tab" then
-        world.state.debugMenuOpen = not world.state.debugMenuOpen
-        return
+    -- Route to settings manager first
+    if settingsMod and settingsMod.visible then
+        if settingsMod.keypressed and settingsMod.keypressed(tecla) then return end
     end
 
     -- Route to profiles manager first

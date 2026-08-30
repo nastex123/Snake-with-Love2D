@@ -7,7 +7,10 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     local w = anchoGrilla * tam
     local h = altoGrilla * tam
 
-    local baseC = constants.COLOR_ACCENT
+    local worldMod = package.loaded["world.world"]
+    local biome = worldMod and worldMod.getBiomeData and worldMod.getBiomeData()
+
+    local baseC = (biome and biome.gridAccent) or constants.COLOR_ACCENT
     local hotC = constants.COLOR_GRID_HOT_A
 
     local r = baseC[1] + (hotC[1] - baseC[1]) * comboIntensity
@@ -17,7 +20,7 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
 
     love.graphics.setLineWidth(1)
 
-    -- vertical lines
+    -- lineas verticales
     for x = 0, anchoGrilla do
         local px = x * tam
         local wave = math.sin(time * constants.SHIMMER_SPEED + x * 0.5) * 0.02
@@ -30,7 +33,7 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
         love.graphics.line(px, 0, px, h)
     end
 
-    -- horizontal lines
+    -- lineas horizontales
     for y = 0, altoGrilla do
         local py = y * tam
         local wave = math.sin(time * constants.SHIMMER_SPEED + y * 0.3) * 0.02
@@ -43,9 +46,21 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
         love.graphics.line(0, py, w, py)
     end
 
-    -- outer border
+    -- borde exterior
     love.graphics.setColor(r, g, b, math.min(0.5, alpha + 0.2))
     love.graphics.rectangle("line", 0, 0, w, h)
+
+    -- Alerta perimetral para Santuario del Vacío (sin Wall-Wrap / caída mortal)
+    if biome and biome.wallWrap == false then
+        local warnP = 0.5 + math.sin(time * 8) * 0.4
+        love.graphics.setColor(1.0, 0.2, 0.8, warnP * 0.85)
+        love.graphics.setLineWidth(2.5)
+        love.graphics.rectangle("line", -2, -2, w + 4, h + 4, 2, 2)
+        love.graphics.setColor(1.0, 0.4, 0.2, warnP * 0.5)
+        love.graphics.setLineWidth(1.0)
+        love.graphics.rectangle("line", -4, -4, w + 8, h + 8, 4, 4)
+        love.graphics.setLineWidth(1)
+    end
 end
 
 local fontCache = {}
@@ -79,17 +94,25 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
 
     local x = 8 * s                               -- margen izquierdo
 
-    -- Indicador de sala
+    -- Indicador de sala y bioma
     if etapa and sala then
-        local roomText = etapa .. "-" .. sala
+        local worldMod = package.loaded["world.world"]
+        local bData = worldMod and worldMod.getBiomeData and worldMod.getBiomeData()
+        local bName = bData and bData.name and string.upper(bData.name) or "CATACUMBAS"
         local isBoss = sala == 5
+        local roomText = etapa .. "-" .. sala
         if isBoss then
             love.graphics.setColor(1, 0.3, 0.5)
         else
-            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
+            local acc = bData and bData.gridAccent or constants.COLOR_ACCENT
+            love.graphics.setColor(acc[1], acc[2], acc[3])
         end
         love.graphics.print(roomText, x, cy)
-        x = x + font:getWidth(roomText) + 14 * s
+        x = x + font:getWidth(roomText) + 8 * s
+
+        love.graphics.setColor(0.5, 0.6, 0.7, 0.85)
+        love.graphics.print(bName, x, cy)
+        x = x + font:getWidth(bName) + 14 * s
     end
 
     love.graphics.setColor(1, 0.84, 0.0)
@@ -132,7 +155,7 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         x = x + font:getWidth("S") + 6 * s
     end
 
-    if magnetTimer > 0 then
+    if magnetTimer and magnetDuration and magnetTimer > 0 and magnetDuration > 0 then
         local frac = magnetTimer / magnetDuration
         love.graphics.setColor(1, 0.5, 0)
         love.graphics.print("M", x, cy)
@@ -179,7 +202,8 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 love.graphics.setColor(0.25, 0.25, 0.25)
                 love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
-                love.graphics.rectangle("fill", x, barY, 20 * s * (t.remaining / 10), 6 * s, 2 * s, 2 * s)
+                local dur = t.duration or constants.TURBO_DURATION or 10
+                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, t.remaining / dur), 6 * s, 2 * s, 2 * s)
                 x = x + 26 * s
             end
         end
