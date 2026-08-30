@@ -7,11 +7,17 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
 ## ✨ Características Principales
 
 - **🎮 5 Etapas & 25 Salas Generadas Proceduralmente**: Mazmorras con árboles BSP, corredores tácticos y modificadores por bioma.
-- **👾 IA Social de Enemigos**:
-  - **Chasers**: Comportamiento adaptativo según número de unidades (**SOLO**, **DUPLA** con flanqueo lateral, **MANADA** con anillo de cerco y compresión).
-  - **Patrollers**: Patrullaje lineal con rebote suave en paredes/obstáculos y detección de colisión.
-  - **Spawners**: Generadores de unidades con intervalos adaptativos.
-  - **Jefe (Food-Based Defeat)**: Jefe invulnerable por impacto directo; se derrota recolectando 15 comidas no-moneda mientras esquivas 4 ataques telegrafiados (*projectile spread*, *spawn adds*, *radial pulse*, *teleport*).
+- **👾 Enemigos con Sprites Pixel-Art e IA Táctica**:
+  - **Chasers (Shuriken Plasma Hyper 7x7)**: Aspas con rotación continua a 60 FPS acelerada por estado de combate y ojo giroscópico estabilizado que rastrea a la serpiente. IA social adaptativa (**SOLO**, **DUPLA** con flanqueo lateral, **MANADA** con cerco orbital).
+  - **Patrollers (Interceptor Delta 5x5)**: Dron de patrullaje con blindaje cobalto, orientación continua según vector de avance, núcleo fotónico pulsante y micro-llama de plasma.
+  - **Spawners**: Generadores estáticos de unidades y obstáculos.
+  - **Jefe (Food-Based Defeat)**: Jefe invulnerable por impacto directo; se derrota recolectando 15 comidas no-moneda esquivando 4 ataques telegrafiados (*projectile spread*, *spawn adds*, *radial pulse*, *teleport*).
+- **🌋 5 Biomas con Peligros Ambientales Dinámicos**:
+  - *Catacumbas de Piedra (1)*: Entorno base con muros estándar.
+  - *Cripta Helada (2)*: Losetas de hielo resbaladizas con inercia de deslizamiento `+1`.
+  - *Caverna Volcánica (3)*: Fisuras de magma con ciclo autónomo de advertencia y erupción letal.
+  - *Colmena Tóxica (4)*: Charcos viscosos con penalización de -20% de velocidad de paso.
+  - *Santuario del Vacío (5)*: Sin wall-wrap (caída libre mortal al cruzar los bordes) y placas de pinchos de presión temporizadas.
 - **🕹️ Menú Principal Asimétrico Cyberpunk**:
   - **Panel Lateral Izquierdo (40% ancho)**: Fondo procedural de Matriz de Puntos HUD con ondas senoidales expansivas y Círculo Alquímico de Invocación rotatorio a 60 FPS con bloom glow.
   - **Botones Cyber-Step #03**: 4 botones arcade con zarpazos a 45°, micro-nodos de relojería y animación de elevación.

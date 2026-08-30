@@ -190,9 +190,9 @@ Modos de manada por cantidad de chasers vivos en la sala:
 - **Escalado por etapa**: `intervalo = max(0.15s, (0.30 / speedMult) * 0.90^(etapa - 1))`.
 - **Durante Boss**: Cap `BOSS_MAX_RED = 3` fuerza permanentemente el modo DUPLA (1 Hunter + 2 Flankers); el respawn tras 15s reaparece en flancos laterales alternados (`side = 1 / -1`).
 
-### Patroller (Blue)
+### Patroller (Blue) — Interceptor Delta
 
-El patrullero. Se mueve en línea recta continua y rebota ante paredes, obstáculos, el Boss y otros enemigos. Se dibuja como un triángulo azul (`COLOR_ENEMY_PATROLLER = {0.2, 0.4, 0.9}`) con rotación orientada a su vector de movimiento y pulso de energía.
+El patrullero. Dron táctico de reconocimiento militar dotado de blindaje cobalto y micro-turbina de plasma. Se dibuja con el sprite rasterizado 5x5 `assets/patroller_delta.png` (#01 Interceptor Delta) orientado en su vector de avance, con núcleo fotónico pulsante y micro-llama de plasma.
 
 #### Datos de config (`core/config.lua`)
 | Key | Valor | Descripción |
@@ -201,10 +201,26 @@ El patrullero. Se mueve en línea recta continua y rebota ante paredes, obstácu
 | `ENEMY_DROP_PATROLLER` | 2 | Monedas al ser derrotado |
 | `patrollerWeight` | 0.20–0.35 | Peso de spawn por etapa (0.35 / 0.30 / 0.30 / 0.20 / 0.25) |
 | `BOSS_MAX_BLUE` | 4 | Cap de patrollers durante el boss |
+| `PATROLLER_LOS_RANGE` | 6 | Rango máximo de línea de visión para intercepción (celdas) |
+| `PATROLLER_ALERT_TIME` | 0.25 | Tiempo de telegrafiado antes de la embestida (s) |
+| `PATROLLER_DASH_TILES` | 3 | Celdas recorridas a velocidad turbo durante la intercepción |
+| `PATROLLER_DASH_SPEED_MULT` | 2.0 | Multiplicador de velocidad durante la intercepción turbo |
+| `PATROLLER_DASH_COOLDOWN` | 3.0 | Cooldown de recarga tras una embestida (s) |
 
-#### Comportamiento
-- Al spawnear en salas de tipo corredor, detecta el eje de mayor espacio despejado (horizontal vs vertical) para patrullar a lo largo del pasillo.
-- Ante colisión frontal con cualquier elemento sólido (pared, obstáculo, cuerpo de serpiente, Boss u otro enemigo), invierte su dirección inmediatamente (`dirX = -dirX; dirY = -dirY`) y da el paso de rebote si la casilla opuesta está libre, evitando atascos o deadlocks cara a cara.
+#### Comportamiento Táctico de IA (Diseño Avanzado)
+- **Modos Contextuales por Sala (`patrolMode`)**:
+  - `corridor_sweep`: Recorre el eje de pasillos angostos virando en bifurcaciones.
+  - `perimeter_orbit`: Bordea el contorno de salas amplias (*Arena* / *Hub* / *Boss*) en sentido horario o antihorario.
+  - `diagonal_bounce`: Rebote reflectivo tipo salvapantallas cubriendo cuadrantes en zigzag.
+  - `radar_sentry`: Patrullaje corto con escaneo de 0.5s y giro ortogonal a 90°.
+- **Resolución Inteligente de Esquinas (Anti-Deadlock a 90°)**:
+  - Ante bloqueo frontal, evalúa primero los giros ortogonales libres a 90° (izquierda/derecha) para bordear la pared u obstáculo; solo si ambos lados están bloqueados retrocede en 180°.
+- **Línea de Visión & Embestida de Intercepción (*Line-of-Sight Dash*)**:
+  - Si la cabeza de la serpiente entra en su vector de avance directo a $\le 6$ celdas sin obstáculos intermedios: entra en estado `alert` (0.25s con destello del núcleo fotónico) y acelera a velocidad doble (`turbo_dash`) durante 3 celdas con estela de plasma alargada.
+- **Seccionamiento Quirúrgico de Cola (*Guillotine Slice*)**:
+  - A diferencia del Chaser (letal directo a la cabeza), el Patroller corta la serpiente si impacta del segmento 4 en adelante (cuerpo/cola) siempre que esta mida $\ge 5$ segmentos. Los segmentos se desintegran en chispas, el dron atraviesa a velocidad normal sin frenarse y la serpiente recibe 1.0s de intangibilidad de gracia (resetea combo a x1 sin tocar la racha de supervivencia). Si la serpiente mide $\le 4$ o el golpe es en segmentos 1-3, es letal.
+- **Sincronización en Parejas**: Al generarse dos Patrollers, coordinan sentidos opuestos o carriles paralelos creando compuertas rítmicas de paso.
+- **Documentación completa**: Véase [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md).
 
 ### Spawner (Purple)
 

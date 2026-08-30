@@ -1,4 +1,4 @@
-﻿# Changelog — Snake Dungeon Crawler
+# Changelog — Snake Dungeon Crawler
 
 All notable changes to this project will be documented here.
 
@@ -7,6 +7,86 @@ Format: `DD:MM:YYYY (category - HH:MM): description`
 Categories: feature, fix, refactor, docs, balance, polish
 
 ---
+
+## 2026-08-29 20:16
+
+- **Config** (completed - 2026-08-29 20:16): Despliegue de la skill `git-workflow` a nivel global (America/Bogota):
+  1. **QUÉ**: Copiado `git-workflow/SKILL.md` hacia `~/.gemini/config/skills/git-workflow/SKILL.md`.
+  2. **POR QUÉ**: Habilitar el flujo disciplinado de ramas, commits atómicos convencionales y gestión de releases en la configuración global del asistente.
+  3. **Verificación**: Archivo verificado y validado en el sistema de archivos de usuario.
+
+## 2026-08-29 20:14
+
+- **Config** (completed - 2026-08-29 20:14): Importación y sincronización de `gemini_skills_backup.zip` (America/Bogota):
+  1. **QUÉ — Extracción y Sincronización**:
+     - Descomprimido el paquete de respaldo `gemini_skills_backup.zip` sincronizando:
+       - **Reglas del proyecto**: `.agents/rules/agent-commands.md`, `.agents/rules/documentation-policy.md`, `AGENTS.gemini.md`.
+       - **Agentes del proyecto**: `.agents/agents/goth-kawaii-frontend/agent.md`, `.agents/agents/kawaii-creative/agent.md`.
+       - **Skills locales**: `.agents/skills/` y `.opencode/skills/` (`git-workflow`, `goth-kawaii-frontend`, `kawaii-creative`, `documentation`).
+       - **Configuración global**: `~/.gemini/config/skills/` (`documentation`, `technical-partner`) y `~/.gemini/config/agents/`.
+  2. **POR QUÉ**: Restaurar y mantener sincronizadas las habilidades y definiciones de agentes en los entornos de trabajo local y global del asistente.
+  3. **Verificación**: Git status validado, tests unitarios en PASS y `error.log` en 0 bytes.
+
+## 2026-08-29 20:12
+
+- **Docs** (completed - 2026-08-29 20:12): Documentación de la mecánica "Seccionamiento Quirúrgico de Cola" (Guillotine Slice) para el Patroller (America/Bogota):
+  1. **QUÉ — Especificación Formal**:
+     - Actualizado [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md) con el *Pilar E: Seccionamiento Quirúrgico de Cola*.
+     - Actualizado [`docs/GDD.md`](GDD.md) (Sección 3: Patroller Interceptor Delta).
+     - Definidas las reglas consensuadas: impacto letal en segmentos 1-3 (cabeza/cuello); corte limpio desde segmento $\ge 4$ si la serpiente mide $\ge 5$; desintegración instantánea de segmentos en partículas metálicas; el Patroller atraviesa sin frenar; 1.0s de intangibilidad de gracia tras el corte; reseteo de combo a x1 sin penalizar *Survival Streak*.
+  2. **POR QUÉ**: Diferenciar la naturaleza del Patroller respecto al Chaser, transformándolo en una cuchilla volante implacable y reduciendo muertes baratas por tener cola larga.
+  3. **Verificación**: Documentación coherente y validada en el repositorio.
+
+## 2026-08-29 20:01
+
+- **Docs** (completed - 2026-08-29 20:01): Documentación técnica y de diseño para la Evolución de la IA del Patroller (America/Bogota):
+  1. **QUÉ — Diagnóstico y Especificación**:
+     - Creado [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md) con el diagnóstico del estado actual (bloque monolítico en `enemies.lua`, atascos 1D y falta de reactividad).
+     - Definidos 4 modos de patrullaje contextuales por sala (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
+     - Especificada la resolución de esquinas a 90° con anti-deadlock antes de forzar retroceso 180°.
+     - Diseñado el sistema de intercepción reactiva por línea de visión (*Line-of-Sight Dash*) con telegrafiado fotónico y aceleración de plasma.
+     - Actualizado [`docs/GDD.md`](GDD.md) (Sección 3: Patroller Interceptor Delta) y [`docs/TODO.md`](TODO.md).
+  2. **POR QUÉ**: Formalizar las decisiones de diseño y la arquitectura modular desacoplada (`entities/patrollerAI.lua`) antes de la fase de implementación.
+  3. **Verificación**: Documentación coherente y validada sin impacto negativo en el código actual.
+
+## 2026-08-29 19:31
+
+- **Fix** (completed - 2026-08-29 19:31): Corrección de referencia nula a `EYE_DARK` en `render/enemiesDraw.lua` (America/Bogota):
+  1. **QUÉ**: Se reincorporaron las constantes cromáticas locales `AMBER`, `EYE_DARK` y `WARM_WHITE` en la cabecera de `render/enemiesDraw.lua` que habían sido accidentalmente omitidas durante la integración del sprite de Chaser.
+  2. **POR QUÉ**: Al renderizar la pupila del ojo central en `drawChaser`, `EYE_DARK` se evaluaba como `nil`, interrumpiendo el ciclo de dibujo.
+  3. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
+
+## 2026-08-29 19:28
+
+- **Feature** (completed - 2026-08-29 19:28): Sprite e importación de Shuriken Plasma Hyper 7x7 para el Chaser (America/Bogota):
+  1. **QUÉ — Sprite PNG 7x7**:
+     - Generado el asset `assets/chaser_shuriken.png` (7x7 píxeles RGBA) basado en la derivada #01 del diseño "Plasma Hyper Base" (haces lineales de plasma carmesí neón con núcleo de contención).
+  2. **QUÉ — Render Pipeline & Desacoplamiento Giroscópico**:
+     - En `render/enemiesDraw.lua` (`drawChaser`): Carga segura con `pcall(love.graphics.newImage, ...)` y filtro `nearest`.
+     - Las aspas del shuriken giran activamente a 60 FPS con velocidad dinámica modulada por el estado de la IA social (`IDLE` lento, `ENCIRCLE` acelerado, `CIERRE` a 16 rad/s).
+     - El ojo central y su pupila permanecen estabilizados desacoplados de la rotación de las aspas, rastreando a la serpiente en tiempo real con pupilas de rendija en rol `flanker` y párpado en `IDLE`.
+     - Preservadas auras ámbar/blanca, promoción de líder de manada y advertencia de embestida.
+  3. **POR QUÉ**: Proporcionar fidelidad pixel-art superior al Chaser combinando el impacto visual del shuriken rotatorio con el seguimiento ocular de la IA social.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
+
+## 2026-08-29 19:00
+
+- **Fix** (completed - 2026-08-29 19:00): Eliminado fondo rectangular oscuro debajo del Patroller (America/Bogota):
+  1. **QUÉ**: En `render/enemiesDraw.lua` (`drawPatroller`), se removió la caja de sombra cuadrada pre-renderizada (`rectangle("fill", ...)`), dejando el sprite `assets/patroller_delta.png` transparente y limpio sobre la cuadrícula del juego.
+  2. **POR QUÉ**: El rectángulo negro de 5x5 provocaba artefactos oscuros y manchas visibles en las esquinas transparentes del dron durante sus rotaciones y giros.
+  3. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
+
+## 2026-08-29 18:41
+
+- **Feature** (completed - 2026-08-29 18:41): Importación y renderizado de sprite rasterizado `patroller_delta.png` para el Patroller (America/Bogota):
+  1. **QUÉ — Asset Sprite PNG**:
+     - Generado el archivo de sprite rasterizado de 5x5 píxeles en `assets/patroller_delta.png` con transparencia RGBA exacta del diseño #01 "Interceptor Delta".
+  2. **QUÉ — Integración en Render Pipeline**:
+     - En `render/enemiesDraw.lua`: Implementado cargador seguro con `pcall(love.graphics.newImage, "assets/patroller_delta.png")` y filtro `nearest` para nitidez pixel-art.
+     - Renderizado del sprite alineado con el origen de rotación y movimiento, complementado con sombra proyectada 2D, pulso lumínico del núcleo y micro-llama de propulsión de plasma.
+     - Mantenido fallback procedural determinista en caso de ausencia de archivo.
+  3. **POR QUÉ**: Proporcionar fidelidad pixel-art exacta e integrar el diseño aprobado del Patroller en el pipeline de assets del juego.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
 
 ## 2026-08-27 19:02
 
