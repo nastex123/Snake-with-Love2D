@@ -76,8 +76,10 @@
 
 - [x] Asymmetric Main Menu UI Redesign & Procedural Cyan Isometric Title 2.5D (Left vertical panel 40% with Dot Matrix #14 procedural background and rotating novice pixel art Alchemy Sigil #17, 4 centered Cyber-Step #03 buttons, central diamond emblem at w/2,h/2, right procedural cyan neon logo 2.5D #00F0FF via ui/menuLogo.lua with real-time F2 calibrator systems/debugLogo.lua, and Chunky Profile & High Score #11 card via ui/menuCard.lua).
 - [x] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
+- [x] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
+- [x] Enemy Pixel-Art Sprite Identity (Patroller 5x5 Delta Interceptor, Chaser 7x7 Plasma Hyper Shuriken with decoupled gyroscopic eye tracking)
+- [x] Patroller Tactical AI Evolution (Modular patrollerAI.lua, 4 contextual patrol modes, 90-degree corner turns, Line-of-Sight Dash, and Guillotine Slice tail-cutting mechanic)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
-- [ ] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
 - [ ] Elite Encounters & 5 Mini-Bosses (Mid-stage room 3 challenges with guaranteed golden rewards)
 - [ ] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks)
 - [ ] Room Modifiers, Curses & Blessings (10 mutators: Zero Gravity, Midas Curse, Phoenix Blessing, Tunnel Vision, etc.)

@@ -48,16 +48,37 @@
   - [x] **Pantalla Interactiva de Muerte**: Modal táctico cyberpunk con resumen de run y botones "Revivir (-30$)" vs "Aceptar Muerte".
   - [x] **Emisores de Partículas Dedicados**: `fireTrail`, `frostFreeze`, `tailSnapShockwave`, `slimmingBurst`, `bombExplosion`, `constrictorBurst`, `streakDiamond`, `autotomyDecoy`.
 
+## Completed (Menú Configuraciones — Mejora Interacción/Estética 27:08:2026 18:36)
+- [x] **Settings Redesign — Live Preview & Anti-Recarga + Estética Cyberpunk (verificado 2026-08-27 18:36 America/Bogota)**:
+  - [x] Live preview volumen `0.5->0.8` y `uiScale` vía drag con `applyLivePreview()` sin guardar; diff `_graphicsDiff/_audioDiff` en `persistence.applySettings` evita `setMode/recreateCanvases` innecesarios.
+  - [x] Filtro live (`nearest`/`linear`) aplica inmediato con `setDefaultFilter` + `recreateCanvases` sin recarga ventana; verificado sin heavy.
+  - [x] Resolución preview 5s con `previewTimer`/`previewOriginal` y auto-revert si no se guarda (`Preview 5s` toast).
+  - [x] Estética cyberpunk: panel doble borde cian, matriz puntos HUD #14, header glow, tabs 🔊/🖥/♿ con subrayado, hover pulse, scrollbar anti-overflow.
+  - [x] Anti-overflow: dropdowns clamp 240px + scroll wheel, `panelXY` responsivo, hitboxes `settings.g.*` recalculadas y validadas, sin tablas por frame excesivas (`g={}` único por draw).
+  - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [ ] **Extended Items Arsenal (51-60)**:
   - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
-- [ ] **Stage Biomes & Hazards**:
-  - [ ] Stage 1: Stone Catacombs (standard solid walls)
-  - [ ] Stage 2: Frozen Crypt (ice tiles with +1 slide momentum on turns)
-  - [ ] Stage 3: Volcanic Cavern (timed magma fissure hazards)
-  - [ ] Stage 4: Toxic Hive (slime tiles with -20% step speed)
-  - [ ] Stage 5: Void Sanctuary (void borders with lethal drop / no wall-wrap)
-  - [ ] Pressure Spikes hazard (0.5s trigger delay)
+- [x] **Stage Biomes & Hazards (100% Completado)**:
+  - [x] Stage 1: Stone Catacombs (framework base de biomas, muros estándar, paleta de mazmorra, banner y badge HUD)
+  - [x] Stage 2: Frozen Crypt (losetas de hielo con deslizamiento inercial `+1` al girar y partículas de escarcha)
+  - [x] Stage 3: Volcanic Cavern (fisuras de magma con ciclo térmico `cooldown` -> `warning` -> `active` letal y partículas de brasas)
+  - [x] Stage 4: Toxic Hive (charcos de baba ácida viscosa con reducción de -20% de velocidad y burbujas ácidas)
+  - [x] Stage 5: Void Sanctuary (abismo letal sin wall-wrap, bordes mortales de caída libre, advertencia visual y partículas de vacío)
+  - [x] Trampas de pinchos de presión (`pressure_spike`: `idle` -> `warning` 0.5s -> `extended` letal 1.2s -> `retracting`)
+  - [x] Suite de pruebas unitarias `tests/test_scope_19_biomes_hazards.lua` con cobertura completa en PASS
+- [x] **Sprites e Identidad Visual Pixel-Art de Enemigos**:
+  - [x] Patroller: Sprite rasterizado 5x5 `assets/patroller_delta.png` (#01 Interceptor Delta) con filtrado `nearest`, orientación dinámica, núcleo fotónico pulsante y micro-llama de plasma.
+  - [x] Chaser: Sprite rasterizado 7x7 `assets/chaser_shuriken.png` (#01 Shuriken Plasma Hyper) con rotación a 60 FPS modulada por estado de IA y ojo giroscópico desacoplado que rastrea a la serpiente.
+- [x] **Evolución Táctica de la IA del Patroller (Interceptor Delta)**:
+  - [x] Documentación técnica y de diseño en `docs/PATROLLER-DESIGN-NOTE.md` y `docs/GDD.md` (Sección 3).
+  - [x] Desacoplamiento modular en `entities/patrollerAI.lua` (extracción de lógica de `entities/enemies.lua`).
+  - [x] 4 Modos de patrulla contextuales (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
+  - [x] Resolución de esquinas a 90° con anti-deadlock de retroceso 180°.
+  - [x] Línea de visión y aceleración de intercepción (*Line-of-Sight Dash*) con alerta fotónica y estela de plasma.
+  - [x] Seccionamiento quirúrgico de cola (*Guillotine Slice*) en `entities/snake.lua` y feedback en `systems/gamestates.lua`.
+  - [x] Suite de pruebas unitarias `tests/test_scope_20_patroller_ai.lua` en PASS (100% verde).
 - [ ] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)**:
   - [ ] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards
 - [ ] **Boss Enrage Phase & Laser Attacks**:
@@ -168,4 +189,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 23:08:2026 (Limpieza recomendada — menuUI/debugLogo/shaders + LICENSE)*
+*Last updated: 2026-08-27 18:36 (Menú Configuraciones — live preview/diff/filtro live/resolución preview 5s/cyberpunk/anti-overflow verificado + love . 0 errores + settings suites PASS)*

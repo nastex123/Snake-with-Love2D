@@ -19,15 +19,21 @@ local settingsDefaults = {
 
 function persistence.getLogoConfig()
     if not persistence.settings then persistence.loadSettings() end
-    if not persistence.settings.logo then
+    if not persistence.settings.logo or type(persistence.settings.logo) ~= 'table' then
         persistence.settings.logo = helpers.deep_copy(settingsDefaults.logo)
     end
     return persistence.settings.logo
 end
 
+persistence.loadLogoConfig = persistence.getLogoConfig
+
 function persistence.saveLogoConfig(cfg)
     if not persistence.settings then persistence.loadSettings() end
-    persistence.settings.logo = cfg or persistence.settings.logo
+    if cfg and type(cfg) == 'table' then
+        persistence.settings.logo = cfg
+    elseif not persistence.settings.logo or type(persistence.settings.logo) ~= 'table' then
+        persistence.settings.logo = helpers.deep_copy(settingsDefaults.logo)
+    end
     return persistence.saveSettings(persistence.settings)
 end
 
@@ -41,7 +47,9 @@ local function deep_merge(dest, src)
             if type(dest[k]) ~= 'table' then dest[k] = {} end
             deep_merge(dest[k], v)
         else
-            if dest[k] == nil then dest[k] = v end
+            if dest[k] == nil or type(dest[k]) ~= type(v) then
+                dest[k] = v
+            end
         end
     end
     return dest
@@ -50,8 +58,17 @@ end
 -- We save settings in Lua table format so that load() can read them directly
 -- without any JSON-to-Lua conversion. This avoids fragility with gsub/load.
 
+local LUA_KEYWORDS = {
+    ["and"] = true, ["break"] = true, ["do"] = true, ["else"] = true,
+    ["elseif"] = true, ["end"] = true, ["false"] = true, ["for"] = true,
+    ["function"] = true, ["goto"] = true, ["if"] = true, ["in"] = true,
+    ["local"] = true, ["nil"] = true, ["not"] = true, ["or"] = true,
+    ["repeat"] = true, ["return"] = true, ["then"] = true, ["true"] = true,
+    ["until"] = true, ["while"] = true
+}
+
 local function isIdentifier(s)
-    return type(s) == 'string' and s:match('^[a-zA-Z_][a-zA-Z0-9_]*$')
+    return type(s) == 'string' and s:match('^[a-zA-Z_][a-zA-Z0-9_]*$') and not LUA_KEYWORDS[s]
 end
 
 local function lua_encode(val)
@@ -95,13 +112,27 @@ local function lua_encode(val)
 end
 
 local function lua_decode(text)
-    if type(text) ~= 'string' or #text == 0 then return nil end
-    local fn, err = load('return ' .. text)
+    if type(text) ~= 'string' or #text == 0 then return nil, "empty input" end
+    if text:match('^%s*$') then return nil, "whitespace only" end
+    local loader = loadstring or load
+    local fn, err
+    if _VERSION == "Lua 5.1" or (jit and type(setfenv) == "function") then
+        fn, err = loader('return ' .. text)
+        if fn then
+            setfenv(fn, {}) -- empty sandbox environment
+        end
+    else
+        fn, err = loader('return ' .. text, "=(safe_load)", "t", {})
+    end
     if not fn then return nil, err end
     local ok, res = pcall(fn)
     if not ok then return nil, res end
     return res
 end
+
+-- Export encoding/decoding helpers for unit testing
+persistence._lua_encode = lua_encode
+persistence._lua_decode = lua_decode
 
 local settingsPath = 'config/settings.dat'
 local profilesPath = 'config/profiles.dat'
@@ -109,6 +140,8 @@ local profilesPath = 'config/profiles.dat'
 -- ============================================================
 -- Profiles system (max 3 profiles, per-profile data)
 -- ============================================================
+
+local MAX_NAME_LENGTH = 14
 
 function persistence.initProfiles()
     persistence.profilesData = nil
@@ -118,11 +151,37 @@ function persistence.initProfiles()
             local decoded = lua_decode(contents)
             if decoded and type(decoded) == 'table' then
                 persistence.profilesData = decoded
-                if not persistence.profilesData.profiles then
-                    persistence.profilesData.profiles = {nil, nil, nil}
+                if type(persistence.profilesData.profiles) ~= 'table' then
+                    persistence.profilesData.profiles = {}
                 end
-                for i = #persistence.profilesData.profiles + 1, 3 do
-                    persistence.profilesData.profiles[i] = nil
+                for k, p in pairs(persistence.profilesData.profiles) do
+                    if type(k) ~= 'number' or k < 1 or k > 3 or type(p) ~= 'table' then
+                        persistence.profilesData.profiles[k] = nil
+                    else
+                        p.name = (type(p.name) == 'string' and #p.name > 0) and p.name or ("Jugador " .. k)
+                        p.monedas = (type(p.monedas) == 'number' and p.monedas >= 0) and p.monedas or 0
+                        p.highScore = (type(p.highScore) == 'number' and p.highScore >= 0) and p.highScore or 0
+                        p.achievements = type(p.achievements) == 'table' and p.achievements or {}
+                        p.unlocks = type(p.unlocks) == 'table' and p.unlocks or {}
+                        p.stats = type(p.stats) == 'table' and p.stats or {
+                            kills = 0,
+                            bossesKilled = 0,
+                            highestStage = 1,
+                            highestScore = 0,
+                            totalCoins = 0,
+                            highestStreak = 1.0
+                        }
+                    end
+                end
+                local act = persistence.profilesData.activeProfileIndex
+                if act and (type(act) ~= 'number' or act < 1 or act > 3 or not persistence.profilesData.profiles[act]) then
+                    persistence.profilesData.activeProfileIndex = nil
+                    for i = 1, 3 do
+                        if persistence.profilesData.profiles[i] then
+                            persistence.profilesData.activeProfileIndex = i
+                            break
+                        end
+                    end
                 end
                 return
             end
@@ -131,7 +190,7 @@ function persistence.initProfiles()
     persistence.profilesData = {
         version = 1,
         activeProfileIndex = nil,
-        profiles = {nil, nil, nil}
+        profiles = {}
     }
 end
 
@@ -151,12 +210,15 @@ function persistence.saveProfiles()
 end
 
 function persistence.getProfiles()
-    return persistence.profilesData and persistence.profilesData.profiles or {nil, nil, nil}
+    if not persistence.profilesData or type(persistence.profilesData.profiles) ~= 'table' then
+        return {}
+    end
+    return persistence.profilesData.profiles
 end
 
 function persistence.getActiveProfile()
     local idx = persistence.getActiveProfileIndex()
-    if idx then
+    if idx and persistence.profilesData and persistence.profilesData.profiles then
         local p = persistence.profilesData.profiles[idx]
         if p then return p end
     end
@@ -166,22 +228,42 @@ end
 function persistence.getActiveProfileIndex()
     if not persistence.profilesData then return nil end
     local idx = persistence.profilesData.activeProfileIndex
-    if idx and idx >= 1 and idx <= 3 then return idx end
+    if idx and type(idx) == 'number' and idx >= 1 and idx <= 3 then
+        if persistence.profilesData.profiles and persistence.profilesData.profiles[idx] then
+            return idx
+        end
+    end
     return nil
 end
 
 function persistence.createProfile(name)
+    if not persistence.profilesData then persistence.initProfiles() end
     local profiles = persistence.profilesData.profiles
     for i = 1, 3 do
         if profiles[i] == nil then
+            local cleanName = name
+            if cleanName then
+                cleanName = tostring(cleanName):gsub("^%s*(.-)%s*$", "%1")
+                if #cleanName > MAX_NAME_LENGTH then cleanName = cleanName:sub(1, MAX_NAME_LENGTH) end
+            end
+            if not cleanName or #cleanName == 0 then
+                cleanName = "Jugador " .. i
+            end
             profiles[i] = {
-                name = name or ("Jugador " .. i),
+                name = cleanName,
                 createdAt = os.time(),
                 monedas = 0,
                 highScore = 0,
                 achievements = {},
                 unlocks = {},
-                stats = {}
+                stats = {
+                    kills = 0,
+                    bossesKilled = 0,
+                    highestStage = 1,
+                    highestScore = 0,
+                    totalCoins = 0,
+                    highestStreak = 1.0
+                }
             }
             persistence.profilesData.activeProfileIndex = i
             persistence.saveProfiles()
@@ -192,7 +274,8 @@ function persistence.createProfile(name)
 end
 
 function persistence.selectProfile(index)
-    if index < 1 or index > 3 then
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then
         return false, "Índice inválido"
     end
     if not persistence.profilesData.profiles[index] then
@@ -204,17 +287,22 @@ function persistence.selectProfile(index)
 end
 
 function persistence.renameProfile(index, newName)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
     local profile = persistence.profilesData.profiles[index]
     if not profile then return false, "Perfil vacío" end
-    profile.name = newName
+    local cleanName = newName and tostring(newName):gsub("^%s*(.-)%s*$", "%1") or ""
+    if #cleanName > MAX_NAME_LENGTH then cleanName = cleanName:sub(1, MAX_NAME_LENGTH) end
+    if #cleanName == 0 then cleanName = "Jugador " .. index end
+    profile.name = cleanName
     persistence.saveProfiles()
     return true
 end
 
 function persistence.deleteProfile(index)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
-    if not persistence.profilesData.profiles[index] then
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData.profiles or not persistence.profilesData.profiles[index] then
         return false, "Perfil vacío"
     end
     persistence.profilesData.profiles[index] = nil
@@ -236,7 +324,8 @@ function persistence.deleteProfile(index)
 end
 
 function persistence.resetProfile(index)
-    if index < 1 or index > 3 then return false, "Índice inválido" end
+    if not persistence.profilesData then persistence.initProfiles() end
+    if type(index) ~= 'number' or index < 1 or index > 3 then return false, "Índice inválido" end
     local old = persistence.profilesData.profiles[index]
     if not old then return false, "Perfil vacío" end
     persistence.profilesData.profiles[index] = {
@@ -246,7 +335,14 @@ function persistence.resetProfile(index)
         highScore = 0,
         achievements = {},
         unlocks = {},
-        stats = {}
+        stats = {
+            kills = 0,
+            bossesKilled = 0,
+            highestStage = 1,
+            highestScore = 0,
+            totalCoins = 0,
+            highestStreak = 1.0
+        }
     }
     persistence.saveProfiles()
     return true
@@ -255,11 +351,18 @@ end
 function persistence.syncActiveProfile()
     local profile = persistence.getActiveProfile()
     if not profile then return false end
-    profile.monedas = world.get("monedas") or 0
-    profile.highScore = world.get("highScore") or 0
-    profile.stats = profile.stats or {}
-    local curStreak = world.get("highestStreak") or 1.0
-    profile.stats.highestStreak = math.max(profile.stats.highestStreak or 1.0, curStreak)
+    if world and world.get then
+        local wMonedas = world.get("monedas")
+        if type(wMonedas)=="number" and wMonedas==wMonedas and wMonedas>=0 then profile.monedas = math.floor(wMonedas) end
+        local wHighScore = world.get("highScore")
+        if type(wHighScore)=="number" and wHighScore==wHighScore and wHighScore>=0 then profile.highScore = math.floor(wHighScore) end
+        profile.stats = profile.stats or {}
+        local curStreak = world.get("highestStreak") or 1.0
+        profile.stats.highestStreak = math.max(profile.stats.highestStreak or 1.0, curStreak)
+        local curHighScore = world.get("highScore") or profile.highScore or 0
+        profile.stats.highestScore = math.max(profile.stats.highestScore or 0, curHighScore)
+        profile.stats.totalCoins = math.max(profile.stats.totalCoins or 0, profile.monedas)
+    end
     persistence.saveProfiles()
     return true
 end
@@ -267,7 +370,8 @@ end
 function persistence.syncUnlocks(unlocksTable)
     local profile = persistence.getActiveProfile()
     if not profile then return false end
-    profile.unlocks = unlocksTable or {}
+    local helpers = require("core.helpers")
+    profile.unlocks = helpers.deep_copy(unlocksTable or {})
     persistence.saveProfiles()
     return true
 end
@@ -289,6 +393,7 @@ function persistence.loadSettings()
 end
 
 function persistence.saveSettings(tbl)
+    tbl = tbl or persistence.settings or persistence.defaults()
     local encoded = lua_encode(tbl)
     if type(encoded) ~= 'string' or #encoded == 0 then
         return false, 'encode failed'
@@ -303,34 +408,56 @@ function persistence.saveSettings(tbl)
     return true
 end
 
-function persistence.applySettings(settings)
-    if type(settings.audio) == 'table' then
-        pcall(function() sound.setMasterVolume(settings.audio.master) end)
-        pcall(function() sound.enableMusic(settings.audio.music) end)
-        pcall(function() sound.enableSfx(settings.audio.sfx) end)
+local function _graphicsDiff(a, b)
+    if not a or not b then return true end
+    if a.pixelScale ~= b.pixelScale then return true end
+    if a.filter ~= b.filter then return true end
+    if a.fullscreen ~= b.fullscreen then return true end
+    if a.vsync ~= b.vsync then return true end
+    local ra, rb = a.resolution, b.resolution
+    if (ra == nil) ~= (rb == nil) then return true end
+    if ra and rb then
+        if ra.width ~= rb.width or ra.height ~= rb.height then return true end
     end
-    if type(settings.graphics) == 'table' then
-        local g = settings.graphics
-        pcall(function()
-            local w, h = love.graphics.getWidth(), love.graphics.getHeight()
-            if g.resolution and type(g.resolution.width) == 'number' and type(g.resolution.height) == 'number' then
-                w, h = g.resolution.width, g.resolution.height
+    return false
+end
+
+local function _audioDiff(a, b)
+    if not a or not b then return true end
+    if a.master ~= b.master then return true end
+    if a.music ~= b.music then return true end
+    if a.sfx ~= b.sfx then return true end
+    return false
+end
+
+-- Helpers internos LIVE / HEAVY  (selective apply sin recargas)
+local function _applyAudio(tbl)
+    if not tbl or type(tbl.audio) ~= 'table' then return end
+    pcall(function() sound.setMasterVolume(tbl.audio.master) end)
+    pcall(function() sound.enableMusic(tbl.audio.music) end)
+    pcall(function() sound.enableSfx(tbl.audio.sfx) end)
+end
+
+local function _applyFilter(filter)
+    if not filter then return end
+    pcall(function()
+        if shaders and shaders.setFilter then
+            shaders.setFilter(filter)
+        else
+            local canv = shaders.getCanvases and shaders.getCanvases()
+            if canv then
+                for _, c in pairs(canv) do
+                    if c and c.setFilter then pcall(function() c:setFilter(filter, filter) end) end
+                end
             end
-            local dw, dh = love.window.getDesktopDimensions(1)
-            if dw and dh and (w > dw or h > dh) and not g.fullscreen then
-                w, h = math.min(w, dw), math.min(h, dh)
-            end
-            local ok2 = pcall(function()
-                love.window.setMode(w, h, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'})
-            end)
-            if not ok2 then
-                love.window.setMode(dw or 800, dh or 600, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'})
-            end
-        end)
-        pcall(function() shaders.recreateCanvases(g.pixelScale, g.filter) end)
-    end
-    if type(settings.accessibility) == 'table' then
-        local a = settings.accessibility
+        end
+    end)
+end
+
+local function _applyUI(tbl)
+    if not tbl then return end
+    if type(tbl.accessibility) == 'table' then
+        local a = tbl.accessibility
         local ok, ui = pcall(require, 'ui.ui')
         if ok and ui then
             pcall(function() ui.setScale(a.uiScale) end)
@@ -338,13 +465,291 @@ function persistence.applySettings(settings)
             pcall(function() ui.applyColorblind(a.colorblind) end)
         end
     end
-    if type(settings.gameplay) == 'table' and settings.gameplay.controlMode then
-        world.state.controlMode = settings.gameplay.controlMode
-    elseif type(settings.controls) == 'table' and settings.controls.controlMode then
-        world.state.controlMode = settings.controls.controlMode
+    if type(tbl.gameplay) == 'table' and tbl.gameplay.controlMode then
+        world.state.controlMode = tbl.gameplay.controlMode
+    elseif type(tbl.controls) == 'table' and tbl.controls.controlMode then
+        world.state.controlMode = tbl.controls.controlMode
     else
         world.state.controlMode = 'tactical'
     end
+end
+
+local function _recalcGrid()
+    pcall(function()
+        local ok, gameflow = pcall(require, "systems.gameflow")
+        if ok and gameflow and gameflow.recalcularGrilla then
+            gameflow.recalcularGrilla()
+        end
+    end)
+end
+
+local function _applyHeavy(tbl, oldTbl)
+    if not tbl or type(tbl.graphics) ~= 'table' then return end
+    local g = tbl.graphics
+    pcall(function()
+        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        if g.resolution and type(g.resolution.width) == 'number' and type(g.resolution.height) == 'number' then
+            w, h = g.resolution.width, g.resolution.height
+        elseif g.resolution == nil then
+            w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        end
+        local dw, dh = love.window.getDesktopDimensions(1)
+        if dw and dh and (w > dw or h > dh) and not g.fullscreen then
+            w, h = math.min(w, dw), math.min(h, dh)
+        end
+        local ok2 = pcall(function()
+            love.window.setMode(w, h, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'})
+        end)
+        if not ok2 and dw and dh then
+            pcall(function() love.window.setMode(dw or 800, dh or 600, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'}) end)
+        end
+    end)
+    pcall(function()
+        if not shaders then return end
+        local need = true
+        if shaders.needsRecreate and oldTbl and oldTbl.graphics and tbl.graphics then
+            need = shaders.needsRecreate(oldTbl.graphics, tbl.graphics)
+        elseif oldTbl and oldTbl.graphics then
+            local pg = oldTbl.graphics
+            local eq = (pg.pixelScale == g.pixelScale and pg.fullscreen == g.fullscreen and pg.vsync == g.vsync)
+            local ra, rb = pg.resolution, g.resolution
+            local resEq = false
+            if ra == rb then resEq = true elseif ra == nil and rb == nil then resEq = true elseif ra and rb and ra.width == rb.width and ra.height == rb.height then resEq = true end
+            if eq and resEq and pg.filter == g.filter then need = false end
+            if pg.filter ~= g.filter and eq and resEq then need = false end
+        end
+        if need and shaders.recreateCanvases then
+            shaders.recreateCanvases(g.pixelScale, g.filter)
+        elseif not need and g.filter then
+            _applyFilter(g.filter)
+        end
+    end)
+    _recalcGrid()
+end
+
+function persistence.applyAudio(tbl) _applyAudio(tbl) end
+function persistence.applyUI(tbl) _applyUI(tbl) end
+function persistence.applyHeavy(tbl, oldTbl) _applyHeavy(tbl, oldTbl) end
+function persistence.applyFilter(filter) _applyFilter(filter) end
+
+function persistence.applyLive(tbl)
+    if not tbl or type(tbl) ~= 'table' then return end
+    _applyAudio(tbl)
+    _applyUI(tbl)
+    if tbl.graphics and tbl.graphics.filter then
+        _applyFilter(tbl.graphics.filter)
+    end
+end
+
+function persistence.diffSettings(a, b)
+    if not a or not b or type(a) ~= 'table' or type(b) ~= 'table' then
+        return {audio = false, ui = false, heavy = false, filter = false, resolution = false, empty = true}
+    end
+    local d = {audio = false, ui = false, heavy = false, filter = false, resolution = false, empty = true}
+    local aa = a.audio or {}
+    local ba = b.audio or {}
+    if aa.master ~= ba.master or aa.music ~= ba.music or aa.sfx ~= ba.sfx then d.audio = true end
+    local aAcc = a.accessibility or {}
+    local bAcc = b.accessibility or {}
+    if aAcc.uiScale ~= bAcc.uiScale or aAcc.highContrast ~= bAcc.highContrast or aAcc.colorblind ~= bAcc.colorblind then d.ui = true end
+    local aCM = (a.gameplay and a.gameplay.controlMode) or (a.controls and a.controls.controlMode)
+    local bCM = (b.gameplay and b.gameplay.controlMode) or (b.controls and b.controls.controlMode)
+    if aCM ~= bCM then d.ui = true end
+    local aG = a.graphics or {}
+    local bG = b.graphics or {}
+    if aG.filter ~= bG.filter then d.filter = true end
+    if aG.pixelScale ~= bG.pixelScale or aG.fullscreen ~= bG.fullscreen or aG.vsync ~= bG.vsync then d.heavy = true end
+    local aRes = aG.resolution
+    local bRes = bG.resolution
+    local resEq = false
+    if aRes == bRes then resEq = true
+    elseif aRes == nil and bRes == nil then resEq = true
+    elseif aRes == nil or bRes == nil then resEq = false
+    elseif type(aRes) == 'table' and type(bRes) == 'table' and aRes.width == bRes.width and aRes.height == bRes.height then resEq = true end
+    if not resEq then d.resolution = true end
+    d.empty = not (d.audio or d.ui or d.heavy or d.filter or d.resolution)
+    return d
+end
+
+function persistence.needsHeavy(diff)
+    return diff and diff.heavy == true
+end
+
+function persistence.applySettingsSelective(last, cur)
+    if not cur or type(cur) ~= 'table' then return end
+    if not last or type(last) ~= 'table' then
+        persistence.applySettings(cur)
+        return
+    end
+    local diff = persistence.diffSettings(last, cur)
+    if diff.empty then return end
+    if diff.audio or diff.ui or diff.filter then
+        persistence.applyLive(cur)
+    end
+    if diff.heavy or diff.resolution then
+        _applyHeavy(cur, last)
+    end
+    persistence.settings = cur
+end
+
+function persistence.saveAndApplySelective(last, cur)
+    if not cur or type(cur) ~= 'table' then return false, 'no settings' end
+    if not last or type(last) ~= 'table' then last = persistence.settings or persistence.defaults() end
+    local diff = persistence.diffSettings(last, cur)
+    if diff.empty then return false, 'no_changes' end
+    local ok, err = persistence.saveSettings(cur)
+    if not ok then return false, err end
+    if diff.audio or diff.ui or diff.filter then
+        persistence.applyLive(cur)
+    end
+    if diff.heavy or diff.resolution then
+        _applyHeavy(cur, last)
+    end
+    if diff.resolution and persistence._previewTimer then
+        persistence.confirmResolutionPreview()
+    end
+    persistence.settings = cur
+    return true
+end
+
+persistence._previewPrev = nil
+persistence._previewTimer = nil
+
+function persistence.previewResolution(newRes)
+    if not newRes or type(newRes) ~= 'table' or not newRes.width or not newRes.height then
+        return false
+    end
+    local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+    local curW, curH = love.graphics.getWidth(), love.graphics.getHeight()
+    if not persistence._previewPrev then
+        persistence._previewPrev = {width = curW, height = curH}
+    end
+    if persistence._previewTimer then
+        pcall(function() persistence._previewTimer:cancel() end)
+        persistence._previewTimer = nil
+    end
+    local fullscreen = g.fullscreen
+    local vsync = g.vsync
+    if vsync == nil then vsync = true end
+    pcall(function()
+        love.window.setMode(newRes.width, newRes.height, {fullscreen = fullscreen, vsync = vsync, fullscreentype = 'desktop'})
+    end)
+    pcall(function()
+        if shaders and shaders.recreateCanvases then
+            shaders.recreateCanvases(g.pixelScale, g.filter)
+        end
+    end)
+    pcall(function()
+        local ok, gf = pcall(require, 'systems.gameflow')
+        if ok and gf and gf.recalcularGrilla then gf.recalcularGrilla() end
+    end)
+    world.state.resolutionConfirmTimer = 5
+    local okT, timersMod = pcall(require, 'core.timers')
+    if okT and timersMod and timersMod.after then
+        persistence._previewTimer = timersMod.after(5, function()
+            persistence.revertResolutionPreview()
+        end)
+    end
+    return true
+end
+
+function persistence.confirmResolutionPreview()
+    if persistence._previewTimer then
+        pcall(function() persistence._previewTimer:cancel() end)
+        persistence._previewTimer = nil
+    end
+    persistence._previewPrev = nil
+    world.state.resolutionConfirmTimer = nil
+end
+
+function persistence.revertResolutionPreview()
+    if persistence._previewTimer then
+        pcall(function() persistence._previewTimer:cancel() end)
+        persistence._previewTimer = nil
+    end
+    if persistence._previewPrev then
+        local prev = persistence._previewPrev
+        local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+        local fullscreen = g.fullscreen
+        local vsync = g.vsync
+        if vsync == nil then vsync = true end
+        pcall(function()
+            love.window.setMode(prev.width, prev.height, {fullscreen = fullscreen, vsync = vsync, fullscreentype = 'desktop'})
+        end)
+        pcall(function()
+            if shaders and shaders.recreateCanvases then
+                shaders.recreateCanvases(g.pixelScale, g.filter)
+            end
+        end)
+        pcall(function()
+            local ok, gf = pcall(require, 'systems.gameflow')
+            if ok and gf and gf.recalcularGrilla then gf.recalcularGrilla() end
+        end)
+        persistence._previewPrev = nil
+        pcall(function()
+            local sMod = require('systems.settings')
+            local sDraw = require('systems.settingsDraw')
+            if sMod and sMod.visible and sMod.editing and sMod.lastSaved then
+                if sMod.lastSaved.graphics and sMod.lastSaved.graphics.resolution then
+                    sMod.editing.graphics.resolution = helpers.deep_copy(sMod.lastSaved.graphics.resolution)
+                elseif persistence.settings and persistence.settings.graphics and persistence.settings.graphics.resolution then
+                    sMod.editing.graphics.resolution = helpers.deep_copy(persistence.settings.graphics.resolution)
+                else
+                    sMod.editing.graphics.resolution = nil
+                end
+                sDraw.showToast(sMod, 'Resolución revertida', true)
+            end
+        end)
+    end
+    world.state.resolutionConfirmTimer = nil
+end
+
+function persistence.applySettings(settings, opts)
+    if not settings or type(settings) ~= 'table' then return end
+    if opts and type(opts) == 'table' then
+        if opts.liveOnly then
+            persistence.applyLive(settings)
+            persistence.settings = settings
+            return
+        end
+        if opts.heavy == false then
+            persistence.applyLive(settings)
+            persistence.settings = settings
+            return
+        end
+        if opts.heavy == true then
+            persistence.applyLive(settings)
+            _applyHeavy(settings, nil)
+            persistence.settings = settings
+            return
+        end
+    end
+    local prev = persistence.settings
+    if type(settings.audio) == 'table' then
+        if not prev or not prev.audio or _audioDiff(settings.audio, prev.audio) then
+            _applyAudio(settings)
+        end
+    end
+    if type(settings.graphics) == 'table' then
+        local g = settings.graphics
+        local pg = prev and prev.graphics
+        local filterOnly = false
+        if pg and g.filter ~= pg.filter and g.pixelScale == pg.pixelScale and g.fullscreen == pg.fullscreen and g.vsync == pg.vsync then
+            local ra, rb = pg.resolution, g.resolution
+            local resEq = false
+            if ra == rb then resEq = true elseif ra == nil and rb == nil then resEq = true elseif ra and rb and ra.width == rb.width and ra.height == rb.height then resEq = true end
+            if resEq then filterOnly = true end
+        end
+        if filterOnly then
+            _applyFilter(g.filter)
+        else
+            local needsHeavy = not prev or not prev.graphics or _graphicsDiff(g, prev.graphics)
+            if needsHeavy then
+                _applyHeavy(settings, prev)
+            end
+        end
+    end
+    _applyUI(settings)
     persistence.settings = settings
 end
 
@@ -359,12 +764,15 @@ end
 function persistence.cargar()
     local f = 'highscore.txt'
     if love.filesystem.getInfo(f) then
-        return tonumber(love.filesystem.read(f)) or 0
+        local content = love.filesystem.read(f)
+        return tonumber(content) or 0
     end
     return 0
 end
 
 function persistence.guardar(puntajeActual, recordActual)
+    puntajeActual = puntajeActual or 0
+    recordActual = recordActual or 0
     if puntajeActual > recordActual then
         love.filesystem.write('highscore.txt', tostring(puntajeActual))
         return puntajeActual

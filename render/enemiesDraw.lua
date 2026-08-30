@@ -1,33 +1,45 @@
--- render/enemiesDraw.lua — Dibujo de enemigos, telegraphs, objetos de ataque y boss
 local draw = {}
 local constants = require("constants")
+local world = require("core.world")
 
 local TAU = math.pi * 2
 
--- Chaser "Estrella de espinas" (propuesta 6): estrella de 4 puntas con ojo
--- central que rastrea a la serpiente. Estados: idle/chase/flank/encircle/close.
 local AMBER = {0.95, 0.64, 0.24}
 local EYE_DARK = {0.09, 0.04, 0.05}
 local WARM_WHITE = {1, 0.91, 0.69}
 
-local function starPoints(cx, cy, rot, rOut, rIn)
-    local pts = {}
-    for i = 0, 7 do
-        local r = (i % 2 == 0) and rOut or rIn
-        local a = rot + i * math.pi / 4 - math.pi / 2
-        pts[#pts + 1] = cx + math.cos(a) * r
-        pts[#pts + 1] = cy + math.sin(a) * r
+-- Textura sprite 7x7 para el Chaser (Shuriken Plasma Hyper #01)
+local chaserSprite = nil
+local chaserSpriteLoaded = false
+
+local function getChaserSprite()
+    if not chaserSpriteLoaded then
+        chaserSpriteLoaded = true
+        local ok, img = pcall(love.graphics.newImage, "assets/chaser_shuriken.png")
+        if ok and img then
+            img:setFilter("nearest", "nearest")
+            chaserSprite = img
+        end
     end
-    return pts
+    return chaserSprite
 end
+
+-- Matriz 7x7 fallback para el Chaser
+local CHASER_SHURIKEN_MATRIX = {
+    { 0, -3, "A"}, { 0, -2, "A"},
+    {-1, -1, "B"}, { 0, -1, "D"}, { 1, -1, "B"},
+    {-3,  0, "A"}, {-2,  0, "A"}, {-1, 0, "D"}, { 0, 0, "*"}, { 1, 0, "D"}, { 2, 0, "A"}, { 3, 0, "A"},
+    {-1,  1, "B"}, { 0,  1, "D"}, { 1,  1, "B"},
+    { 0,  2, "A"}, { 0,  3, "A"}
+}
 
 local function drawChaser(e, tam, time, head)
     local cx = e.x * tam + tam / 2
     local cy = e.y * tam + tam / 2
     local st = e.aiState or "chase"
-    local k = tam / 15
+    local k = tam / 7.5
     local seed = e.seed or 0
-    local col = constants.COLOR_ENEMY_CHASER
+    local sprite = getChaserSprite()
 
     local on = math.floor(time * 14) % 2 == 0
     local blink = st == "close" and on
@@ -41,48 +53,77 @@ local function drawChaser(e, tam, time, head)
     -- Aura (encircle ámbar pulsante, close cálido con estela de embestida)
     if st == "encircle" then
         love.graphics.setColor(AMBER[1], AMBER[2], AMBER[3], alpha * (0.14 + 0.26 * th))
-        love.graphics.circle("fill", cx, cy, 7.6 * k)
+        love.graphics.circle("fill", cx, cy, 3.8 * k)
     elseif st == "close" then
         local dashPulse = e.ringTighten and 0.45 or (0.6 + 0.25 * math.sin(time * 20))
         love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha * dashPulse)
-        love.graphics.circle("fill", cx, cy, (8.2 + 1.2 * pul) * k)
+        love.graphics.circle("fill", cx, cy, (4.2 + 0.8 * pul) * k)
     end
 
-    -- Efecto de promocion a nuevo lider (corona dorada en expansion)
+    -- Efecto de promoción a líder de manada (corona dorada en expansión)
     if e.promotedTimer and e.promotedTimer > 0 then
         local pFrac = e.promotedTimer / 0.5
         love.graphics.setColor(1, 0.85, 0.2, pFrac * 0.8)
         love.graphics.setLineWidth(2)
-        love.graphics.circle("line", cx, cy, (6.0 + (1 - pFrac) * 8.0) * k)
+        love.graphics.circle("line", cx, cy, (3.2 + (1 - pFrac) * 4.5) * k)
         love.graphics.setLineWidth(1)
     end
 
-    -- Cuerpo: estrella de 4 puntas (elongadas en encircle)
-    local rOut
-    if st == "encircle" then
-        rOut = (6.6 + 1.3 * th) * k
-    elseif st == "idle" then
-        rOut = 5.2 * k
-    else
-        rOut = 6.4 * k
+    -- Velocidad de giro del shuriken según estado de combate
+    local spinSpeed = 6.5
+    if st == "idle" then spinSpeed = 1.8
+    elseif st == "close" then spinSpeed = 16.0
+    elseif st == "encircle" then spinSpeed = 9.5
     end
-    local rot = e.visRot or 0
+    local spinAngle = (time * spinSpeed + seed * 1.5) % TAU
 
-    if blink then
-        love.graphics.setColor(1, 1, 1, alpha)
+    -- 1. Renderizado de las aspas del Shuriken (Rotación activa continua)
+    love.graphics.push()
+    love.graphics.translate(cx, cy)
+    love.graphics.rotate(spinAngle)
+
+    if sprite then
+        if blink then
+            love.graphics.setColor(1, 1, 1, alpha)
+        else
+            love.graphics.setColor(1, 1, 1, alpha)
+        end
+        love.graphics.draw(sprite, -3.5 * k, -3.5 * k, 0, k, k)
     else
-        love.graphics.setColor(col[1], col[2], col[3], alpha)
+        for _, px in ipairs(CHASER_SHURIKEN_MATRIX) do
+            local xOff, yOff, pType = px[1] * k, px[2] * k, px[3]
+            if pType == "A" then
+                love.graphics.setColor(1.0, 0.46, 0.56, alpha)
+            elseif pType == "B" then
+                love.graphics.setColor(0.90, 0.22, 0.27, alpha)
+            elseif pType == "D" then
+                love.graphics.setColor(0.35, 0.05, 0.13, alpha)
+            elseif pType == "*" then
+                love.graphics.setColor(1.0, 1.0, 1.0, alpha)
+            end
+            love.graphics.rectangle("fill", xOff - k/2, yOff - k/2, k, k)
+        end
     end
-    love.graphics.polygon("fill", starPoints(cx, cy, rot, rOut, 2.5 * k))
 
-    -- FLANK: contorno blanco pulsante
+    -- FLANK: contorno de filo blanco pulsante
     if st == "flank" then
         love.graphics.setColor(1, 1, 1, alpha * (0.3 + 0.7 * pul))
         love.graphics.setLineWidth(1)
-        love.graphics.polygon("line", starPoints(cx, cy, rot, rOut + 1.2 * k, 3.2 * k))
+        love.graphics.polygon("line",
+            0, -3.5 * k,
+            0.5 * k, -0.5 * k,
+            3.5 * k, 0,
+            0.5 * k, 0.5 * k,
+            0, 3.5 * k,
+            -0.5 * k, 0.5 * k,
+            -3.5 * k, 0,
+            -0.5 * k, -0.5 * k
+        )
     end
 
-    -- Ojo central: pupila que rastrea a la cabeza de la serpiente
+    love.graphics.pop() -- Fin rotación del shuriken
+
+    -- 2. Ojo Central Estabilizado (NO rota con las aspas, rastrea a la serpiente)
     local ux, uy = 0, 0
     if head then
         local dx = head.x * tam + tam / 2 - cx
@@ -90,52 +131,139 @@ local function drawChaser(e, tam, time, head)
         local d = math.sqrt(dx * dx + dy * dy)
         if d > 0.001 then ux, uy = dx / d, dy / d end
     end
-    local po = (st == "idle" and 0.2 or 1.4) * k
+    local po = (st == "idle" and 0.2 or 0.8) * k
 
+    -- Fondo blanco del ojo
     if blink then
         love.graphics.setColor(WARM_WHITE[1], WARM_WHITE[2], WARM_WHITE[3], alpha)
     else
         love.graphics.setColor(1, 1, 1, alpha)
     end
-    love.graphics.circle("fill", cx, cy, 2.4 * k)
+    love.graphics.circle("fill", cx, cy, 1.1 * k)
 
+    -- Pupila
     love.graphics.setColor(EYE_DARK[1], EYE_DARK[2], EYE_DARK[3], alpha)
     if e.role == "flanker" then
-        -- Rol flanker: pupila de rendija orientada al objetivo
         love.graphics.push()
         love.graphics.translate(cx + ux * po, cy + uy * po)
         love.graphics.rotate(math.atan2(uy, ux))
-        love.graphics.rectangle("fill", -0.5 * k, -1.6 * k, 1.0 * k, 3.2 * k)
+        love.graphics.rectangle("fill", -0.3 * k, -0.8 * k, 0.6 * k, 1.6 * k)
         love.graphics.pop()
     else
-        love.graphics.circle("fill", cx + ux * po, cy + uy * po, 1.1 * k)
+        love.graphics.circle("fill", cx + ux * po, cy + uy * po, 0.55 * k)
     end
 
-    -- Brillo especular
+    -- Brillo especular en la pupila
     love.graphics.setColor(1, 1, 1, alpha * 0.9)
-    love.graphics.rectangle("fill", cx + ux * po - 1.2 * k, cy + uy * po - 1.2 * k, 0.8 * k, 0.8 * k)
+    love.graphics.rectangle("fill", cx + ux * po - 0.4 * k, cy + uy * po - 0.4 * k, 0.35 * k, 0.35 * k)
 
     -- IDLE: párpado cerrado (media luna superior)
     if st == "idle" then
-        if blink then
-            love.graphics.setColor(1, 1, 1, alpha)
-        else
-            love.graphics.setColor(col[1], col[2], col[3], alpha)
-        end
-        love.graphics.arc("fill", cx, cy, 2.6 * k, math.pi, TAU)
+        love.graphics.setColor(0.90, 0.22, 0.27, alpha)
+        love.graphics.arc("fill", cx, cy, 1.2 * k, math.pi, TAU)
     end
 
-    -- CIERRE: signo de advertencia parpadeante
+    -- CIERRE: signo de advertencia parpadeante en la parte superior
     if st == "close" then
         if on then
             love.graphics.setColor(1, 1, 1, alpha)
         else
             love.graphics.setColor(1, 1, 1, alpha * 0.25)
         end
-        local y0 = cy - 12.5 * k
-        love.graphics.rectangle("fill", cx - 0.7 * k, y0, 1.4 * k, 3.4 * k)
-        love.graphics.rectangle("fill", cx - 0.7 * k, y0 + 4.2 * k, 1.4 * k, 1.4 * k)
+        local y0 = cy - 4.5 * k
+        love.graphics.rectangle("fill", cx - 0.4 * k, y0, 0.8 * k, 2.0 * k)
+        love.graphics.rectangle("fill", cx - 0.4 * k, y0 + 2.5 * k, 0.8 * k, 0.8 * k)
     end
+end
+
+-- Textura sprite 5x5 para el Patroller (Interceptor Delta)
+local patrollerSprite = nil
+local patrollerSpriteLoaded = false
+
+local function getPatrollerSprite()
+    if not patrollerSpriteLoaded then
+        patrollerSpriteLoaded = true
+        local ok, img = pcall(love.graphics.newImage, "assets/patroller_delta.png")
+        if ok and img then
+            img:setFilter("nearest", "nearest")
+            patrollerSprite = img
+        end
+    end
+    return patrollerSprite
+end
+
+local function drawPatroller(e, tam, time)
+    local cx = e.x * tam + tam / 2
+    local cy = e.y * tam + tam / 2
+    local angle = e.visRot or math.atan2(e.dirY or 0, e.dirX or 1)
+    local k = tam / 5.5
+    local pulse = 0.5 + 0.5 * math.sin(time * 8 + (e.seed or 0))
+    local sprite = getPatrollerSprite()
+
+    love.graphics.push()
+    love.graphics.translate(cx, cy)
+    love.graphics.rotate(angle)
+
+    local isAlert = (e.aiState == "alert")
+    local isDash = (e.aiState == "dash")
+
+    if sprite then
+        -- Renderizado de textura sprite PNG
+        if isAlert then
+            local flash = math.floor(time * 30) % 2 == 0
+            love.graphics.setColor(1, 1, 1, flash and 1.0 or 0.4)
+        else
+            love.graphics.setColor(1, 1, 1, 1)
+        end
+        love.graphics.draw(sprite, -2.5 * k, -2.5 * k, 0, k, k)
+
+        -- Núcleo fotónico pulsante sobre el sprite (pixel central 0, 0)
+        if isAlert then
+            love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+            love.graphics.rectangle("fill", -0.7 * k, -0.7 * k, 1.4 * k, 1.4 * k)
+        else
+            love.graphics.setColor(1.0, 1.0, 1.0, (isDash and 0.9 or 0.40) * pulse)
+            love.graphics.rectangle("fill", -0.5 * k, -0.5 * k, k, k)
+        end
+    else
+        -- Fallback procedural si la textura no está disponible
+        for _, px in ipairs(PATROLLER_MATRIX_5X5) do
+            local xOff, yOff, pType = px[1] * k, px[2] * k, px[3]
+            if pType == "B" then
+                love.graphics.setColor(0.05, 0.45, 0.85, 0.95)
+            elseif pType == "C" then
+                love.graphics.setColor(0.00, 0.94, 1.00, 0.95)
+            elseif pType == "*" then
+                love.graphics.setColor(1.0, 1.0, 1.0, isAlert and 1.0 or (0.85 + 0.15 * pulse))
+            elseif pType == "A" then
+                love.graphics.setColor(0.90, 0.98, 1.00, 1.0)
+            elseif pType == "T" then
+                love.graphics.setColor(0.30, 0.85, 1.00, 0.70 + 0.30 * pulse)
+            end
+            love.graphics.rectangle("fill", xOff - k/2, yOff - k/2, k, k)
+        end
+    end
+
+    -- Borde exterior de definición pixel-art
+    local borderColor = isAlert and {1.0, 1.0, 1.0, 0.9} or (isDash and {0.0, 1.0, 0.8, 0.8} or {0.0, 0.94, 1.0, 0.45})
+    love.graphics.setColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
+    love.graphics.setLineWidth(1)
+    love.graphics.polygon("line", 
+        2.5 * k, 0,
+        0, -2.5 * k,
+        -2.5 * k, -1.5 * k,
+        -1.5 * k, 0,
+        -2.5 * k, 1.5 * k,
+        0, 2.5 * k
+    )
+
+    -- Micro-llama de plasma del propulsor (alargada y brillante en DASH)
+    local thrusterLen = (isDash and (3.5 + 1.2 * pulse) or (1.2 + 0.8 * pulse)) * k
+    local flameColor = isDash and {0.0, 1.0, 0.8, 0.9} or {0.2, 0.90, 1.0, 0.6 * pulse}
+    love.graphics.setColor(flameColor[1], flameColor[2], flameColor[3], flameColor[4])
+    love.graphics.polygon("fill", -2.5 * k, -0.8 * k, -2.5 * k - thrusterLen, 0, -2.5 * k, 0.8 * k)
+
+    love.graphics.pop()
 end
 
 function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
@@ -165,24 +293,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
                 drawChaser(e, tam, time, snakeHead)
 
             elseif e.type == "patroller" then
-                local pulse = math.sin(time * 5) * 0.1 + 0.9
-                love.graphics.setColor(
-                    constants.COLOR_ENEMY_PATROLLER[1] * pulse,
-                    constants.COLOR_ENEMY_PATROLLER[2] * pulse,
-                    constants.COLOR_ENEMY_PATROLLER[3] * pulse
-                )
-                local angle = e.visRot or math.atan2(e.dirY or 0, e.dirX or 1)
-                local r = tam * 0.45
-                local pts = {
-                    cx + math.cos(angle) * r, cy + math.sin(angle) * r,
-                    cx + math.cos(angle + 2.5) * r, cy + math.sin(angle + 2.5) * r,
-                    cx + math.cos(angle - 2.5) * r, cy + math.sin(angle - 2.5) * r
-                }
-                love.graphics.polygon("fill", pts)
-                love.graphics.setColor(1, 1, 1, 0.4)
-                love.graphics.setLineWidth(1.5)
-                love.graphics.polygon("line", pts)
-                love.graphics.setLineWidth(1)
+                drawPatroller(e, tam, time)
 
             elseif e.type == "spawner" then
                 local pulse = math.sin(time * 2) * 0.2 + 0.8
@@ -213,7 +324,6 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
             end
 
             -- Efecto visual de congelacion global (Frost Berry)
-            local world = require("core.world")
             local freezeTimer = world.get("enemyFreezeTimer") or 0
             if freezeTimer > 0 then
                 local cx = e.x * tam + tam / 2
@@ -299,7 +409,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
         love.graphics.setLineWidth(1)
         love.graphics.rectangle("line", bx - 1, by - 1, cfg.width + 2, cfg.height + 2)
         -- Foreground fill
-        local fillW = math.floor(math.max(0, math.min(1, boss._uiBarFill)) * cfg.width)
+        local fillW = math.floor(math.max(0, math.min(1, boss._uiBarFill or 1)) * cfg.width)
         love.graphics.setColor(cfg.fgColor)
         love.graphics.rectangle("fill", bx, by, fillW, cfg.height)
         -- Counter text

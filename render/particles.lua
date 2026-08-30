@@ -3,19 +3,47 @@ local constants = require("constants")
 
 local texture
 
+function particles.getTexture()
+    return texture
+end
+
+function particles.release()
+    if texture and texture.release then
+        pcall(function() texture:release() end)
+    end
+    texture = nil
+end
+
 function particles.load()
-    local imgData = love.image.newImageData(4, 4)
-    for y = 0, 3 do
-        for x = 0, 3 do
-            imgData:setPixel(x, y, 1, 1, 1, 1)
+    particles.release()
+    local newImageData = (love.image and love.image.newImageData) or (love.graphics and love.graphics.newImageData)
+    local imgData = newImageData and newImageData(4, 4)
+    if imgData then
+        for y = 0, 3 do
+            for x = 0, 3 do
+                imgData:setPixel(x, y, 1, 1, 1, 1)
+            end
+        end
+        texture = love.graphics.newImage(imgData)
+        if texture then
+            texture:setFilter("nearest", "nearest")
+        end
+        if imgData.release then
+            pcall(function() imgData:release() end)
         end
     end
-    texture = love.graphics.newImage(imgData)
-    texture:setFilter("nearest", "nearest")
+end
+
+local function ensureTexture()
+    if not texture then
+        particles.load()
+    end
+    return texture
 end
 
 function particles.comer(x, y)
-    local ps = love.graphics.newParticleSystem(texture, constants.PARTICLE_COMER_COUNT)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, constants.PARTICLE_COMER_COUNT)
     ps:setEmissionRate(0)
     ps:setSpeed(30, 80)
     ps:setLinearAcceleration(0, 40)
@@ -28,7 +56,8 @@ function particles.comer(x, y)
 end
 
 function particles.muerte(x, y)
-    local ps = love.graphics.newParticleSystem(texture, constants.PARTICLE_MUERTE_COUNT)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, constants.PARTICLE_MUERTE_COUNT)
     ps:setEmissionRate(0)
     ps:setSpeed(40, 120)
     ps:setLinearAcceleration(0, 60)
@@ -41,7 +70,8 @@ function particles.muerte(x, y)
 end
 
 function particles.highScore(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 30)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 30)
     ps:setEmissionRate(0)
     ps:setSpeed(60, 140)
     ps:setLinearAcceleration(0, -50)
@@ -55,7 +85,8 @@ function particles.highScore(x, y)
 end
 
 function particles.activacion(x, y, r, g, b)
-    local ps = love.graphics.newParticleSystem(texture, 15)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 15)
     ps:setEmissionRate(0)
     ps:setSpeed(30, 70)
     ps:setLinearAcceleration(0, -20)
@@ -69,7 +100,8 @@ function particles.activacion(x, y, r, g, b)
 end
 
 function particles.enemyKill(x, y, r, g, b)
-    local ps = love.graphics.newParticleSystem(texture, constants.PARTICLE_ENEMY_COUNT)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, constants.PARTICLE_ENEMY_COUNT)
     ps:setEmissionRate(0)
     ps:setSpeed(20, 60)
     ps:setLinearAcceleration(0, -30)
@@ -83,7 +115,8 @@ function particles.enemyKill(x, y, r, g, b)
 end
 
 function particles.bossFoodTick(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 6)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 6)
     ps:setEmissionRate(0)
     ps:setSpeed(20, 50)
     ps:setLinearAcceleration(0, -20)
@@ -97,7 +130,8 @@ function particles.bossFoodTick(x, y)
 end
 
 function particles.bossDeath(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 30)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 30)
     ps:setEmissionRate(0)
     ps:setSpeed(50, 120)
     ps:setLinearAcceleration(0, -40)
@@ -111,7 +145,8 @@ function particles.bossDeath(x, y)
 end
 
 function particles.bombExplosion(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 40)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 40)
     ps:setEmissionRate(0)
     ps:setSpeed(80, 200)
     ps:setLinearAcceleration(0, 40)
@@ -125,7 +160,8 @@ function particles.bombExplosion(x, y)
 end
 
 function particles.constrictorBurst(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 45)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 45)
     ps:setEmissionRate(0)
     ps:setSpeed(60, 160)
     ps:setLinearAcceleration(0, -30)
@@ -139,7 +175,8 @@ function particles.constrictorBurst(x, y)
 end
 
 function particles.streakDiamond(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 35)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 35)
     ps:setEmissionRate(0)
     ps:setSpeed(50, 130)
     ps:setLinearAcceleration(0, -40)
@@ -153,7 +190,8 @@ function particles.streakDiamond(x, y)
 end
 
 function particles.autotomyDecoy(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 25)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 25)
     ps:setEmissionRate(0)
     ps:setSpeed(20, 60)
     ps:setLinearAcceleration(0, -20)
@@ -167,7 +205,8 @@ function particles.autotomyDecoy(x, y)
 end
 
 function particles.fireTrail(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 16)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 16)
     ps:setEmissionRate(0)
     ps:setSpeed(15, 45)
     ps:setLinearAcceleration(0, -30)
@@ -181,7 +220,8 @@ function particles.fireTrail(x, y)
 end
 
 function particles.frostFreeze(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 40)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 40)
     ps:setEmissionRate(0)
     ps:setSpeed(40, 110)
     ps:setLinearAcceleration(0, 0)
@@ -195,7 +235,8 @@ function particles.frostFreeze(x, y)
 end
 
 function particles.tailSnapShockwave(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 30)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 30)
     ps:setEmissionRate(0)
     ps:setSpeed(60, 150)
     ps:setLinearAcceleration(0, 0)
@@ -209,7 +250,8 @@ function particles.tailSnapShockwave(x, y)
 end
 
 function particles.slimmingBurst(x, y)
-    local ps = love.graphics.newParticleSystem(texture, 28)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 28)
     ps:setEmissionRate(0)
     ps:setSpeed(30, 80)
     ps:setLinearAcceleration(0, 40)
@@ -222,8 +264,69 @@ function particles.slimmingBurst(x, y)
     return ps
 end
 
+function particles.iceSlip(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 12)
+    ps:setEmissionRate(0)
+    ps:setSpeed(20, 60)
+    ps:setLinearAcceleration(0, 10)
+    ps:setColors(0.4, 0.9, 1.0, 0.9,  0.8, 0.98, 1.0, 0.6,  1.0, 1.0, 1.0, 0)
+    ps:setSizes(1.2, 0.2)
+    ps:setParticleLifetime(0.25, 0.5)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(12)
+    return ps
+end
+
+function particles.magmaEmbers(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 18)
+    ps:setEmissionRate(0)
+    ps:setSpeed(25, 75)
+    ps:setLinearAcceleration(0, -60)
+    ps:setColors(1.0, 0.5, 0.1, 1,  1.0, 0.2, 0.05, 0.8,  0.5, 0.05, 0.0, 0)
+    ps:setSizes(1.4, 0.2)
+    ps:setParticleLifetime(0.4, 0.8)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(18)
+    return ps
+end
+
+function particles.toxicBubbles(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 15)
+    ps:setEmissionRate(0)
+    ps:setSpeed(15, 45)
+    ps:setLinearAcceleration(0, -25)
+    ps:setColors(0.3, 0.95, 0.2, 0.9,  0.6, 1.0, 0.4, 0.7,  0.1, 0.4, 0.1, 0)
+    ps:setSizes(1.3, 0.3)
+    ps:setParticleLifetime(0.35, 0.7)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(15)
+    return ps
+end
+
+function particles.voidDust(x, y)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 20)
+    ps:setEmissionRate(0)
+    ps:setSpeed(20, 50)
+    ps:setLinearAcceleration(0, 0)
+    ps:setColors(0.8, 0.3, 1.0, 0.9,  0.2, 0.8, 1.0, 0.7,  1.0, 1.0, 1.0, 0)
+    ps:setSizes(1.4, 0.2)
+    ps:setParticleLifetime(0.4, 0.8)
+    ps:setPosition(x, y)
+    ps:setSpread(6.28)
+    ps:emit(20)
+    return ps
+end
+
 function particles.menuFondo()
-    local ps = love.graphics.newParticleSystem(texture, 80)
+    local tex = ensureTexture()
+    local ps = love.graphics.newParticleSystem(tex, 80)
     ps:setEmissionRate(4)
     ps:setSpeed(8, 25)
     ps:setLinearAcceleration(-2, -8)

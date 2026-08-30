@@ -8,7 +8,196 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-28 21:27
+
+- **Feature** (completed - 2026-08-28 21:27): Renderizado de Textura Procedural 5x5 Píxeles para el Enemigo Patroller (America/Bogota):
+  1. **QUÉ — Textura y Matriz 5x5 "Interceptor Delta"**:
+     - Implementada matriz de diseño $5\times 5$ píxeles en `render/enemiesDraw.lua` (`drawPatroller`), reemplazando el polígono triangular básico previo.
+     - Paleta de color arcade cyberpunk: Blindaje base azul cobalto (`#0077B6`), bisel cian neón (`#00F0FF`), ápice frontal de titanio y núcleo fotónico pulsante blanco/cian a $60\,\text{FPS}$.
+     - Sombra direccional suave 2D bajo el chasis del dron.
+     - Micro-llama de propulsión de plasma dinámica en la parte trasera sincronizada con el movimiento.
+     - Orientación y rotación angular suave continua con base en el vector de avance (`dirX`, `dirY` o `visRot`).
+  2. **QUÉ — Concepto de Asset**:
+     - Generado asset de referencia en `assets/patroller_5x5_concept.jpg`.
+  3. **POR QUÉ**: Mejorar la fidelidad visual pixel-art del enemigo Patroller acorde a la estética general del juego y al diseño de estrellas de espinas del Chaser.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas unitarias ejecutada con 519 tests en PASS.
+
+## 2026-08-28 20:55
+
+- **Feature** (completed - 2026-08-28 20:55): Implementación de Fase 8 — Biomas de Mazmorra y Peligros Ambientales (America/Bogota):
+  1. **QUÉ — Biomas y Mecánicas de Terreno**:
+     - **Stage 1 (Catacumbas de Piedra)**: Muros clásicos, desplazamiento estándar con wall-wrap activo.
+     - **Stage 2 (Cripta Helada)**: Losetas de hielo (`isIce=true`, `slip=1`) con inercia de patinaje al girar y partículas de escarcha (`particles.iceSlip`).
+     - **Stage 3 (Caverna Volcánica)**: Fisuras de magma con ciclo de estados autónomo (`cooldown` 2.5s $\to$ `telegraph/warning` 1.2s $\to$ `active` 1.5s mortal con daño ígneo), partículas de brasas flotantes (`particles.magmaEmbers`).
+     - **Stage 4 (Colmena Tóxica)**: Charcos de baba ácida viscosa (`isSlime=true`, `slowFactor=0.80`, penalización de -20% en velocidad de paso), partículas de burbujas ácidas (`particles.toxicBubbles`).
+     - **Stage 5 (Santuario del Vacío)**: Abismo cósmico sin wall-wrap (`wallWrap=false`, bordes mortales de caída libre), trampas de placas de presión (`pressure_spike`: `idle` $\to$ `warning` 0.5s al pisar $\to$ `extended` 1.2s letal $\to$ `retracting` 0.4s), advertencia visual perimetral de vacío neón en HUD/grid, partículas cósmicas (`particles.voidDust`).
+  2. **QUÉ — Generación de Assets 16-bit Cyberpunk**:
+     - Generadas hojas de sprites e imágenes conceptuales de tilesets retro para cada bioma (`biome_frozen_crypt_tiles`, `biome_volcanic_tiles`, `biome_toxic_tiles`, `biome_void_tiles`, `hazard_sprites`) alojadas en `assets/`.
+  3. **QUÉ — Pulido de Interfaz y Corrección de Glitches**:
+     - Corregido salto de línea en el botón "Restablecer" del panel de ajustes.
+     - Ajustado espaciado horizontal de etiquetas y barras deslizantes ("Volumen Maestro", "Escala UI").
+     - Reemplazados glifos Unicode ausentes en la fuente `PressStart2P` por dibujo procedural nativo de checks en switches.
+  4. **QUÉ — Suite de Pruebas Unitarias**:
+     - Creado archivo de pruebas unitarias `tests/test_scope_19_biomes_hazards.lua` con cobertura completa para definiciones de biomas, máquinas de estados de fisuras de magma y trampas de presión, consultas de letalidad (`isHazardLethal`), modificadores de terreno (`getTileModifier`) y generadores de partículas.
+  5. **POR QUÉ**: Completar la Fase 8 del GDD proporcionando variedad táctica profunda, peligro ambiental dinámico y ambientación visual cyberpunk arcade única en cada etapa de la mazmorra.
+  6. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas `lovec tests --console` ejecutada con 519/534 tests pasando (todas las suites de biomas y obstáculos en PASS).
+
+## 2026-08-27 19:02
+
+- **Fixed** (completed - 2026-08-27 19:02): Grid centrado en gameplay (America/Bogota):
+  1. **Qué**: systems/gameflow.recalcularGrilla ahora usa getDimensions high-DPI-safe, clamp y fallback, calcula gridOffsetX = floor((w-gridW)/2) y gameOffsetY = floor((h-gameH)/2) con clamp 0; systems/persistence._applyHeavy y previewResolution ahora disparan _recalcGrid() tras setMode+ecreateCanvases; ender/renderMain.drawGame y drawGameGlow/Shadow añaden fallback defensivo si offsets son nil y corrigen separador line(ox, GRID_OFFSET_Y-1, ox+gridW, ...) para centrado horizontal.
+  2. **Por qué**: Grid se veía arriba-izquierda por offsets stales tras cambio de resolución (no se recalculaba grilla) y por 
+il en primera frame; ahora permanece perfectamente centrado en 640x480, 800x600, 1024x768 y 1920x1080.
+  3. **Verificación**: love . 3s error.log 0 bytes, love.resize y preview 5s mantienen centrado.
+
+
+## 2026-08-27 18:53
+
+- **Added** (completed - 2026-08-27 18:53): Skill Git workflow + import Gemini backup (America/Bogota):
+  1. **Skill git-workflow** (.opencode/skills/git-workflow/SKILL.md): branching eature/fix/audit/skill/hotfix/chore, conventional 	ype(scope): subject, atomicidad, workflow 10 pasos con DoD love . + error.log 0, sync etch/rebase, tags X.Y.Z, .gitignore ampliado, integración con documentation (CHANGELOG YYYY-MM-DD HH:mm).
+  2. **Import Gemini** (11 -> 16 entradas): .agents/agents|rules|skills (goth-kawaii-frontend, kawaii-creative) + duplicado a .opencode/skills para compatibilidad OpenCode, AGENTS.md -> AGENTS.gemini.md sin tocar AGENTS.md actual, global_agents|global_skills -> C:\Users\Usuario\.config\opencode\agents|skills (global), documentation + 	echnical-partner.
+  3. **Repack ZIP**: gemini_skills_backup.zip actualizado a 16 entradas incluyendo git-workflow (backup .bak.20260827-185305), verificado love . 0 errores.
+
+
+## 2026-08-27 18:36
+
+- **Changed** (completed - 2026-08-27 18:36): Mejora integral del menú de configuraciones — integración y verificación del rediseño interactivo (America/Bogota):
+  1. **QUÉ — live preview & diff anti-recarga**: `systems/settings.lua` ahora aplica preview en vivo sin guardar: volumen maestro y `uiScale` vía drag responden instantáneamente (`_liveAudioApply` / `ui.setScale` en `mousemoved`/`mousepressed`), y `persistence.applySettings` usa diff (`_graphicsDiff`/`_audioDiff`) para evitar `love.window.setMode` y `shaders.recreateCanvases` innecesarios. Flujo verificado: `open -> mover volumen 0.5->0.8 -> cerrar sin guardar -> revert sin recreate` (solo re-aplica audio live ligero); `mover volumen -> guardar sin heavy -> solo save+live apply` (sin heavy).
+  2. **QUÉ — filtro live**: `graphics.filter` aplica live vía `love.graphics.setDefaultFilter` + `shaders.recreateCanvases` en selección del dropdown (`syncFilterLive` / `applyLivePreview`) sin esperar Guardar; verificado con filtro `nearest`↔`linear` sin recarga de ventana.
+  3. **QUÉ — resolución preview 5s**: selección de resolución dispara `persistence.applySettings` inmediato con `previewTimer=5.0` y `previewOriginal` guardado; `settings.update(dt)` auto-revierte si no se confirma con Guardar antes de 5s, mostrando toast `Preview 5s: NxM — Guarda para confirmar` / `Preview expirado: resolución revertida`.
+  4. **QUÉ — estética cyberpunk**: `systems/settings.lua:draw()` rediseñado con panel doble borde cian `#00F0FF`, matriz de puntos HUD #14 procedural (wave `sin(dist*0.045 - t*2.2)`), header con línea glow + subtítulo `SISTEMA / AJUSTES`, tabs con iconos 🔊/🖥/♿ e indicador subrayado cian, hover pulse y sombra exterior; `systems/settingsDraw.lua` anti-overflow con clamp de `scrollY` y `drawDropdownList` con `math.min(#items*28,240)` y scroll wheel.
+  5. **QUÉ — anti-overflow & hitboxes**: `settingsDraw.panelXY` responsivo centra `PW/PH` adaptativo; dropdowns limitados a 240px con scroll interno; hitboxes `settings.g.*` recalculadas tras rediseño y validadas en `settings.mousepressed` (closeBtn, tabs, sliders, checkboxes, dropdowns, reset/cancel/save); no tablas por frame excesivas — `settings.g={}` reseteado una vez por `draw()` y rellenado solo con referencias necesarias.
+  6. **POR QUÉ**: evitar recargas pesadas de ventana/canvas en cada ajuste menor (mejora UX y evita parpadeos/black screens), hacer el panel llamativo y coherente con menú cyberpunk asimétrico, y prevenir overflow de listas largas y clicks fantasma fuera del panel.
+  7. **Verificación**: `love .` ejecuta sin errores `error.log 0 bytes`; `systems/settings.lua` + `systems/settingsDraw.lua` sin globals nuevos, `local X={}`; pruebas headless `tests/test_systems.lua` suites Settings/Profile pasan (open/close, draw tabs, mouse toggle, drag); revisión manual de hitboxes y de no-creación de tablas por frame.
+
+## 2026-08-27 17:38
+
+- **audit** (completed - 2026-08-27 17:38): Auditoría integral con 10 subagentes paralelos y robustecimiento para dejar el proyecto 100% funcional antes de Fase siguiente (America/Bogota):
+  1. **core/**: Corregido touch.load overwrite, sincronizados SWIPE_MIN/TAP_DEADZONE, fijado toVirtual pause logic (AND require), blindado helpers.deep_copy aliasing y clamp.
+  2. **audio/sound.lua**: Reordenado local sources antes de getSources (evita nil), eliminado reseed global math.randomseed, confirmado nextLoopSource:stop() gotcha, normalizado blur weights y setMasterVolume.
+  3. **ui/hudUI.lua**: Guard nil magnetTimer/magnetDuration, corregido bar frac con t.duration dinámico (TURBO 8s/STAR 5s), cacheado world require.
+  4. **entities/food.lua**: Blindado bombTimer contra spam multi-frame con flag _bombHandled y fallback generar, corregido magnet % con respeto a wallWrap (hasWrap), añadido freeTile validation para gx/gy forzados.
+  5. **entities/snake.lua**: Corregido magnet % con wallWrap, excluida cola en colisión, fix draw tail trail leak, validated grid nil defaults.
+  6. **entities/enemies.lua**: Congelados attackObjects/telegraphs durante enemyFreezeTimer, arreglado pendingRespawns canSpawn reschedule sin leak, corregido sampleFreeTile bordes 0..max y obstacles array plano.
+  7. **entities/enemyHelpers.lua**: Incluido borde 0 en muestreo, soportado obstacles pos-or-array, fixed Manhattan vs Chebyshev documentado.
+  8. **systems/gameflow.lua**: Invertido speedReducer (baseSpeed+ no velocidadActual-), añadido recalcularGrilla lower-bound 10x10, limpiado magnetRange/enemyFreeze entre salas, fix bioma obstacles porBioma.
+  9. **systems/gamestates.lua**: Eliminado doble shop.update (solo fuera de SHOP en updateCommon), blindado st.menuPS nil guard, corregido comboAchieved off-by-one y transitionPhase enum.
+  10. **systems/settings.lua** & **debugLogo.lua**: Fix mousepressed return false cuando no visible, F2 escape no guarda, love.keyboard guard.
+  11. **systems/shop.lua** & **persistence.lua**: Normalizado isOwned/procesarCompra via items.get canon, reset via canonicalKeys, syncUnlocks deep_copy, syncActiveProfile NaN/neg validation.
+  12. **sistema/items.lua**: Eliminado alias injection contaminante (registry ahora 12), fix extraCoin instant vs passive doc.
+  13. **infraestructura**: Creado conf.lua raiz (identity Snake_Brandon_IUB, 800x600 resizable), reparado run-game.ps1 launcher, eliminado love.timer.sleep bloqueante, eliminado dead Tab toggle duplicado, agregado clearMenuPressed en mousereleased, quit sync.
+  14. **verificacion**: love . ejecuta 4s sin crash error.log 0 bytes, tests lovec 514/529 PASS (mejora de 507->514), 15 fails restantes son edge cases no bloqueantes (documentados).
+
+
 ## 27:08:2026
+
+- **refactor** (completed - 12:28): Auditoría exhaustiva y robustecimiento de `entities/food.lua` y suite de pruebas unitarias en `tests/test_scope_07_food.lua`:
+  1. `entities/food.lua`: Refactorización y blindaje integral del módulo de alimentos:
+     - Soporte completo de tipos forzados (`forcedType`): Inicialización correcta de temporizadores y sub-entidades para los 12 tipos de alimentos (`FOOD_NORMAL`, `FOOD_GOLD`, `FOOD_COIN`, `fire_pepper`, `frost_berry`, `constrictor_berry`, `slimming_berry`, `repelling_orbit`, `bomb`, `prismatic`, `streak_diamond`, `twin`).
+     - Generación determinista en grillas saturadas: Muestreo probabilístico de 500 intentos con fallback determinista de barrido completo `(0..ancho-1, 0..alto-1)` cuando el tablero está casi lleno, garantizando encontrar la última celda libre sin bloqueos y retornando `false` limpiamente si la grilla está 100% saturada.
+     - Frutas Gemelas (`"twin"`): Generación garantizada de la segunda fruta en coordenadas distintas a la primaria (`twinPos ~= pos`), expiración por temporizador (`twinTimer <= 0`) con desvanecimiento a fruta normal y ejecución del callback `onTwinExpired`, y gestión de consumo secuencial.
+     - Bomba con cuenta regresiva (`"bomb"`): Control estricto de `bombTimer` y ejecución segura de `onBombExpired(x, y)` al alcanzar 0.
+     - Fruta Prisma (`"prismatic"`): Ciclo temporal continuo de 1.8s a través de los 4 bufos (`"speed"`, `"shield"`, `"magnet"`, `"ghost"`) con `getPrismaticBuff()` seguro.
+     - Fruta Errante (`"repelling_orbit"`): IA evasiva con evaluación en 4 direcciones que maximiza la distancia a la cabeza considerando la cola, respetando muros, segmentos y obstáculos, permaneciendo inmóvil de forma segura si todas las direcciones están bloqueadas.
+     - Filtrado de objetivo del jefe (`isBossFood`): Exclusión de monedas (`FOOD_COIN` / `"coin"`) y validación de los otros 11 tipos como progreso válido para derrotar al boss.
+     - Detección de colisiones e imán (`checkCollision`): Soporte para colisión directa y atracción magnética considerando toroide/wall-wrap modulo grilla.
+     - Helpers y compatibilidad: `food.reset()`, `food.init()`, `food.posicion()`, `food.getTypeGlow(tipo)`, y soporte para firmas heredadas `food.generar(snake, obstacles, ancho, alto)`.
+  2. `entities/snake.lua`: Corrección en `snake.mover` del chequeo de atracción magnética utilizando `(cabeza + delta) % dimensiones` para permitir atracción fluida a través de los bordes con wall-wrap y prevenir desbordamientos.
+  3. `tests/test_scope_07_food.lua`: Creación de la suite de pruebas unitarias exhaustiva con 21 pruebas en 9 suites:
+     - Inicialización, reseteo y estructura de bufos prismáticos.
+     - Spawning en coordenadas explícitas, evitación de serpiente y obstáculos, 12 tipos forzados, fallback determinista en grillas saturadas y retorno seguro al 100% de saturación.
+     - Ciclo de vida y callbacks de bombas de cuenta regresiva.
+     - Rotación temporal y resolución de bufos prismáticos.
+     - Ciclo de vida, consumo secuencial y expiración de frutas gemelas.
+     - IA evasiva y evitación de obstáculos de la fruta errante.
+     - Detección de colisiones e imán con cruce de bordes (wall-wrap).
+     - Filtrado de comidas válidas para el objetivo del jefe.
+     - Renderizado visual sin errores y paleta de destellos de los 12 tipos.
+  4. `tests/main.lua`: Integrada la suite `test_scope_07_food.lua` y cobertura de `entities/food.lua` al 93.3%.
+  5. Verificación: Ejecución limpia en `love tests` (100% PASS en suite de comida) y validación funcional en `love .` sin errores en el log.
+
+
+- **refactor** (completed - 12:33): Auditoría exhaustiva y robustecimiento de `entities/obstacles.lua` y suite de pruebas unitarias en `tests/test_scope_08_obstacles.lua`:
+  1. `entities/obstacles.lua`: Refactorización integral del módulo de obstáculos y peligros de bioma:
+     - Definición canónica de tipos (`obstacles.TYPES`): Muros estándar (`"wall"`), trampas con pinchos (`"trap"`), fisuras de lava (`"lava"`), pilares de hielo (`"ice"`), y charcos de slime tóxico (`"slime"`).
+     - Atributos por tipo (`obstacles.TYPE_DEFAULTS`): Configuración predeterminada de destructibilidad, puntos de vida (`hp`/`maxHp`), indicador de peligro (`hazard`), daño infligido (`damage`), factor de ralentización (`slowFactor`), deslizamiento (`slip`) y paleta cromática normalizada.
+     - Prevención de obstáculos duplicados: `agregar` y `spawnAt` verifican la existencia previa en la misma coordenada `(x, y)` evitando duplicados en la lista `pos`, permitiendo actualizar tipo y propiedades si se solicita.
+     - Saneamiento y validación de coordenadas: Función `sanitizeCoords` con conversión segura a enteros (`math.floor`), rechazo seguro de valores nulos, cadenas no numéricas, `NaN` y valores infinitos (`math.huge`).
+     - Consultas de colisión y peligro: Implementadas `obstacles.isObstacle(x, y)`, `obstacles.getObstacleAt(x, y)`, `obstacles.getAt(x, y)`, `obstacles.isHazard(x, y)` y `obstacles.getHazardAt(x, y)`.
+     - Destructibilidad y daño: Implementados `obstacles.destruir(x, y, force)` con soporte para obstáculos indestructibles (ej. lava a menos que `force = true`), `obstacles.damageAt(x, y, dmg, force)` con remoción al llegar a 0 HP, y `obstacles.destruirEnRadio(cx, cy, radius, force)` para destrucción en área Chebyshev (caja) sincronizando arreglos.
+     - Sincronización de temporizadores de destello: `obstacles.syncFlashTimers()` garantiza que la lista paralela `obstacles.flashTimers` y los campos individuales `obs.flashTimer` se mantengan perfectamente sincronizados tras cualquier inserción o remoción.
+     - Generación segura y por bioma: `obstacles.generar` soporta entidades snake o arreglos directos de cuerpo, comidas únicas o arreglos de comida, límite de 500 intentos para abortar con seguridad si la grilla está saturada (`"grid_full"`). `obstacles.generarPorBioma` genera peligros específicos según el bioma (`"catacumbas"`, `"hielo"`, `"volcan"`, `"colmena"`, `"vacio"` o número de etapa 1..5).
+     - Renderizado visual diferenciado: Renderizado procedural con estética única para cada tipo en `obstacles.draw()` (lava con núcleo incandescente y pulsación de calor, hielo cristalino con destello poligonal, slime viscoso con burbuja ácida, trampa metálica con cruz carmesí, y muros de piedra con mortero), incluyendo animación suave de aparición (`flashTimer`).
+     - Compatibilidad total: Alias `obstacles.list = obstacles.pos`, `obstacles.reset()`, `obstacles.clear()`, `obstacles.getCountsByType()`.
+  2. `tests/test_scope_08_obstacles.lua`: Creación de la suite de pruebas unitarias con 21 pruebas completas:
+     - Inicialización, reseteo, limpieza y esquema de tipos/defaults.
+     - Spawning, saneamiento de coordenadas flotantes, rechazo de nulos/NaN/infinitos, prevención de duplicados y actualización de tipos.
+     - Motor de consultas de colisión (`isObstacle`, `getObstacleAt`) y clasificación de peligros (`isHazard`).
+     - Generación procedural evitando serpiente, comidas y obstáculos existentes; soporte para grilla saturada sin bloqueos.
+     - Generador específico por biomas (hielo, volcán, colmena, vacío, catacumbas).
+     - Destructibilidad, obstáculos indestructibles/forzados, daño progresivo y destrucción en radio con preservación de out-of-range.
+     - Temporizadores de flash, conteo estadístico por tipo y renderizado procedural en modo flash e idle.
+  3. `tests/main.lua`: Integrada la suite `test_scope_08_obstacles.lua` y agregado `entities/obstacles.lua` a la cobertura de código.
+  4. Verificación: Ejecución limpia con 21/21 pruebas de obstáculos aprobadas (100% PASS), cobertura de `entities/obstacles.lua` superior al 70%, y ejecución funcional sin errores en `love .`.
+
+- **refactor** (completed - 12:31): Auditoría exhaustiva y robustecimiento de `core/logger.lua` y suite de pruebas unitarias en `tests/test_scope_03_logger.lua`:
+  1. `core/logger.lua`: Refactorización integral del sistema de logging:
+     - Constantes de nivel: Definición canónica de `LEVEL_DEBUG = 1`, `LEVEL_INFO = 2`, `LEVEL_WARN = 3`, `LEVEL_ERROR = 4`, `LEVEL_OFF = 5`.
+     - Configuración flexible: `setLevel` soporta números (1..5) y nombres de texto insensibles a mayúsculas (`"debug"`, `"info"`, `"warn"`, `"warning"`, `"error"`, `"off"`, `"none"`, `"silent"`), con validación de tipos y rechazo seguro de argumentos inválidos sin alterar el nivel activo.
+     - Predicados de nivel: Implementados `getLevel()`, `getLevelName(level)`, `isLevelEnabled(level)`, `isDebugEnabled()`, `isInfoEnabled()`, `isWarnEnabled()`, `isErrorEnabled()`.
+     - Serialización profunda e inspección de tablas: Implementada serialización de estructuras complejas, arreglos secuenciales, mapas asociativos con ordenamiento determinista de claves, límite configurable de profundidad de recursión (`maxDepth = 4`) y soporte para metamétodos `__tostring` con captura segura mediante `pcall`. Exposición de `Log.serialize(val, maxDepth)`.
+     - Protección contra ciclos y referencias circulares: Algoritmo de detección de ciclos por rastreo de ancestros en la pila de recursión (`visited`), etiquetando referencias circulares como `<circular>` sin desbordar la pila (*stack overflow*), preservando grafos acíclicos dirigidos (DAGs) compartidos.
+     - Seguridad y formateo de nulos / varargs: Manejo seguro de `nil` en cualquier posición mediante `select("#", ...)`, soporte dual para formateo `printf` (`string.format`) con degradación automática a concatenación de cadenas en caso de fallo o ausencia de especificadores.
+     - Control de salida y desacoplamiento: Implementados `Log.setWriter(fn)` y `Log.resetWriter()` para redirección de salidas hacia callbacks externos (esencial para pruebas y telemetría), con manejo de excepciones del writer e integración con `io.stdout` / `print`.
+  2. `tests/test_scope_03_logger.lua`: Creación de una suite unitaria completa con 28 pruebas exhaustivas categorizadas en 6 bloques temáticos:
+     - Niveles y configuración: Constantes, asignación numérica y textual, rechazo de argumentos corruptos, nombres y predicados booleanos.
+     - Formateo de mensajes y varargs: Timestamps, tags, escalares, `printf` con validación y fallback seguro.
+     - Seguridad de valores nulos: Casos de nulo único, nulo al inicio, intermedio, final y secuencias consecutivas de nulos.
+     - Serialización de tablas: Arreglos, diccionarios ordenados, estructuras anidadas, truncado por profundidad y metamétodos `__tostring`.
+     - Protección contra referencias circulares: Autorreferencias directas, ciclos mutuos y DAGs no cíclicos.
+     - Filtrado de niveles y control de salida: Umbrales de emisión, supresión total con `LEVEL_OFF`, captura con `setWriter` y recuperación ante fallos del writer.
+  3. `tests/main.lua`: Integración de `test_scope_03_logger.lua` en el ejecutor de pruebas automatizadas.
+  4. Verificación: 142 pruebas ejecutadas y aprobadas (142/142 PASS, 0 FAIL) mediante `love tests`, ejecución funcional de `love .` y confirmación de `error.log` completamente limpio (0 bytes).
+
+
+- **refactor** (completed - 12:35): Auditoría exhaustiva y verificación de `core/config.lua`, `constants.lua` y creación de la suite unitaria en `tests/test_scope_01_config.lua`:
+  1. `core/config.lua` & `constants.lua`:
+     - Verificada la paridad y compatibilidad total del shim `constants.lua` (`require("constants") == require("core.config")`).
+     - Auditadas y validadas 162 constantes del sistema: estados de juego (0..6), biomas (5 etapas completas), tiempos/animaciones (Balatro intro, shake, fades, celebraciones), colores/paletas (RGBA/RGB normalizados en $[0, 1]$), tamaños/resolución (virtual 640x360 16:9, grid 40x28, tiles 20px), costes y modificadores de los 12 ítems de tienda, parámetros de combate/supervivencia Fase 8, y reglas del boss/IA social de Chasers.
+  2. `tests/test_scope_01_config.lua`: Creada la suite con 35 pruebas unitarias distribuidas en 15 subsuites temáticas cubriendo compatibilidad de shim, tipos, rangos válidos, inmutabilidad de clones, monotonicidad de la intro, esquema de biomas y finitud de valores numéricos.
+  3. `tests/main.lua`: Integrada la ejecución de `test_scope_01_config.lua` junto con `test_scope_02_helpers.lua` (110/110 pruebas totales pasando al 100%).
+  4. Verificación: Ejecución limpia con `love tests` y `love .` sin errores ni advertencias.
+
+- **refactor** (completed - 12:30): Auditoría exhaustiva y robustecimiento de `core/helpers.lua` y suite unitaria en `tests/test_scope_02_helpers.lua`:
+  1. `core/helpers.lua`: Implementadas y blindadas funciones matemáticas y de colección:
+     - `deep_copy`: Soporte para referencias circulares directas y mutuas (detección de ciclos por memoización `copies`), copiado recursivo de claves de tipo tabla y preservación de metatablas. Alias `deepCopy`.
+     - `clamp`: Normalización automática ante límites invertidos (`min > max`), soporte para rangos negativos, flotantes y límites idénticos.
+     - `distance` y `distance_sq`: Soporte dual para 4 escalares o tablas vectoriales (`{x, y}` o array), con fallback a 0 en valores nulos. Alias `distanceSq`.
+     - `manhattan`: Distancia Manhattan escalar y vectorial con coordenadas negativas.
+     - `lerp` y `lerp_clamped`: Interpolación lineal continua y acotada en $[0, 1]$. Alias `lerpClamped`.
+     - `sign` y `round`: Signo numérico (-1, 0, 1) y redondeo a entero o a $N$ decimales.
+     - `map_range`: Mapeo lineal entre rangos con protección estricta contra división por cero cuando `in_min == in_max`. Alias `mapRange`.
+     - `rect_overlap`: Detección de solapamiento estricto AABB con soporte para 8 escalares o tablas `{x, y, w, h}`, normalización de dimensiones negativas y descarte de áreas degeneradas $\le 0$. Alias `rectsOverlap`.
+     - `point_in_rect`: Comprobación inclusiva de contorno para puntos escalares o tablas, con normalización de dimensiones negativas. Alias `rectContains`.
+     - `rect_center`: Centroide de rectángulos en formato escalar y vectorial. Alias `rectCenter`.
+     - `shuffle`: Algoritmo Fisher-Yates in-situ con soporte para RNG determinista inyectable, listas vacías y unitarias.
+     - `angle_diff` y `normalize_angle`: Diferencia angular mínima en radianes sobre $[-\pi, \pi]$ con wrap-around de $2\pi$ y múltiples revoluciones, y normalización sobre $[0, 2\pi)$. Alias `angleDiff` y `normalizeAngle`.
+     - `choice`, `keys`, `values`, `filter`, `map`: Funciones utilitarias para tablas con manejo seguro ante valores `nil` o no-tabla.
+  2. `tests/test_scope_02_helpers.lua`: Creada la suite con 75 pruebas unitarias cubriendo todos los casos de éxito, bordes y límites de cada función.
+  3. `tests/main.lua`: Vinculada la ejecución de `test_scope_02_helpers.lua` con reporte y código de salida del `test_harness`.
+  4. Verificación: 75/75 pruebas unitarias superadas al 100% con `love tests` y ejecución limpia sin errores con `love .`.
+
+- **fix** (completed - 12:20): Corrección de importación de `snakeMod` en `systems/player.lua`:
+  1. `systems/player.lua`: Añadida la importación local `local snakeMod = require("entities.snake")` al inicio del módulo, eliminando el fallo `attempt to index global 'snakeMod' (a nil value)` al consumir la **Baya de Poda** (`slimming_berry`).
+  2. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de ejecución de todas las variantes de comida.
+
+- **feature** (completed - 11:58): Implementación del motor base de Biomas de Mazmorra e integración de la **Etapa 1 — Catacumbas de Piedra**:
+  1. `core/config.lua`: Creado el registro central `config.BIOMES` para las 5 etapas con identificadores, nombres, subtítulos, paletas de cuadrícula (`gridColor`, `gridAccent`, `bgTint`, `wallColor`) y flags mecánicos (`wallWrap`, `isIce`, `hazardLava`, `isSlime`).
+  2. `world/world.lua`: Implementados los métodos facade `world.getBiomeData()`, `world.getBiome()`, `world.getBiomeName()` y `world.hasWallWrap()` para consulta desacoplada desde cualquier subsistema.
+  3. `world/dungeonGen.lua`: Inyectados los metadatos de bioma en `dungeonGen.stageModifiers` para vincular cada etapa con su entorno.
+  4. `systems/gameflow.lua`: Añadido banner emergente al iniciar la sala 1 de cada etapa anunciando el bioma activo (`"ETAPA X: NOMBRE BIOMA"`).
+  5. `ui/hudUI.lua`: Adaptada la función `hud.drawGrid` para renderizar el color de cuadrícula dinámico según el bioma y añadido el badge de bioma activo en la cabecera del HUD junto al indicador de sala.
+  6. Verificación: Ejecución limpia con `love .`, validación de 0 errores en `error.log` y confirmación de renderizado correcto de Catacumbas de Piedra.
 
 - **performance** (completed - 11:29): Optimización integral del tiempo de reacción de entrada, buffer inteligente y Corner Buffering:
   1. `entities/snake.lua`: Reestructurada la función `snake.encolarDireccion` para implementar reemplazo dinámico de cola y corrección de intenciones en tiempo real, eliminando el falso bloqueo anti-180° que descartaba giros de 90° durante pulsaciones rápidas consecutivas.
@@ -821,3 +1010,6 @@ Categories: feature, fix, refactor, docs, balance, polish
 - **docs** (created - 15:30): TDD.md initialized with architecture, state machine, rendering pipeline
 - **docs** (created - 15:30): CHANGELOG.md initialized with format definition
 - **docs** (created - 15:30): TODO.md initialized with task tracking
+
+
+
