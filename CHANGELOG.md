@@ -8,6 +8,18 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-29 21:12
+
+- **Fix** (completed - 2026-08-29 21:12): Corrección de cadencia de movimiento y colisiones físicas del Patroller (America/Bogota):
+  1. **QUÉ — Velocidad / Cadencia normalizada**:
+     - Eliminada la doble acumulación de `dt` en [`entities/patrollerAI.lua`](entities/patrollerAI.lua) (donde `e.moveTimer` se sumaba en el loop de `enemies.lua` y volvía a sumarse dentro de `patrollerAI.step`).
+     - Ajustado `ENEMY_PATROLLER_SPEED` de 0.20s a un ritmo táctico balanceado de 0.35s (1.8x en dash).
+  2. **QUÉ — Detección y Colisión Física Continua**:
+     - Eliminada la serpiente de la lista de obstáculos inmóviles en `isBlocked`: el Patroller ya no detecta el cuerpo de la serpiente como un muro sólido contra el cual rebotar preventivamente.
+     - Implementado [`snake.checkEnemyCollisions(s, enemiesList)`](entities/snake.lua) integrado en el tick de `systems/gamestates.lua`: si cualquier enemigo (incluido el Patroller) se desplaza hacia la cabeza o los segmentos 2-3 de la serpiente (o cualquier segmento si la longitud es menor a 5), se activa la colisión letal (o consumo de escudo/armadura). Si el Patroller impacta en los segmentos 4 o posteriores y la serpiente mide $\ge 5$, ejecuta el seccionamiento quirúrgico (*Guillotine Slice*).
+  3. **POR QUÉ**: Resolver que el Patroller se moviera a velocidad descontrolada y que atravesara o esquivara artificialmente a la serpiente sin generar colisión ni peligro.
+  4. **Verificación**: `love .` probado exitosamente con colisiones y corte de cola activos, `error.log` en 0 bytes y suite de pruebas unitarias al 100% en PASS.
+
 ## 2026-08-29 20:57
 
 - **Feature** (completed - 2026-08-29 20:57): Implementación modular de la IA Táctica del Patroller (Interceptor Delta) y Mecánica Guillotine Slice (America/Bogota):

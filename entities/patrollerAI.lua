@@ -7,12 +7,9 @@ local constants = require("constants")
 
 local TAU = math.pi * 2
 
-local function isBlocked(cx, cy, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList, selfEnemy)
+local function isBlocked(cx, cy, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList, selfEnemy)
     if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then
         return true
-    end
-    for _, s in ipairs(snakeBody or {}) do
-        if s.x == cx and s.y == cy then return true end
     end
     if obstaclesMod then
         local obs = obstaclesMod.pos or obstaclesMod
@@ -109,14 +106,14 @@ function patrollerAI.checkLineOfSight(e, snakeHead, obstaclesMod, anchoGrilla, a
     return false
 end
 
-function patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList)
+function patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList)
     local dx, dy = e.dirX, e.dirY
     -- Direcciones ortogonales a 90 grados: izquierda (-dy, dx) y derecha (dy, -dx)
     local leftX, leftY = -dy, dx
     local rightX, rightY = dy, -dx
 
-    local leftBlocked = isBlocked(e.x + leftX, e.y + leftY, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList, e)
-    local rightBlocked = isBlocked(e.x + rightX, e.y + rightY, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList, e)
+    local leftBlocked = isBlocked(e.x + leftX, e.y + leftY, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList, e)
+    local rightBlocked = isBlocked(e.x + rightX, e.y + rightY, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList, e)
 
     -- Prioridad en modo perimeter_orbit segun sentido de orbita
     if e.patrolMode == "perimeter_orbit" then
@@ -141,7 +138,7 @@ function patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, snakeBody, obstacle
 
     -- Si ambos lados a 90 grados estan bloqueados: rebote retroceso a 180 grados
     local backX, backY = -dx, -dy
-    if not isBlocked(e.x + backX, e.y + backY, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList, e) then
+    if not isBlocked(e.x + backX, e.y + backY, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList, e) then
         return backX, backY
     end
 
@@ -195,13 +192,12 @@ function patrollerAI.step(e, ctx)
     end
 
     -- 3. Cadencia de paso segun estado
-    local baseInterval = e.moveInterval or constants.ENEMY_PATROLLER_SPEED or 0.2
+    local baseInterval = e.moveInterval or constants.ENEMY_PATROLLER_SPEED or 0.35
     local currentInterval = baseInterval
     if e.aiState == "dash" then
-        currentInterval = baseInterval / (constants.PATROLLER_DASH_SPEED_MULT or 2.0)
+        currentInterval = baseInterval / (constants.PATROLLER_DASH_SPEED_MULT or 1.8)
     end
 
-    e.moveTimer = (e.moveTimer or 0) + dt
     if e.moveTimer < currentInterval then
         return
     end
@@ -219,9 +215,9 @@ function patrollerAI.step(e, ctx)
     local nx = e.x + e.dirX
     local ny = e.y + e.dirY
 
-    if isBlocked(nx, ny, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList, e) then
+    if isBlocked(nx, ny, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList, e) then
         -- Bloqueo frontal: resolver giro a 90 grados o rebote 180 grados
-        local turnX, turnY = patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList)
+        local turnX, turnY = patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList)
         e.dirX = turnX
         e.dirY = turnY
 
@@ -252,7 +248,7 @@ function patrollerAI.step(e, ctx)
                 e.sentryStepCount = 0
                 e.sentryWaitTimer = 0.5
                 -- Gira 90 grados para cubrir otro cuadrante
-                local turnX, turnY = patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, snakeBody, obstaclesMod, boss, enemiesList)
+                local turnX, turnY = patrollerAI.resolveTurn(e, anchoGrilla, altoGrilla, obstaclesMod, boss, enemiesList)
                 if turnX ~= 0 or turnY ~= 0 then
                     e.dirX = turnX
                     e.dirY = turnY
