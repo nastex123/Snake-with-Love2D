@@ -243,6 +243,22 @@ function states.updatePlaying(dt)
         end
     end
 
+    -- Comprobacion de seccionamiento de cola por Patroller (Guillotine Slice)
+    if snakeMod.checkPatrollerSlice then
+        local slice = snakeMod.checkPatrollerSlice(st.player, enemiesMod.list)
+        if slice then
+            local tam = constants.TAMANIO_BLOQUE or 20
+            local px = slice.gx * tam + tam / 2
+            local py = slice.gy * tam + tam / 2
+            table.insert(st.activePS, { ps = particles.tailSnapShockwave(px, py) })
+            sound.play("shieldBreak")
+            uiMod.addPopup("COLA CORTADA! -" .. slice.removedCount, slice.gx, slice.gy)
+            st.comboCount = 0
+            st.shakeTimer = 0.2
+            shadersMod.triggerDamage(0.5, 0.3)
+        end
+    end
+
     if shop.magnetTimer > 0 then
         shop.magnetTimer = shop.magnetTimer - dt
         if shop.magnetTimer <= 0 then
