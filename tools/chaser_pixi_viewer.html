@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chaser Enemy Pixel-Art Showcase — 20 Proposals</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background-color: #05050D;
+      color: #F3F4F6;
+      font-family: 'Rajdhani', sans-serif;
+    }
+    .pixel-font {
+      font-family: 'Press Start 2P', monospace;
+    }
+    .cyber-card {
+      background: linear-gradient(135deg, rgba(26, 11, 22, 0.85) 0%, rgba(10, 5, 12, 0.95) 100%);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      box-shadow: 0 0 15px rgba(239, 68, 68, 0.08);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .cyber-card:hover {
+      border-color: rgba(239, 68, 68, 0.85);
+      box-shadow: 0 0 25px rgba(239, 68, 68, 0.35), inset 0 0 15px rgba(239, 68, 68, 0.15);
+      transform: translateY(-4px);
+    }
+    .hud-grid {
+      background-size: 24px 24px;
+      background-image: 
+        linear-gradient(to right, rgba(239, 68, 68, 0.05) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(239, 68, 68, 0.05) 1px, transparent 1px);
+    }
+  </style>
+</head>
+<body class="hud-grid min-h-screen pb-16">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md border-b border-red-500/30 px-6 py-4 mb-8">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <span class="inline-block w-3 h-3 bg-red-500 rounded-full animate-pulse shadow-[0_0_10px_#EF4444]"></span>
+          <h1 class="text-2xl md:text-3xl font-bold tracking-wider text-red-400 font-mono">CHASER SHOWCASE</h1>
+          <span class="text-xs bg-red-950 text-red-300 border border-red-500/50 px-2 py-0.5 rounded font-mono">20 PIXEL-ART PROPOSALS</span>
+        </div>
+        <p class="text-sm text-slate-400 mt-1">Catálogo interactivo con IA social simulada, seguimiento ocular y estados (SOLO, DUPLA, MANADA)</p>
+      </div>
+
+      <!-- Global Controls -->
+      <div class="flex flex-wrap items-center gap-3 bg-slate-900/90 px-4 py-2.5 rounded-xl border border-red-500/30">
+        <label class="text-xs font-bold text-red-300">ESTADO IA:</label>
+        <button id="btn-state-chase" class="px-2.5 py-1 text-xs rounded bg-red-950 border border-red-500 hover:bg-red-800 text-red-200 font-bold shadow-[0_0_10px_rgba(239,68,68,0.4)]">CHASE (Persecución)</button>
+        <button id="btn-state-idle" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">IDLE (Alerta)</button>
+        <button id="btn-state-flank" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">FLANK (Flanqueo)</button>
+        <button id="btn-state-encircle" class="px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300">ENCIRCLE (Cerco)</button>
+        <button id="btn-state-close" class="px-3 py-1 text-xs rounded bg-red-500/20 border border-red-400 hover:bg-red-500/40 text-red-300 font-bold animate-pulse">CIERRE (Embestida)</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Cards Grid Container -->
+  <main class="max-w-7xl mx-auto px-6">
+    <div id="cards-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <!-- Generated dynamically -->
+    </div>
+  </main>
+
+  <script>
+    // Paletas temáticas de alta legibilidad arcade
+    const PALETTES = {
+      CRIMSON_NEON: {
+        BODY: 0xE63946,
+        DARK: 0x590D22,
+        ACCENT: 0xFF758F,
+        EYE_BG: 0xFFFFFF,
+        PUPIL: 0x1A050A,
+        PULSE: 0xFFB3C1
+      },
+      CYBER_MAGMA: {
+        BODY: 0xD00000,
+        DARK: 0x370617,
+        ACCENT: 0xFFBA08,
+        EYE_BG: 0xFFFFFF,
+        PUPIL: 0x220901,
+        PULSE: 0xFF5400
+      },
+      VOID_PURPLE: {
+        BODY: 0x7209B7,
+        DARK: 0x240046,
+        ACCENT: 0xF72585,
+        EYE_BG: 0xFFFFFF,
+        PUPIL: 0x10002B,
+        PULSE: 0x4CC9F0
+      },
+      BIO_VIRAL: {
+        BODY: 0x9E0059,
+        DARK: 0x390040,
+        ACCENT: 0xFF0054,
+        EYE_BG: 0xE0AAFF,
+        PUPIL: 0x10002B,
+        PULSE: 0xFF5400
+      },
+      SHADOW_STEALTH: {
+        BODY: 0x334155,
+        DARK: 0x0F172A,
+        ACCENT: 0xEF4444,
+        EYE_BG: 0xF8FAFC,
+        PUPIL: 0x020617,
+        PULSE: 0xF87171
+      }
+    };
+
+    // 20 Derivadas especializadas del diseño #19 "Shuriken Plasma Hyper (Laser Shuriken)"
+    const PROPOSALS = [
+      {
+        id: 1,
+        name: "Plasma Hyper Base (Canónico 19)",
+        tag: "CRUZ HIPER-LÁSER",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "La base canónica: 4 emisores lineales puros con núcleo cerrado y estabilizadores esquineros.",
+        spinSpeed: 6.5,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 2,
+        name: "Laser Lance (Púas Convergentes)",
+        tag: "ÁPICES EN PUNTA DE FLECHA",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Haces láser con puntas dobles divergentes que simulan flechas de energía en los 4 extremos.",
+        spinSpeed: 7.0,
+        matrix: [
+          [-1, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-3,  1, 'ACCENT'],
+          [-2,  0, 'ACCENT'], [-1,  0, 'DARK'],   [ 0,  0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'],
+          [ 3, -1, 'ACCENT'], [ 3,  1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'ACCENT'],
+          [-1,  3, 'ACCENT'], [ 1,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 3,
+        name: "Plasma Swirl (Vórtice Angular)",
+        tag: "DEFLEXIÓN A 90°",
+        palette: PALETTES.CYBER_MAGMA,
+        desc: "Rayos de plasma que se quiebran en escuadra en las puntas para acentuar el par cinético de giro.",
+        spinSpeed: 7.5,
+        matrix: [
+          [ 0, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-3,  0, 'ACCENT'], [-2, 0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [ 3,  1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'ACCENT'],
+          [-1,  3, 'ACCENT'], [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 4,
+        name: "Twin Beam (Haz Bifurcado)",
+        tag: "DOBLE RAYO PARALELO",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Cada extremo proyecta dos micro-haces paralelos gemelos creando 8 columnas de corte.",
+        spinSpeed: 6.2,
+        matrix: [
+          [-1, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [-1, -2, 'ACCENT'], [ 1, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-2, -1, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, -1, 'ACCENT'], [ 3, -1, 'ACCENT'],
+          [-3,  1, 'ACCENT'], [-2,  1, 'ACCENT'], [ 2,  1, 'ACCENT'], [ 3,  1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [-1,  2, 'ACCENT'], [ 1,  2, 'ACCENT'],
+          [-1,  3, 'ACCENT'], [ 1,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 5,
+        name: "Overclocked Core (Cámara Expansiva)",
+        tag: "NÚCLEO PESADO 3x3",
+        palette: PALETTES.SHADOW_STEALTH,
+        desc: "Blindaje de contención ensanchado de 3x3 píxeles con cañones láser de alta compresión.",
+        spinSpeed: 5.8,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'BODY'],   [ 0, -2, 'ACCENT'], [ 1, -2, 'BODY'],
+          [-1, -1, 'DARK'],   [ 0, -1, 'DARK'],   [ 1, -1, 'DARK'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'DARK'],   [ 0,  1, 'DARK'],   [ 1,  1, 'DARK'],
+          [-1,  2, 'BODY'],   [ 0,  2, 'ACCENT'], [ 1,  2, 'BODY'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 6,
+        name: "Diamond Rail (Bisel Romboidal)",
+        tag: "DIAMANTES EN PUNTAS",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Puntas láser que terminan en rombos compactos con núcleo refractario.",
+        spinSpeed: 6.0,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'ACCENT'], [ 0, -2, 'BODY'],   [ 1, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2, -1, 'ACCENT'], [-2, 1, 'ACCENT'], [-2, 0, 'BODY'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'BODY'], [ 2, -1, 'ACCENT'], [ 2, 1, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [-1,  2, 'ACCENT'], [ 0,  2, 'BODY'],   [ 1,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 7,
+        name: "Cruciform Blade (Cruz Ensanchada)",
+        tag: "ESPADA DE 4 FILOS",
+        palette: PALETTES.CYBER_MAGMA,
+        desc: "Las 4 aspas tienen 3 píxeles de espesor en su base decreciendo hacia una punta afilada.",
+        spinSpeed: 5.5,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'ACCENT'], [ 0, -2, 'BODY'],   [ 1, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2, -1, 'ACCENT'], [-2, 0, 'BODY'], [-2, 1, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, -1, 'ACCENT'], [ 2, 0, 'BODY'], [ 2, 1, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [-1,  2, 'ACCENT'], [ 0,  2, 'BODY'],   [ 1,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 8,
+        name: "Void Ray (Frecuencia Púrpura)",
+        tag: "ESPECTRO SINGULAR",
+        palette: PALETTES.VOID_PURPLE,
+        desc: "Láser de vacío cósmico con micro-fragmentos en flotación electromagnética.",
+        spinSpeed: 6.8,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [ 0, -2, 'BODY'],
+          [-2, -2, 'DARK'],   [ 2, -2, 'DARK'],
+          [-1, -1, 'ACCENT'], [ 0, -1, 'DARK'],   [ 1, -1, 'ACCENT'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'BODY'],   [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'BODY'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'ACCENT'], [ 0,  1, 'DARK'],   [ 1,  1, 'ACCENT'],
+          [-2,  2, 'DARK'],   [ 2,  2, 'DARK'],
+          [ 0,  2, 'BODY'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 9,
+        name: "Serrated Laser (Dientes Fotónicos)",
+        tag: "DIENTES ESCALONADOS",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Los bordes de cada haz presentan muescas escalonadas que aumentan la fricción visual de corte.",
+        spinSpeed: 7.2,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'], [ 1, -2, 'BODY'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'ACCENT'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-2, 1, 'BODY'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, -1, 'BODY'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'ACCENT'], [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [-1,  2, 'BODY'],   [ 0,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 10,
+        name: "Solar Stigma (Corona Radiante)",
+        tag: "DIAGONALES SECUNDARIAS",
+        palette: PALETTES.CYBER_MAGMA,
+        desc: "Cruz primaria #19 complementada con 4 micro-chispas en las diagonales a 45°.",
+        spinSpeed: 6.4,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-2, -2, 'DARK'],   [ 0, -2, 'ACCENT'], [ 2, -2, 'DARK'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [-2,  2, 'DARK'],   [ 0,  2, 'ACCENT'], [ 2,  2, 'DARK'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 11,
+        name: "Bio-Plasma (Aguijón Celular)",
+        tag: "PULSO BIOQUÍMICO",
+        palette: PALETTES.BIO_VIRAL,
+        desc: "Emisores de plasma orgánico que palpitan entre magenta profundo y ácido fluorescente.",
+        spinSpeed: 5.6,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'DARK'],   [ 0, -2, 'ACCENT'], [ 1, -2, 'DARK'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'BODY'],   [ 1, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2, -1, 'DARK'],   [-2, 0, 'ACCENT'], [-2, 1, 'DARK'], [ 0, 0, 'EYE'], [ 2, -1, 'DARK'], [ 2, 0, 'ACCENT'], [ 2, 1, 'DARK'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'BODY'],   [ 1,  1, 'BODY'],
+          [-1,  2, 'DARK'],   [ 0,  2, 'ACCENT'], [ 1,  2, 'DARK'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 12,
+        name: "Laser Glaive (Hojas Triangular-Tech)",
+        tag: "ALAS DE FLECHA",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Cada extremo cuenta con un estabilizador angular que ensancha la punta a 3 píxeles.",
+        spinSpeed: 6.6,
+        matrix: [
+          [-1, -3, 'ACCENT'], [ 0, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [ 0, -2, 'BODY'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-3,  0, 'ACCENT'], [-3, 1, 'ACCENT'], [-2, 0, 'BODY'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'BODY'], [ 3, -1, 'ACCENT'], [ 3, 0, 'ACCENT'], [ 3, 1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'BODY'],
+          [-1,  3, 'ACCENT'], [ 0,  3, 'ACCENT'], [ 1,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 13,
+        name: "Shadow Needle (Estilete Furtivo)",
+        tag: "SILUETA ULTRA-FINA",
+        palette: PALETTES.SHADOW_STEALTH,
+        desc: "Diseño minimalista: un haz lineal de 1 píxel que corta la oscuridad con sigilo letal.",
+        spinSpeed: 8.0,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [ 0, -1, 'BODY'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'BODY'], [ 0, 0, 'EYE'], [ 1, 0, 'BODY'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [ 0,  1, 'BODY'],
+          [ 0,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 14,
+        name: "Plasma Anchor (Ancla Cuádruple)",
+        tag: "BRAZOS EN FORMA DE 'T'",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Las 4 puntas terminan en barras horizontales perpendiculares formando anclas de choque.",
+        spinSpeed: 5.4,
+        matrix: [
+          [-1, -3, 'ACCENT'], [ 0, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-3,  0, 'ACCENT'], [-3, 1, 'ACCENT'], [-2, 0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, -1, 'ACCENT'], [ 3, 0, 'ACCENT'], [ 3, 1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'ACCENT'],
+          [-1,  3, 'ACCENT'], [ 0,  3, 'ACCENT'], [ 1,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 15,
+        name: "Hyper Barricade (Blindaje Modular)",
+        tag: "DEFENSA PESADA",
+        palette: PALETTES.SHADOW_STEALTH,
+        desc: "Bloques de blindaje rectangular intercalados en las uniones de los cañones de energía.",
+        spinSpeed: 5.0,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'BODY'],   [ 0, -2, 'ACCENT'], [ 1, -2, 'BODY'],
+          [-1, -1, 'DARK'],   [ 0, -1, 'DARK'],   [ 1, -1, 'DARK'],
+          [-3,  0, 'ACCENT'], [-2, -1, 'BODY'],   [-2, 0, 'ACCENT'], [-2, 1, 'BODY'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, -1, 'BODY'], [ 2, 0, 'ACCENT'], [ 2, 1, 'BODY'], [ 3, 0, 'ACCENT'],
+          [-1,  1, 'DARK'],   [ 0,  1, 'DARK'],   [ 1,  1, 'DARK'],
+          [-1,  2, 'BODY'],   [ 0,  2, 'ACCENT'], [ 1,  2, 'BODY'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 16,
+        name: "Pulsar Fin (Aletas Escalonadas)",
+        tag: "ALETAS DINÁMICAS",
+        palette: PALETTES.CYBER_MAGMA,
+        desc: "Aletas asimétricas que se pliegan sobre el eje de avance para estabilizar el giro.",
+        spinSpeed: 6.8,
+        matrix: [
+          [ 0, -3, 'ACCENT'], [ 1, -3, 'BODY'],
+          [ 0, -2, 'ACCENT'], [ 1, -2, 'DARK'],
+          [-1, -1, 'DARK'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'BODY'],   [-3,  0, 'ACCENT'], [-2, 0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'], [ 3, 1, 'BODY'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'DARK'],
+          [-1,  2, 'DARK'],   [ 0,  2, 'ACCENT'],
+          [-1,  3, 'BODY'],   [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 17,
+        name: "Laser Cross-Ring (Anillo Difusor)",
+        tag: "ANILLO MAGNÉTICO",
+        palette: PALETTES.VOID_PURPLE,
+        desc: "Un anillo de energía conecta los 4 emisores conteniendo el plasma en un lazo circular.",
+        spinSpeed: 6.0,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [-1, -2, 'DARK'],   [ 0, -2, 'ACCENT'], [ 1, -2, 'DARK'],
+          [-2, -1, 'DARK'],   [ 0, -1, 'BODY'],   [ 2, -1, 'DARK'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'BODY'], [ 0, 0, 'EYE'], [ 1, 0, 'BODY'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [-2,  1, 'DARK'],   [ 0,  1, 'BODY'],   [ 2,  1, 'DARK'],
+          [-1,  2, 'DARK'],   [ 0,  2, 'ACCENT'], [ 1,  2, 'DARK'],
+          [ 0,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 18,
+        name: "Quantum Split (Doble Emisor Invertido)",
+        tag: "HAZ DIVIDIDO EN 'Y'",
+        palette: PALETTES.BIO_VIRAL,
+        desc: "Las puntas se abren en horquillas de dos extremos que emiten micro-arcos eléctricos.",
+        spinSpeed: 7.4,
+        matrix: [
+          [-1, -3, 'ACCENT'], [ 1, -3, 'ACCENT'],
+          [ 0, -2, 'BODY'],
+          [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'],
+          [-3, -1, 'ACCENT'], [-2,  0, 'BODY'],   [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'BODY'], [ 3, -1, 'ACCENT'],
+          [-3,  1, 'ACCENT'], [ 3,  1, 'ACCENT'],
+          [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'],
+          [ 0,  2, 'BODY'],
+          [-1,  3, 'ACCENT'], [ 1,  3, 'ACCENT']
+        ]
+      },
+      {
+        id: 19,
+        name: "Hyper Tachyon (Foco Hiperbólico)",
+        tag: "VELOCIDAD EXTREMA",
+        palette: PALETTES.CRIMSON_NEON,
+        desc: "Máxima elongación: haces estrechos de longitud 4 que rozan los límites de la celda.",
+        spinSpeed: 8.5,
+        matrix: [
+          [ 0, -3, 'ACCENT'],
+          [ 0, -2, 'ACCENT'],
+          [ 0, -1, 'ACCENT'],
+          [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'ACCENT'], [ 0, 0, 'EYE'], [ 1, 0, 'ACCENT'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'],
+          [ 0,  1, 'ACCENT'],
+          [ 0,  2, 'ACCENT'],
+          [ 0,  3, 'ACCENT'],
+          [-1, -1, 'BODY'],   [ 1, -1, 'BODY'],   [-1, 1, 'BODY'], [ 1, 1, 'BODY']
+        ]
+      },
+      {
+        id: 20,
+        name: "Abyssal Laser (Corona Sangrienta)",
+        tag: "CRUZ + 4 ESPINAS VORTEX",
+        palette: PALETTES.CYBER_MAGMA,
+        desc: "Hibridación final: combina los 4 rayos lineales de plasma con 4 espinas curvas de vórtice.",
+        spinSpeed: 6.2,
+        matrix: [
+          [ 0, -3, 'ACCENT'], [ 1, -3, 'DARK'],
+          [ 0, -2, 'ACCENT'],
+          [-2, -2, 'DARK'],   [-1, -1, 'BODY'],   [ 0, -1, 'DARK'],   [ 1, -1, 'BODY'], [ 2, -2, 'ACCENT'],
+          [-3, -1, 'DARK'],   [-3,  0, 'ACCENT'], [-2,  0, 'ACCENT'], [-1, 0, 'DARK'], [ 0, 0, 'EYE'], [ 1, 0, 'DARK'], [ 2, 0, 'ACCENT'], [ 3, 0, 'ACCENT'], [ 3, 1, 'DARK'],
+          [-2,  2, 'ACCENT'], [-1,  1, 'BODY'],   [ 0,  1, 'DARK'],   [ 1,  1, 'BODY'], [ 2,  2, 'DARK'],
+          [ 0,  2, 'ACCENT'],
+          [-1,  3, 'DARK'],   [ 0,  3, 'ACCENT']
+        ]
+      }
+    ];
+
+    // Estado global de la aplicación
+    let activeState = 'chase'; // 'idle', 'chase', 'flank', 'encircle', 'close'
+    let mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    const activeApps = [];
+
+    window.addEventListener('mousemove', (e) => {
+      mousePos.x = e.clientX;
+      mousePos.y = e.clientY;
+    });
+
+    const gridEl = document.getElementById('cards-grid');
+
+    PROPOSALS.forEach((prop, idx) => {
+      // 1. Crear Tarjeta HTML
+      const card = document.createElement('div');
+      card.className = "cyber-card rounded-2xl p-5 flex flex-col justify-between";
+      card.innerHTML = `
+        <div>
+          <div class="flex items-center justify-between gap-2 mb-2">
+            <span class="text-xs font-mono font-bold text-red-400">#${String(prop.id).padStart(2, '0')}</span>
+            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-500/40">${prop.tag}</span>
+          </div>
+          <h3 class="text-lg font-bold text-slate-100 tracking-wide">${prop.name}</h3>
+          <p class="text-xs text-slate-400 mt-1 min-h-[32px]">${prop.desc}</p>
+        </div>
+
+        <!-- Canvas Container -->
+        <div class="my-4 flex items-center justify-center p-3 bg-slate-950/80 rounded-xl border border-red-500/20 relative overflow-hidden">
+          <div class="absolute inset-0 bg-radial from-red-500/10 via-transparent to-transparent"></div>
+          <canvas id="canvas-chaser-${prop.id}" width="150" height="150" class="w-[150px] h-[150px] block"></canvas>
+        </div>
+
+        <!-- Card Footer Info -->
+        <div class="flex items-center justify-between pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+          <span>7x7 SHURIKEN (${prop.matrix.length} px)</span>
+          <span class="text-red-400 font-bold">SPIN + EYE TRACK</span>
+        </div>
+      `;
+
+      gridEl.appendChild(card);
+
+      const canvas = document.getElementById(`canvas-chaser-${prop.id}`);
+      const ctx = canvas.getContext('2d');
+      activeApps.push({ canvas, ctx, prop, idx, currentSpin: 0 });
+    });
+
+    // Bucle principal de animación a 60 FPS
+    const k = 9; // 9px por micro-píxel (7x7 = 63x63 centrado en 150x150)
+    let lastTime = performance.now();
+
+    function hexToRgba(hex, alpha = 1.0) {
+      const r = (hex >> 16) & 255;
+      const g = (hex >> 8) & 255;
+      const b = hex & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function animate(now) {
+      const dt = (now - lastTime) / 1000;
+      lastTime = now;
+
+      activeApps.forEach((item) => {
+        const { canvas, ctx, prop, idx } = item;
+        const rect = canvas.getBoundingClientRect();
+        const cardCenterX = rect.left + rect.width / 2;
+        const cardCenterY = rect.top + rect.height / 2;
+
+        // Vector hacia el ratón (simula la cabeza de la serpiente)
+        const dx = mousePos.x - cardCenterX;
+        const dy = mousePos.y - cardCenterY;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        const ux = dx / dist;
+        const uy = dy / dist;
+
+        // Rotación del Shuriken (Giro continuo de aspas acelerado por estado)
+        let spinSpeedMult = 1.0;
+        if (activeState === 'idle') spinSpeedMult = 0.25;
+        if (activeState === 'close') spinSpeedMult = 2.5;
+        if (activeState === 'encircle') spinSpeedMult = 1.5;
+
+        item.currentSpin += dt * (prop.spinSpeed || 4.0) * spinSpeedMult;
+
+        const localTime = now * 0.005 + idx * 0.35;
+        const pulse = 0.5 + 0.5 * Math.sin(localTime * 5);
+        const fastPulse = 0.5 + 0.5 * Math.sin(localTime * 15);
+
+        ctx.clearRect(0, 0, 150, 150);
+        ctx.save();
+        ctx.translate(75, 75);
+
+        // 1. Efectos de Aura según Estado IA
+        if (activeState === 'encircle') {
+          ctx.fillStyle = "rgba(245, 158, 11, 0.15)";
+          ctx.beginPath();
+          ctx.arc(0, 0, 38 + 4 * pulse, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (activeState === 'close') {
+          ctx.fillStyle = `rgba(255, 255, 255, ${0.2 + 0.3 * fastPulse})`;
+          ctx.beginPath();
+          ctx.arc(0, 0, 42 + 6 * fastPulse, 0, Math.PI * 2);
+          ctx.fill();
+        } else if (activeState === 'flank') {
+          ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(0, 0, 36 + 3 * pulse, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // 2. Dibujar las Aspas del Shuriken en Rotación Rápida
+        ctx.save();
+        ctx.rotate(item.currentSpin);
+
+        // Sombra proyectada del Shuriken
+        ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
+        ctx.beginPath();
+        ctx.roundRect(-3.5 * k + 2, -3.5 * k + 4, 7 * k, 7 * k, 4);
+        ctx.fill();
+
+        for (const [px, py, type] of prop.matrix) {
+          if (type === 'EYE') continue;
+
+          let hexColor = prop.palette[type] || prop.palette.BODY;
+          let alpha = 1.0;
+
+          if (activeState === 'idle') {
+            alpha = 0.55 + 0.2 * pulse;
+          } else if (activeState === 'close' && Math.floor(now * 0.02) % 2 === 0) {
+            hexColor = 0xFFFFFF; // Destello de aviso en embestida
+          } else if (type === 'ACCENT') {
+            alpha = 0.85 + 0.15 * pulse;
+          }
+
+          ctx.fillStyle = hexToRgba(hexColor, alpha);
+          ctx.fillRect(px * k - k / 2, py * k - k / 2, k, k);
+        }
+
+        ctx.restore(); // Fin rotación del shuriken
+
+        // 3. Ojo Central Estabilizado que Rastrea a la Serpiente (NO gira con las aspas)
+        // Fondo / Esclerótica del Ojo Central
+        ctx.fillStyle = hexToRgba(prop.palette.EYE_BG || 0xFFFFFF, activeState === 'idle' ? 0.6 : 1.0);
+        ctx.beginPath();
+        ctx.arc(0, 0, k * 0.85, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Borde fino del ojo
+        ctx.strokeStyle = hexToRgba(prop.palette.DARK, 0.8);
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Pupila rastreadora orientada al ratón
+        const pupilOffset = (activeState === 'idle' ? 1.0 : 2.5);
+        const px = ux * pupilOffset;
+        const py = uy * pupilOffset;
+
+        ctx.fillStyle = hexToRgba(prop.palette.PUPIL || 0x1A050A, 1.0);
+        ctx.beginPath();
+        if (activeState === 'flank') {
+          // Pupila vertical de rendija orientada hacia la serpiente
+          const angle = Math.atan2(uy, ux);
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(angle);
+          ctx.fillRect(-1.0, -3.0, 2.0, 6.0);
+          ctx.restore();
+        } else {
+          ctx.arc(px, py, 2.2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Brillo especular en la pupila
+        ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+        ctx.fillRect(px - 1.2, py - 1.2, 1.0, 1.0);
+
+        // Párpado cerrado en modo IDLE
+        if (activeState === 'idle') {
+          ctx.fillStyle = hexToRgba(prop.palette.BODY, 0.9);
+          ctx.beginPath();
+          ctx.arc(0, 0, k * 0.9, Math.PI, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.restore();
+
+        // 4. Signo de advertencia en modo CIERRE
+        if (activeState === 'close') {
+          ctx.fillStyle = fastPulse > 0.5 ? "#FFFFFF" : "#EF4444";
+          ctx.fillRect(75 - 1.5, 14, 3, 8);
+          ctx.fillRect(75 - 1.5, 24, 3, 3);
+        }
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    requestAnimationFrame(animate);
+
+    // Controles de Estados IA
+    const stateBtns = {
+      chase: document.getElementById('btn-state-chase'),
+      idle: document.getElementById('btn-state-idle'),
+      flank: document.getElementById('btn-state-flank'),
+      encircle: document.getElementById('btn-state-encircle'),
+      close: document.getElementById('btn-state-close')
+    };
+
+    function setState(newState) {
+      activeState = newState;
+      Object.keys(stateBtns).forEach(key => {
+        const btn = stateBtns[key];
+        if (key === newState) {
+          btn.className = "px-2.5 py-1 text-xs rounded bg-red-950 border border-red-500 hover:bg-red-800 text-red-200 font-bold shadow-[0_0_10px_rgba(239,68,68,0.4)]";
+        } else {
+          btn.className = "px-2.5 py-1 text-xs rounded bg-slate-800 border border-slate-600 hover:bg-slate-700 text-slate-300";
+        }
+      });
+    }
+
+    stateBtns.chase.addEventListener('click', () => setState('chase'));
+    stateBtns.idle.addEventListener('click', () => setState('idle'));
+    stateBtns.flank.addEventListener('click', () => setState('flank'));
+    stateBtns.encircle.addEventListener('click', () => setState('encircle'));
+    stateBtns.close.addEventListener('click', () => setState('close'));
+  </script>
+</body>
+</html>
