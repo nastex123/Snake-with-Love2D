@@ -72,7 +72,8 @@ function snake.reset()
         turnHistory = {},
         pendingTailSnap = false,
         standstill = true,
-        hasNewInput = false
+        hasNewInput = false,
+        sliceGraceTimer = 0
     }
 end
 
@@ -80,6 +81,9 @@ function snake.update(s, dt)
     if not s then return end
     if s.flashTimer and s.flashTimer > 0 then
         s.flashTimer = math.max(0, s.flashTimer - dt)
+    end
+    if s.sliceGraceTimer and s.sliceGraceTimer > 0 then
+        s.sliceGraceTimer = math.max(0, s.sliceGraceTimer - dt)
     end
     if s.ghostTimer and s.ghostTimer > 0 then
         s.ghostTimer = math.max(0, s.ghostTimer - dt)
@@ -215,6 +219,84 @@ function snake.triggerAutotomy(s)
         return true, decoyPos
     end
     return false
+end
+
+function snake.checkEnemyCollisions(s, enemiesList)
+    if not s or not s.body or #s.body == 0 or not enemiesList then
+        return nil
+    end
+    if s.ghost or immune() or (s.sliceGraceTimer and s.sliceGraceTimer > 0) then
+        return nil
+    end
+
+    local head = s.body[1]
+    for idx, e in ipairs(enemiesList) do
+        if e.alive then
+            -- 1. Choque directo con la cabeza
+            if head and e.x == head.x and e.y == head.y then
+                if shop.shieldActive then
+                    shop.shieldActive = false
+                    local res = enemies.killEnemy(idx)
+                    return {type = "shield_block", result = res}
+                elseif s.armor and s.armor > 0 then
+                    s.armor = s.armor - 1
+                    local res = enemies.killEnemy(idx)
+                    return {type = "armor_block", result = res}
+                else
+                    return {type = "death"}
+                end
+            end
+
+            -- 2. Choque con el cuerpo
+            for segIdx = 2, #s.body do
+                local seg = s.body[segIdx]
+                if seg and seg.x == e.x and seg.y == e.y then
+                    -- Segmentos 2 y 3: letal directo (cabeza y cuello)
+                    -- O cualquier segmento si la longitud total es < 5
+                    local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
+                    if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then
+                        if shop.shieldActive then
+                            shop.shieldActive = false
+                            local res = enemies.killEnemy(idx)
+                            return {type = "shield_block", result = res}
+                        elseif s.armor and s.armor > 0 then
+                            s.armor = s.armor - 1
+                            local res = enemies.killEnemy(idx)
+                            return {type = "armor_block", result = res}
+                        else
+                            return {type = "death"}
+                        end
+                    else
+                        -- Patroller impacta en segmento >= 4 con longitud >= 5: Guillotine Slice!
+                        local removed = #s.body - segIdx + 1
+                        while #s.body >= segIdx do
+                            table.remove(s.body)
+                        end
+                        s.prevBody = {}
+                        for i, b in ipairs(s.body) do
+                            s.prevBody[i] = {x = b.x, y = b.y}
+                        end
+                        s.sliceGraceTimer = constants.PATROLLER_SLICE_GRACE_TIME or 1.0
+                        return {
+                            type = "slice",
+                            gx = seg.x,
+                            gy = seg.y,
+                            removedCount = removed
+                        }
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+function snake.checkPatrollerSlice(s, enemiesList)
+    local col = snake.checkEnemyCollisions(s, enemiesList)
+    if col and col.type == "slice" then
+        return col
+    end
+    return nil
 end
 
 local function pointInPolygon(px, py, poly)

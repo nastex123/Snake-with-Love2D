@@ -10,6 +10,7 @@ local constants = require("constants")
 local bossAttacks = require("entities.bossAttacks")
 local enemyHelpers = require("entities.enemyHelpers")
 local chaserAI = require("entities.chaserAI")
+local patrollerAI = require("entities.patrollerAI")
 local enemiesDraw = require("render.enemiesDraw")
 
 local telegraphs = {}
@@ -126,6 +127,7 @@ function enemies.spawnAt(type, gx, gy, params)
             e.dirX, e.dirY = d[1], d[2]
         end
         e.visRot = math.atan2(e.dirY, e.dirX)
+        patrollerAI.init(e, params.roomType, params.anchoGrilla, params.altoGrilla)
     else
         e.moveInterval = 999
     end
@@ -337,15 +339,25 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
     end
 
     -- IA social de chasers: clasificacion del pack, roles y ciclo de cierre
+    local worldFacade = package.loaded["world.world"]
+    local currRoom = worldFacade and worldFacade.getCurrentRoom and worldFacade.getCurrentRoom()
+    local roomType = currRoom and currRoom.type or "corridor"
+
     local ctx = {
         list = enemies.list,
+        enemiesList = enemies.list,
         body = snakeBody or {},
+        snake = { body = snakeBody or {} },
         head = targetHead,
         anchoGrilla = anchoGrilla,
         altoGrilla = altoGrilla,
+        obstacles = obstaclesMod,
         obstaclePos = obstaclesMod and (obstaclesMod.pos or obstaclesMod) or {},
+        boss = enemies.boss,
+        roomType = roomType,
         etapa = (type(etapa) == "number") and etapa or 1,
         stageModifier = stageModifier or {},
+        dt = dt,
     }
     if not isFrozen then
         chaserAI.updatePack(ctx, dt)
@@ -387,51 +399,7 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                 end
 
             elseif e.type == "patroller" then
-                if e.moveTimer >= e.moveInterval then
-                    e.moveTimer = 0
-
-                    local function isCellBlocked(cx, cy)
-                        if cx < 0 or cx >= anchoGrilla or cy < 0 or cy >= altoGrilla then
-                            return true
-                        end
-                        for _, s in ipairs(snakeBody or {}) do
-                            if s.x == cx and s.y == cy then return true end
-                        end
-                        if obstaclesMod then
-                            local obs = obstaclesMod.pos or obstaclesMod
-                            for _, o in ipairs(obs) do
-                                if o.x == cx and o.y == cy then return true end
-                            end
-                        end
-                        if enemies.boss and enemies.boss.alive and enemies.boss.x == cx and enemies.boss.y == cy then
-                            return true
-                        end
-                        for _, oe in ipairs(enemies.list) do
-                            if oe ~= e and oe.alive and oe.x == cx and oe.y == cy then
-                                return true
-                            end
-                        end
-                        return false
-                    end
-
-                    local nx = e.x + e.dirX
-                    local ny = e.y + e.dirY
-
-                    if isCellBlocked(nx, ny) then
-                        e.dirX = -e.dirX
-                        e.dirY = -e.dirY
-                        local rx = e.x + e.dirX
-                        local ry = e.y + e.dirY
-                        if not isCellBlocked(rx, ry) then
-                            e.x = rx
-                            e.y = ry
-                        end
-                    else
-                        e.x = nx
-                        e.y = ny
-                    end
-                    e.visRot = math.atan2(e.dirY, e.dirX)
-                end
+                patrollerAI.step(e, ctx)
 
             elseif e.type == "spawner" then
                 local spawnerInterval = constants.ENEMY_SPAWNER_INTERVAL

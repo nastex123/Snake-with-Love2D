@@ -8,6 +8,48 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-29 21:12
+
+- **Fix** (completed - 2026-08-29 21:12): Corrección de cadencia de movimiento y colisiones físicas del Patroller (America/Bogota):
+  1. **QUÉ — Velocidad / Cadencia normalizada**:
+     - Eliminada la doble acumulación de `dt` en [`entities/patrollerAI.lua`](entities/patrollerAI.lua) (donde `e.moveTimer` se sumaba en el loop de `enemies.lua` y volvía a sumarse dentro de `patrollerAI.step`).
+     - Ajustado `ENEMY_PATROLLER_SPEED` de 0.20s a un ritmo táctico balanceado de 0.35s (1.8x en dash).
+  2. **QUÉ — Detección y Colisión Física Continua**:
+     - Eliminada la serpiente de la lista de obstáculos inmóviles en `isBlocked`: el Patroller ya no detecta el cuerpo de la serpiente como un muro sólido contra el cual rebotar preventivamente.
+     - Implementado [`snake.checkEnemyCollisions(s, enemiesList)`](entities/snake.lua) integrado en el tick de `systems/gamestates.lua`: si cualquier enemigo (incluido el Patroller) se desplaza hacia la cabeza o los segmentos 2-3 de la serpiente (o cualquier segmento si la longitud es menor a 5), se activa la colisión letal (o consumo de escudo/armadura). Si el Patroller impacta en los segmentos 4 o posteriores y la serpiente mide $\ge 5$, ejecuta el seccionamiento quirúrgico (*Guillotine Slice*).
+  3. **POR QUÉ**: Resolver que el Patroller se moviera a velocidad descontrolada y que atravesara o esquivara artificialmente a la serpiente sin generar colisión ni peligro.
+  4. **Verificación**: `love .` probado exitosamente con colisiones y corte de cola activos, `error.log` en 0 bytes y suite de pruebas unitarias al 100% en PASS.
+
+## 2026-08-29 20:57
+
+- **Feature** (completed - 2026-08-29 20:57): Implementación modular de la IA Táctica del Patroller (Interceptor Delta) y Mecánica Guillotine Slice (America/Bogota):
+  1. **QUÉ — Módulo `entities/patrollerAI.lua`**:
+     - Creado submódulo desacoplado de 270 líneas (`entities/patrollerAI.lua`) liberando [`entities/enemies.lua`](entities/enemies.lua) a 623 líneas.
+     - **4 Modos de Patrullaje Contextuales**: `corridor_sweep` (pasillos con bifurcación), `perimeter_orbit` (órbita horaria/antihoraria en salas amplias), `diagonal_bounce` (zigzag reflectivo) y `radar_sentry` (patrulla con pausa de escaneo cada 4 celdas).
+     - **Resolución Inteligente de Esquinas a 90°**: Si la celda frontal está bloqueada, evalúa primero los giros ortogonales libres laterales antes de forzar el retroceso en 180° (anti-deadlock).
+     - **Line-of-Sight Dash (Embestida Turbo)**: Raycast ortogonal a $\le 6$ celdas sin muros intermedios; telegrafiado de 0.25s en estado `alert` con flash fotónico y aceleración 2x (`turbo_dash`) durante 3 celdas con estela de plasma alargada.
+  2. **QUÉ — Seccionamiento Quirúrgico de Cola (Guillotine Slice)**:
+     - En `entities/snake.lua` (`checkPatrollerSlice`): Si el Patroller impacta en segmentos $\ge 4$ y la serpiente mide $\ge 5$, secciona limpiamente la cola.
+     - Desintegración instantánea de segmentos cortados en partículas cinéticas, corte limpio sin frenar al dron, 1.0s de intangibilidad de gracia (`sliceGraceTimer`) y reseteo de combo a x1 en `systems/gamestates.lua` sin tocar la racha de supervivencia.
+  3. **QUÉ — Suite de Pruebas Unitarias**:
+     - Creada suite `tests/test_scope_20_patroller_ai.lua` con cobertura de inicialización de modos, giros a 90°, raycast LOS, ciclo de dash y seccionamiento de cola. Integrada en `tests/main.lua` (100% PASS).
+  4. **POR QUÉ**: Convertir al Patroller en una amenaza táctica militar predecible pero letal en línea recta, reduciendo muertes injustas por colas largas.
+  5. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
+
+## 2026-08-29 20:30
+
+- **Chore** (completed - 2026-08-29 20:30): Higiene de ramas Git en local y remoto (America/Bogota):
+  1. **QUÉ**: Eliminadas las ramas obsoletas/fusionadas `auditoria` y `feature/phase-8-biomes-hazards` tanto a nivel local (`git branch -d`) como en el repositorio remoto `origin` (`git push origin --delete`).
+  2. **POR QUÉ**: Mantener el árbol de ramas limpio, ordenado y libre de ramas integradas conforme a las buenas prácticas de `git-workflow`.
+  3. **Verificación**: `git branch -a` confirmado sin referencias a las ramas eliminadas.
+
+## 2026-08-29 20:25
+
+- **Docs** (completed - 2026-08-29 20:25): Estandarización de Pull Requests detallados en la skill `git-workflow` (America/Bogota):
+  1. **QUÉ**: Actualizado el paso 9 de `git-workflow/SKILL.md` (tanto global en `~/.gemini/config/skills/` como local en `.opencode/skills/`) estableciendo como obligatorio que todo Pull Request generado vía GitHub CLI cuente con título convencional descriptivo, resumen ejecutivo en viñetas, desglose técnico por sistema, tabla de módulos afectados y checklist de Definition of Done (DoD).
+  2. **POR QUÉ**: Asegurar máxima transparencia, trazabilidad y rigor técnico en las revisiones de código y fusiones de ramas en GitHub.
+  3. **Verificación**: Archivos sincronizados en ambos scopes y confirmados en el repositorio.
+
 ## 2026-08-29 20:16
 
 - **Config** (completed - 2026-08-29 20:16): Despliegue de la skill `git-workflow` a nivel global (America/Bogota):

@@ -148,7 +148,7 @@ config.BOSS_COLORS = {
 }
 
 config.ENEMY_CHASER_SPEED = 0.3
-config.ENEMY_PATROLLER_SPEED = 0.2
+config.ENEMY_PATROLLER_SPEED = 0.35
 config.ENEMY_SPAWNER_INTERVAL = 3
 
 config.ENEMY_DROP_CHASER = 3
@@ -173,6 +173,15 @@ config.CHASER_RING_CYCLE = 8
 config.CHASER_IDLE_SPIN = 0.7
 config.CHASER_CLOSE_SPIN = 10
 config.CHASER_ROT_LERP = 7
+
+-- Patroller AI tactico (GDD seccion 3 & PATROLLER-DESIGN-NOTE.md)
+config.PATROLLER_LOS_RANGE       = 6      -- Rango maximo de linea de vision para intercepcion
+config.PATROLLER_ALERT_TIME      = 0.25   -- Tiempo de telegrafiado alert antes de dash (s)
+config.PATROLLER_DASH_TILES      = 3      -- Celdas recorridas a velocidad turbo
+config.PATROLLER_DASH_SPEED_MULT = 2.0    -- Multiplicador de velocidad en dash
+config.PATROLLER_DASH_COOLDOWN   = 3.0    -- Cooldown entre embestidas (s)
+config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para corte de cola
+config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
 config.MAX_GRID_COLS = 40

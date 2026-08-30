@@ -243,6 +243,36 @@ function states.updatePlaying(dt)
         end
     end
 
+    -- Comprobacion continua de colision de enemigos contra el cuerpo/cabeza (y seccionamiento de cola)
+    if snakeMod.checkEnemyCollisions then
+        local col = snakeMod.checkEnemyCollisions(st.player, enemiesMod.list)
+        if col then
+            if col.type == "death" then
+                st.roomDamaged = true
+                st.deathModalOpen = true
+                return true
+            elseif col.type == "shield_block" then
+                st.roomDamaged = true
+                sound.play("shieldBreak")
+                shadersMod.triggerDamage(0.5, 0.5)
+            elseif col.type == "armor_block" then
+                st.roomDamaged = true
+                sound.play("shieldBreak")
+                shadersMod.triggerDamage(0.4, 0.4)
+            elseif col.type == "slice" then
+                local tam = constants.TAMANIO_BLOQUE or 20
+                local px = col.gx * tam + tam / 2
+                local py = col.gy * tam + tam / 2
+                table.insert(st.activePS, { ps = particles.tailSnapShockwave(px, py) })
+                sound.play("shieldBreak")
+                uiMod.addPopup("COLA CORTADA! -" .. col.removedCount, col.gx, col.gy)
+                st.comboCount = 0
+                st.shakeTimer = 0.2
+                shadersMod.triggerDamage(0.5, 0.3)
+            end
+        end
+    end
+
     if shop.magnetTimer > 0 then
         shop.magnetTimer = shop.magnetTimer - dt
         if shop.magnetTimer <= 0 then

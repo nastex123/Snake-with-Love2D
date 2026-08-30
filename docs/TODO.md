@@ -71,13 +71,14 @@
 - [x] **Sprites e Identidad Visual Pixel-Art de Enemigos**:
   - [x] Patroller: Sprite rasterizado 5x5 `assets/patroller_delta.png` (#01 Interceptor Delta) con filtrado `nearest`, orientación dinámica, núcleo fotónico pulsante y micro-llama de plasma.
   - [x] Chaser: Sprite rasterizado 7x7 `assets/chaser_shuriken.png` (#01 Shuriken Plasma Hyper) con rotación a 60 FPS modulada por estado de IA y ojo giroscópico desacoplado que rastrea a la serpiente.
-- [ ] **Evolución Táctica de la IA del Patroller (Interceptor Delta)**:
+- [x] **Evolución Táctica de la IA del Patroller (Interceptor Delta)**:
   - [x] Documentación técnica y de diseño en `docs/PATROLLER-DESIGN-NOTE.md` y `docs/GDD.md` (Sección 3).
-  - [ ] Desacoplamiento modular en `entities/patrollerAI.lua` (extracción de lógica de `entities/enemies.lua`).
-  - [ ] 4 Modos de patrulla contextuales (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
-  - [ ] Resolución de esquinas a 90° con anti-deadlock de retroceso 180°.
-  - [ ] Línea de visión y aceleración de intercepción (*Line-of-Sight Dash*) con alerta fotónica y estela de plasma.
-  - [ ] Suite de pruebas unitarias `tests/test_scope_20_patroller_ai.lua`.
+  - [x] Desacoplamiento modular en `entities/patrollerAI.lua` (extracción de lógica de `entities/enemies.lua`).
+  - [x] 4 Modos de patrulla contextuales (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
+  - [x] Resolución de esquinas a 90° con anti-deadlock de retroceso 180°.
+  - [x] Línea de visión y aceleración de intercepción (*Line-of-Sight Dash*) con alerta fotónica y estela de plasma.
+  - [x] Seccionamiento quirúrgico de cola (*Guillotine Slice*) en `entities/snake.lua` y feedback en `systems/gamestates.lua`.
+  - [x] Suite de pruebas unitarias `tests/test_scope_20_patroller_ai.lua` en PASS (100% verde).
 - [ ] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)**:
   - [ ] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards
 - [ ] **Boss Enrage Phase & Laser Attacks**:
