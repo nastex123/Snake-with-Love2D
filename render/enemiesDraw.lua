@@ -204,14 +204,27 @@ local function drawPatroller(e, tam, time)
     love.graphics.translate(cx, cy)
     love.graphics.rotate(angle)
 
+    local isAlert = (e.aiState == "alert")
+    local isDash = (e.aiState == "dash")
+
     if sprite then
         -- Renderizado de textura sprite PNG
-        love.graphics.setColor(1, 1, 1, 1)
+        if isAlert then
+            local flash = math.floor(time * 30) % 2 == 0
+            love.graphics.setColor(1, 1, 1, flash and 1.0 or 0.4)
+        else
+            love.graphics.setColor(1, 1, 1, 1)
+        end
         love.graphics.draw(sprite, -2.5 * k, -2.5 * k, 0, k, k)
 
         -- Núcleo fotónico pulsante sobre el sprite (pixel central 0, 0)
-        love.graphics.setColor(1.0, 1.0, 1.0, 0.40 * pulse)
-        love.graphics.rectangle("fill", -0.5 * k, -0.5 * k, k, k)
+        if isAlert then
+            love.graphics.setColor(1.0, 1.0, 1.0, 1.0)
+            love.graphics.rectangle("fill", -0.7 * k, -0.7 * k, 1.4 * k, 1.4 * k)
+        else
+            love.graphics.setColor(1.0, 1.0, 1.0, (isDash and 0.9 or 0.40) * pulse)
+            love.graphics.rectangle("fill", -0.5 * k, -0.5 * k, k, k)
+        end
     else
         -- Fallback procedural si la textura no está disponible
         for _, px in ipairs(PATROLLER_MATRIX_5X5) do
@@ -221,7 +234,7 @@ local function drawPatroller(e, tam, time)
             elseif pType == "C" then
                 love.graphics.setColor(0.00, 0.94, 1.00, 0.95)
             elseif pType == "*" then
-                love.graphics.setColor(1.0, 1.0, 1.0, 0.85 + 0.15 * pulse)
+                love.graphics.setColor(1.0, 1.0, 1.0, isAlert and 1.0 or (0.85 + 0.15 * pulse))
             elseif pType == "A" then
                 love.graphics.setColor(0.90, 0.98, 1.00, 1.0)
             elseif pType == "T" then
@@ -232,7 +245,8 @@ local function drawPatroller(e, tam, time)
     end
 
     -- Borde exterior de definición pixel-art
-    love.graphics.setColor(0.0, 0.94, 1.0, 0.45)
+    local borderColor = isAlert and {1.0, 1.0, 1.0, 0.9} or (isDash and {0.0, 1.0, 0.8, 0.8} or {0.0, 0.94, 1.0, 0.45})
+    love.graphics.setColor(borderColor[1], borderColor[2], borderColor[3], borderColor[4])
     love.graphics.setLineWidth(1)
     love.graphics.polygon("line", 
         2.5 * k, 0,
@@ -243,9 +257,10 @@ local function drawPatroller(e, tam, time)
         0, 2.5 * k
     )
 
-    -- Micro-llama de plasma del propulsor
-    local thrusterLen = (1.2 + 0.8 * pulse) * k
-    love.graphics.setColor(0.2, 0.90, 1.0, 0.6 * pulse)
+    -- Micro-llama de plasma del propulsor (alargada y brillante en DASH)
+    local thrusterLen = (isDash and (3.5 + 1.2 * pulse) or (1.2 + 0.8 * pulse)) * k
+    local flameColor = isDash and {0.0, 1.0, 0.8, 0.9} or {0.2, 0.90, 1.0, 0.6 * pulse}
+    love.graphics.setColor(flameColor[1], flameColor[2], flameColor[3], flameColor[4])
     love.graphics.polygon("fill", -2.5 * k, -0.8 * k, -2.5 * k - thrusterLen, 0, -2.5 * k, 0.8 * k)
 
     love.graphics.pop()

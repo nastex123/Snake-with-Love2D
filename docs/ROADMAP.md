@@ -78,6 +78,7 @@
 - [x] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [x] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
 - [x] Enemy Pixel-Art Sprite Identity (Patroller 5x5 Delta Interceptor, Chaser 7x7 Plasma Hyper Shuriken with decoupled gyroscopic eye tracking)
+- [x] Patroller Tactical AI Evolution (Modular patrollerAI.lua, 4 contextual patrol modes, 90-degree corner turns, Line-of-Sight Dash, and Guillotine Slice tail-cutting mechanic)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
 - [ ] Elite Encounters & 5 Mini-Bosses (Mid-stage room 3 challenges with guaranteed golden rewards)
 - [ ] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks)

@@ -59,9 +59,20 @@ chore(git): expand .gitignore for config/*.dat
 6. `git commit -m "type(scope): subject" -m "Body"`
 7. `git fetch && git rebase origin/main` — resolver conflictos (`ours/theirs` documentado).
 8. `git push -u origin <branch>` — primer push con upstream.
-9. PR si remoto existe, con checklist DoD: `love .` verde, log limpio, docs actualizados.
-10. Squash/merge → `main`, `git tag -a vX.Y.Z -m "Phase ..."` si release, `git push origin --tags`.
-11. Actualizar `docs/CHANGELOG.md` (hora `America/Bogota` `YYYY-MM-DD HH:mm`) + `docs/TODO.md` + `CHANGELOG.md` raíz (skill documentation) en mismo branch o follow-up `docs:`.
+9. **Creación de Pull Request (PR) detallado vía GitHub CLI (`gh pr create`)**:
+   - **Título**: Formato Conventional Commit descriptivo y en español técnico (ej. `feat(phase-8): Biomas, Peligros Ambientales y Sprites Pixel-Art`).
+   - **Cuerpo obligatorio**:
+     - **Resumen Ejecutivo**: 3 a 5 viñetas con qué se hizo y por qué.
+     - **Detalle Técnico por Sistema**: Arquitectura, módulos tocados, parámetros de balance nuevos.
+     - **Tabla de Módulos Modificados / Creados**.
+     - **Checklist Definition of Done (DoD)**:
+       - [x] `love .` ejecutado sin errores.
+       - [x] `error.log` verificado en 0 bytes.
+       - [x] Suite de tests unitarios relevante en PASS (`love tests`).
+       - [x] Documentación sincronizada (`GDD`, `TDD`, `TODO`, `ROADMAP`, `CHANGELOG`).
+10. Revisión/Aprobación del PR (`gh pr merge` o en GitHub Web) → merge a `dev` o `main`.
+11. `git tag -a vX.Y.Z -m "Phase ..."` si release, `git push origin --tags`.
+12. Actualizar `docs/CHANGELOG.md` (hora `America/Bogota` `YYYY-MM-DD HH:mm`) + `docs/TODO.md` + `CHANGELOG.md` raíz (skill documentation) en mismo branch o follow-up `docs:`.
 
 ## Sync & Higiene
 
