@@ -117,6 +117,39 @@
   - [ ] Colorblind filters, FX sliders, training mode, run history, record PNG export, full keybind mapping, HUD performance overlay, Alt+Tab auto-pause, HD vibration
 - [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
 
+## Planned (Tech Debt Plan — 31:08:2026) — Saneamiento Deuda Técnica Viva
+
+Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 3 fases + 2 futuro. Rama: `chore/tech-debt-plan` desde `main@87d5ac4`. DoD: `love .` + `error.log 0` + tests PASS + docs sincronizados por propuesta.
+
+### Fase 1 — Desmonolitizar (CRÍTICO)
+
+- [ ] **P01 — Split `entities/enemies.lua` 634 → 4 módulos** (`enemies.lua` facade + `enemies/bossLogic.lua` + `enemies/spawnerLogic.lua` + `enemies/attackRegistry.lua`; pools `telegraphs`/`attackObjects`/`pendingRespawns` aislados) — Branch: `refactor/split-enemies` — Verifica: `test_scope_09_enemies`, `test_scope_11_bossAttacks` PASS, 4 ficheros <250L
+- [ ] **P02 — Split `entities/snake.lua` 922 → 4 módulos** (`snake/core.lua` + `snake/movement.lua` + `snake/abilities.lua` + `snake/collisions.lua`; facade `snake.lua` 120L re-exporta API `mover`/`encolarDireccion` intacta) — Branch: `refactor/split-snake` — Verifica: `test_scope_06_snake` PASS, 4 ficheros <320L
+- [ ] **P03 — Split `systems/gamestates.lua` 643 → 4 módulos** (facade + `gamestates/playing.lua` 372L + `gamestates/transition.lua` + `gamestates/death.lua`; primer paso ECS) — Branch: `refactor/split-gamestates` — Verifica: `test_scope_18_gamestatesDebug` PASS, 4 ficheros <300L
+
+### Fase 2 — Desacoplar Estado (CRÍTICO + RECOMENDADO)
+
+- [ ] **P04 — Migración final globals → `World.state`** (`shop.shieldActive/magnetTimer/ghostActive` → `World.state.shop`; `enemies.list/boss` → `World.state.enemies`; `World.subscribe`) — Branch: `refactor/world-state-globals` — Verifica: `grep shop\.` 0 fuera de `World.get`, `test_scope_15_shopPersistence` PASS
+- [ ] **P05 — Consolidar timers duales → `core/timers.lua` único** (deprecar `world.state.activeTimers[]` + `shockwaves` loops; `timers.update(dt)` único desde `love.update`) — Branch: `refactor/timers-consolidated` — Verifica: `test_scope_04_timers` PASS
+- [ ] **P06 — Crear `core/events.lua` (Event Bus)** (`Events.emit/on`, `local E={} return E`, migrar `achievements.check`/`persistence.sync`/`ui.showToast` a suscriptores) — Branch: `feat/core-events` — Verifica: `test_scope_05_world` listeners PASS, 0 `require` circular
+- [ ] **P07 — Crear `core/input.lua` (Input centralizado)** (`Input.isHeld(dir)` + `config.KEYBINDS` + `touch.hasActiveTouch` + hook gamepad; `love.keyboard.isDown` solo en `core/input.lua`) — Branch: `refactor/input-central` — Verifica: `grep isDown` único
+- [ ] **P08 — Crear `core/assets.lua` (Asset Manager)** (`Assets.getFont/getCanvas`, 0 `newImage/newCanvas` por frame, Zero-GC) — Branch: `refactor/assets-manager` — Verifica: `test_ui_render_audio` PASS
+
+### Fase 3 — Resiliencia (RECOMENDADO + OPCIONAL)
+
+- [ ] **P09 — Escritura atómica `profiles.dat` + `schema_version`** (`profiles.dat.tmp` + `os.rename` + `.bak`, `pcall` + validación, `schema_version=2`) — Branch: `fix/persistence-atomic` — Verifica: corte simulado, `test_scope_15_shopPersistence` corrupción PASS
+- [ ] **P10 — Split `tests/test_systems.lua` 1135 → 3 suites + smoke headless** (`test_gamestates`, `test_shop`, `smoke.lua` `love . --test`) — Branch: `chore/tests-split` — Verifica: `love tests` <1.0s, 3 ficheros <400L
+- [ ] **P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns`** (32/64 tablas pre-alocadas con `active` flag; iteración sin `table.insert/remove` en loop) — Branch: `perf/pools-attacks` — Verifica: `collectgarbage("count")` estable
+- [ ] **P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua`** (`obstacles.lua` 723→~380L; `BiomeHazards.update(dt)` unifica `isIce/isSlime/lava/pressure_spike`) — Branch: `refactor/biome-hazards` — Verifica: `obstacles.lua` <500L
+- [ ] **P13 — Contrato API `World.state` + `World.validate()` debug** (assertType en `World.set` modo debug, `World.validate()` en `love.load`) — Branch: `chore/world-validate` — Verifica: asserts de tipo en `test_core` PASS
+
+### Futuro (Phase 9 prep)
+
+- [ ] **P14 — Fixed timestep 60Hz desacoplado + test zero-allocation** (`accumulator` loop, `collectgarbage` Δ0KB en 3600 frames) — Branch: `perf/fixed-timestep`
+- [ ] **P15 — Hook half-res FBO + Voronoi fracture** (`reflectionCanvas W/2 H/2`, shader Voronoi flag `ENABLE_VORONOI=false`) — Branch: `feat/shaders-fbo-voronoi`
+
+> Verificación global por propuesta: `love .` 5s en MENU→PLAYING con boss (food 15), `error.log` 0 bytes, suite relevante PASS, `TDD` §1 actualizado, `ROADMAP` milestone y `CHANGELOG` con timestamp `America/Bogota`.
+
 ## Backlog — GDD §21 (80 Propuestas del Socio Técnico)
 Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (sin análogo previo) o **[solapa → ref]** (refina una especificación existente; la fuente canónica se conserva).
 - [ ] **B1 Feedback & Game Feel (§21.1)** — Causa de muerte explícita, replay lento al morir, amenaza en bordes, escala de amenaza por color, pitch de combo, flash de comidas activas, HUD defensas segmentado, ghost frame con reloj radial, preview Autotomy, acorde de cadena, timer de racha, campana de última defensa, distinción de estados defensivos, hundimiento de tiles, barra de botín del boss, zoom-out de jefes, resolución por sala, modo eco.
