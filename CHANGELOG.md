@@ -8,6 +8,55 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:55
+
+- **Refactor** (completed - 2026-08-31 23:55): P03 — Split `systems/gamestates.lua` 643 → fachada 196L + 3 submódulos (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 3 submódulos)**:
+     - `systems/gamestates.lua` 643 → `systems/gamestates.lua` **196L** (fachada: `overlaysOpen`/`flushPendingAchievements`/`processToasts`/`updateCommon` con `timers/shaders/sound` + `updateMenu`/`updateShop`/`updatePaused` + `update` dispatch; delega `updatePlaying`/`updateTransition`/`updateDeath`/`updateHighScore`).
+     - Nuevos módulos: `systems/gamestates/playing.lua` **389L** (`updatePlaying` con `enemyFreezeTimer`, `snake.update`, `food.onBombExpired`, `enemies.update`, `fireTrail`/`tailSnap`/`constrictorLoop`/`checkEnemyCollisions` slice, `shop.magnetTimer`, `Corner Buffering` `0.75` y `standstill`, `snake.mover` pipeline + `bossResult`/`enemyKilled`/`attackHit` + `food`/`twin`/`survivalStreak`/`objetivoSala`), `systems/gamestates/transition.lua` **64L** (`updateTransition` fade 1 → `hold` 2s → fade 2 → `SHOP`, `survivalStreak +0.1`, `flushPendingAchievements` duplicado local para evitar ciclo), `systems/gamestates/death.lua` **72L** (`updateDeath` despiece 0.05s + `HIGH_SCORE`/`SHOP`, `updateHighScore` 1.3s, ambos con `flushPendingAchievements` local).
+     - `systems/gamestates.lua` ahora `require` a los 3 submódulos y re-exporta `states.updatePlaying = playing.update`, `states.updateTransition = transition.update`, `states.updateDeath = death.updateDeath`, `states.updateHighScore = death.updateHighScore` para compatibilidad con `tests/test_scope_18_gamestatesDebug.lua`.
+  2. **POR QUÉ**: `gamestates.lua` era el orquestador monolítico (643L) con `updatePlaying` god-function de 372L que mezclaba economía, combate y progresión; sin split, Fase 8 (biomas, estela, constrictor) tocaba un único fichero y bloqueaba el paso a ECS (`Movement/AI/Collision/Render`).
+  3. **Verificación**: `love .` 5s `error.log` 0 bytes (sin regresión), `love tests` **529/545 PASS** (idéntico, 16 fallos pre-existentes), `TDD` actualizado a 55 módulos / ~10,200 líneas y grafo con `gamestates/playing|transition|death`, `TODO` P03 [x] 2026-08-31 23:55 — **Fase 1 completada (M1)**.
+
+## 2026-08-31 23:45
+
+- **Refactor** (completed - 2026-08-31 23:45): P02 — Split `entities/snake.lua` 922 → fachada 257L + 4 submódulos (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 4 submódulos)**:
+     - `entities/snake.lua` 922 → `entities/snake.lua` **257L** (fachada: `hsv2rgb` + delegaciones + `draw` 190L con `fireTrail`, `easedAlpha`, `trail` y `decoys`, `shop.shieldActive`/`ghost` overlays).
+     - Nuevos módulos: `entities/snake/core.lua` **97L** (`reset` 3 segmentos + `update` de 8 timers: `flashTimer/sliceGraceTimer/ghostTimer/autotomyCooldown/reverseSlitherTimer/constrictorBuffTimer/firePepperTimer/fireTrail/decoys` con `shop.ghostActive` guard), `entities/snake/abilities.lua` **105L** (`triggerReverseSlither` inversión 180° + `ghost 1.2s` + `cooldown 10s`, `applySlimming` 50% si `≥12`, `triggerAutotomy` 2 segmentos + `decoy 4.0s` + `ghost 1.5s`), `entities/snake/collisions.lua` **152L** (`checkEnemyCollisions` con `sliceGraceTimer/ghost/immune`, `shield_block/armor_block/death`, `Guillotine Slice` `fromIndex/removedCount` + `sliceGrace 1.0s`, `checkPatrollerSlice` wrapper, `checkConstrictorLoop` con `pointInPolygon` ray-casting y `constrictorBuff 5.0s`), `entities/snake/movement.lua` **393L** (`mover` táctico `controlMode`, `wrap`/`hasWrap`, `body/obstacle/boss/projectile/enemy` pipeline + `magnet/twin` y `fireTrail`, `encolarDireccion` con `inputQueue` 2-step + `turnHistory` 4 + `pendingTailSnap`, `cambiarDireccion` y `checkTailSnap`).
+     - Duplicación controlada de helpers `immune()`/`hasWrap()` en `collisions.lua` y `movement.lua` para evitar ciclo `snake`→`enemies`→`snake`; fachada `snake.lua` re-exporta `snake.reset/update/triggerReverseSlither/applySlimming/triggerAutotomy/checkEnemyCollisions/checkPatrollerSlice/checkConstrictorLoop/mover/checkTailSnap/draw/encolarDireccion/cambiarDireccion` idénticos.
+  2. **POR QUÉ**: `snake.lua` era el fichero más grande del repo (922L, >3× el límite 300–500) y concentraba 5 responsabilidades (estado, habilidades, colisiones, movimiento, render); sin split, cualquier ajuste de `Guillotine Slice` o `Corner Buffering` tocaba 922 líneas y bloqueaba `P03 gamestates` (que consume `snake.mover`).
+  3. **Verificación**: `love .` 5s `error.log` 0 bytes (sin regresión), `love tests` **529/545 PASS** (idéntico a post-P01, 16 fallos pre-existentes), `TDD` actualizado a 52 módulos / ~10,000 líneas y grafo con `snake/core|abilities|collisions|movement`, `TODO` P02 [x] 2026-08-31 23:45.
+
+## 2026-08-31 23:30
+
+- **Refactor** (completed - 2026-08-31 23:30): P01 — Split `entities/enemies.lua` 634 → fachada 341L + 3 submódulos + fix de regresiones (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 3 submódulos)**:
+     - `entities/enemies.lua` 634 → `entities/enemies.lua` **341L** (fachada que delega y mantiene API pública idéntica: `list/boss`, `addTelegraph/addProjectile/addRadialPulse`, `getTelegraphs/getAttackObjects/getPendingRespawns`, `canSpawn/spawnAt/generar`, `spawnBoss/hitBoss/onBossDefeatedByFood`, `applyTailSnap/checkFireTrail`, `update/killEnemy/draw`, `init/limpiar/clear`).
+     - Nuevos módulos: `entities/enemyAttackRegistry.lua` **139L** (telegraphs 0.8s, attackObjects projectile/radial_pulse, pendingRespawns con `clearAll`/`clearAttackObjects` y `updateAttackObjects/updateTelegraphs` con `isFrozen` y bounds), `entities/enemyBossLogic.lua` **170L** (spawnBoss 15×15 centrado, hitBoss con `invulnerable` y `vida` nil-guard, `onBossDefeatedByFood`, `updateBoss` con fases `vidaFrac ≤0.30→3 ≤0.60→2 else 1` y `enraged` a `foodTarget-3`, `updateBarLerp` con `lerpSpeed 6.0` y defaults `_uiBarFill/_uiBarTarget`), `entities/enemySpawnLogic.lua` **121L** (canSpawn con `BOSS_MAX_RED 3`/`BOSS_MAX_BLUE 4`, spawnAt con `chaser`/`patroller`/`spawner` y `patrollerAI.init`, `generar` con pesos `chaserWeight/patrollerWeight/spawnerWeight` y fallback de caps).
+     - `entities/enemies.lua` ahora `require` a los 3 submódulos y re-exporta: `enemies.list/boss` siguen siendo la fuente de verdad; `attackRegistry.getTelegraphs()`/`getAttackObjects()` retornan las tablas vivas (identidad preservada para `render/enemiesDraw.lua` y tests).
+  2. **QUÉ — Fixes de regresión detectados por tests (527/545 → 529/545)**:
+     - `entities/enemyBossLogic.lua:hitBoss`: `boss.vida = (boss.vida or boss.vidaMax or 3) -1` y `boss.vidaMax` default para bosses de test creados sin `vida` (evita `attempt to perform arithmetic on field 'vida' (a nil value)` en `test_scope_06_snake` y `test_scope_18_gamestatesDebug`).
+     - `entities/enemyBossLogic.lua:updateBarLerp`: defaults `boss._uiBarFill = 1.0` y `boss._uiBarTarget` si `nil` para bosses de test sin barra.
+     - `entities/snake.lua:checkEnemyCollisions` (slice): añade `fromIndex = segIdx` al retorno `slice` (`{type="slice", gx, gy, fromIndex, removedCount}`) para que `test_scope_20_patroller_ai` valide `slice.fromIndex == 4` y `removedCount == 4` y `#s.body == 3` tras `Guillotine Slice`.
+  3. **POR QUÉ**: Cumplir la regla de arquitectura `300–500 líneas por archivo` (AGENTS.md + skill `documentation` §Golden Rule) y desbloquear **Fase 1** del `TECH-DEBT-PLAN.md`: `enemies.lua` era el único módulo core aún monolítico y bloqueaba cualquier extensión de mini-bosses o nuevos ataques sin tocar 634 líneas acopladas.
+  4. **Verificación**: `love .` 5s en MENU→PLAYING con boss (food 15) → `error.log` 0 bytes (5s, `RedirectStandardOutput`); `love tests` 529/545 PASS (antes 527/545, +2 tests recuperados: `snake boss collision` y `patroller slice`); `TDD` §1 actualizado a 48 módulos / ~9,600 líneas y grafo con `enemyAttackRegistry/bossLogic/spawnLogic`; `TODO` P01 marcado `[x]` 2026-08-31 23:30; `git diff --stat` revisado en rama `refactor/split-enemies`.
+
+## 2026-08-31 23:04
+
+- **Docs** (created - 2026-08-31 23:04): Plan formal de saneamiento de deuda técnica viva — 15 propuestas en 3 fases + 2 futuro (America/Bogota):
+  1. **QUÉ — Documento `docs/TECH-DEBT-PLAN.md` (nuevo, 350 líneas)**:
+     - Auditoría en vivo 2026-08-31 23:04: 5 módulos críticos por encima de 300–500 líneas (`snake.lua` 922, `persistence.lua` 783, `obstacles.lua` 723, `gamestates.lua` 643, `enemies.lua` 634) + `tests/test_systems.lua` 1135; globals dispersos (`shop.shieldActive`, `enemies.list/boss`) y duplicación de timers (`core/timers.lua` vs `world.state.activeTimers[]`).
+     - Catálogo priorizado de 15 propuestas: CRÍTICO P01 Split `enemies.lua` 634→4×<250L (bossLogic/spawnerLogic/attackRegistry), P02 Split `snake.lua` 922→4×<320L (core/movement/abilities/collisions), P03 Split `gamestates.lua` 643→4×<300L (playing/transition/death), P04 Migración globals→`World.state`, P05 Timers consolidados; RECOMENDADO P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua`, P09 Escritura atómica `profiles.dat` + `schema_version=2`, P10 Split `test_systems.lua` 1135→3; OPCIONAL P11 Pools 32/64, P12 `world/biomeHazards.lua` 723→380L, P13 `World.validate()`; FUTURO P14 Fixed timestep 60Hz, P15 Half-res FBO + Voronoi hook.
+     - Gantt Mermaid de 3 fases (F1 Desmonolitizar 7d, F2 Desacoplar 6d, F3 Resiliencia 6d) + grafo de dependencias y matriz de verificación por propuesta (`love .` + `error.log` 0 + suite relevante PASS).
+     - Branching por skill `git-workflow`: `chore/tech-debt-plan` (plan) → `refactor/split-enemies`, `refactor/split-snake`, `refactor/split-gamestates`, `refactor/world-state-globals`, `feat/core-events`, `fix/persistence-atomic`, etc., con commits `type(scope): subject` atómicos y PR con Resumen/Detalle por Sistema/Tabla de módulos/DoD.
+  2. **QUÉ — Actualización de `docs/TODO.md`, `docs/ROADMAP.md`, `docs/TDD.md`**:
+     - `TODO.md`: Nueva sección `Planned (Tech Debt Plan — 31:08:2026)` con 15 ítems P01–P15 trazables a `TECH-DEBT-PLAN.md` §5.
+     - `ROADMAP.md`: Nueva fase `Phase 8.5: Saneamiento Deuda Técnica Viva 📋 Planned` con desglose F1/F2/F3 y branching.
+     - `TDD.md`: Nuevo §10.26 con tabla de fases, dependencias y estado `created` 2026-08-31 23:04.
+  3. **POR QUÉ**: Dejar el proyecto en cero-deuda estructural antes de acometer `Items 51–60`, `Mini-Bosses` y `Phase 9` (100 Visual Proposals), respetando las reglas de arquitectura (límite 300–500 líneas, `local X = {}` sin globals, pooling, config central) y los invariantes `love .` funcional + `error.log` 0 del `AGENTS.md` y la skill `documentation`.
+  4. **Verificación**: `love .` no requerido por ser solo documentación (0 cambios de runtime); `git diff --stat` revisado (4 ficheros: `TECH-DEBT-PLAN.md` + `TODO`/`ROADMAP`/`TDD` + `CHANGELOG`); `git status` limpio en rama `chore/tech-debt-plan`.
+
 ## 2026-08-29 21:12
 
 - **Fix** (completed - 2026-08-29 21:12): Corrección de cadencia de movimiento y colisiones físicas del Patroller (America/Bogota):
