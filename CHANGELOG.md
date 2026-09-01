@@ -8,6 +8,21 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:04
+
+- **Docs** (created - 2026-08-31 23:04): Plan formal de saneamiento de deuda técnica viva — 15 propuestas en 3 fases + 2 futuro (America/Bogota):
+  1. **QUÉ — Documento `docs/TECH-DEBT-PLAN.md` (nuevo, 350 líneas)**:
+     - Auditoría en vivo 2026-08-31 23:04: 5 módulos críticos por encima de 300–500 líneas (`snake.lua` 922, `persistence.lua` 783, `obstacles.lua` 723, `gamestates.lua` 643, `enemies.lua` 634) + `tests/test_systems.lua` 1135; globals dispersos (`shop.shieldActive`, `enemies.list/boss`) y duplicación de timers (`core/timers.lua` vs `world.state.activeTimers[]`).
+     - Catálogo priorizado de 15 propuestas: CRÍTICO P01 Split `enemies.lua` 634→4×<250L (bossLogic/spawnerLogic/attackRegistry), P02 Split `snake.lua` 922→4×<320L (core/movement/abilities/collisions), P03 Split `gamestates.lua` 643→4×<300L (playing/transition/death), P04 Migración globals→`World.state`, P05 Timers consolidados; RECOMENDADO P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua`, P09 Escritura atómica `profiles.dat` + `schema_version=2`, P10 Split `test_systems.lua` 1135→3; OPCIONAL P11 Pools 32/64, P12 `world/biomeHazards.lua` 723→380L, P13 `World.validate()`; FUTURO P14 Fixed timestep 60Hz, P15 Half-res FBO + Voronoi hook.
+     - Gantt Mermaid de 3 fases (F1 Desmonolitizar 7d, F2 Desacoplar 6d, F3 Resiliencia 6d) + grafo de dependencias y matriz de verificación por propuesta (`love .` + `error.log` 0 + suite relevante PASS).
+     - Branching por skill `git-workflow`: `chore/tech-debt-plan` (plan) → `refactor/split-enemies`, `refactor/split-snake`, `refactor/split-gamestates`, `refactor/world-state-globals`, `feat/core-events`, `fix/persistence-atomic`, etc., con commits `type(scope): subject` atómicos y PR con Resumen/Detalle por Sistema/Tabla de módulos/DoD.
+  2. **QUÉ — Actualización de `docs/TODO.md`, `docs/ROADMAP.md`, `docs/TDD.md`**:
+     - `TODO.md`: Nueva sección `Planned (Tech Debt Plan — 31:08:2026)` con 15 ítems P01–P15 trazables a `TECH-DEBT-PLAN.md` §5.
+     - `ROADMAP.md`: Nueva fase `Phase 8.5: Saneamiento Deuda Técnica Viva 📋 Planned` con desglose F1/F2/F3 y branching.
+     - `TDD.md`: Nuevo §10.26 con tabla de fases, dependencias y estado `created` 2026-08-31 23:04.
+  3. **POR QUÉ**: Dejar el proyecto en cero-deuda estructural antes de acometer `Items 51–60`, `Mini-Bosses` y `Phase 9` (100 Visual Proposals), respetando las reglas de arquitectura (límite 300–500 líneas, `local X = {}` sin globals, pooling, config central) y los invariantes `love .` funcional + `error.log` 0 del `AGENTS.md` y la skill `documentation`.
+  4. **Verificación**: `love .` no requerido por ser solo documentación (0 cambios de runtime); `git diff --stat` revisado (4 ficheros: `TECH-DEBT-PLAN.md` + `TODO`/`ROADMAP`/`TDD` + `CHANGELOG`); `git status` limpio en rama `chore/tech-debt-plan`.
+
 ## 2026-08-29 21:12
 
 - **Fix** (completed - 2026-08-29 21:12): Corrección de cadencia de movimiento y colisiones físicas del Patroller (America/Bogota):
