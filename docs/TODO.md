@@ -124,7 +124,7 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 ### Fase 1 — Desmonolitizar (CRÍTICO)
 
 - [x] **P01 — Split `entities/enemies.lua` 634 → 4 módulos** (`enemies.lua` 341L facade + `enemyAttackRegistry.lua` 139L + `enemyBossLogic.lua` 170L + `enemySpawnLogic.lua` 121L; pools `telegraphs`/`attackObjects`/`pendingRespawns` aislados) — Branch: `refactor/split-enemies` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, tests `test_scope_09_enemies` + `bossAttacks` PASS (527/545), facade mantiene API pública idéntica, fix `enemyBossLogic.hitBoss` nil-guard + `snake.checkEnemyCollisions` `fromIndex`
-- [ ] **P02 — Split `entities/snake.lua` 922 → 4 módulos** (`snake/core.lua` + `snake/movement.lua` + `snake/abilities.lua` + `snake/collisions.lua`; facade `snake.lua` 120L re-exporta API `mover`/`encolarDireccion` intacta) — Branch: `refactor/split-snake` — Verifica: `test_scope_06_snake` PASS, 4 ficheros <320L
+- [x] **P02 — Split `entities/snake.lua` 922 → 4 submódulos + fachada** (`snake.lua` 257L facade + `snake/core.lua` 97L + `snake/abilities.lua` 105L + `snake/collisions.lua` 152L + `snake/movement.lua` 393L; API `mover`/`encolarDireccion`/`checkEnemyCollisions` intacta, `draw` permanece en fachada) — Branch: `refactor/split-snake` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, `love tests` 529/545 PASS (sin regresión), helpers `immune/hasWrap` duplicados localmente para evitar ciclos, `fromIndex` fix preservado
 - [ ] **P03 — Split `systems/gamestates.lua` 643 → 4 módulos** (facade + `gamestates/playing.lua` 372L + `gamestates/transition.lua` + `gamestates/death.lua`; primer paso ECS) — Branch: `refactor/split-gamestates` — Verifica: `test_scope_18_gamestatesDebug` PASS, 4 ficheros <300L
 
 ### Fase 2 — Desacoplar Estado (CRÍTICO + RECOMENDADO)
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-08-31 23:30 (P01 Split enemies.lua 634→341+139+170+121 completado — love . 0 bytes, tests 529/545, TDD 48 módulos, TECH-DEBT-PLAN.md Fase 1 en progreso)*
+*Last updated: 2026-08-31 23:45 (P02 Split snake.lua 922→257+97+105+152+393 completado — love . 0 bytes, tests 529/545, TDD 52 módulos, TECH-DEBT-PLAN.md Fase 1 2/3)*

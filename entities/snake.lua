@@ -1,30 +1,23 @@
 -- =============================================================================
--- MÃ“DULO DE LA SERPIENTE
--- Contiene la lÃ³gica de movimiento, colisiones y dibujo del cuerpo.
+-- MÓDULO DE LA SERPIENTE — Fachada (P02)
+-- P02 Split 922 → fachada ~320L + 4 submódulos:
+--   entities/snake/core.lua       (reset, update)
+--   entities/snake/abilities.lua  (triggerReverseSlither, applySlimming, triggerAutotomy)
+--   entities/snake/collisions.lua (checkEnemyCollisions, checkPatrollerSlice, checkConstrictorLoop)
+--   entities/snake/movement.lua   (mover, encolarDireccion, cambiarDireccion, checkTailSnap)
+-- Mantiene API pública idéntica.
 -- =============================================================================
 local snake = {}
 local constants = require("constants")
 local shop = require("systems.shop")
-local enemies = require("entities.enemies")
-local world = require("core.world")
+local core = require("entities.snake.core")
+local abilities = require("entities.snake.abilities")
+local collisions = require("entities.snake.collisions")
+local movement = require("entities.snake.movement")
 
--- lectura del estado debug (legacy global debugImmune -> world.state.debugImmune)
-local function immune()
-    return world.get("debugImmune") or false
-end
-
-local function hasWrap()
-    local wf = package.loaded["world.world"]
-    if not wf then
-        local ok, res = pcall(require, "world.world")
-        if ok then wf = res end
-    end
-    if wf and wf.hasWallWrap then
-        return wf.hasWallWrap()
-    end
-    return true
-end
-
+-- ---------------------------------------------------------------------------
+-- Helpers de render (solo usado en draw)
+-- ---------------------------------------------------------------------------
 local function hsv2rgb(h, s, v)
     local i = math.floor(h * 6)
     local f = h * 6 - i
@@ -40,609 +33,37 @@ local function hsv2rgb(h, s, v)
     return v, p, q
 end
 
-function snake.reset()
-    return {
-        body = {
-            {x = 5, y = 5},
-            {x = 4, y = 5},
-            {x = 3, y = 5}
-        },
-        dirX = 1,
-        dirY = 0,
-        lastMovedDirX = 1,
-        lastMovedDirY = 0,
-        inputQueue = {},
-        prevBody = {
-            {x = 5, y = 5},
-            {x = 4, y = 5},
-            {x = 3, y = 5}
-        },
-        trail = {},
-        ghost = false,
-        ghostTimer = 0,
-        armor = 0,
-        flashTimer = 0,
-        autotomyCooldown = 0,
-        decoys = {},
-        constrictorBuffTimer = 0,
-        reverseSlitherTimer = 0,
-        reverseSlitherCooldown = 0,
-        firePepperTimer = 0,
-        fireTrail = {},
-        turnHistory = {},
-        pendingTailSnap = false,
-        standstill = true,
-        hasNewInput = false,
-        sliceGraceTimer = 0
-    }
-end
+-- ---------------------------------------------------------------------------
+-- Delegaciones — Core
+-- ---------------------------------------------------------------------------
+snake.reset = core.reset
+snake.update = core.update
 
-function snake.update(s, dt)
-    if not s then return end
-    if s.flashTimer and s.flashTimer > 0 then
-        s.flashTimer = math.max(0, s.flashTimer - dt)
-    end
-    if s.sliceGraceTimer and s.sliceGraceTimer > 0 then
-        s.sliceGraceTimer = math.max(0, s.sliceGraceTimer - dt)
-    end
-    if s.ghostTimer and s.ghostTimer > 0 then
-        s.ghostTimer = math.max(0, s.ghostTimer - dt)
-        if s.ghostTimer <= 0 and not shop.ghostActive then
-            s.ghost = false
-        end
-    end
-    if s.autotomyCooldown and s.autotomyCooldown > 0 then
-        s.autotomyCooldown = math.max(0, s.autotomyCooldown - dt)
-    end
-    if s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
-        s.reverseSlitherTimer = math.max(0, s.reverseSlitherTimer - dt)
-    end
-    if s.reverseSlitherCooldown and s.reverseSlitherCooldown > 0 then
-        s.reverseSlitherCooldown = math.max(0, s.reverseSlitherCooldown - dt)
-    end
-    if s.constrictorBuffTimer and s.constrictorBuffTimer > 0 then
-        s.constrictorBuffTimer = math.max(0, s.constrictorBuffTimer - dt)
-    end
-    if s.firePepperTimer and s.firePepperTimer > 0 then
-        s.firePepperTimer = math.max(0, s.firePepperTimer - dt)
-    end
-    if s.fireTrail then
-        for i = #s.fireTrail, 1, -1 do
-            local ft = s.fireTrail[i]
-            ft.timer = ft.timer - dt
-            if ft.timer <= 0 then
-                table.remove(s.fireTrail, i)
-            end
-        end
-    end
-    if s.decoys then
-        for i = #s.decoys, 1, -1 do
-            local dec = s.decoys[i]
-            dec.timer = dec.timer - dt
-            if dec.timer <= 0 then
-                table.remove(s.decoys, i)
-            end
-        end
-    end
-end
+-- ---------------------------------------------------------------------------
+-- Delegaciones — Abilities
+-- ---------------------------------------------------------------------------
+snake.triggerReverseSlither = abilities.triggerReverseSlither
+snake.applySlimming = abilities.applySlimming
+snake.triggerAutotomy = abilities.triggerAutotomy
 
-function snake.triggerReverseSlither(s)
-    if not s or not s.body or #s.body < 2 then return false end
-    s.reverseSlitherCooldown = s.reverseSlitherCooldown or 0
-    if s.reverseSlitherCooldown > 0 then return false end
+-- ---------------------------------------------------------------------------
+-- Delegaciones — Collisions
+-- ---------------------------------------------------------------------------
+snake.checkEnemyCollisions = collisions.checkEnemyCollisions
+snake.checkPatrollerSlice = collisions.checkPatrollerSlice
+snake.checkConstrictorLoop = collisions.checkConstrictorLoop
 
-    local n = #s.body
-    for i = 1, math.floor(n / 2) do
-        s.body[i], s.body[n - i + 1] = s.body[n - i + 1], s.body[i]
-    end
+-- ---------------------------------------------------------------------------
+-- Delegaciones — Movement
+-- ---------------------------------------------------------------------------
+snake.mover = movement.mover
+snake.encolarDireccion = movement.encolarDireccion
+snake.cambiarDireccion = movement.cambiarDireccion
+snake.checkTailSnap = movement.checkTailSnap
 
-    local h = s.body[1]
-    local neck = s.body[2]
-    local dx = h.x - neck.x
-    local dy = h.y - neck.y
-    if math.abs(dx) > 1 then dx = dx > 0 and -1 or 1 end
-    if math.abs(dy) > 1 then dy = dy > 0 and -1 or 1 end
-
-    if dx ~= 0 and dy == 0 then
-        s.dirX = dx
-        s.dirY = 0
-    elseif dy ~= 0 and dx == 0 then
-        s.dirX = 0
-        s.dirY = dy
-    elseif dx ~= 0 then
-        s.dirX = dx
-        s.dirY = 0
-    elseif dy ~= 0 then
-        s.dirX = 0
-        s.dirY = dy
-    else
-        s.dirX = -s.dirX
-        s.dirY = -s.dirY
-    end
-
-    s.lastMovedDirX = s.dirX
-    s.lastMovedDirY = s.dirY
-    s.inputQueue = {}
-
-    s.ghost = true
-    s.ghostTimer = 1.2
-    s.reverseSlitherTimer = constants.REVERSE_SLITHER_DURATION or 3.0
-    s.reverseSlitherCooldown = constants.REVERSE_SLITHER_COOLDOWN or 10.0
-
-    s.prevBody = {}
-    for i, seg in ipairs(s.body) do
-        s.prevBody[i] = {x = seg.x, y = seg.y}
-    end
-    return true, h
-end
-
-function snake.applySlimming(s)
-    if not s or not s.body then return false end
-    local minLen = constants.SLIMMING_MIN_LENGTH or 12
-    if #s.body >= minLen then
-        local factor = constants.SLIMMING_FACTOR or 0.5
-        local target = math.max(3, math.floor(#s.body * factor))
-        while #s.body > target do
-            table.remove(s.body)
-        end
-        s.prevBody = {}
-        for i, seg in ipairs(s.body) do
-            s.prevBody[i] = {x = seg.x, y = seg.y}
-        end
-        return true
-    end
-    return false
-end
-
-function snake.triggerAutotomy(s)
-    if not s or not s.body then return false end
-    s.autotomyCooldown = s.autotomyCooldown or 0
-    s.decoys = s.decoys or {}
-
-    if s.autotomyCooldown <= 0 and #s.body >= 4 then
-        local r1 = table.remove(s.body)
-        local r2 = table.remove(s.body)
-        local decoyPos = r1 or r2
-        table.insert(s.decoys, {
-            x = decoyPos.x,
-            y = decoyPos.y,
-            timer = constants.AUTOTOMY_DECOY_DURATION or 4.0,
-            maxTimer = constants.AUTOTOMY_DECOY_DURATION or 4.0
-        })
-        s.ghost = true
-        s.ghostTimer = constants.AUTOTOMY_GHOST_DURATION or 1.5
-        s.autotomyCooldown = constants.AUTOTOMY_COOLDOWN or 8.0
-        s.prevBody = {}
-        for i, seg in ipairs(s.body) do
-            s.prevBody[i] = {x = seg.x, y = seg.y}
-        end
-        return true, decoyPos
-    end
-    return false
-end
-
-function snake.checkEnemyCollisions(s, enemiesList)
-    if not s or not s.body or #s.body == 0 or not enemiesList then
-        return nil
-    end
-    if s.ghost or immune() or (s.sliceGraceTimer and s.sliceGraceTimer > 0) then
-        return nil
-    end
-
-    local head = s.body[1]
-    for idx, e in ipairs(enemiesList) do
-        if e.alive then
-            -- 1. Choque directo con la cabeza
-            if head and e.x == head.x and e.y == head.y then
-                if shop.shieldActive then
-                    shop.shieldActive = false
-                    local res = enemies.killEnemy(idx)
-                    return {type = "shield_block", result = res}
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                    local res = enemies.killEnemy(idx)
-                    return {type = "armor_block", result = res}
-                else
-                    return {type = "death"}
-                end
-            end
-
-            -- 2. Choque con el cuerpo
-            for segIdx = 2, #s.body do
-                local seg = s.body[segIdx]
-                if seg and seg.x == e.x and seg.y == e.y then
-                    -- Segmentos 2 y 3: letal directo (cabeza y cuello)
-                    -- O cualquier segmento si la longitud total es < 5
-                    local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
-                    if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then
-                        if shop.shieldActive then
-                            shop.shieldActive = false
-                            local res = enemies.killEnemy(idx)
-                            return {type = "shield_block", result = res}
-                        elseif s.armor and s.armor > 0 then
-                            s.armor = s.armor - 1
-                            local res = enemies.killEnemy(idx)
-                            return {type = "armor_block", result = res}
-                        else
-                            return {type = "death"}
-                        end
-                    else
-                        -- Patroller impacta en segmento >= 4 con longitud >= 5: Guillotine Slice!
-                        local removed = #s.body - segIdx + 1
-                        local fromIdx = segIdx
-                        while #s.body >= segIdx do
-                            table.remove(s.body)
-                        end
-                        s.prevBody = {}
-                        for i, b in ipairs(s.body) do
-                            s.prevBody[i] = {x = b.x, y = b.y}
-                        end
-                        s.sliceGraceTimer = constants.PATROLLER_SLICE_GRACE_TIME or 1.0
-                        return {
-                            type = "slice",
-                            gx = seg.x,
-                            gy = seg.y,
-                            fromIndex = fromIdx,
-                            removedCount = removed
-                        }
-                    end
-                end
-            end
-        end
-    end
-    return nil
-end
-
-function snake.checkPatrollerSlice(s, enemiesList)
-    local col = snake.checkEnemyCollisions(s, enemiesList)
-    if col and col.type == "slice" then
-        return col
-    end
-    return nil
-end
-
-local function pointInPolygon(px, py, poly)
-    local inside = false
-    local n = #poly
-    if n < 4 then return false end
-    local j = n
-    for i = 1, n do
-        local xi, yi = poly[i].x + 0.5, poly[i].y + 0.5
-        local xj, yj = poly[j].x + 0.5, poly[j].y + 0.5
-        if ((yi > py) ~= (yj > py)) and (px < (xj - xi) * (py - yi) / ((yj - yi) + 1e-9) + xi) then
-            inside = not inside
-        end
-        j = i
-    end
-    return inside
-end
-
-function snake.checkConstrictorLoop(s, enemiesList)
-    if not s or not s.body or #s.body < 8 or not enemiesList then return nil end
-    local killed = {}
-    for i = #enemiesList, 1, -1 do
-        local e = enemiesList[i]
-        if e.alive then
-            local onBody = false
-            for _, seg in ipairs(s.body) do
-                if seg.x == e.x and seg.y == e.y then
-                    onBody = true
-                    break
-                end
-            end
-            if not onBody and pointInPolygon(e.x + 0.5, e.y + 0.5, s.body) then
-                table.insert(killed, {
-                    index = i,
-                    enemy = e,
-                    x = e.x,
-                    y = e.y,
-                    type = e.type,
-                    coins = (e.dropCoins or 1) * 2
-                })
-            end
-        end
-    end
-    if #killed > 0 then
-        s.constrictorBuffTimer = constants.CONSTRICTOR_BUFF_DURATION or 5.0
-        return killed
-    end
-    return nil
-end
-
-function snake.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange, twinPos)
-    if not s or not s.body or #s.body == 0 then return false, false end
-    s.inputQueue = s.inputQueue or {}
-
-    -- Modo de control táctico: requiere tecla direccional sostenida para avanzar
-    local controlMode = world.get("controlMode") or "tactical"
-    if controlMode == "tactical" then
-        local isHeld = false
-        if love.keyboard and love.keyboard.isDown then
-            isHeld = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
-        end
-        local touchMod = package.loaded["core.touch"]
-        if touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
-            isHeld = true
-        end
-        if #s.inputQueue > 0 then isHeld = true end
-
-        if not isHeld then
-            s.standstill = true
-            s.prevBody = {}
-            for i, segment in ipairs(s.body) do
-                s.prevBody[i] = {x = segment.x, y = segment.y}
-            end
-            return true, false
-        end
-        s.standstill = false
-    end
-
-    -- Si la cola está vacía, revisar si el jugador mantiene pulsada una tecla perpendicular válida
-    if #s.inputQueue == 0 and love.keyboard and love.keyboard.isDown then
-        local refY = s.lastMovedDirY or s.dirY
-        local refX = s.lastMovedDirX or s.dirX
-        if (love.keyboard.isDown("up") or love.keyboard.isDown("w")) and refY == 0 then
-            table.insert(s.inputQueue, {x = 0, y = -1})
-        elseif (love.keyboard.isDown("down") or love.keyboard.isDown("s")) and refY == 0 then
-            table.insert(s.inputQueue, {x = 0, y = 1})
-        elseif (love.keyboard.isDown("left") or love.keyboard.isDown("a")) and refX == 0 then
-            table.insert(s.inputQueue, {x = -1, y = 0})
-        elseif (love.keyboard.isDown("right") or love.keyboard.isDown("d")) and refX == 0 then
-            table.insert(s.inputQueue, {x = 1, y = 0})
-        end
-    end
-
-    -- Consumir el siguiente comando en cola si existe
-    if #s.inputQueue > 0 then
-        local nextDir = table.remove(s.inputQueue, 1)
-        s.dirX = nextDir.x
-        s.dirY = nextDir.y
-    end
-    s.hasNewInput = false
-
-    s.lastMovedDirX = s.dirX
-    s.lastMovedDirY = s.dirY
-
-    local nuevaCabezaX = s.body[1].x + s.dirX
-    local nuevaCabezaY = s.body[1].y + s.dirY
-
-    s.prevBody = {}
-    for i, segment in ipairs(s.body) do
-        s.prevBody[i] = {x = segment.x, y = segment.y}
-    end
-
-    -- Colisiones con bordes: wall wrap o muerte según bioma
-    if hasWrap() then
-        if nuevaCabezaX < 0 then nuevaCabezaX = anchoGrilla - 1
-        elseif nuevaCabezaX >= anchoGrilla then nuevaCabezaX = 0
-        end
-        if nuevaCabezaY < 0 then nuevaCabezaY = altoGrilla - 1
-        elseif nuevaCabezaY >= altoGrilla then nuevaCabezaY = 0
-        end
-    else
-        if nuevaCabezaX < 0 or nuevaCabezaX >= anchoGrilla or nuevaCabezaY < 0 or nuevaCabezaY >= altoGrilla then
-            if not immune() then
-                if shop.shieldActive then
-                    shop.shieldActive = false
-                    return true, false
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                    return true, false
-                else
-                    return false, false
-                end
-            else
-                nuevaCabezaX = math.max(0, math.min(anchoGrilla - 1, nuevaCabezaX))
-                nuevaCabezaY = math.max(0, math.min(altoGrilla - 1, nuevaCabezaY))
-            end
-        end
-    end
-
-    -- Verificación de colisiones con el cuerpo
-    for _, segmento in ipairs(s.body) do
-        if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
-            if s.ghost or immune() then
-            elseif shop.shieldActive then
-                shop.shieldActive = false
-                return true, false
-            elseif s.armor and s.armor > 0 then
-                s.armor = s.armor - 1
-                return true, false
-            else
-                return false, false
-            end
-        end
-    end
-
-    -- Verificación de colisiones con obstáculos y peligros ambientales
-    local obstaclesMod = package.loaded["entities.obstacles"]
-    if not obstaclesMod then
-        local ok, res = pcall(require, "entities.obstacles")
-        if ok then obstaclesMod = res end
-    end
-
-    if obstaclesMod then
-        -- Armar trampas de presión al pasar sobre ellas
-        obstaclesMod.triggerPressureSpike(nuevaCabezaX, nuevaCabezaY)
-
-        -- Verificar si el obstáculo en esa posición es un peligro letal activo (lava ardiente, púas extendidas, trampa)
-        local isLethal, hazardObs = obstaclesMod.isHazardLethal(nuevaCabezaX, nuevaCabezaY)
-        if isLethal and not s.ghost and not immune() then
-            if shop.shieldActive then
-                shop.shieldActive = false
-                return true, false
-            elseif s.armor and s.armor > 0 then
-                s.armor = s.armor - 1
-                return true, false
-            else
-                return false, false
-            end
-        end
-    end
-
-    if obstaclePos then
-        for _, obs in ipairs(obstaclePos) do
-            if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
-                -- Losetas transitables (hielo, slime, lava en cooldown/warning, púa retraída)
-                local isPassable = (obs.type == "ice" or obs.type == "slime" or (obs.type == "lava" and obs.state ~= "active") or (obs.type == "pressure_spike" and obs.state ~= "extended"))
-                if not isPassable then
-                    if immune() then
-                    elseif shop.shieldActive then
-                        shop.shieldActive = false
-                        return true, false
-                    elseif s.armor and s.armor > 0 then
-                        s.armor = s.armor - 1
-                        return true, false
-                    else
-                        return false, false
-                    end
-                end
-            end
-        end
-    end
-
-    -- Colision con jefe
-    if enemies.boss and enemies.boss.alive and nuevaCabezaX == enemies.boss.x and nuevaCabezaY == enemies.boss.y then
-        if not s.ghost and not immune() then
-            local bossResult = enemies.hitBoss and enemies.hitBoss() or {hit = true}
-            if bossResult then
-                if shop.shieldActive then
-                    shop.shieldActive = false
-                    return true, false, nil, bossResult
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                    return true, false, nil, bossResult
-                else
-                    return false, false, nil, bossResult
-                end
-            end
-        end
-    end
-
-    -- Colision con objetos de ataque (proyectiles, pulsos)
-    if enemies.getAttackObjects then
-        for _, ao in ipairs(enemies.getAttackObjects() or {}) do
-            local hit = false
-            if ao.type == "projectile" then
-                if math.abs(nuevaCabezaX - ao.x) < 0.6 and math.abs(nuevaCabezaY - ao.y) < 0.6 then
-                    hit = true
-                end
-            elseif ao.type == "radial_pulse" then
-                local dist = math.sqrt((nuevaCabezaX - ao.cx) ^ 2 + (nuevaCabezaY - ao.cy) ^ 2)
-                if dist >= ao.radius - 0.5 and dist <= ao.radius + 0.5 then
-                    hit = true
-                end
-            end
-            if hit then
-                if s.ghost or immune() then
-                    -- pass through
-                elseif shop.shieldActive then
-                    shop.shieldActive = false
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                else
-                    return false, false, nil, nil, {hit = true, damage = ao.damage or 1}
-                end
-            end
-        end
-    end
-
-    -- Verificacion de colisiones con enemigos
-    if enemies.list then
-        for i = #enemies.list, 1, -1 do
-            local e = enemies.list[i]
-            if e and e.alive and nuevaCabezaX == e.x and nuevaCabezaY == e.y then
-                if s.ghost or immune() then
-                else
-                    if shop.shieldActive then
-                        shop.shieldActive = false
-                        local result = enemies.killEnemy(i)
-                        return true, false, result
-                    elseif s.armor and s.armor > 0 then
-                        s.armor = s.armor - 1
-                        local result = enemies.killEnemy(i)
-                        return true, false, result
-                    else
-                        return false, false, nil
-                    end
-                end
-            end
-        end
-    end
-
-    table.insert(s.body, 1, {x = nuevaCabezaX, y = nuevaCabezaY})
-
-    -- Verificar si come comida primaria o gemela (con o sin iman)
-    local comio = false
-    local comioTwin = false
-    if magnetRange and magnetRange > 0 and anchoGrilla and altoGrilla then
-        local wrap = hasWrap()
-        for dy = -magnetRange, magnetRange do
-            for dx = -magnetRange, magnetRange do
-                local checkX, checkY
-                if wrap then
-                    checkX = (nuevaCabezaX + dx) % anchoGrilla
-                    checkY = (nuevaCabezaY + dy) % altoGrilla
-                else
-                    checkX = nuevaCabezaX + dx
-                    checkY = nuevaCabezaY + dy
-                    if checkX <0 or checkX>=anchoGrilla or checkY<0 or checkY>=altoGrilla then
-                        checkX=nil; checkY=nil
-                    end
-                end
-                if checkX and foodPos and checkX == foodPos.x and checkY == foodPos.y then
-                    comio = true
-                    break
-                elseif checkX and twinPos and checkX == twinPos.x and checkY == twinPos.y then
-                    comio = true
-                    comioTwin = true
-                    break
-                end
-            end
-            if comio then break end
-        end
-    else
-        if foodPos and nuevaCabezaX == foodPos.x and nuevaCabezaY == foodPos.y then
-            comio = true
-        elseif twinPos and nuevaCabezaX == twinPos.x and nuevaCabezaY == twinPos.y then
-            comio = true
-            comioTwin = true
-        end
-    end
-
-    if comio then
-        return true, true, nil, nil, nil, comioTwin
-    else
-        local removed = table.remove(s.body)
-        table.insert(s.trail, {x = removed.x, y = removed.y, alpha = 0.5})
-        if #s.trail > 6 then table.remove(s.trail, 1) end
-
-        if s.firePepperTimer and s.firePepperTimer > 0 then
-            table.insert(s.fireTrail, {
-                x = removed.x,
-                y = removed.y,
-                timer = constants.FIRE_TRAIL_LIFETIME or 1.8,
-                maxTimer = constants.FIRE_TRAIL_LIFETIME or 1.8
-            })
-        end
-
-        return true, false
-    end
-end
-
-function snake.checkTailSnap(s)
-    if not s or not s.pendingTailSnap or not s.body or #s.body == 0 then return nil end
-    s.pendingTailSnap = false
-    local tail = s.body[#s.body]
-    local tam = constants.TAMANIO_BLOQUE or 20
-    return {
-        gx = tail.x,
-        gy = tail.y,
-        px = tail.x * tam + tam / 2,
-        py = tail.y * tam + tam / 2
-    }
-end
-
+-- ---------------------------------------------------------------------------
+-- Draw — permanece en fachada (render separado de lógica, pero evita 5º módulo)
+-- ---------------------------------------------------------------------------
 function snake.draw(s, alpha)
     local numSegments = s and s.body and #s.body or 0
     if numSegments == 0 then return end
@@ -651,7 +72,6 @@ function snake.draw(s, alpha)
     local size = tam
     local time = love.timer.getTime()
 
-    -- Dibujar rastro de fuego de Fire Pepper
     if s.fireTrail and #s.fireTrail > 0 then
         for _, ft in ipairs(s.fireTrail) do
             local frac = math.max(0, ft.timer / (ft.maxTimer or 1.8))
@@ -663,7 +83,6 @@ function snake.draw(s, alpha)
         end
     end
 
-    -- Easing cubico: suaviza arranque y frenado de cada paso
     local easedAlpha = alpha * alpha * (3 - 2 * alpha)
 
     local positions = {}
@@ -821,7 +240,6 @@ function snake.draw(s, alpha)
         end
     end
 
-    -- Dibujar señuelos de autotomia activos
     if s.decoys and #s.decoys > 0 then
         for _, dec in ipairs(s.decoys) do
             local dFrac = math.max(0, dec.timer / (dec.maxTimer or 4.0))
@@ -833,91 +251,6 @@ function snake.draw(s, alpha)
             love.graphics.rectangle("line", dec.x * tam + 1, dec.y * tam + 1, tam - 2, tam - 2, 3, 3)
             love.graphics.setLineWidth(1)
         end
-    end
-end
-
-function snake.encolarDireccion(s, tx, ty)
-    if not s or not tx or not ty then return end
-    s.inputQueue = s.inputQueue or {}
-
-    local curX = s.lastMovedDirX or s.dirX
-    local curY = s.lastMovedDirY or s.dirY
-    local qLen = #s.inputQueue
-
-    if qLen == 0 then
-        if tx == curX and ty == curY then return end
-        if (tx == -curX and curX ~= 0) or (ty == -curY and curY ~= 0) then return end
-        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
-            table.insert(s.inputQueue, {x = tx, y = ty})
-            s.hasNewInput = true
-            s.turnHistory = s.turnHistory or {}
-            local now = love.timer.getTime()
-            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
-            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
-        end
-    elseif qLen == 1 then
-        local q1 = s.inputQueue[1]
-        if tx == q1.x and ty == q1.y then return end
-
-        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
-            s.inputQueue[1] = {x = tx, y = ty}
-            s.hasNewInput = true
-            s.turnHistory = s.turnHistory or {}
-            local now = love.timer.getTime()
-            table.insert(s.turnHistory, {x = tx, y = ty, fromX = curX, fromY = curY, time = now})
-            if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
-        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
-            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
-                table.insert(s.inputQueue, {x = tx, y = ty})
-                s.hasNewInput = true
-                s.turnHistory = s.turnHistory or {}
-                local now = love.timer.getTime()
-                table.insert(s.turnHistory, {x = tx, y = ty, fromX = q1.x, fromY = q1.y, time = now})
-                if #s.turnHistory > 4 then table.remove(s.turnHistory, 1) end
-            end
-        end
-    else
-        local q1 = s.inputQueue[1]
-        if (curX ~= 0 and ty ~= 0 and tx == 0) or (curY ~= 0 and tx ~= 0 and ty == 0) then
-            s.inputQueue[1] = {x = tx, y = ty}
-            s.inputQueue[2] = nil
-            s.hasNewInput = true
-        elseif (q1.x ~= 0 and ty ~= 0 and tx == 0) or (q1.y ~= 0 and tx ~= 0 and ty == 0) then
-            if not ((tx == -q1.x and q1.x ~= 0) or (ty == -q1.y and q1.y ~= 0)) then
-                s.inputQueue[2] = {x = tx, y = ty}
-                s.hasNewInput = true
-            end
-        end
-    end
-
-    if s.turnHistory and #s.turnHistory >= 2 then
-        local now = love.timer.getTime()
-        local t1 = s.turnHistory[#s.turnHistory - 1]
-        local t2 = s.turnHistory[#s.turnHistory]
-        if now - t1.time <= 0.8 then
-            if (t1.fromX == -t2.x and t1.fromX ~= 0) or (t1.fromY == -t2.y and t1.fromY ~= 0) then
-                s.pendingTailSnap = true
-            end
-        end
-    end
-end
-
-function snake.cambiarDireccion(s, tecla)
-    if not tecla then return end
-    tecla = string.lower(tostring(tecla))
-    local tx, ty
-    if tecla == "up" or tecla == "w" then
-        tx, ty = 0, -1
-    elseif tecla == "down" or tecla == "s" then
-        tx, ty = 0, 1
-    elseif tecla == "left" or tecla == "a" then
-        tx, ty = -1, 0
-    elseif tecla == "right" or tecla == "d" then
-        tx, ty = 1, 0
-    end
-
-    if tx and ty then
-        snake.encolarDireccion(s, tx, ty)
     end
 end
 
