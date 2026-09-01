@@ -125,7 +125,7 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 
 - [x] **P01 — Split `entities/enemies.lua` 634 → 4 módulos** (`enemies.lua` 341L facade + `enemyAttackRegistry.lua` 139L + `enemyBossLogic.lua` 170L + `enemySpawnLogic.lua` 121L; pools `telegraphs`/`attackObjects`/`pendingRespawns` aislados) — Branch: `refactor/split-enemies` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, tests `test_scope_09_enemies` + `bossAttacks` PASS (527/545), facade mantiene API pública idéntica, fix `enemyBossLogic.hitBoss` nil-guard + `snake.checkEnemyCollisions` `fromIndex`
 - [x] **P02 — Split `entities/snake.lua` 922 → 4 submódulos + fachada** (`snake.lua` 257L facade + `snake/core.lua` 97L + `snake/abilities.lua` 105L + `snake/collisions.lua` 152L + `snake/movement.lua` 393L; API `mover`/`encolarDireccion`/`checkEnemyCollisions` intacta, `draw` permanece en fachada) — Branch: `refactor/split-snake` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, `love tests` 529/545 PASS (sin regresión), helpers `immune/hasWrap` duplicados localmente para evitar ciclos, `fromIndex` fix preservado
-- [ ] **P03 — Split `systems/gamestates.lua` 643 → 4 módulos** (facade + `gamestates/playing.lua` 372L + `gamestates/transition.lua` + `gamestates/death.lua`; primer paso ECS) — Branch: `refactor/split-gamestates` — Verifica: `test_scope_18_gamestatesDebug` PASS, 4 ficheros <300L
+- [x] **P03 — Split `systems/gamestates.lua` 643 → fachada 196L + 3 submódulos** (`gamestates.lua` 196L facade + `gamestates/playing.lua` 389L + `gamestates/transition.lua` 64L + `gamestates/death.lua` 72L; primer paso ECS, `updateCommon`/`overlaysOpen`/`flushPendingAchievements` en fachada, `updatePlaying`/`updateTransition`/`updateDeath` delegados) — Branch: `refactor/split-gamestates` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, `love tests` 529/545 PASS sin regresión, `flushPendingAchievements` duplicado localmente en `transition`/`death` para evitar ciclo, API `states.updatePlaying/updateTransition/updateDeath/updateHighScore` preservada
 
 ### Fase 2 — Desacoplar Estado (CRÍTICO + RECOMENDADO)
 
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-08-31 23:45 (P02 Split snake.lua 922→257+97+105+152+393 completado — love . 0 bytes, tests 529/545, TDD 52 módulos, TECH-DEBT-PLAN.md Fase 1 2/3)*
+*Last updated: 2026-08-31 23:55 (P03 Split gamestates.lua 643→196+389+64+72 completado — love . 0 bytes, tests 529/545, TDD 55 módulos, TECH-DEBT-PLAN.md Fase 1 completada ✅ M1)*

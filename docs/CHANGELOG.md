@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:55
+
+- **Refactor** (completed - 2026-08-31 23:55): P03 — Split `systems/gamestates.lua` 643 → fachada 196L + 3 submódulos (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 3 submódulos)**:
+     - `systems/gamestates.lua` 643 → `systems/gamestates.lua` **196L** (fachada: `overlaysOpen`/`flushPendingAchievements`/`processToasts`/`updateCommon` con `timers/shaders/sound` + `updateMenu`/`updateShop`/`updatePaused` + `update` dispatch; delega `updatePlaying`/`updateTransition`/`updateDeath`/`updateHighScore`).
+     - Nuevos módulos: `systems/gamestates/playing.lua` **389L** (`updatePlaying` con `enemyFreezeTimer`, `snake.update`, `food.onBombExpired`, `enemies.update`, `fireTrail`/`tailSnap`/`constrictorLoop`/`checkEnemyCollisions` slice, `shop.magnetTimer`, `Corner Buffering` `0.75` y `standstill`, `snake.mover` pipeline + `bossResult`/`enemyKilled`/`attackHit` + `food`/`twin`/`survivalStreak`/`objetivoSala`), `systems/gamestates/transition.lua` **64L** (`updateTransition` fade 1 → `hold` 2s → fade 2 → `SHOP`, `survivalStreak +0.1`, `flushPendingAchievements` duplicado local para evitar ciclo), `systems/gamestates/death.lua` **72L** (`updateDeath` despiece 0.05s + `HIGH_SCORE`/`SHOP`, `updateHighScore` 1.3s, ambos con `flushPendingAchievements` local).
+     - `systems/gamestates.lua` ahora `require` a los 3 submódulos y re-exporta `states.updatePlaying = playing.update`, `states.updateTransition = transition.update`, `states.updateDeath = death.updateDeath`, `states.updateHighScore = death.updateHighScore` para compatibilidad con `tests/test_scope_18_gamestatesDebug.lua`.
+  2. **POR QUÉ**: `gamestates.lua` era el orquestador monolítico (643L) con `updatePlaying` god-function de 372L que mezclaba economía, combate y progresión; sin split, Fase 8 (biomas, estela, constrictor) tocaba un único fichero y bloqueaba el paso a ECS (`Movement/AI/Collision/Render`).
+  3. **Verificación**: `love .` 5s `error.log` 0 bytes (sin regresión), `love tests` **529/545 PASS** (idéntico, 16 fallos pre-existentes), `TDD` actualizado a 55 módulos / ~10,200 líneas y grafo con `gamestates/playing|transition|death`, `TODO` P03 [x] 2026-08-31 23:55 — **Fase 1 completada (M1)**.
+
 ## 2026-08-31 23:45
 
 - **Refactor** (completed - 2026-08-31 23:45): P02 — Split `entities/snake.lua` 922 → fachada 257L + 4 submódulos (America/Bogota):

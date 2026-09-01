@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management  
 **Entry Point**: `main.lua`  
-**Total Modules**: 52 .lua files (P01 +3, P02 +4: snake/core, snake/abilities, snake/collisions, snake/movement)  
-**Total Lines**: ~10,000 (post-P02 31:08:2026: snake 922→257+97+105+152+393, enemies 634→341+139+170+121)
+**Total Modules**: 55 .lua files (P01 +3, P02 +4, P03 +3: gamestates/playing, transition, death)  
+**Total Lines**: ~10,200 (post-P03 31:08:2026: gamestates 643→196+389+64+72, snake 922→257+97+105+152+393, enemies 634→341+139+170+121)
 
 ### Folder Structure
 
@@ -50,7 +50,11 @@ Snake-with-Love2D/
 │   ├── settingsDraw.lua        ← render tabs de ajustes
 │   ├── player.lua              ← calc velocidad/items del jugador
 │   ├── gameflow.lua            ← runs/rooms (resets)
-│   ├── gamestates.lua          ← update por estado (7 estados)
+│   ├── gamestates.lua          ← fachada 196L (P03: delega a 3 submódulos, updateCommon + dispatch)
+│   ├── gamestates/
+│   │   ├── playing.lua         ← updatePlaying 389L (P03: movimiento, economía, boss, input buffer)
+│   │   ├── transition.lua      ← updateTransition 64L (fade 1 → hold 2s → fade 2 → SHOP)
+│   │   └── death.lua           ← updateDeath + updateHighScore 72L (despiece + SHOP)
 │   └── debugTools.lua          ← menú debug (Tab)
 ├── ui/
 │   ├── ui.lua                  ← facade: popups/toasts/menu/fuentes/accesibilidad
@@ -89,7 +93,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── systems/profiles.lua → systems/persistence.lua, ui/ui.lua, systems/achievements.lua, systems/profilesDraw.lua
 ├── systems/settings.lua → systems/persistence.lua, core/helpers.lua, ui/ui.lua, render/shaders.lua, systems/settingsDraw.lua
 ├── systems/achievements.lua → systems/persistence.lua, core/world.lua
-├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua, systems/debugTools.lua → systems/debugLogo.lua
+├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua (fachada 196L) → systems/gamestates/playing.lua, systems/gamestates/transition.lua, systems/gamestates/death.lua; systems/debugTools.lua → systems/debugLogo.lua
 ├── ui/ui.lua (facade) ──→ ui/introUI.lua, ui/menuUI.lua → ui/menuLogo.lua + ui/menuCard.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua
 ├── render/shaders.lua, render/particles.lua, render/renderMain.lua, render/enemiesDraw.lua
 └── audio/sound.lua
@@ -134,7 +138,10 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | settingsDraw.lua | systems/ | 261 | — | Settings tabs/controls/toasts rendering (split 17:08:2026) |
 | player.lua | systems/ | 141 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
 | gameflow.lua | systems/ | 105 | — | Runs/rooms: init run, reset sala |
-| gamestates.lua | systems/ | 464 | — | Update por estado (7 estados): playing, death, highScore, transition |
+| gamestates.lua | systems/ | 196 | — | Fachada P03 196L (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
+| gamestates/playing.lua | systems/gamestates/ | 389 | — | P03: updatePlaying (economía, fuego, tailSnap, constrictor, slice, mover + combo) |
+| gamestates/transition.lua | systems/gamestates/ | 64 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
+| gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
 | debugTools.lua | systems/ | 196 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
 | debugLogo.lua | systems/ | 189 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
 | ui.lua | ui/ | 143 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
@@ -831,14 +838,14 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro,
 
 | Fase | Propuestas | Objetivo métrico | Branch tipo |
 | :--- | :--- | :--- | :--- |
-| **Fase 1 — Desmonolitizar** | P01 `enemies.lua` 634→4×<250L, P02 `snake.lua` 922→4×<320L, P03 `gamestates.lua` 643→4×<300L | 3 módulos críticos <500L, `love .` 0 errs, `test_scope_09/06/18` PASS | `refactor/split-*` |
+| **Fase 1 — Desmonolitizar** | P01 `enemies.lua` 341+139+170+121 ✅, P02 `snake.lua` 257+97+105+152+393 ✅, P03 `gamestates.lua` 196+389+64+72 ✅ | 3 módulos críticos <500L, `love .` 0 errs, `test_scope_09/06/18` 529/545 PASS | `refactor/split-*` |
 | **Fase 2 — Desacoplar** | P04 globals→`World.state`, P05 timers único, P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua` | 0 globals dispersos, 1 `timers.update`, 1 `Input.isHeld`, 0 `newCanvas` por frame | `refactor/*`, `feat/core-events` |
 | **Fase 3 — Resiliencia** | P09 atomic write + `schema_version`, P10 tests split 1135→3, P11 pools 32/64, P12 `biomeHazards.lua` 723→380L, P13 `World.validate()` | `profiles.dat.tmp`+`.bak`, `love tests` <1.0s, `collectgarbage` estable, `obstacles.lua` <500L | `fix/persistence-atomic`, `chore/*`, `perf/*` |
 | **Futuro (Phase 9 prep)** | P14 fixed timestep 60Hz + zero-alloc 3600f, P15 half-res FBO + Voronoi hook `ENABLE_VORONOI=false` | `accumulator` loop, `reflectionCanvas W/2 H/2` reservado 0 costo | `perf/fixed-timestep`, `feat/shaders-fbo-voronoi` |
 
 **Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
 
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` 2026-08-31 23:30 (341+139+170+121) completado, P02 `snake.lua` 2026-08-31 23:45 (257+97+105+152+393) completado, P03–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md`.
+**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` 23:30 (341+139+170+121) ✅, P02 `snake.lua` 23:45 (257+97+105+152+393) ✅, P03 `gamestates.lua` 23:55 (196+389+64+72) ✅ — Fase 1 completada (M1), P04–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md`.
 
 ## 11. Love2D Gotchas
 
