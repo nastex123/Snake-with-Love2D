@@ -1,15 +1,57 @@
 local shop = {}
 local constants = require("constants")
 local items = require("systems.items")
+local world = require("core.world")
+
+-- P04: World.state.shop como fuente de verdad (shop.shieldActive/magnetTimer/ghostActive)
+if not world.state.shop then
+    world.state.shop = { shieldActive = false, magnetTimer = 0, ghostActive = false }
+else
+    world.state.shop.shieldActive = world.state.shop.shieldActive or false
+    world.state.shop.magnetTimer = world.state.shop.magnetTimer or 0
+    world.state.shop.ghostActive = world.state.shop.ghostActive or false
+end
+
+-- Proxy para sincronizar shop.* ↔ World.state.shop.* y notificar via World.set
+-- P04: World.state.shop es fuente de verdad; shop.* es proxy sin rawset para proxied keys
+-- para que World.reset (que borra world.state.shop) no deje raw fields desincronizados.
+do
+    local proxyKeys = { shieldActive = true, magnetTimer = true, ghostActive = true }
+    local mt = {
+        __index = function(t, k)
+            if proxyKeys[k] then
+                if world.state.shop then
+                    return world.state.shop[k]
+                end
+                return nil
+            end
+            return rawget(t, k)
+        end,
+        __newindex = function(t, k, v)
+            if proxyKeys[k] then
+                if not world.state.shop then
+                    world.state.shop = { shieldActive = false, magnetTimer = 0, ghostActive = false }
+                end
+                world.state.shop[k] = v
+                -- No rawset para proxied keys: mantiene proxy activo tras World.reset
+                world.set("shop." .. k, v)
+            else
+                rawset(t, k, v)
+            end
+        end
+    }
+    setmetatable(shop, mt)
+end
 
 shop.slots = {nil, nil, nil}
 
 shop.inventory = {
     speedReducer = false, extraCoin = false
 }
-
-shop.magnetTimer = 0
-shop.shieldActive = false
+-- Inicializa World.state.shop si no existe (ya hecho arriba), no crear raw fields
+if not world.state.shop then
+    world.state.shop = { shieldActive = false, magnetTimer = 0, ghostActive = false }
+end
 
 local fontNormal, fontSmall, fontLarge
 local page = 1
