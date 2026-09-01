@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management  
 **Entry Point**: `main.lua`  
-**Total Modules**: 45 .lua files  
-**Total Lines**: ~9,100 (post-split 23:08:2026: menuUI 683→205+129+214, debugTools 503→196+189, shaders 535→496)
+**Total Modules**: 48 .lua files (P01 +3: enemyAttackRegistry, enemyBossLogic, enemySpawnLogic)  
+**Total Lines**: ~9,600 (post-P01 31:08:2026: enemies 634→341+139+170+121, snake 922 pendiente P02)
 
 ### Folder Structure
 
@@ -20,10 +20,13 @@ Snake-with-Love2D/
 │   ├── touch.lua               ← input táctil (swipes)
 │   └── helpers.lua             ← deep_copy, math/rect utilities
 ├── entities/
-│   ├── snake.lua               ← mov/colisiones, mover() retorna 5 valores
+│   ├── snake.lua               ← mov/colisiones, mover() retorna 5 valores (922L → pendiente P02)
 │   ├── food.lua                ← 3 tipos de comida
-│   ├── obstacles.lua           ← obstáculos
-│   ├── enemies.lua             ← facción enemigos/boss
+│   ├── obstacles.lua           ← obstáculos (723L → pendiente P12)
+│   ├── enemies.lua             ← fachada 341L (P01: delega a 3 submódulos)
+│   ├── enemyAttackRegistry.lua ← telegraphs/attackObjects/pendingRespawns (P01 139L)
+│   ├── enemyBossLogic.lua      ← spawnBoss/hitBoss/onBossDefeated + máquina de estados boss (P01 170L)
+│   ├── enemySpawnLogic.lua     ← canSpawn/spawnAt/generar (P01 121L)
 │   ├── chaserAI.lua            ← IA social Chaser (SOLO/DUPLA/MANADA)
 │   ├── bossAttacks.lua         ← 4 ataques del boss
 │   └── enemyHelpers.lua        ← validarPos, sampleFreeTile, etc.
@@ -97,8 +100,11 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | world.lua | core/ | 29 | world | World state container (World.state, no globals) |
 | touch.lua | core/ | 113 | — | Touch input (swipes) |
 | helpers.lua | core/ | 52 | — | Utility functions |
-| snake.lua | entities/ | 440 | snakeMod | Movement, collision detection (devuelve 5 valores) |
-| enemies.lua | entities/ | 521 | enemiesMod | Enemy AI, boss logic (split 08:08:2026: bossAttacks + enemyHelpers) |
+| snake.lua | entities/ | 922 | snakeMod | Movement, collision detection (devuelve 5 valores) (pendiente P02 split) |
+| enemies.lua | entities/ | 341 | enemiesMod | Fachada P01 341L (delega a 3 submódulos, API idéntica) |
+| enemyAttackRegistry.lua | entities/ | 139 | — | P01: telegraphs/attackObjects/pendingRespawns + updateAttackObjects/updateTelegraphs |
+| enemyBossLogic.lua | entities/ | 170 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
+| enemySpawnLogic.lua | entities/ | 121 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
 | chaserAI.lua | entities/ | 310 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
 | bossAttacks.lua | entities/ | 146 | — | 4 ataques del boss (projectile_spread, spawn_adds, radial_pulse, teleport) |
 | enemyHelpers.lua | entities/ | 61 | — | validarPos, sampleFreeTile, tiles seguros |
@@ -821,7 +827,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro,
 
 **Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
 
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — 0 cambios de código; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md` y actualización de esta tabla a `completed`.
+**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` completado 2026-08-31 (341+139+170+121), P02–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md` y actualización de esta tabla a `completed`.
 
 ## 11. Love2D Gotchas
 

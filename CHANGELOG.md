@@ -8,6 +8,20 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:30
+
+- **Refactor** (completed - 2026-08-31 23:30): P01 — Split `entities/enemies.lua` 634 → fachada 341L + 3 submódulos + fix de regresiones (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 3 submódulos)**:
+     - `entities/enemies.lua` 634 → `entities/enemies.lua` **341L** (fachada que delega y mantiene API pública idéntica: `list/boss`, `addTelegraph/addProjectile/addRadialPulse`, `getTelegraphs/getAttackObjects/getPendingRespawns`, `canSpawn/spawnAt/generar`, `spawnBoss/hitBoss/onBossDefeatedByFood`, `applyTailSnap/checkFireTrail`, `update/killEnemy/draw`, `init/limpiar/clear`).
+     - Nuevos módulos: `entities/enemyAttackRegistry.lua` **139L** (telegraphs 0.8s, attackObjects projectile/radial_pulse, pendingRespawns con `clearAll`/`clearAttackObjects` y `updateAttackObjects/updateTelegraphs` con `isFrozen` y bounds), `entities/enemyBossLogic.lua` **170L** (spawnBoss 15×15 centrado, hitBoss con `invulnerable` y `vida` nil-guard, `onBossDefeatedByFood`, `updateBoss` con fases `vidaFrac ≤0.30→3 ≤0.60→2 else 1` y `enraged` a `foodTarget-3`, `updateBarLerp` con `lerpSpeed 6.0` y defaults `_uiBarFill/_uiBarTarget`), `entities/enemySpawnLogic.lua` **121L** (canSpawn con `BOSS_MAX_RED 3`/`BOSS_MAX_BLUE 4`, spawnAt con `chaser`/`patroller`/`spawner` y `patrollerAI.init`, `generar` con pesos `chaserWeight/patrollerWeight/spawnerWeight` y fallback de caps).
+     - `entities/enemies.lua` ahora `require` a los 3 submódulos y re-exporta: `enemies.list/boss` siguen siendo la fuente de verdad; `attackRegistry.getTelegraphs()`/`getAttackObjects()` retornan las tablas vivas (identidad preservada para `render/enemiesDraw.lua` y tests).
+  2. **QUÉ — Fixes de regresión detectados por tests (527/545 → 529/545)**:
+     - `entities/enemyBossLogic.lua:hitBoss`: `boss.vida = (boss.vida or boss.vidaMax or 3) -1` y `boss.vidaMax` default para bosses de test creados sin `vida` (evita `attempt to perform arithmetic on field 'vida' (a nil value)` en `test_scope_06_snake` y `test_scope_18_gamestatesDebug`).
+     - `entities/enemyBossLogic.lua:updateBarLerp`: defaults `boss._uiBarFill = 1.0` y `boss._uiBarTarget` si `nil` para bosses de test sin barra.
+     - `entities/snake.lua:checkEnemyCollisions` (slice): añade `fromIndex = segIdx` al retorno `slice` (`{type="slice", gx, gy, fromIndex, removedCount}`) para que `test_scope_20_patroller_ai` valide `slice.fromIndex == 4` y `removedCount == 4` y `#s.body == 3` tras `Guillotine Slice`.
+  3. **POR QUÉ**: Cumplir la regla de arquitectura `300–500 líneas por archivo` (AGENTS.md + skill `documentation` §Golden Rule) y desbloquear **Fase 1** del `TECH-DEBT-PLAN.md`: `enemies.lua` era el único módulo core aún monolítico y bloqueaba cualquier extensión de mini-bosses o nuevos ataques sin tocar 634 líneas acopladas.
+  4. **Verificación**: `love .` 5s en MENU→PLAYING con boss (food 15) → `error.log` 0 bytes (5s, `RedirectStandardOutput`); `love tests` 529/545 PASS (antes 527/545, +2 tests recuperados: `snake boss collision` y `patroller slice`); `TDD` §1 actualizado a 48 módulos / ~9,600 líneas y grafo con `enemyAttackRegistry/bossLogic/spawnLogic`; `TODO` P01 marcado `[x]` 2026-08-31 23:30; `git diff --stat` revisado en rama `refactor/split-enemies`.
+
 ## 2026-08-31 23:04
 
 - **Docs** (created - 2026-08-31 23:04): Plan formal de saneamiento de deuda técnica viva — 15 propuestas en 3 fases + 2 futuro (America/Bogota):
