@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:45
+
+- **Refactor** (completed - 2026-08-31 23:45): P02 — Split `entities/snake.lua` 922 → fachada 257L + 4 submódulos (America/Bogota):
+  1. **QUÉ — Desmonolitización (fachada + 4 submódulos)**:
+     - `entities/snake.lua` 922 → `entities/snake.lua` **257L** (fachada: `hsv2rgb` + delegaciones + `draw` 190L con `fireTrail`, `easedAlpha`, `trail` y `decoys`, `shop.shieldActive`/`ghost` overlays).
+     - Nuevos módulos: `entities/snake/core.lua` **97L** (`reset` 3 segmentos + `update` de 8 timers: `flashTimer/sliceGraceTimer/ghostTimer/autotomyCooldown/reverseSlitherTimer/constrictorBuffTimer/firePepperTimer/fireTrail/decoys` con `shop.ghostActive` guard), `entities/snake/abilities.lua` **105L** (`triggerReverseSlither` inversión 180° + `ghost 1.2s` + `cooldown 10s`, `applySlimming` 50% si `≥12`, `triggerAutotomy` 2 segmentos + `decoy 4.0s` + `ghost 1.5s`), `entities/snake/collisions.lua` **152L** (`checkEnemyCollisions` con `sliceGraceTimer/ghost/immune`, `shield_block/armor_block/death`, `Guillotine Slice` `fromIndex/removedCount` + `sliceGrace 1.0s`, `checkPatrollerSlice` wrapper, `checkConstrictorLoop` con `pointInPolygon` ray-casting y `constrictorBuff 5.0s`), `entities/snake/movement.lua` **393L** (`mover` táctico `controlMode`, `wrap`/`hasWrap`, `body/obstacle/boss/projectile/enemy` pipeline + `magnet/twin` y `fireTrail`, `encolarDireccion` con `inputQueue` 2-step + `turnHistory` 4 + `pendingTailSnap`, `cambiarDireccion` y `checkTailSnap`).
+     - Duplicación controlada de helpers `immune()`/`hasWrap()` en `collisions.lua` y `movement.lua` para evitar ciclo `snake`→`enemies`→`snake`; fachada `snake.lua` re-exporta `snake.reset/update/triggerReverseSlither/applySlimming/triggerAutotomy/checkEnemyCollisions/checkPatrollerSlice/checkConstrictorLoop/mover/checkTailSnap/draw/encolarDireccion/cambiarDireccion` idénticos.
+  2. **POR QUÉ**: `snake.lua` era el fichero más grande del repo (922L, >3× el límite 300–500) y concentraba 5 responsabilidades (estado, habilidades, colisiones, movimiento, render); sin split, cualquier ajuste de `Guillotine Slice` o `Corner Buffering` tocaba 922 líneas y bloqueaba `P03 gamestates` (que consume `snake.mover`).
+  3. **Verificación**: `love .` 5s `error.log` 0 bytes (sin regresión), `love tests` **529/545 PASS** (idéntico a post-P01, 16 fallos pre-existentes), `TDD` actualizado a 52 módulos / ~10,000 líneas y grafo con `snake/core|abilities|collisions|movement`, `TODO` P02 [x] 2026-08-31 23:45.
+
 ## 2026-08-31 23:30
 
 - **Refactor** (completed - 2026-08-31 23:30): P01 — Split `entities/enemies.lua` 634 → fachada 341L + 3 submódulos + fix de regresiones (America/Bogota):

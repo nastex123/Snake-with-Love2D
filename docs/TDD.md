@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management  
 **Entry Point**: `main.lua`  
-**Total Modules**: 48 .lua files (P01 +3: enemyAttackRegistry, enemyBossLogic, enemySpawnLogic)  
-**Total Lines**: ~9,600 (post-P01 31:08:2026: enemies 634→341+139+170+121, snake 922 pendiente P02)
+**Total Modules**: 52 .lua files (P01 +3, P02 +4: snake/core, snake/abilities, snake/collisions, snake/movement)  
+**Total Lines**: ~10,000 (post-P02 31:08:2026: snake 922→257+97+105+152+393, enemies 634→341+139+170+121)
 
 ### Folder Structure
 
@@ -20,7 +20,12 @@ Snake-with-Love2D/
 │   ├── touch.lua               ← input táctil (swipes)
 │   └── helpers.lua             ← deep_copy, math/rect utilities
 ├── entities/
-│   ├── snake.lua               ← mov/colisiones, mover() retorna 5 valores (922L → pendiente P02)
+│   ├── snake.lua               ← fachada 257L (P02: delega a 4 submódulos, draw + hsv2rgb)
+│   ├── snake/
+│   │   ├── core.lua            ← reset + update timers (P02 97L)
+│   │   ├── abilities.lua       ← triggerReverseSlither/applySlimming/triggerAutotomy (P02 105L)
+│   │   ├── collisions.lua      ← checkEnemyCollisions (+fromIndex) / checkPatrollerSlice / checkConstrictorLoop (P02 152L)
+│   │   └── movement.lua        ← mover + encolarDireccion/cambiarDireccion/checkTailSnap (P02 393L)
 │   ├── food.lua                ← 3 tipos de comida
 │   ├── obstacles.lua           ← obstáculos (723L → pendiente P12)
 │   ├── enemies.lua             ← fachada 341L (P01: delega a 3 submódulos)
@@ -73,8 +78,10 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── constants.lua (raíz) ──→ core/config.lua
 ├── core/world.lua ← estado del juego (World.state, reemplaza globals)
 ├── core/timers.lua, core/logger.lua, core/touch.lua, core/helpers.lua
-├── entities/snake.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua
-├── entities/enemies.lua ──→ entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua
+├── entities/snake.lua (fachada 257L) ──→ entities/snake/core.lua, entities/snake/abilities.lua, entities/snake/collisions.lua, entities/snake/movement.lua; draw usa shop/constants
+├── entities/snake/movement.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua, entities/obstacles.lua
+├── entities/snake/collisions.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua
+├── entities/enemies.lua (fachada 341L) ──→ entities/enemyAttackRegistry.lua, entities/enemyBossLogic.lua, entities/enemySpawnLogic.lua, entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua, entities/patrollerAI.lua
 ├── entities/food.lua, entities/obstacles.lua
 ├── world/world.lua (facade) ──→ world/dungeonGen.lua, world/populate.lua, core/helpers.lua
 ├── systems/items.lua, systems/shop.lua ──→ systems/items.lua
@@ -100,7 +107,11 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | world.lua | core/ | 29 | world | World state container (World.state, no globals) |
 | touch.lua | core/ | 113 | — | Touch input (swipes) |
 | helpers.lua | core/ | 52 | — | Utility functions |
-| snake.lua | entities/ | 922 | snakeMod | Movement, collision detection (devuelve 5 valores) (pendiente P02 split) |
+| snake.lua | entities/ | 257 | snakeMod | Fachada P02 257L (delega a 4 submódulos, draw + hsv2rgb, API idéntica) |
+| snake/core.lua | entities/snake/ | 97 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
+| snake/abilities.lua | entities/snake/ | 105 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
+| snake/collisions.lua | entities/snake/ | 152 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
+| snake/movement.lua | entities/snake/ | 393 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail) + encolarDireccion/cambiarDireccion/checkTailSnap |
 | enemies.lua | entities/ | 341 | enemiesMod | Fachada P01 341L (delega a 3 submódulos, API idéntica) |
 | enemyAttackRegistry.lua | entities/ | 139 | — | P01: telegraphs/attackObjects/pendingRespawns + updateAttackObjects/updateTelegraphs |
 | enemyBossLogic.lua | entities/ | 170 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
@@ -827,7 +838,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro,
 
 **Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
 
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` completado 2026-08-31 (341+139+170+121), P02–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md` y actualización de esta tabla a `completed`.
+**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` 2026-08-31 23:30 (341+139+170+121) completado, P02 `snake.lua` 2026-08-31 23:45 (257+97+105+152+393) completado, P03–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md`.
 
 ## 11. Love2D Gotchas
 
