@@ -16,9 +16,43 @@ local enemiesDraw = require("render.enemiesDraw")
 local attackRegistry = require("entities.enemyAttackRegistry")
 local bossLogic = require("entities.enemyBossLogic")
 local spawnLogic = require("entities.enemySpawnLogic")
+local world = require("core.world")
 
-enemies.list = {}
-enemies.boss = nil
+-- P04: World.state.enemies como fuente de verdad (enemies.list / enemies.boss)
+-- Inicializa World.state.enemies si no existe; no crear raw fields en enemies para mantener proxy activo tras World.reset
+if not world.state.enemies then
+    world.state.enemies = { list = {}, boss = nil }
+else
+    world.state.enemies.list = world.state.enemies.list or {}
+end
+
+do
+    local proxyKeys = { list = true, boss = true }
+    local mt = {
+        __index = function(t, k)
+            if proxyKeys[k] then
+                if world.state.enemies then
+                    return world.state.enemies[k]
+                end
+                return nil
+            end
+            return rawget(t, k)
+        end,
+        __newindex = function(t, k, v)
+            if proxyKeys[k] then
+                if not world.state.enemies then
+                    world.state.enemies = { list = {}, boss = nil }
+                end
+                world.state.enemies[k] = v
+                -- No rawset para proxied keys: evita desincronización tras World.reset
+                world.set("enemies." .. k, v)
+            else
+                rawset(t, k, v)
+            end
+        end
+    }
+    setmetatable(enemies, mt)
+end
 
 -- ============================================================
 -- Telegraph / attack object API — delega a attackRegistry

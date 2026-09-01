@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-08-31 23:59
+
+- **Refactor** (completed - 2026-08-31 23:59): P04 — Migración `shop`/`enemies` a `World.state` con dot-notation y proxies sin rawset (America/Bogota, consola-only):
+  1. **QUÉ — `core/world.lua` dot-notation**: `World.get/set/has/delete` ahora soportan `shop.shieldActive`, `enemies.list` via `traverse` + `splitKey`; `World.set("shop.shieldActive", true)` crea `World.state.shop.shieldActive` y notifica `World.subscribe`.
+  2. **QUÉ — `systems/shop.lua` proxy**: `World.state.shop = {shieldActive, magnetTimer, ghostActive}` como fuente de verdad; metatable `__index`/`__newindex` sin `rawset` para proxied keys (sobrevive `World.reset` que borra `world.state.shop`), `World.set("shop.*")` notifica HUD; `shop.slots`/`inventory` permanecen en `shop` (no migrados aún).
+  3. **QUÉ — `entities/enemies.lua` proxy**: `World.state.enemies = {list, boss}`; `enemies.list`/`boss` via `__index`/`__newindex` sin rawset, `World.set("enemies.*")`; `enemies.init` ahora `enemies.list = {}` proxificado.
+  4. **QUÉ — Lecturas migradas a `World.get`**: `snake/core.lua` (`ghostActive`), `snake/collisions.lua` (2× `shieldActive`), `snake/movement.lua` (7× `shieldActive` + `enemies.list` fallback) y `gamestates/playing.lua` (`magnetTimer`/`shieldActive` 3×) ahora leen `World.get("shop.*")` / `World.get("enemies.list")`; escrituras siguen `shop.* =` via proxy (sincroniza a `World.state`).
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P04 y AGENTS.md “sin globals, `World.state` central”; `shop.shieldActive` y `enemies.list` eran los últimos globals dispersos fuera de `World.state` (74 `shop.`/`enemies.` accesos), bloqueaban `World.subscribe` para HUD y persistencia atómica.
+  6. **Verificación**: `love tests --console` (sin ventana, `t.window=nil`) **529/545 PASS** estable (16 fallos pre-existentes, +4 shield tests recuperados tras fix proxy `rawset` → sin `rawset`), `love .` no ejecutado con ventana por orden expresa (solo consola); `TDD` §10.26 P04 ✅, `TODO` P04 [x] 23:59.
+
 ## 2026-08-31 23:55
 
 - **Refactor** (completed - 2026-08-31 23:55): P03 — Split `systems/gamestates.lua` 643 → fachada 196L + 3 submódulos (America/Bogota):

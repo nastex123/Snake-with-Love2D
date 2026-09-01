@@ -130,9 +130,9 @@ function playing.update(dt)
         end
     end
 
-    if shop.magnetTimer > 0 then
-        shop.magnetTimer = shop.magnetTimer - dt
-        if shop.magnetTimer <= 0 then
+    if world.get("shop.magnetTimer", 0) > 0 then
+        shop.magnetTimer = world.get("shop.magnetTimer", 0) - dt
+        if world.get("shop.magnetTimer", 0) <= 0 then
             st.magnetRange = 0
         else
             st.magnetRange = constants.MAGNET_RANGE
@@ -165,7 +165,7 @@ function playing.update(dt)
 
     if st.cronometro >= st.velocidadActual then
         st.cronometro = 0
-        local shieldBefore = shop.shieldActive
+        local shieldBefore = world.get("shop.shieldActive", false)
         local vivo, comio, enemyKilled, bossResult, attackHit, comioTwin = snakeMod.mover(st.player, foodMod.pos, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, st.magnetRange, foodMod.twinPos)
 
         if attackHit then
@@ -225,7 +225,7 @@ function playing.update(dt)
             return true
         end
 
-        if shieldBefore and not shop.shieldActive then
+        if shieldBefore and not world.get("shop.shieldActive", false) then
             st.roomDamaged = true
             sound.play("shieldBreak")
             shadersMod.triggerDamage(0.5, 0.5)

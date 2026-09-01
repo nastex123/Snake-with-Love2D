@@ -38,7 +38,7 @@ function collisions.checkEnemyCollisions(s, enemiesList)
     for idx, e in ipairs(enemiesList) do
         if e.alive then
             if head and e.x == head.x and e.y == head.y then
-                if shop.shieldActive then
+                if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     local res = enemies.killEnemy(idx)
                     return {type = "shield_block", result = res}
@@ -56,7 +56,7 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                 if seg and seg.x == e.x and seg.y == e.y then
                     local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
                     if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then
-                        if shop.shieldActive then
+                        if world.get("shop.shieldActive", false) then
                             shop.shieldActive = false
                             local res = enemies.killEnemy(idx)
                             return {type = "shield_block", result = res}
