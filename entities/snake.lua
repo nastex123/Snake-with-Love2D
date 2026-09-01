@@ -269,6 +269,7 @@ function snake.checkEnemyCollisions(s, enemiesList)
                     else
                         -- Patroller impacta en segmento >= 4 con longitud >= 5: Guillotine Slice!
                         local removed = #s.body - segIdx + 1
+                        local fromIdx = segIdx
                         while #s.body >= segIdx do
                             table.remove(s.body)
                         end
@@ -281,6 +282,7 @@ function snake.checkEnemyCollisions(s, enemiesList)
                             type = "slice",
                             gx = seg.x,
                             gy = seg.y,
+                            fromIndex = fromIdx,
                             removedCount = removed
                         }
                     end
