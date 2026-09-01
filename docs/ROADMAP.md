@@ -92,6 +92,16 @@
 - [ ] 10 Unlockable Game Modes (Endless, Rush, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Draft, Sudden Death, Maze Runner)
 - [ ] 80 Engineering & Gameplay Improvements Suite (Input ramp-up, corner buffering, AABB ray-cast pre-filter, half-res FBO reflections, Voronoi fracture, fixed timestep)
 
+## Phase 8.5: Saneamiento Deuda Técnica Viva 📋 Planned (Tech Debt Plan 2026-08-31)
+**Goal:** Dejar el proyecto en cero-deuda estructural para desbloquear Phase 8 restante y Phase 9 sin fricción — Plan: `docs/TECH-DEBT-PLAN.md` (15 propuestas, 3 fases + 2 futuro, rama `chore/tech-debt-plan`)
+
+- [ ] **Fase 1 — Desmonolitizar (CRÍTICO):** P01 Split `enemies.lua` 634→4 módulos, P02 Split `snake.lua` 922→4 módulos, P03 Split `gamestates.lua` 643→4 módulos — Branches `refactor/split-*` — DoD `love .` + `error.log 0` + `test_scope_*.lua` PASS — Milestone M1
+- [ ] **Fase 2 — Desacoplar Estado (CRÍTICO+RECOMENDADO):** P04 Globals → `World.state`, P05 Timers consolidados → `core/timers`, P06 Event Bus `core/events.lua`, P07 Input centralizado `core/input.lua`, P08 Asset Manager `core/assets.lua` — Branches `refactor/world-state-globals`, `feat/core-events`, etc. — Milestone M2
+- [ ] **Fase 3 — Resiliencia (RECOMENDADO+OPCIONAL):** P09 Escritura atómica `profiles.dat` + `schema_version`, P10 Split `tests/test_systems.lua` 1135→3 suites, P11 Pools `telegraphs/projectiles`, P12 Extraer `world/biomeHazards.lua` (obstacles 723→380), P13 `World.validate()` — Milestone M3
+- [ ] **Futuro — Phase 9 prep:** P14 Fixed timestep 60Hz + zero-alloc test, P15 Half-res FBO + Voronoi hook (`ENABLE_VORONOI=false`)
+
+**Branching:** `chore/tech-debt-plan` (plan) → `refactor/*`/`feat/*`/`fix/*`/`perf/*`/`chore/*` por propuesta, commits `type(scope): subject` atómicos, PR con tabla de módulos + DoD (skill `git-workflow`)
+
 ## Phase 9: Final Polish & Release ⏳ Not Started
 **Goal**: Release-ready quality, sensorial polish, visual style evolution, accessibility and packaging
 
