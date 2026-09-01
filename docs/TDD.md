@@ -808,6 +808,21 @@ Las propuestas del Bloque 4 del GDD §21.4 que afectan arquitectura se catalogan
 | **Input centralizado** | `core/input.lua` (nuevo) | `Input.action("left")` unifica teclado/ratón/gamepad/touch; prepara gamepad ROADMAP Fase 9; `Input.update()` en `love.update()`. |
 | **Guía DX de extensión** | `docs/` | Checklist 10 pasos + scaffolding para añadir enemigo/ítem; referencia la convención `local X = {}` / `return X`. |
 
+### 10.26 Plan de Saneamiento de Deuda Técnica Viva (2026-08-31 23:04 America/Bogota)
+
+Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro, rama `chore/tech-debt-plan` desde `main@87d5ac4`.
+
+| Fase | Propuestas | Objetivo métrico | Branch tipo |
+| :--- | :--- | :--- | :--- |
+| **Fase 1 — Desmonolitizar** | P01 `enemies.lua` 634→4×<250L, P02 `snake.lua` 922→4×<320L, P03 `gamestates.lua` 643→4×<300L | 3 módulos críticos <500L, `love .` 0 errs, `test_scope_09/06/18` PASS | `refactor/split-*` |
+| **Fase 2 — Desacoplar** | P04 globals→`World.state`, P05 timers único, P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua` | 0 globals dispersos, 1 `timers.update`, 1 `Input.isHeld`, 0 `newCanvas` por frame | `refactor/*`, `feat/core-events` |
+| **Fase 3 — Resiliencia** | P09 atomic write + `schema_version`, P10 tests split 1135→3, P11 pools 32/64, P12 `biomeHazards.lua` 723→380L, P13 `World.validate()` | `profiles.dat.tmp`+`.bak`, `love tests` <1.0s, `collectgarbage` estable, `obstacles.lua` <500L | `fix/persistence-atomic`, `chore/*`, `perf/*` |
+| **Futuro (Phase 9 prep)** | P14 fixed timestep 60Hz + zero-alloc 3600f, P15 half-res FBO + Voronoi hook `ENABLE_VORONOI=false` | `accumulator` loop, `reflectionCanvas W/2 H/2` reservado 0 costo | `perf/fixed-timestep`, `feat/shaders-fbo-voronoi` |
+
+**Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
+
+**Estado:** `created` 2026-08-31 23:04 America/Bogota — 0 cambios de código; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md` y actualización de esta tabla a `completed`.
+
 ## 11. Love2D Gotchas
 
 | Wrong | Correct |
