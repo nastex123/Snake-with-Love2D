@@ -6,7 +6,8 @@
 -- =============================================================================
 local core = {}
 local constants = require("constants")
-local shop = require("systems.shop")
+local world = require("core.world")
+local shop = require("systems.shop") -- legacy proxy, prefer World.get("shop.ghostActive")
 
 function core.reset()
     return {
@@ -55,7 +56,7 @@ function core.update(s, dt)
     end
     if s.ghostTimer and s.ghostTimer > 0 then
         s.ghostTimer = math.max(0, s.ghostTimer - dt)
-        if s.ghostTimer <= 0 and not shop.ghostActive then
+        if s.ghostTimer <= 0 and not world.get("shop.ghostActive", false) then
             s.ghost = false
         end
     end

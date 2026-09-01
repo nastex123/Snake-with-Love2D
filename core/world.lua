@@ -36,11 +36,47 @@ function World.reset(defaults)
     end
 end
 
+-- Helper para claves con dot-notation (ej. "shop.shieldActive")
+local function splitKey(key)
+    local parts = {}
+    for part in string.gmatch(key, "[^%.]+") do
+        table.insert(parts, part)
+    end
+    return parts
+end
+
+local function traverse(key, create)
+    if not key:find("%.") then return World.state, key end
+    local parts = splitKey(key)
+    local cur = World.state
+    for i = 1, #parts - 1 do
+        local p = parts[i]
+        if cur[p] == nil then
+            if not create then return nil, nil end
+            cur[p] = {}
+        end
+        if type(cur[p]) ~= "table" then
+            if not create then return nil, nil end
+            cur[p] = {}
+        end
+        cur = cur[p]
+    end
+    return cur, parts[#parts]
+end
+
 --- Obtiene un valor del estado con soporte para valor por defecto si es nil.
+-- Soporta dot-notation: World.get("shop.shieldActive")
 -- @param key string Clave a consultar.
 -- @param defaultVal any Valor de fallback si la clave no existe o es nil.
 -- @return any
 function World.get(key, defaultVal)
+    if key:find("%.") then
+        local cur, last = traverse(key, false)
+        if not cur then return defaultVal end
+        local val = cur[last]
+        if val == nil then return defaultVal end
+        return val
+    end
     local val = World.state[key]
     if val == nil then
         return defaultVal
@@ -49,9 +85,21 @@ function World.get(key, defaultVal)
 end
 
 --- Establece un valor en el estado y notifica a observadores si existen.
+-- Soporta dot-notation: World.set("shop.shieldActive", true)
 -- @param key string Clave a modificar.
 -- @param val any Nuevo valor.
 function World.set(key, val)
+    if key:find("%.") then
+        local cur, last = traverse(key, true)
+        local oldVal = cur[last]
+        cur[last] = val
+        if listeners[key] then
+            for _, cb in ipairs(listeners[key]) do
+                pcall(cb, val, oldVal, key)
+            end
+        end
+        return
+    end
     local oldVal = World.state[key]
     World.state[key] = val
     if listeners[key] then
@@ -62,16 +110,34 @@ function World.set(key, val)
 end
 
 --- Comprueba si una clave existe (no es nil) en el estado.
+-- Soporta dot-notation.
 -- @param key string Clave a verificar.
 -- @return boolean
 function World.has(key)
+    if key:find("%.") then
+        local cur, last = traverse(key, false)
+        return cur and cur[last] ~= nil or false
+    end
     return World.state[key] ~= nil
 end
 
 --- Elimina una clave del estado.
+-- Soporta dot-notation.
 -- @param key string Clave a eliminar.
 -- @return any Valor previo.
 function World.delete(key)
+    if key:find("%.") then
+        local cur, last = traverse(key, false)
+        if not cur then return nil end
+        local oldVal = cur[last]
+        cur[last] = nil
+        if listeners[key] then
+            for _, cb in ipairs(listeners[key]) do
+                pcall(cb, nil, oldVal, key)
+            end
+        end
+        return oldVal
+    end
     local oldVal = World.state[key]
     World.state[key] = nil
     if listeners[key] then

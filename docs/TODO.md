@@ -129,7 +129,7 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 
 ### Fase 2 — Desacoplar Estado (CRÍTICO + RECOMENDADO)
 
-- [ ] **P04 — Migración final globals → `World.state`** (`shop.shieldActive/magnetTimer/ghostActive` → `World.state.shop`; `enemies.list/boss` → `World.state.enemies`; `World.subscribe`) — Branch: `refactor/world-state-globals` — Verifica: `grep shop\.` 0 fuera de `World.get`, `test_scope_15_shopPersistence` PASS
+- [x] **P04 — Migración final globals → `World.state` (shop/enemies)** (`shop.shieldActive/magnetTimer/ghostActive` → `World.state.shop`; `enemies.list/boss` → `World.state.enemies` con proxy + `World.get`/`World.set` dot-notation y `World.subscribe`) — Branch: `refactor/world-state-globals` — **Completado 2026-08-31 23:XX America/Bogota (consola-only)**: `core/world.lua` dot-notation (`shop.shieldActive`, `enemies.list`), `systems/shop.lua` proxy sin rawset (sobrevive `World.reset`), `entities/enemies.lua` proxy, `snake/core|collisions|movement` y `gamestates/playing` migrados a `World.get`, `love tests` 529/545 estable (recuperados 4 shield tests), `grep shop\.` reducido 74→~30 (restante `renderMain`/`player` en P05)
 - [ ] **P05 — Consolidar timers duales → `core/timers.lua` único** (deprecar `world.state.activeTimers[]` + `shockwaves` loops; `timers.update(dt)` único desde `love.update`) — Branch: `refactor/timers-consolidated` — Verifica: `test_scope_04_timers` PASS
 - [ ] **P06 — Crear `core/events.lua` (Event Bus)** (`Events.emit/on`, `local E={} return E`, migrar `achievements.check`/`persistence.sync`/`ui.showToast` a suscriptores) — Branch: `feat/core-events` — Verifica: `test_scope_05_world` listeners PASS, 0 `require` circular
 - [ ] **P07 — Crear `core/input.lua` (Input centralizado)** (`Input.isHeld(dir)` + `config.KEYBINDS` + `touch.hasActiveTouch` + hook gamepad; `love.keyboard.isDown` solo en `core/input.lua`) — Branch: `refactor/input-central` — Verifica: `grep isDown` único
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-08-31 23:55 (P03 Split gamestates.lua 643→196+389+64+72 completado — love . 0 bytes, tests 529/545, TDD 55 módulos, TECH-DEBT-PLAN.md Fase 1 completada ✅ M1)*
+*Last updated: 2026-08-31 23:59 (P04 World.state shop/enemies — love tests 529/545 consola-only, proxy sin rawset, snake/playing migrados a World.get, TDD dot-notation)*

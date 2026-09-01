@@ -845,7 +845,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro,
 
 **Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
 
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 `enemies.lua` 23:30 (341+139+170+121) ✅, P02 `snake.lua` 23:45 (257+97+105+152+393) ✅, P03 `gamestates.lua` 23:55 (196+389+64+72) ✅ — Fase 1 completada (M1), P04–P15 planificados; cada propuesta cierra con entrada `docs/CHANGELOG.md` + `CHANGELOG.md`.
+**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 23:30 (341+139+170+121) ✅, P02 23:45 (257+97+105+152+393) ✅, P03 23:55 (196+389+64+72) ✅ — **Fase 1 (M1) ✅**, P04 `World.state` 23:XX ✅ (World dot-notation + shop/enemies proxy + snake/playing migrados), P05–P15 planificados.
 
 ## 11. Love2D Gotchas
 

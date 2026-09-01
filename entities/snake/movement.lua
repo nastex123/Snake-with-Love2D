@@ -2,6 +2,7 @@
 -- MÓDULO: entities/snake/movement.lua
 -- Parte de P02 — Split de entities/snake.lua (922 → 4 submódulos + fachada)
 -- Gestiona movimiento táctico, cola de inputs y colisiones de paso.
+-- P04: lecturas de shop.* migradas a World.get("shop.*") (World.state.shop).
 -- Extraído de entities/snake.lua sin cambios de semántica.
 -- =============================================================================
 local movement = {}
@@ -108,7 +109,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     else
         if nuevaCabezaX < 0 or nuevaCabezaX >= anchoGrilla or nuevaCabezaY < 0 or nuevaCabezaY >= altoGrilla then
             if not immune() then
-                if shop.shieldActive then
+                if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     return true, false
                 elseif s.armor and s.armor > 0 then
@@ -127,7 +128,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     for _, segmento in ipairs(s.body) do
         if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
             if s.ghost or immune() then
-            elseif shop.shieldActive then
+            elseif world.get("shop.shieldActive", false) then
                 shop.shieldActive = false
                 return true, false
             elseif s.armor and s.armor > 0 then
@@ -149,7 +150,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         obstaclesMod.triggerPressureSpike(nuevaCabezaX, nuevaCabezaY)
         local isLethal, hazardObs = obstaclesMod.isHazardLethal(nuevaCabezaX, nuevaCabezaY)
         if isLethal and not s.ghost and not immune() then
-            if shop.shieldActive then
+            if world.get("shop.shieldActive", false) then
                 shop.shieldActive = false
                 return true, false
             elseif s.armor and s.armor > 0 then
@@ -167,7 +168,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 local isPassable = (obs.type == "ice" or obs.type == "slime" or (obs.type == "lava" and obs.state ~= "active") or (obs.type == "pressure_spike" and obs.state ~= "extended"))
                 if not isPassable then
                     if immune() then
-                    elseif shop.shieldActive then
+                    elseif world.get("shop.shieldActive", false) then
                         shop.shieldActive = false
                         return true, false
                     elseif s.armor and s.armor > 0 then
@@ -185,7 +186,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         if not s.ghost and not immune() then
             local bossResult = enemies.hitBoss and enemies.hitBoss() or {hit = true}
             if bossResult then
-                if shop.shieldActive then
+                if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     return true, false, nil, bossResult
                 elseif s.armor and s.armor > 0 then
@@ -213,7 +214,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
             end
             if hit then
                 if s.ghost or immune() then
-                elseif shop.shieldActive then
+                elseif world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                 elseif s.armor and s.armor > 0 then
                     s.armor = s.armor - 1
@@ -230,7 +231,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
             if e and e.alive and nuevaCabezaX == e.x and nuevaCabezaY == e.y then
                 if s.ghost or immune() then
                 else
-                    if shop.shieldActive then
+                    if world.get("shop.shieldActive", false) then
                         shop.shieldActive = false
                         local result = enemies.killEnemy(i)
                         return true, false, result
