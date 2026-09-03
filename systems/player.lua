@@ -2,6 +2,9 @@
 local player = {}
 local constants = require("constants")
 local world = require("core.world")
+local timers = require("core.timers")
+local hasLogger, Log = pcall(require, "core.logger")
+if not hasLogger or type(Log) ~= "table" then Log = nil end
 local shop = require("systems.shop")
 local foodMod = require("entities.food")
 local obstaclesMod = require("entities.obstacles")
@@ -27,13 +30,19 @@ function player.calcSpeed(base, fruits, opts)
     local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
     local current = math.max(constants.VELOCIDAD_MINIMA, base - speedReduction)
 
-    -- Evaluar Turbo activo (vía parámetro explícito o activeTimers en world.state)
+    -- Evaluar Turbo activo (vía parámetro explícito o timers pool)
     local hasTurbo = opts.turbo
     if hasTurbo == nil and st and st.activeTimers then
         for _, t in ipairs(st.activeTimers) do
-            if t.id == "turbo" and t.remaining > 0 then
-                hasTurbo = true
-                break
+            if t.id == "turbo" then
+                if t._handle and timers.isActive(t._handle) then
+                    hasTurbo = true
+                    break
+                elseif not t._handle and t.remaining and t.remaining > 0 then
+                    -- compatibilidad con inserts manuales de tests (sin _handle)
+                    hasTurbo = true
+                    break
+                end
             end
         end
     end
@@ -74,52 +83,112 @@ function player.itemColor(itemId)
     return c and c[1] or 1, c and c[2] or 1, c and c[3] or 1
 end
 
---- Helper interno para refrescar o añadir un temporizador en st.activeTimers sin solapamientos negativos
+--- Helper interno para refrescar o añadir un temporizador vía core/timers pool (HUD visible en activeTimers)
 local function addOrRefreshTimer(st, timerId, duration, onEndFn)
     duration = math.max(0, duration or 0)
+    -- Buscar existente
     for _, t in ipairs(st.activeTimers) do
         if t.id == timerId then
+            if t._handle then timers.cancel(t._handle) end
+            t.duration = duration
             t.remaining = duration
             t.onEnd = onEndFn
+            -- crear nuevo handle pooled
+            local handle = timers.after(duration, function()
+                -- remover entrada HUD y ejecutar callback una sola vez
+                for i = #st.activeTimers, 1, -1 do
+                    if st.activeTimers[i].id == timerId and st.activeTimers[i] == t then
+                        table.remove(st.activeTimers, i)
+                        break
+                    end
+                end
+                if onEndFn then
+                    local ok, err = pcall(onEndFn)
+                    if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
+                end
+            end)
+            t._handle = handle
             return t
         end
     end
-    local newTimer = {
+    local entry = {
         id = timerId,
+        duration = duration,
         remaining = duration,
-        onEnd = onEndFn
+        onEnd = onEndFn,
+        _handle = nil,
     }
-    table.insert(st.activeTimers, newTimer)
-    return newTimer
+    local handle = timers.after(duration, function()
+        for i = #st.activeTimers, 1, -1 do
+            if st.activeTimers[i].id == timerId and st.activeTimers[i] == entry then
+                table.remove(st.activeTimers, i)
+                break
+            end
+        end
+        if onEndFn then
+            local ok, err = pcall(onEndFn)
+            if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
+        end
+    end)
+    entry._handle = handle
+    table.insert(st.activeTimers, entry)
+    return entry
 end
 
---- Busca un temporizador activo por ID
+--- Busca un temporizador activo por ID (usa handle pooled si existe)
 function player.getActiveTimer(timerId)
     local st = world.state
     if not st or not st.activeTimers then return nil end
     for _, t in ipairs(st.activeTimers) do
-        if t.id == timerId and t.remaining > 0 then
-            return t
+        if t.id == timerId then
+            if t._handle then
+                if timers.isActive(t._handle) then return t end
+            elseif t.remaining and t.remaining > 0 then
+                return t -- compat legacy inserts sin handle (tests)
+            end
         end
     end
     return nil
 end
 
---- Cancela un temporizador activo de forma segura
+--- Cancela un temporizador activo de forma segura (cancela handle pooled)
 function player.clearActiveTimer(timerId, runOnEnd)
     local st = world.state
     if not st or not st.activeTimers then return false end
     for i = #st.activeTimers, 1, -1 do
         local t = st.activeTimers[i]
         if t.id == timerId then
-            if runOnEnd and t.onEnd then
-                t.onEnd()
-            end
+            if t._handle then timers.cancel(t._handle) end
+            local cb = t.onEnd
             table.remove(st.activeTimers, i)
+            if runOnEnd and cb then
+                local ok, err = pcall(cb)
+                if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
+            end
             return true
         end
     end
     return false
+end
+
+-- Helper HUD: remaining dinámico desde handle (para ui/hudUI.lua)
+function player.getTimerRemaining(entry)
+    if not entry then return 0 end
+    if entry._handle then
+        -- timers pool: delay - accum
+        local h = entry._handle
+        if h and h.active and h.delay and h.accum then
+            local rem = h.delay - h.accum
+            return rem > 0 and rem or 0
+        end
+        return 0
+    end
+    return entry.remaining or 0
+end
+
+function player.getTimerDuration(entry)
+    if not entry then return 0 end
+    return entry.duration or entry.remaining or 0
 end
 
 --- Retorna el multiplicador de puntuación efectivo
@@ -239,6 +308,7 @@ function player.aplicarItem(itemId)
         for i = #st.activeTimers, 1, -1 do
             local t = st.activeTimers[i]
             if t.id == "star" or t.id == "doubler" then
+                if t._handle then timers.cancel(t._handle) end
                 table.remove(st.activeTimers, i)
             end
         end
@@ -257,6 +327,7 @@ function player.aplicarItem(itemId)
         for i = #st.activeTimers, 1, -1 do
             local t = st.activeTimers[i]
             if t.id == "star" or t.id == "doubler" then
+                if t._handle then timers.cancel(t._handle) end
                 table.remove(st.activeTimers, i)
             end
         end

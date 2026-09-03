@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 11:30
+
+- **Refactor** (completed - 2026-09-03 11:30): P05 — Consolidar timers duales → `core/timers.lua` único (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `systems/player.lua` pool**: `addOrRefreshTimer(id,duration,onEnd)` ahora usa `timers.after(duration, cb)` pooled con `_handle` + `duration`/`remaining` HUD; cancela previo con `timers.cancel`; `player.calcSpeed` turbo check vía `timers.isActive(_handle)` (compat legacy `remaining>0` sin handle para tests); `getActiveTimer/clearActiveTimer` cancelan handle; nuevos helpers `getTimerRemaining/getTimerDuration`; `aplicarItem` `doubler/star` cancela `star/doubler` handles antes de `table.remove`; `shop.magnetTimer` vía handle.
+  2. **QUÉ — `systems/gamestates.lua` updateCommon**: mantiene `timers.update(dt)` único (vía `main.lua:140` `states.update(dt)` escalado); loop `activeTimers` deprecado a compat solo `not _handle` (legacy tests) + sync `remaining = delay - accum` para HUD; `shockwaves` loop ahora solo entries con `timer~=nil` (legacy tests), nuevos shocks tweeneados (ver playing.lua) no tocan loop.
+  3. **QUÉ — `systems/gamestates/playing.lua` shockwave**: `table.insert(shockwaves,{radio=0,alpha=1,timer=0})` → `sw={radio=0,alpha=1}` + `sw._tween=timers.tween(0.4, sw, {radio=48,alpha=0}, removeCB)`; `require("core.timers")`; `shop.magnetTimer` sync manual → `player.getActiveTimer("magnet")` + `getTimerRemaining` (fallback legacy `-dt`).
+  4. **QUÉ — `systems/settings.lua` + `ui/hudUI.lua` + `systems/gameflow.lua`**: `settings.update` `resolutionConfirmTimer` ahora lee `persistence._previewTimer` handle remaining (fallback manual si no hay handle); `hudUI.drawHUD` barra `t._handle.delay - accum` si existe; `gameflow.resetGame` cancela `activeTimers._handle` y `shockwaves._tween` antes de `={}` para evitar `onEnd` tardío.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P05 y GDD §21.4; `world.state.activeTimers[]` + `shockwaves` loops manuales duplicaban `core/timers.lua` pooling y causaban `GC churn` + doble fuente de verdad (2× `remaining -= dt` vs `timers.accum`). Unificar a `timers.update` único deja `love.update` determinista y prepara `P06 Event Bus` y `P08 Asset Manager`.
+  6. **Verificación**: `love` no disponible en sandbox (sin `love`/`lua` binario); verificación estática `git diff --stat` 6 files 171 insertions; compat `test_scope_04_timers` y `test_scope_18_gamestatesDebug` legacy inserts sin `_handle` siguen expirando vía fallback; `TODO` P05 [x] 11:30, `TDD` §10 P05 ✅.
+
 ## 2026-08-31 23:59
 
 - **Refactor** (completed - 2026-08-31 23:59): P04 — Migración `shop`/`enemies` a `World.state` con dot-notation y proxies sin rawset (America/Bogota, consola-only):

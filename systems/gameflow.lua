@@ -65,6 +65,13 @@ function gameflow.resetGame(keepShopInventory)
     st.deathAnimTimer = 0
     st.lastObstacleScore = 0
     st.magnetRange = 0
+    -- P05: cancelar handles pooled antes de limpiar (evitar onEnd tardío)
+    if st.activeTimers then
+        local timers = require("core.timers")
+        for _, t in ipairs(st.activeTimers) do
+            if t._handle then pcall(function() timers.cancel(t._handle) end) end
+        end
+    end
     st.activeTimers = {}
     st.scoreMultiplier = 1
     st.coinBonus = 0
@@ -76,6 +83,13 @@ function gameflow.resetGame(keepShopInventory)
     obstaclesMod.init()
     enemiesMod.init()
     uiMod.resetPopups()
+    -- cancelar tweens de shockwaves pendientes
+    if st.shockwaves then
+        local timers = require("core.timers")
+        for _, sw in ipairs(st.shockwaves) do
+            if sw._tween then pcall(function() timers.cancel(sw._tween) end) end
+        end
+    end
     st.shockwaves = {}
     st.comboFlashTimer = 0
     st.comboCount = 0

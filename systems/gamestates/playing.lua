@@ -21,6 +21,7 @@ local achievementsMod = require("systems.achievements")
 local persistence = require("systems.persistence")
 local gameflow = require("systems.gameflow")
 local playerMod = require("systems.player")
+local timers = require("core.timers")
 
 function playing.update(dt)
     local st = world.state
@@ -130,12 +131,24 @@ function playing.update(dt)
         end
     end
 
-    if world.get("shop.magnetTimer", 0) > 0 then
-        shop.magnetTimer = world.get("shop.magnetTimer", 0) - dt
-        if world.get("shop.magnetTimer", 0) <= 0 then
-            st.magnetRange = 0
+    -- P05: magnetTimer ahora via core/timers (player.addOrRefreshTimer usa timers.after)
+    -- Sincronizar HUD desde handle pooled en vez de decrementar manual
+    local magnetEntry = playerMod.getActiveTimer("magnet")
+    if magnetEntry then
+        shop.magnetTimer = playerMod.getTimerRemaining(magnetEntry)
+        st.magnetRange = constants.MAGNET_RANGE
+    else
+        if world.get("shop.magnetTimer", 0) > 0 then
+            -- fallback legacy sin handle (tests)
+            shop.magnetTimer = math.max(0, world.get("shop.magnetTimer", 0) - dt)
+            if shop.magnetTimer <= 0 then
+                st.magnetRange = 0
+            else
+                st.magnetRange = constants.MAGNET_RANGE
+            end
         else
-            st.magnetRange = constants.MAGNET_RANGE
+            shop.magnetTimer = 0
+            st.magnetRange = 0
         end
     end
 
@@ -295,7 +308,17 @@ function playing.update(dt)
                     ps = particles.comer(fx, fy)
                 })
 
-                table.insert(st.shockwaves, {x = fx, y = fy, radio = 0, alpha = 1, timer = 0})
+                -- P05: shockwave via timers.tween (0.4s, radio 0->48, alpha 1->0), sin loop manual
+                local sw = {x = fx, y = fy, radio = 0, alpha = 1}
+                table.insert(st.shockwaves, sw)
+                sw._tween = timers.tween(0.4, sw, {radio = 48, alpha = 0}, function()
+                    for i = #st.shockwaves, 1, -1 do
+                        if st.shockwaves[i] == sw then
+                            table.remove(st.shockwaves, i)
+                            break
+                        end
+                    end
+                end)
 
                 if st.comboCount > 0 then
                     uiMod.addPopup(textPopup .. " x" .. (st.comboCount + 1), foodMod.pos.x, foodMod.pos.y)

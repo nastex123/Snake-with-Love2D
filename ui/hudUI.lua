@@ -202,8 +202,13 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 love.graphics.setColor(0.25, 0.25, 0.25)
                 love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
+                -- P05: remaining desde handle pooled si existe, fallback a t.remaining (tests)
                 local dur = t.duration or constants.TURBO_DURATION or 10
-                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, t.remaining / dur), 6 * s, 2 * s, 2 * s)
+                local rem = t.remaining or dur
+                if t._handle and t._handle.delay then
+                    rem = math.max(0, t._handle.delay - (t._handle.accum or 0))
+                end
+                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, rem / dur), 6 * s, 2 * s, 2 * s)
                 x = x + 26 * s
             end
         end

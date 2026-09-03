@@ -130,24 +130,36 @@ function states.updateCommon(dt)
     obstaclesMod.update(dt)
     if st.menuPS and st.menuPS.update then st.menuPS:update(dt) end
 
+    -- P05: shockwaves tweeneados por core/timers (playing.lua), mantener compat legacy con timer
     for i = #st.shockwaves, 1, -1 do
         local sw = st.shockwaves[i]
-        sw.radio = sw.radio + 120 * dt
-        sw.timer = sw.timer + dt
-        sw.alpha = 1 - sw.timer / 0.4
-        if sw.alpha <= 0 then
-            table.remove(st.shockwaves, i)
+        if sw.timer ~= nil then
+            sw.radio = sw.radio + 120 * dt
+            sw.timer = sw.timer + dt
+            sw.alpha = 1 - sw.timer / 0.4
+            if sw.alpha <= 0 then
+                table.remove(st.shockwaves, i)
+            end
         end
     end
 
+    -- P05: activeTimers ahora vive en core/timers pool (player.lua addOrRefreshTimer usa timers.after)
+    -- Mantener compatibilidad solo para inserts legacy de tests (sin _handle)
     for i = #st.activeTimers, 1, -1 do
         local t = st.activeTimers[i]
-        t.remaining = math.max(0, t.remaining - dt)
-        if t.remaining <= 0 then
-            if t.onEnd then
-                t.onEnd()
+        if not t._handle then
+            t.remaining = math.max(0, (t.remaining or 0) - dt)
+            if t.remaining <= 0 then
+                local cb = t.onEnd
+                table.remove(st.activeTimers, i)
+                if cb then pcall(cb) end
             end
-            table.remove(st.activeTimers, i)
+        else
+            -- pooled: sincronizar remaining para HUD (opcional, no afecta onEnd)
+            if t._handle and t._handle.delay then
+                local rem = t._handle.delay - (t._handle.accum or 0)
+                t.remaining = rem > 0 and rem or 0
+            end
         end
     end
 

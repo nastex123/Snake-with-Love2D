@@ -82,10 +82,19 @@ function settings.update(dt)
         settings.toastTimer = settings.toastTimer - dt
         if settings.toastTimer < 0 then settings.toastTimer = 0 end
     end
-    -- world.state.resolutionConfirmTimer es manejado por persistence.previewResolution via core/timers
-    -- Fallback si timers no disponible: decremento manual del contador world.state
-    if world and world.state and world.state.resolutionConfirmTimer and type(world.state.resolutionConfirmTimer) == 'number' then
-        -- No auto-revert aquí: persistence.revertResolutionPreview es disparado por timer; solo mantenemos contador para toast
+    -- P05: resolutionConfirmTimer via core/timers pool (persistence._previewTimer)
+    -- Sincronizar display desde handle pooled; fallback manual solo si no hay handle (tests)
+    local hasHandle = persistence and persistence._previewTimer and persistence._previewTimer.active
+    if hasHandle then
+        local h = persistence._previewTimer
+        local rem = (h.delay or 5) - (h.accum or 0)
+        if rem > 0.01 then
+            world.state.resolutionConfirmTimer = rem
+        else
+            world.state.resolutionConfirmTimer = nil
+        end
+    elseif world and world.state and world.state.resolutionConfirmTimer and type(world.state.resolutionConfirmTimer) == 'number' then
+        -- Fallback legacy (tests sin timers)
         world.state.resolutionConfirmTimer = math.max(0, world.state.resolutionConfirmTimer - dt)
         if world.state.resolutionConfirmTimer <= 0 then
             world.state.resolutionConfirmTimer = nil
