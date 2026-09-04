@@ -3,7 +3,6 @@
 --  - Toque en el botón de pausa (esquina inferior derecha): pausa/reanuda
 local touch = {}
 local world = require("core.world")
-local snakeMod = require("entities.snake")
 local constants = require("constants")
 
 local SWIPE_MIN = 18
@@ -121,6 +120,8 @@ end
 function touch.processSwipe(dirX, dirY)
     local st = world.state
     if not st or not st.player then return false end
+    local ok, snakeMod = pcall(require, "entities.snake")
+    if not ok or not snakeMod or not snakeMod.encolarDireccion then return false end
     snakeMod.encolarDireccion(st.player, dirX, dirY)
     return true
 end

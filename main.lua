@@ -125,6 +125,14 @@ function love.load()
     world.state.scheduledToasts = world.state.scheduledToasts or {}
     world.state.scheduledIndex = world.state.scheduledIndex or {}
 
+    if world.DEBUG then
+        local ok, err = pcall(function() world.validate() end)
+        if not ok and world.DEBUG then
+            local hasLogger, Log = pcall(require, "core.logger")
+            if hasLogger and Log and Log.error then Log.error("World.validate failed:", tostring(err)) end
+        end
+    end
+
     -- Check for screenshot suite automation argument
     if arg then
         for _, a in ipairs(arg) do

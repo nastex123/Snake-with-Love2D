@@ -13,7 +13,9 @@ print("=======================================================")
 print("           SNAKE LOVE2D - INTEGRATED TEST RUNNER       ")
 print("=======================================================")
 
-require("tests.test_systems")
+require("tests.test_shop")
+require("tests.test_settings")
+require("tests.test_gamestates")
 if pcall(require, "tests.test_scope_01_config") then end
 if pcall(require, "tests.test_scope_02_helpers") then end
 if pcall(require, "tests.test_scope_03_logger") then end

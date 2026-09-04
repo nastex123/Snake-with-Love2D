@@ -8,6 +8,51 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 15:50
+
+- **Fix** (completed - 2026-09-04 15:50): Circular `core.touch` ↔ `core.input` — `render/renderMain.lua:17` loop (America/Bogota, consola-only):
+  1. **QUÉ — `core/touch.lua:4`**: eliminado `local snakeMod = require("entities.snake")` del top; `touch.processSwipe` ahora `pcall(require, "entities.snake")` lazy (`touch.lua:120-123`).
+  2. **QUÉ — `core/input.lua:6`**: eliminado `pcall(require, "core.touch")` del top; `Input.hasActiveTouch` ahora `pcall(require, "core.touch")` lazy (`input.lua:47-52`); `love.keyboard.isDown` sigue solo en `core/input.lua:13` (`Input.isDown`).
+  3. **POR QUÉ**: Cadena `touch` → `snake` → `movement` → `input` → `touch` causaba `loop or previous error loading module 'core.touch'` en `renderMain.lua:17` (`require("core.touch")`) al cargar `main.lua:18`; romper requires top-level deja `touch` sin `snake` y `input` sin `touch`.
+  4. **Verificación**: `npx luaparse` 4 ficheros OK, grafo `require` top-level `touch`→`world,constants` sin `snake`, `input`→`[]` sin `touch`, ciclo roto; `error.log` 0; commit `9e8f025` en `chore/phase3-resiliencia`.
+
+## 2026-09-03 15:00
+
+- **Chore** (completed - 2026-09-03 15:00): P13 — Contrato API `World.state` + `World.validate()` debug (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `core/world.lua` 309→380L**: `World.DEBUG=false` + `World.SCHEMA` 12 keys (`puntuacion/monedas/comboCount/gameState/fadeDir/fadeAlpha/time/introTimer/shakeTimer/comboFlashTimer/debugImmune` + `shop.shieldActive/magnetTimer` + `enemies.list/boss`) + `World.validate()` itera SCHEMA vía `World.get` y `assert` si `DEBUG` con `Log.error`, `World.enableDebug/disableDebug`, `World.set` wrapper con `assert` tipo si `DEBUG` y `SCHEMA[key]` existe; `main.lua` `love.load` `if World.DEBUG then pcall(World.validate)` con `Log.error`.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P13 y AGENTS.md `World.validate` debug; `World.set` sin contrato permitía `shop.shieldActive="bad"` string y `World.state` corrupto; `validate` en `love.load` detecta desincronización tras `World.reset` y prepara `Phase 9` `fixed timestep`.
+  3. **Verificación**: `World.DEBUG` false no aserta (`test_scope_05_world` PASS), `World.enableDebug()` + `World.set("monedas","bad")` aserta; `TODO` P13 [x] 15:00.
+
+## 2026-09-03 14:30
+
+- **Refactor** (completed - 2026-09-03 14:30): P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `world/biomeHazards.lua` 254L nuevo**: `BiomeHazards.DEFAULTS` (lava/ice/slime/pressure_spike) + `isLethal/getTileModifier/triggerPressureSpike/update/draw/getSpawnForBiome/isHazardAt`; `update(dt,obstaclesPos)` unifica `lava` cooldown/warning/active (2.5/1.2/1.5) y `pressure_spike` idle/warning/extended/retracting (0.5/1.2/0.4) + `draw` 4 hazards (lava warning/active, spike warning/extended, ice glint, slime goo).
+  2. **QUÉ — `entities/obstacles.lua` 723→495L**: `require("world.biomeHazards")`; `TYPE_DEFAULTS` lava/ice/slime/spike → `BiomeHazards.DEFAULTS`; `isHazardLethal`→`BiomeHazards.isLethal`, `getTileModifier`→`BiomeHazards.getTileModifier`, `triggerPressureSpike`→`BiomeHazards.triggerPressureSpike`, `generarPorBioma`→`BiomeHazards.getSpawnForBiome`, `update` delega `BiomeHazards.update` + `flashTimers`, `draw` 4 hazards → `BiomeHazards.draw` (107→1 línea), `obstacles.lua` <500L `wc -l` 495.
+  3. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P12 y AGENTS.md límite 300-500; `obstacles.lua` 723L era monolito con `isIce/isSlime/lava/pressure_spike` duplicado en `world/populate.lua` y `draw` 180L; extraer deja `obstacles` como fachada `pos/list` + `agregar/generar/destruir`.
+  4. **Verificación**: `wc -l` 495 <500, `BiomeHazards` 254 <500; `TODO` P12 [x] 14:30.
+
+## 2026-09-03 14:00
+
+- **Perf** (completed - 2026-09-03 14:00): P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `entities/enemyAttackRegistry.lua` 139→260L pools**: `TELEGRAPH_POOL=32`/`ATTACK_POOL=64`/`RESPAWN_POOL=32` pre-alocados `telegraphPool/attackPool/respawnPool` + `freeTelegraphs/freeAttacks/freeRespawns` + `activeTelegraphs/activeAttacks/activeRespawns`; `addTelegraph/addProjectile/addRadialPulse/addPendingRespawn` vía `acquireFree` sin `table.insert({})` nuevo, `updateTelegraphs/updateAttackObjects` reciclan vía `releaseToFree` y `table.remove(activeList)` + `release` sin crear tablas; `entities/enemies.lua` pending loop usa `removePendingRespawn(i)`; 32/64 tablas pre-alocadas con `active` flag.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P11 y AGENTS.md pooling; `table.insert({gx=...})` por ataque creaba GC churn y `update` con `table.remove` en hot loop; pool deja `collectgarbage("count")` estable en boss con 4 proyectiles + 3 patrollers.
+  3. **Verificación**: `test_scope_09_enemies` `#getTelegraphs/#getAttackObjects` sigue vía `activeTelegraphs` length; `TODO` P11 [x] 14:00.
+
+## 2026-09-03 13:30
+
+- **Chore** (completed - 2026-09-03 13:30): P10 — Split `tests/test_systems.lua` 1135→3 suites + smoke headless (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — Split 1135→3**: `tests/test_systems.lua` 1135L → `tests/test_shop.lua` 384L (Suites 1-3 Items/Shop/Persistence) + `tests/test_settings.lua` 397L (Suites 4-7 Settings/Profiles/Achievements/Player) + `tests/test_gamestates.lua` 326L (Suites 8-10 Gameflow/Gamestates/Debug) + `tests/test_systems_helper.lua` 104L `setupCleanWorld` común + `tests/test_systems.lua` 5L shim + `tests/smoke.lua` 32L headless `love . --test`; `tests/main.lua` ahora `require test_shop/test_settings/test_gamestates` en vez de `test_systems` monolítico.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P10 y AGENTS.md límite 300-500; `test_systems.lua` era 1135L (>2× límite) y bloqueaba `love tests` <1.0s y reporte de cobertura; helper evita duplicar `setupCleanWorld` (40 líneas) y 20 requires.
+  3. **Verificación**: `wc -l` 384/397/326 <400L, `test_systems_helper` 104L, `smoke` 32L; `tests/main.lua` 3 requires <1.0s compat (VFS mock); `TODO` P10 [x] 13:30.
+
+## 2026-09-03 13:00
+
+- **Fix** (completed - 2026-09-03 13:00): P09 — Escritura atómica `profiles.dat` + `schema_version=2` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `systems/persistence.lua` `atomicWrite(path,data)`**: escribe `path.tmp` vía `love.filesystem.write` + `pcall`, verifica `getInfo(tmp)`, intenta `os.rename` con `getSaveDirectory()` (`fullPath`/`fullBak`/`fullTmp`) y `.bak` backup del original, fallback a `love.filesystem` copy + `remove(tmp)` para VFS tests (`test_harness` `__clearVFS`); `saveProfiles` setea `schema_version=2`/`version=2` antes de `lua_encode`, valida `lua_decode` antes de escribir y usa `atomicWrite` con `createDirectory` fallback.
+  2. **QUÉ — `initProfiles` resiliente**: `tryLoad(path)` helper pcall `read`+`decode`; intenta `profiles.dat` luego `profiles.dat.bak` y restaura vía `atomicWrite`; migra `schema_version<2` → `2`; sanitiza `profiles`/`monedas`/`stats` igual que antes; crea nuevo con `schema_version=2` si ambos fallan (corrupción total).
+  3. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P09 y GDD §21.4 `escritura atómica`; `love.filesystem.write` directo a `profiles.dat` corría riesgo de corrupción en corte de energía (0 bytes), sin `schema_version` no había migración.
+  4. **Verificación**: `atomicWrite` compatible VFS (`test_scope_15` `__clearVFS` + `love.filesystem.write` mock), `test_scope_15` suites 6-10 `createProfile`/`syncActiveProfile` + corrupt `BAD LUA` recovery simula corte y restaura desde `.bak` (si existe); `TODO` P09 [x] 13:00, `error.log` 0.
+
 ## 2026-09-03 12:30
 
 - **Refactor** (completed - 2026-09-03 12:30): P07+P08 — Input centralizado + Asset Manager (America/Bogota, consola-only, guiado):

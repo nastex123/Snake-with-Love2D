@@ -328,11 +328,11 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
                         spawned.aiState = "flank"
                         spawned.role = "flanker"
                     end
-                    table.remove(pending, i)
+                    attackRegistry.removePendingRespawn(i)
                 else
                     p.attempts = p.attempts - 5
                     if p.attempts <= 0 then
-                        table.remove(pending, i)
+                        attackRegistry.removePendingRespawn(i)
                     else
                         p.respawnAt = nowRespawn + 0.5
                     end
