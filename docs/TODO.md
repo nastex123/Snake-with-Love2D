@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-03 15:00 (P13 World.validate debug — SCHEMA 12 keys, DEBUG flag, love.load validate)
+*Last updated: 2026-09-04 15:50 (Fix circular core.touch ↔ core.input — lazy requires, Input.isDown único, luaparse OK)

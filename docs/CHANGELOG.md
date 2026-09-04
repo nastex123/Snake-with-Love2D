@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 15:50
+
+- **Fix** (completed - 2026-09-04 15:50): Circular `core.touch` ↔ `core.input` — `render/renderMain.lua:17` loop (America/Bogota, consola-only):
+  1. **QUÉ — `core/touch.lua:4`**: eliminado `local snakeMod = require("entities.snake")` del top; `touch.processSwipe` ahora `pcall(require, "entities.snake")` lazy (`touch.lua:120-123`).
+  2. **QUÉ — `core/input.lua:6`**: eliminado `pcall(require, "core.touch")` del top; `Input.hasActiveTouch` ahora `pcall(require, "core.touch")` lazy (`input.lua:47-52`); `love.keyboard.isDown` sigue solo en `core/input.lua:13` (`Input.isDown`).
+  3. **POR QUÉ**: Cadena `touch` → `snake` → `movement` → `input` → `touch` causaba `loop or previous error loading module 'core.touch'` en `renderMain.lua:17` (`require("core.touch")`) al cargar `main.lua:18`; romper requires top-level deja `touch` sin `snake` y `input` sin `touch`.
+  4. **Verificación**: `npx luaparse` 4 ficheros OK, grafo `require` top-level `touch`→`world,constants` sin `snake`, `input`→`[]` sin `touch`, ciclo roto; `error.log` 0; commit `9e8f025` en `chore/phase3-resiliencia`.
+
 ## 2026-09-03 15:00
 
 - **Chore** (completed - 2026-09-03 15:00): P13 — Contrato API `World.state` + `World.validate()` debug (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):

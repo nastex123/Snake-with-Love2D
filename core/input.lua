@@ -3,9 +3,6 @@ local Input = {}
 local hasConfig, config = pcall(require, "core.config")
 if not hasConfig or type(config) ~= "table" then config = {} end
 
-local hasTouch, touch = pcall(require, "core.touch")
-if not hasTouch or type(touch) ~= "table" then touch = nil end
-
 local hasLogger, Log = pcall(require, "core.logger")
 if not hasLogger or type(Log) ~= "table" then Log = nil end
 
@@ -47,9 +44,10 @@ function Input.isAnyDirectionHeld()
 end
 
 function Input.hasActiveTouch()
-    if touch and touch.hasActiveTouch then
-        local ok, res = pcall(touch.hasActiveTouch)
-        if ok then return not not res end
+    local ok, touch = pcall(require, "core.touch")
+    if ok and touch and touch.hasActiveTouch then
+        local ok2, res = pcall(touch.hasActiveTouch)
+        if ok2 then return not not res end
     end
     return false
 end
