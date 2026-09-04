@@ -21,6 +21,10 @@ local achievementsMod = require("systems.achievements")
 local persistence = require("systems.persistence")
 local gameflow = require("systems.gameflow")
 local playerMod = require("systems.player")
+local timers = require("core.timers")
+local hasEvents, Events = pcall(require, "core.events")
+if not hasEvents or type(Events) ~= "table" then Events = nil end
+local Input = require("core.input")
 
 function playing.update(dt)
     local st = world.state
@@ -62,8 +66,13 @@ function playing.update(dt)
                     ps = particles.fireTrail(fk.px, fk.py)
                 })
                 sound.play("enemyKill")
-                achievementsMod.check("enemyKilled")
-                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                if Events then
+                    Events.emit("enemyKilled")
+                    Events.emit("coinsChanged", {totalCoins = st.monedas})
+                else
+                    achievementsMod.check("enemyKilled")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
             end
         end
     end
@@ -92,8 +101,13 @@ function playing.update(dt)
                     table.insert(st.activePS, {
                         ps = particles.constrictorBurst(res.px, res.py)
                     })
-                    achievementsMod.check("enemyKilled")
-                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    if Events then
+                        Events.emit("enemyKilled")
+                        Events.emit("coinsChanged", {totalCoins = st.monedas})
+                    else
+                        achievementsMod.check("enemyKilled")
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    end
                 end
             end
             st.comboCount = st.comboCount + 2
@@ -130,24 +144,29 @@ function playing.update(dt)
         end
     end
 
-    if world.get("shop.magnetTimer", 0) > 0 then
-        shop.magnetTimer = world.get("shop.magnetTimer", 0) - dt
-        if world.get("shop.magnetTimer", 0) <= 0 then
-            st.magnetRange = 0
+    -- P05: magnetTimer ahora via core/timers (player.addOrRefreshTimer usa timers.after)
+    -- Sincronizar HUD desde handle pooled en vez de decrementar manual
+    local magnetEntry = playerMod.getActiveTimer("magnet")
+    if magnetEntry then
+        shop.magnetTimer = playerMod.getTimerRemaining(magnetEntry)
+        st.magnetRange = constants.MAGNET_RANGE
+    else
+        if world.get("shop.magnetTimer", 0) > 0 then
+            -- fallback legacy sin handle (tests)
+            shop.magnetTimer = math.max(0, world.get("shop.magnetTimer", 0) - dt)
+            if shop.magnetTimer <= 0 then
+                st.magnetRange = 0
+            else
+                st.magnetRange = constants.MAGNET_RANGE
+            end
         else
-            st.magnetRange = constants.MAGNET_RANGE
+            shop.magnetTimer = 0
+            st.magnetRange = 0
         end
     end
 
     local controlMode = world.get("controlMode") or "tactical"
-    local isInputActive = (#st.player.inputQueue > 0)
-    if not isInputActive and love.keyboard and love.keyboard.isDown then
-        isInputActive = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
-    end
-    local touchMod = package.loaded["core.touch"]
-    if not isInputActive and touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
-        isInputActive = true
-    end
+    local isInputActive = (#st.player.inputQueue > 0) or Input.isAnyHeld() or Input.hasActiveTouch()
 
     if controlMode == "tactical" and st.player.standstill then
         if isInputActive then
@@ -190,8 +209,13 @@ function playing.update(dt)
                 })
             end
             sound.play("enemyKill")
-            achievementsMod.check("enemyKilled")
-            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+            if Events then
+                Events.emit("enemyKilled")
+                Events.emit("coinsChanged", {totalCoins = st.monedas})
+            else
+                achievementsMod.check("enemyKilled")
+                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+            end
         end
 
         if bossResult then
@@ -206,8 +230,13 @@ function playing.update(dt)
                     ps = particles.enemyKill(bossResult.px, bossResult.py, 1, 0.4, 0.6)
                 })
                 sound.play("enemyKill")
-                achievementsMod.check("bossDefeated")
-                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                if Events then
+                    Events.emit("bossDefeated")
+                    Events.emit("coinsChanged", {totalCoins = st.monedas})
+                else
+                    achievementsMod.check("bossDefeated")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
                 st.bossHealthDisplay = nil
                 if worldMod.isLastRoom() then
                     st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
@@ -273,7 +302,11 @@ function playing.update(dt)
                     st.comboCount = st.comboCount + 1
                     st.comboFlashTimer = 0.3
                     if st.comboCount >= 4 then
-                        achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                        if Events then
+                            Events.emit("comboAchieved", {count = st.comboCount + 1})
+                        else
+                            achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                        end
                     end
                 else
                     st.comboCount = 0
@@ -295,7 +328,17 @@ function playing.update(dt)
                     ps = particles.comer(fx, fy)
                 })
 
-                table.insert(st.shockwaves, {x = fx, y = fy, radio = 0, alpha = 1, timer = 0})
+                -- P05: shockwave via timers.tween (0.4s, radio 0->48, alpha 1->0), sin loop manual
+                local sw = {x = fx, y = fy, radio = 0, alpha = 1}
+                table.insert(st.shockwaves, sw)
+                sw._tween = timers.tween(0.4, sw, {radio = 48, alpha = 0}, function()
+                    for i = #st.shockwaves, 1, -1 do
+                        if st.shockwaves[i] == sw then
+                            table.remove(st.shockwaves, i)
+                            break
+                        end
+                    end
+                end)
 
                 if st.comboCount > 0 then
                     uiMod.addPopup(textPopup .. " x" .. (st.comboCount + 1), foodMod.pos.x, foodMod.pos.y)
@@ -323,8 +366,13 @@ function playing.update(dt)
                         })
                         sound.play("boss_defeated")
                         sound.play("enemyKill")
-                        achievementsMod.check("bossDefeated")
-                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        if Events then
+                            Events.emit("bossDefeated")
+                            Events.emit("coinsChanged", {totalCoins = st.monedas})
+                        else
+                            achievementsMod.check("bossDefeated")
+                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        end
                         if worldMod.isLastRoom() then
                             st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
                             st.transitionPhase = 1

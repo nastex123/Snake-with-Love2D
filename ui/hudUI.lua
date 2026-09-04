@@ -63,18 +63,10 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     end
 end
 
-local fontCache = {}
+local Assets = require("core.assets")
 
 local function getCachedFont(fontSize)
-    if not fontCache[fontSize] then
-        local font
-        local ok = pcall(function() font = love.graphics.newFont(constants.FONT_FILE, fontSize) end)
-        if not ok or not font then
-            font = love.graphics.newFont(fontSize)
-        end
-        fontCache[fontSize] = font
-    end
-    return fontCache[fontSize]
+    return Assets.getFont(constants.FONT_FILE, fontSize) or Assets.getFont(fontSize)
 end
 
 function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
@@ -202,8 +194,13 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 love.graphics.setColor(0.25, 0.25, 0.25)
                 love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
+                -- P05: remaining desde handle pooled si existe, fallback a t.remaining (tests)
                 local dur = t.duration or constants.TURBO_DURATION or 10
-                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, t.remaining / dur), 6 * s, 2 * s, 2 * s)
+                local rem = t.remaining or dur
+                if t._handle and t._handle.delay then
+                    rem = math.max(0, t._handle.delay - (t._handle.accum or 0))
+                end
+                love.graphics.rectangle("fill", x, barY, 20 * s * math.min(1, rem / dur), 6 * s, 2 * s, 2 * s)
                 x = x + 26 * s
             end
         end

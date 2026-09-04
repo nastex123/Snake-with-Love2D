@@ -5,6 +5,7 @@ local uiMod = require("ui.ui")
 local persistence = require("systems.persistence")
 local sound = require("audio.sound")
 local menuLogo = require("ui.menuLogo")
+local Input = require("core.input")
 
 local dragging = false
 local dragStartX = 0
@@ -187,7 +188,7 @@ function debugLogo.keypressed(tecla)
     if tecla == "f2" then debugLogo.toggle(); return true end
     if not world.state.debugLogoOpen then return false end
     local cfg = persistence.getLogoConfig()
-    local step = (love.keyboard.isDown("lshift") or love.keyboard.isDown("rshift")) and 10 or 1
+    local step = (Input.isDown("lshift") or Input.isDown("rshift")) and 10 or 1
     if tecla == "return" or tecla == "kpenter" or tecla == "enter" or tecla == "escape" then debugLogo.toggle(); return true
     elseif tecla == "left" then cfg.offsetX = (cfg.offsetX or 0) - step; persistence.saveLogoConfig(); return true
     elseif tecla == "right" then cfg.offsetX = (cfg.offsetX or 0) + step; persistence.saveLogoConfig(); return true

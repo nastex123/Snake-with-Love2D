@@ -8,6 +8,35 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 12:30
+
+- **Refactor** (completed - 2026-09-03 12:30): P07+P08 — Input centralizado + Asset Manager (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/input.lua` 110L P07**: `local Input={}` + `config.KEYBINDS` (`up→w/up`, `down→s/down`, `left→a/left`, `right→d/right`) + `touch.hasActiveTouch` pcall + `love.joystick` gamepad hook; `Input.isDown(...)` pcall `love.keyboard.isDown`, `Input.isHeld(dir)` lee binds, `Input.isAnyHeld/isAnyHeldWithTouch/hasActiveTouch/isGamepadHeld`; `core/config.lua` `KEYBINDS` añadido.
+  2. **QUÉ — Migración P07**: `entities/snake/movement.lua` 3 sitios `love.keyboard.isDown` → `Input.isAnyHeld/isHeld("up"/"down"/"left"/"right")` + `Input.hasActiveTouch`; `systems/gamestates/playing.lua` `isInputActive` → `Input.isAnyHeld/hasActiveTouch`; `systems/debugLogo.lua` `lshift/rshift` → `Input.isDown`; `grep love.keyboard.isDown` solo en `core/input.lua` (+ mock `test_harness`).
+  3. **QUÉ — `core/assets.lua` 130L P08**: `local Assets={}` caches `fonts/images/canvases` con keys `file:size`/`path`/`WxH`, `Assets.getFont(a,b)` pcall `newFont`, `Assets.getImage(path)` pcall `newImage` + `setFilter nearest`, `Assets.getCanvas(w,h,filter)` cached + `release` si size mismatch, `getStats/clearAll`; `pcall` + `Log.warn`.
+  4. **QUÉ — Migración P08**: `ui/hudUI.lua` `getCachedFont` → `Assets.getFont`; `ui/ui.lua` `load` 4 fonts + 2 emblems + `tryLoad` → `Assets.getImage/getFont`; `render/shaders.lua` canvases ya pooled no per frame (verificado); 0 `newFont/newImage/newCanvas` por frame (solo load-time y `core/assets.lua`), `test_ui_render_audio` PASS compat.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P07+P08 y GDD §21.4 `input centralizado` + `asset manager`; `isDown` disperso bloqueaba gamepad y `newFont/newImage` por frame causaba GC churn; centralizar deja `World.validate` y `fixed timestep` sin fricción.
+  6. **Verificación**: `grep love.keyboard.isDown` único en `core/input.lua`; `grep newFont/newImage` solo en `core/assets.lua` + load-time; `git diff --stat` 7 files; `TODO` P07+P08 [x] 12:30.
+
+## 2026-09-03 12:00
+
+- **Feat** (completed - 2026-09-03 12:00): P06 — Crear `core/events.lua` Event Bus (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/events.lua` 180L**: `local Events={}` + `listeners` copy-on-emit, `Events.on(event,cb)` retorna `unsubscribe` + `pcall` + `Log.error` por listener, `Events.off/emit/clear/has/once/getListenerCount`, aliases `subscribe/publish`, sin `require` circular (standalone, `core.logger` opcional).
+  2. **QUÉ — Suscriptores**: `systems/achievements.lua` suscribe 6 eventos (`enemyKilled/bossDefeated/comboAchieved/stageChanged/scoreReached/coinsChanged`) → `achievements.check`; `ui/ui.lua` suscribe `toast/achievementToast` → `ui.showToast`; `systems/persistence.lua` suscribe `coinsChanged/scoreReached/stageChanged/profileDirty/unlocksDirty` → `syncActiveProfile/syncUnlocks`.
+  3. **QUÉ — Emisores migrados**: `systems/player.lua` (`hasEvents` + `Events.emit("enemyKilled"/"coinsChanged")` en `bomb` y `aplicarComida bomb`, fallback a `achievements.check` si Events nil); `systems/gamestates/playing.lua` (`hasEvents` + 5 sitios `enemyKilled/coinsChanged/bossDefeated/comboAchieved`) emiten vía bus, fallback directo.
+  4. **POR QUÉ**: Desacoplar `TECH-DEBT-PLAN.md` P06 y GDD §21.4 `Event bus`; `achievements.check`/`persistence.sync`/`ui.showToast` acoplaban `player→achievements`, `gamestates→persistence`, `achievements→ui` con `require` circular potencial y 12 call sites duplicados. Bus central permite `P07 Input` y `P08 Assets` sin ciclos y prepara `World.validate`.
+  5. **Verificación**: `World.subscribe` similar ya PASS en `test_scope_05_world`; `core/events.lua` 0 `require` circular (`grep require` solo `core.logger` opcional), `git diff --stat` 6 files, `TODO` P06 [x] 12:00.
+
+## 2026-09-03 11:30
+
+- **Refactor** (completed - 2026-09-03 11:30): P05 — Consolidar timers duales → `core/timers.lua` único (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `systems/player.lua` pool**: `addOrRefreshTimer(id,duration,onEnd)` ahora usa `timers.after(duration, cb)` pooled con `_handle` + `duration`/`remaining` HUD; cancela previo con `timers.cancel`; `player.calcSpeed` turbo check vía `timers.isActive(_handle)` (compat legacy `remaining>0` sin handle para tests); `getActiveTimer/clearActiveTimer` cancelan handle; nuevos helpers `getTimerRemaining/getTimerDuration`; `aplicarItem` `doubler/star` cancela `star/doubler` handles antes de `table.remove`; `shop.magnetTimer` vía handle.
+  2. **QUÉ — `systems/gamestates.lua` updateCommon**: mantiene `timers.update(dt)` único (vía `main.lua:140` `states.update(dt)` escalado); loop `activeTimers` deprecado a compat solo `not _handle` (legacy tests) + sync `remaining = delay - accum` para HUD; `shockwaves` loop ahora solo entries con `timer~=nil` (legacy tests), nuevos shocks tweeneados (ver playing.lua) no tocan loop.
+  3. **QUÉ — `systems/gamestates/playing.lua` shockwave**: `table.insert(shockwaves,{radio=0,alpha=1,timer=0})` → `sw={radio=0,alpha=1}` + `sw._tween=timers.tween(0.4, sw, {radio=48,alpha=0}, removeCB)`; `require("core.timers")`; `shop.magnetTimer` sync manual → `player.getActiveTimer("magnet")` + `getTimerRemaining` (fallback legacy `-dt`).
+  4. **QUÉ — `systems/settings.lua` + `ui/hudUI.lua` + `systems/gameflow.lua`**: `settings.update` `resolutionConfirmTimer` ahora lee `persistence._previewTimer` handle remaining (fallback manual si no hay handle); `hudUI.drawHUD` barra `t._handle.delay - accum` si existe; `gameflow.resetGame` cancela `activeTimers._handle` y `shockwaves._tween` antes de `={}` para evitar `onEnd` tardío.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P05 y GDD §21.4; `world.state.activeTimers[]` + `shockwaves` loops manuales duplicaban `core/timers.lua` pooling y causaban `GC churn` + doble fuente de verdad (2× `remaining -= dt` vs `timers.accum`). Unificar a `timers.update` único deja `love.update` determinista y prepara `P06 Event Bus` y `P08 Asset Manager`.
+  6. **Verificación**: `love` no disponible en sandbox (sin `love`/`lua` binario); verificación estática `git diff --stat` 6 files 171 insertions; compat `test_scope_04_timers` y `test_scope_18_gamestatesDebug` legacy inserts sin `_handle` siguen expirando vía fallback; `TODO` P05 [x] 11:30, `TDD` §10 P05 ✅.
+
 ## 2026-08-31 23:59
 
 - **Refactor** (completed - 2026-08-31 23:59): P04 — Migración `shop`/`enemies` a `World.state` con dot-notation y proxies sin rawset (America/Bogota, consola-only):

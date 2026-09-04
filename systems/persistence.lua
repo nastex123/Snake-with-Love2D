@@ -780,4 +780,14 @@ function persistence.guardar(puntajeActual, recordActual)
     return recordActual
 end
 
+-- P06 Event Bus wiring (sin circular: Events no requiere persistence)
+local okEvents, Events = pcall(require, "core.events")
+if okEvents and Events and Events.on then
+    Events.on("coinsChanged", function() pcall(function() persistence.syncActiveProfile() end) end)
+    Events.on("scoreReached", function() pcall(function() persistence.syncActiveProfile() end) end)
+    Events.on("stageChanged", function() pcall(function() persistence.syncActiveProfile() end) end)
+    Events.on("profileDirty", function() pcall(function() persistence.syncActiveProfile() end) end)
+    Events.on("unlocksDirty", function(payload) pcall(function() persistence.syncUnlocks(payload and payload.unlocks) end) end)
+end
+
 return persistence

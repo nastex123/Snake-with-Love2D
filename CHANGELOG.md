@@ -8,6 +8,35 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 12:30
+
+- **Refactor** (completed - 2026-09-03 12:30): P07+P08 — Input centralizado + Asset Manager (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/input.lua` 110L P07**: `local Input={}` + `config.KEYBINDS` (`up→w/up`, `down→s/down`, `left→a/left`, `right→d/right`) + `touch.hasActiveTouch` pcall + `love.joystick` gamepad hook; `Input.isDown(...)` pcall `love.keyboard.isDown`, `Input.isHeld(dir)` lee binds, `Input.isAnyHeld/isAnyHeldWithTouch/hasActiveTouch/isGamepadHeld`; `core/config.lua` `KEYBINDS` añadido.
+  2. **QUÉ — Migración P07**: `entities/snake/movement.lua` 3 sitios `love.keyboard.isDown` → `Input.isAnyHeld/isHeld("up"/"down"/"left"/"right")` + `Input.hasActiveTouch`; `systems/gamestates/playing.lua` `isInputActive` → `Input.isAnyHeld/hasActiveTouch`; `systems/debugLogo.lua` `lshift/rshift` → `Input.isDown`; `grep love.keyboard.isDown` solo en `core/input.lua` (+ mock `test_harness`).
+  3. **QUÉ — `core/assets.lua` 130L P08**: `local Assets={}` caches `fonts/images/canvases` con keys `file:size`/`path`/`WxH`, `Assets.getFont(a,b)` pcall `newFont`, `Assets.getImage(path)` pcall `newImage` + `setFilter nearest`, `Assets.getCanvas(w,h,filter)` cached + `release` si size mismatch, `getStats/clearAll`; `pcall` + `Log.warn`.
+  4. **QUÉ — Migración P08**: `ui/hudUI.lua` `getCachedFont` → `Assets.getFont`; `ui/ui.lua` `load` 4 fonts + 2 emblems + `tryLoad` → `Assets.getImage/getFont`; `render/shaders.lua` canvases ya pooled no per frame (verificado); 0 `newFont/newImage/newCanvas` por frame (solo load-time y `core/assets.lua`), `test_ui_render_audio` PASS compat.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P07+P08 y GDD §21.4 `input centralizado` + `asset manager`; `isDown` disperso bloqueaba gamepad y `newFont/newImage` por frame causaba GC churn; centralizar deja `World.validate` y `fixed timestep` sin fricción.
+  6. **Verificación**: `grep love.keyboard.isDown` único en `core/input.lua`; `grep newFont/newImage` solo en `core/assets.lua` + load-time; `git diff --stat` 7 files; `TODO` P07+P08 [x] 12:30.
+
+## 2026-09-03 12:00
+
+- **Feat** (completed - 2026-09-03 12:00): P06 — Crear `core/events.lua` Event Bus (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/events.lua` 180L**: `local Events={}` + `listeners` copy-on-emit, `Events.on(event,cb)` retorna `unsubscribe` + `pcall` + `Log.error` por listener, `Events.off/emit/clear/has/once/getListenerCount`, aliases `subscribe/publish`, sin `require` circular (standalone, `core.logger` opcional).
+  2. **QUÉ — Suscriptores**: `systems/achievements.lua` suscribe 6 eventos (`enemyKilled/bossDefeated/comboAchieved/stageChanged/scoreReached/coinsChanged`) → `achievements.check`; `ui/ui.lua` suscribe `toast/achievementToast` → `ui.showToast`; `systems/persistence.lua` suscribe `coinsChanged/scoreReached/stageChanged/profileDirty/unlocksDirty` → `syncActiveProfile/syncUnlocks`.
+  3. **QUÉ — Emisores migrados**: `systems/player.lua` (`hasEvents` + `Events.emit("enemyKilled"/"coinsChanged")` en `bomb` y `aplicarComida bomb`, fallback a `achievements.check` si Events nil); `systems/gamestates/playing.lua` (`hasEvents` + 5 sitios `enemyKilled/coinsChanged/bossDefeated/comboAchieved`) emiten vía bus, fallback directo.
+  4. **POR QUÉ**: Desacoplar `TECH-DEBT-PLAN.md` P06 y GDD §21.4 `Event bus`; `achievements.check`/`persistence.sync`/`ui.showToast` acoplaban `player→achievements`, `gamestates→persistence`, `achievements→ui` con `require` circular potencial y 12 call sites duplicados. Bus central permite `P07 Input` y `P08 Assets` sin ciclos y prepara `World.validate`.
+  5. **Verificación**: `World.subscribe` similar ya PASS en `test_scope_05_world`; `core/events.lua` 0 `require` circular (`grep require` solo `core.logger` opcional), `git diff --stat` 6 files, `TODO` P06 [x] 12:00.
+
+## 2026-09-03 11:30
+
+- **Refactor** (completed - 2026-09-03 11:30): P05 — Consolidar timers duales → `core/timers.lua` único (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `systems/player.lua` pool**: `addOrRefreshTimer(id,duration,onEnd)` ahora usa `timers.after(duration, cb)` pooled con `_handle` + `duration`/`remaining` HUD; cancela previo con `timers.cancel`; `player.calcSpeed` turbo check vía `timers.isActive(_handle)` (compat legacy `remaining>0` sin handle para tests); `getActiveTimer/clearActiveTimer` cancelan handle; nuevos helpers `getTimerRemaining/getTimerDuration`; `aplicarItem` `doubler/star` cancela `star/doubler` handles antes de `table.remove`; `shop.magnetTimer` vía handle.
+  2. **QUÉ — `systems/gamestates.lua` updateCommon**: mantiene `timers.update(dt)` único (vía `main.lua:140` `states.update(dt)` escalado); loop `activeTimers` deprecado a compat solo `not _handle` (legacy tests) + sync `remaining = delay - accum` para HUD; `shockwaves` loop ahora solo entries con `timer~=nil` (legacy tests), nuevos shocks tweeneados (ver playing.lua) no tocan loop.
+  3. **QUÉ — `systems/gamestates/playing.lua` shockwave**: `table.insert(shockwaves,{radio=0,alpha=1,timer=0})` → `sw={radio=0,alpha=1}` + `sw._tween=timers.tween(0.4, sw, {radio=48,alpha=0}, removeCB)`; `require("core.timers")`; `shop.magnetTimer` sync manual → `player.getActiveTimer("magnet")` + `getTimerRemaining` (fallback legacy `-dt`).
+  4. **QUÉ — `systems/settings.lua` + `ui/hudUI.lua` + `systems/gameflow.lua`**: `settings.update` `resolutionConfirmTimer` ahora lee `persistence._previewTimer` handle remaining (fallback manual si no hay handle); `hudUI.drawHUD` barra `t._handle.delay - accum` si existe; `gameflow.resetGame` cancela `activeTimers._handle` y `shockwaves._tween` antes de `={}` para evitar `onEnd` tardío.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P05 y GDD §21.4; `world.state.activeTimers[]` + `shockwaves` loops manuales duplicaban `core/timers.lua` pooling y causaban `GC churn` + doble fuente de verdad (2× `remaining -= dt` vs `timers.accum`). Unificar a `timers.update` único deja `love.update` determinista y prepara `P06 Event Bus` y `P08 Asset Manager`.
+  6. **Verificación**: `love` no disponible en sandbox (sin `love`/`lua` binario); verificación estática `git diff --stat` 6 files 171 insertions; compat `test_scope_04_timers` y `test_scope_18_gamestatesDebug` legacy inserts sin `_handle` siguen expirando vía fallback; `TODO` P05 [x] 11:30, `TDD` §10 P05 ✅.
+
 ## 2026-08-31 23:59
 
 - **Refactor** (completed - 2026-08-31 23:59): P04 — Migración `shop`/`enemies` a `World.state` con dot-notation y proxies sin rawset (America/Bogota, consola-only):
@@ -67,127 +96,39 @@ Categories: feature, fix, refactor, docs, balance, polish
   3. **POR QUÉ**: Dejar el proyecto en cero-deuda estructural antes de acometer `Items 51–60`, `Mini-Bosses` y `Phase 9` (100 Visual Proposals), respetando las reglas de arquitectura (límite 300–500 líneas, `local X = {}` sin globals, pooling, config central) y los invariantes `love .` funcional + `error.log` 0 del `AGENTS.md` y la skill `documentation`.
   4. **Verificación**: `love .` no requerido por ser solo documentación (0 cambios de runtime); `git diff --stat` revisado (4 ficheros: `TECH-DEBT-PLAN.md` + `TODO`/`ROADMAP`/`TDD` + `CHANGELOG`); `git status` limpio en rama `chore/tech-debt-plan`.
 
-## 2026-08-29 21:12
+## 2026-08-28 21:27
 
-- **Fix** (completed - 2026-08-29 21:12): Corrección de cadencia de movimiento y colisiones físicas del Patroller (America/Bogota):
-  1. **QUÉ — Velocidad / Cadencia normalizada**:
-     - Eliminada la doble acumulación de `dt` en [`entities/patrollerAI.lua`](entities/patrollerAI.lua) (donde `e.moveTimer` se sumaba en el loop de `enemies.lua` y volvía a sumarse dentro de `patrollerAI.step`).
-     - Ajustado `ENEMY_PATROLLER_SPEED` de 0.20s a un ritmo táctico balanceado de 0.35s (1.8x en dash).
-  2. **QUÉ — Detección y Colisión Física Continua**:
-     - Eliminada la serpiente de la lista de obstáculos inmóviles en `isBlocked`: el Patroller ya no detecta el cuerpo de la serpiente como un muro sólido contra el cual rebotar preventivamente.
-     - Implementado [`snake.checkEnemyCollisions(s, enemiesList)`](entities/snake.lua) integrado en el tick de `systems/gamestates.lua`: si cualquier enemigo (incluido el Patroller) se desplaza hacia la cabeza o los segmentos 2-3 de la serpiente (o cualquier segmento si la longitud es menor a 5), se activa la colisión letal (o consumo de escudo/armadura). Si el Patroller impacta en los segmentos 4 o posteriores y la serpiente mide $\ge 5$, ejecuta el seccionamiento quirúrgico (*Guillotine Slice*).
-  3. **POR QUÉ**: Resolver que el Patroller se moviera a velocidad descontrolada y que atravesara o esquivara artificialmente a la serpiente sin generar colisión ni peligro.
-  4. **Verificación**: `love .` probado exitosamente con colisiones y corte de cola activos, `error.log` en 0 bytes y suite de pruebas unitarias al 100% en PASS.
+- **Feature** (completed - 2026-08-28 21:27): Renderizado de Textura Procedural 5x5 Píxeles para el Enemigo Patroller (America/Bogota):
+  1. **QUÉ — Textura y Matriz 5x5 "Interceptor Delta"**:
+     - Implementada matriz de diseño $5\times 5$ píxeles en `render/enemiesDraw.lua` (`drawPatroller`), reemplazando el polígono triangular básico previo.
+     - Paleta de color arcade cyberpunk: Blindaje base azul cobalto (`#0077B6`), bisel cian neón (`#00F0FF`), ápice frontal de titanio y núcleo fotónico pulsante blanco/cian a $60\,\text{FPS}$.
+     - Sombra direccional suave 2D bajo el chasis del dron.
+     - Micro-llama de propulsión de plasma dinámica en la parte trasera sincronizada con el movimiento.
+     - Orientación y rotación angular suave continua con base en el vector de avance (`dirX`, `dirY` o `visRot`).
+  2. **QUÉ — Concepto de Asset**:
+     - Generado asset de referencia en `assets/patroller_5x5_concept.jpg`.
+  3. **POR QUÉ**: Mejorar la fidelidad visual pixel-art del enemigo Patroller acorde a la estética general del juego y al diseño de estrellas de espinas del Chaser.
+  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas unitarias ejecutada con 519 tests en PASS.
 
-## 2026-08-29 20:57
+## 2026-08-28 20:55
 
-- **Feature** (completed - 2026-08-29 20:57): Implementación modular de la IA Táctica del Patroller (Interceptor Delta) y Mecánica Guillotine Slice (America/Bogota):
-  1. **QUÉ — Módulo `entities/patrollerAI.lua`**:
-     - Creado submódulo desacoplado de 270 líneas (`entities/patrollerAI.lua`) liberando [`entities/enemies.lua`](entities/enemies.lua) a 623 líneas.
-     - **4 Modos de Patrullaje Contextuales**: `corridor_sweep` (pasillos con bifurcación), `perimeter_orbit` (órbita horaria/antihoraria en salas amplias), `diagonal_bounce` (zigzag reflectivo) y `radar_sentry` (patrulla con pausa de escaneo cada 4 celdas).
-     - **Resolución Inteligente de Esquinas a 90°**: Si la celda frontal está bloqueada, evalúa primero los giros ortogonales libres laterales antes de forzar el retroceso en 180° (anti-deadlock).
-     - **Line-of-Sight Dash (Embestida Turbo)**: Raycast ortogonal a $\le 6$ celdas sin muros intermedios; telegrafiado de 0.25s en estado `alert` con flash fotónico y aceleración 2x (`turbo_dash`) durante 3 celdas con estela de plasma alargada.
-  2. **QUÉ — Seccionamiento Quirúrgico de Cola (Guillotine Slice)**:
-     - En `entities/snake.lua` (`checkPatrollerSlice`): Si el Patroller impacta en segmentos $\ge 4$ y la serpiente mide $\ge 5$, secciona limpiamente la cola.
-     - Desintegración instantánea de segmentos cortados en partículas cinéticas, corte limpio sin frenar al dron, 1.0s de intangibilidad de gracia (`sliceGraceTimer`) y reseteo de combo a x1 en `systems/gamestates.lua` sin tocar la racha de supervivencia.
-  3. **QUÉ — Suite de Pruebas Unitarias**:
-     - Creada suite `tests/test_scope_20_patroller_ai.lua` con cobertura de inicialización de modos, giros a 90°, raycast LOS, ciclo de dash y seccionamiento de cola. Integrada en `tests/main.lua` (100% PASS).
-  4. **POR QUÉ**: Convertir al Patroller en una amenaza táctica militar predecible pero letal en línea recta, reduciendo muertes injustas por colas largas.
-  5. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
-
-## 2026-08-29 20:30
-
-- **Chore** (completed - 2026-08-29 20:30): Higiene de ramas Git en local y remoto (America/Bogota):
-  1. **QUÉ**: Eliminadas las ramas obsoletas/fusionadas `auditoria` y `feature/phase-8-biomes-hazards` tanto a nivel local (`git branch -d`) como en el repositorio remoto `origin` (`git push origin --delete`).
-  2. **POR QUÉ**: Mantener el árbol de ramas limpio, ordenado y libre de ramas integradas conforme a las buenas prácticas de `git-workflow`.
-  3. **Verificación**: `git branch -a` confirmado sin referencias a las ramas eliminadas.
-
-## 2026-08-29 20:25
-
-- **Docs** (completed - 2026-08-29 20:25): Estandarización de Pull Requests detallados en la skill `git-workflow` (America/Bogota):
-  1. **QUÉ**: Actualizado el paso 9 de `git-workflow/SKILL.md` (tanto global en `~/.gemini/config/skills/` como local en `.opencode/skills/`) estableciendo como obligatorio que todo Pull Request generado vía GitHub CLI cuente con título convencional descriptivo, resumen ejecutivo en viñetas, desglose técnico por sistema, tabla de módulos afectados y checklist de Definition of Done (DoD).
-  2. **POR QUÉ**: Asegurar máxima transparencia, trazabilidad y rigor técnico en las revisiones de código y fusiones de ramas en GitHub.
-  3. **Verificación**: Archivos sincronizados en ambos scopes y confirmados en el repositorio.
-
-## 2026-08-29 20:16
-
-- **Config** (completed - 2026-08-29 20:16): Despliegue de la skill `git-workflow` a nivel global (America/Bogota):
-  1. **QUÉ**: Copiado `git-workflow/SKILL.md` hacia `~/.gemini/config/skills/git-workflow/SKILL.md`.
-  2. **POR QUÉ**: Habilitar el flujo disciplinado de ramas, commits atómicos convencionales y gestión de releases en la configuración global del asistente.
-  3. **Verificación**: Archivo verificado y validado en el sistema de archivos de usuario.
-
-## 2026-08-29 20:14
-
-- **Config** (completed - 2026-08-29 20:14): Importación y sincronización de `gemini_skills_backup.zip` (America/Bogota):
-  1. **QUÉ — Extracción y Sincronización**:
-     - Descomprimido el paquete de respaldo `gemini_skills_backup.zip` sincronizando:
-       - **Reglas del proyecto**: `.agents/rules/agent-commands.md`, `.agents/rules/documentation-policy.md`, `AGENTS.gemini.md`.
-       - **Agentes del proyecto**: `.agents/agents/goth-kawaii-frontend/agent.md`, `.agents/agents/kawaii-creative/agent.md`.
-       - **Skills locales**: `.agents/skills/` y `.opencode/skills/` (`git-workflow`, `goth-kawaii-frontend`, `kawaii-creative`, `documentation`).
-       - **Configuración global**: `~/.gemini/config/skills/` (`documentation`, `technical-partner`) y `~/.gemini/config/agents/`.
-  2. **POR QUÉ**: Restaurar y mantener sincronizadas las habilidades y definiciones de agentes en los entornos de trabajo local y global del asistente.
-  3. **Verificación**: Git status validado, tests unitarios en PASS y `error.log` en 0 bytes.
-
-## 2026-08-29 20:12
-
-- **Docs** (completed - 2026-08-29 20:12): Documentación de la mecánica "Seccionamiento Quirúrgico de Cola" (Guillotine Slice) para el Patroller (America/Bogota):
-  1. **QUÉ — Especificación Formal**:
-     - Actualizado [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md) con el *Pilar E: Seccionamiento Quirúrgico de Cola*.
-     - Actualizado [`docs/GDD.md`](GDD.md) (Sección 3: Patroller Interceptor Delta).
-     - Definidas las reglas consensuadas: impacto letal en segmentos 1-3 (cabeza/cuello); corte limpio desde segmento $\ge 4$ si la serpiente mide $\ge 5$; desintegración instantánea de segmentos en partículas metálicas; el Patroller atraviesa sin frenar; 1.0s de intangibilidad de gracia tras el corte; reseteo de combo a x1 sin penalizar *Survival Streak*.
-  2. **POR QUÉ**: Diferenciar la naturaleza del Patroller respecto al Chaser, transformándolo en una cuchilla volante implacable y reduciendo muertes baratas por tener cola larga.
-  3. **Verificación**: Documentación coherente y validada en el repositorio.
-
-## 2026-08-29 20:01
-
-- **Docs** (completed - 2026-08-29 20:01): Documentación técnica y de diseño para la Evolución de la IA del Patroller (America/Bogota):
-  1. **QUÉ — Diagnóstico y Especificación**:
-     - Creado [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md) con el diagnóstico del estado actual (bloque monolítico en `enemies.lua`, atascos 1D y falta de reactividad).
-     - Definidos 4 modos de patrullaje contextuales por sala (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
-     - Especificada la resolución de esquinas a 90° con anti-deadlock antes de forzar retroceso 180°.
-     - Diseñado el sistema de intercepción reactiva por línea de visión (*Line-of-Sight Dash*) con telegrafiado fotónico y aceleración de plasma.
-     - Actualizado [`docs/GDD.md`](GDD.md) (Sección 3: Patroller Interceptor Delta) y [`docs/TODO.md`](TODO.md).
-  2. **POR QUÉ**: Formalizar las decisiones de diseño y la arquitectura modular desacoplada (`entities/patrollerAI.lua`) antes de la fase de implementación.
-  3. **Verificación**: Documentación coherente y validada sin impacto negativo en el código actual.
-
-## 2026-08-29 19:31
-
-- **Fix** (completed - 2026-08-29 19:31): Corrección de referencia nula a `EYE_DARK` en `render/enemiesDraw.lua` (America/Bogota):
-  1. **QUÉ**: Se reincorporaron las constantes cromáticas locales `AMBER`, `EYE_DARK` y `WARM_WHITE` en la cabecera de `render/enemiesDraw.lua` que habían sido accidentalmente omitidas durante la integración del sprite de Chaser.
-  2. **POR QUÉ**: Al renderizar la pupila del ojo central en `drawChaser`, `EYE_DARK` se evaluaba como `nil`, interrumpiendo el ciclo de dibujo.
-  3. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
-
-## 2026-08-29 19:28
-
-- **Feature** (completed - 2026-08-29 19:28): Sprite e importación de Shuriken Plasma Hyper 7x7 para el Chaser (America/Bogota):
-  1. **QUÉ — Sprite PNG 7x7**:
-     - Generado el asset `assets/chaser_shuriken.png` (7x7 píxeles RGBA) basado en la derivada #01 del diseño "Plasma Hyper Base" (haces lineales de plasma carmesí neón con núcleo de contención).
-  2. **QUÉ — Render Pipeline & Desacoplamiento Giroscópico**:
-     - En `render/enemiesDraw.lua` (`drawChaser`): Carga segura con `pcall(love.graphics.newImage, ...)` y filtro `nearest`.
-     - Las aspas del shuriken giran activamente a 60 FPS con velocidad dinámica modulada por el estado de la IA social (`IDLE` lento, `ENCIRCLE` acelerado, `CIERRE` a 16 rad/s).
-     - El ojo central y su pupila permanecen estabilizados desacoplados de la rotación de las aspas, rastreando a la serpiente en tiempo real con pupilas de rendija en rol `flanker` y párpado en `IDLE`.
-     - Preservadas auras ámbar/blanca, promoción de líder de manada y advertencia de embestida.
-  3. **POR QUÉ**: Proporcionar fidelidad pixel-art superior al Chaser combinando el impacto visual del shuriken rotatorio con el seguimiento ocular de la IA social.
-  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
-
-## 2026-08-29 19:00
-
-- **Fix** (completed - 2026-08-29 19:00): Eliminado fondo rectangular oscuro debajo del Patroller (America/Bogota):
-  1. **QUÉ**: En `render/enemiesDraw.lua` (`drawPatroller`), se removió la caja de sombra cuadrada pre-renderizada (`rectangle("fill", ...)`), dejando el sprite `assets/patroller_delta.png` transparente y limpio sobre la cuadrícula del juego.
-  2. **POR QUÉ**: El rectángulo negro de 5x5 provocaba artefactos oscuros y manchas visibles en las esquinas transparentes del dron durante sus rotaciones y giros.
-  3. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
-
-## 2026-08-29 18:41
-
-- **Feature** (completed - 2026-08-29 18:41): Importación y renderizado de sprite rasterizado `patroller_delta.png` para el Patroller (America/Bogota):
-  1. **QUÉ — Asset Sprite PNG**:
-     - Generado el archivo de sprite rasterizado de 5x5 píxeles en `assets/patroller_delta.png` con transparencia RGBA exacta del diseño #01 "Interceptor Delta".
-  2. **QUÉ — Integración en Render Pipeline**:
-     - En `render/enemiesDraw.lua`: Implementado cargador seguro con `pcall(love.graphics.newImage, "assets/patroller_delta.png")` y filtro `nearest` para nitidez pixel-art.
-     - Renderizado del sprite alineado con el origen de rotación y movimiento, complementado con sombra proyectada 2D, pulso lumínico del núcleo y micro-llama de propulsión de plasma.
-     - Mantenido fallback procedural determinista en caso de ausencia de archivo.
-  3. **POR QUÉ**: Proporcionar fidelidad pixel-art exacta e integrar el diseño aprobado del Patroller en el pipeline de assets del juego.
-  4. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes) y suite de pruebas unitarias en PASS.
+- **Feature** (completed - 2026-08-28 20:55): Implementación de Fase 8 — Biomas de Mazmorra y Peligros Ambientales (America/Bogota):
+  1. **QUÉ — Biomas y Mecánicas de Terreno**:
+     - **Stage 1 (Catacumbas de Piedra)**: Muros clásicos, desplazamiento estándar con wall-wrap activo.
+     - **Stage 2 (Cripta Helada)**: Losetas de hielo (`isIce=true`, `slip=1`) con inercia de patinaje al girar y partículas de escarcha (`particles.iceSlip`).
+     - **Stage 3 (Caverna Volcánica)**: Fisuras de magma con ciclo de estados autónomo (`cooldown` 2.5s $\to$ `telegraph/warning` 1.2s $\to$ `active` 1.5s mortal con daño ígneo), partículas de brasas flotantes (`particles.magmaEmbers`).
+     - **Stage 4 (Colmena Tóxica)**: Charcos de baba ácida viscosa (`isSlime=true`, `slowFactor=0.80`, penalización de -20% en velocidad de paso), partículas de burbujas ácidas (`particles.toxicBubbles`).
+     - **Stage 5 (Santuario del Vacío)**: Abismo cósmico sin wall-wrap (`wallWrap=false`, bordes mortales de caída libre), trampas de placas de presión (`pressure_spike`: `idle` $\to$ `warning` 0.5s al pisar $\to$ `extended` 1.2s letal $\to$ `retracting` 0.4s), advertencia visual perimetral de vacío neón en HUD/grid, partículas cósmicas (`particles.voidDust`).
+  2. **QUÉ — Generación de Assets 16-bit Cyberpunk**:
+     - Generadas hojas de sprites e imágenes conceptuales de tilesets retro para cada bioma (`biome_frozen_crypt_tiles`, `biome_volcanic_tiles`, `biome_toxic_tiles`, `biome_void_tiles`, `hazard_sprites`) alojadas en `assets/`.
+  3. **QUÉ — Pulido de Interfaz y Corrección de Glitches**:
+     - Corregido salto de línea en el botón "Restablecer" del panel de ajustes.
+     - Ajustado espaciado horizontal de etiquetas y barras deslizantes ("Volumen Maestro", "Escala UI").
+     - Reemplazados glifos Unicode ausentes en la fuente `PressStart2P` por dibujo procedural nativo de checks en switches.
+  4. **QUÉ — Suite de Pruebas Unitarias**:
+     - Creado archivo de pruebas unitarias `tests/test_scope_19_biomes_hazards.lua` con cobertura completa para definiciones de biomas, máquinas de estados de fisuras de magma y trampas de presión, consultas de letalidad (`isHazardLethal`), modificadores de terreno (`getTileModifier`) y generadores de partículas.
+  5. **POR QUÉ**: Completar la Fase 8 del GDD proporcionando variedad táctica profunda, peligro ambiental dinámico y ambientación visual cyberpunk arcade única en cada etapa de la mazmorra.
+  6. **Verificación**: `love .` ejecutado sin errores (`error.log` 0 bytes); suite de pruebas `lovec tests --console` ejecutada con 519/534 tests pasando (todas las suites de biomas y obstáculos en PASS).
 
 ## 2026-08-27 19:02
 
