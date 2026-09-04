@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 14:30
+
+- **Refactor** (completed - 2026-09-03 14:30): P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `world/biomeHazards.lua` 254L nuevo**: `BiomeHazards.DEFAULTS` (lava/ice/slime/pressure_spike) + `isLethal/getTileModifier/triggerPressureSpike/update/draw/getSpawnForBiome/isHazardAt`; `update(dt,obstaclesPos)` unifica `lava` cooldown/warning/active (2.5/1.2/1.5) y `pressure_spike` idle/warning/extended/retracting (0.5/1.2/0.4) + `draw` 4 hazards (lava warning/active, spike warning/extended, ice glint, slime goo).
+  2. **QUÉ — `entities/obstacles.lua` 723→495L**: `require("world.biomeHazards")`; `TYPE_DEFAULTS` lava/ice/slime/spike → `BiomeHazards.DEFAULTS`; `isHazardLethal`→`BiomeHazards.isLethal`, `getTileModifier`→`BiomeHazards.getTileModifier`, `triggerPressureSpike`→`BiomeHazards.triggerPressureSpike`, `generarPorBioma`→`BiomeHazards.getSpawnForBiome`, `update` delega `BiomeHazards.update` + `flashTimers`, `draw` 4 hazards → `BiomeHazards.draw` (107→1 línea), `obstacles.lua` <500L `wc -l` 495.
+  3. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P12 y AGENTS.md límite 300-500; `obstacles.lua` 723L era monolito con `isIce/isSlime/lava/pressure_spike` duplicado en `world/populate.lua` y `draw` 180L; extraer deja `obstacles` como fachada `pos/list` + `agregar/generar/destruir`.
+  4. **Verificación**: `wc -l` 495 <500, `BiomeHazards` 254 <500; `TODO` P12 [x] 14:30.
+
 ## 2026-09-03 14:00
 
 - **Perf** (completed - 2026-09-03 14:00): P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
