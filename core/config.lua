@@ -312,4 +312,8 @@ config.BIOMES = {
     }
 }
 
+config.ENABLE_VORONOI = false
+config.VORONOI_SCALE = 8.0
+config.REFLECTION_SCALE = 0.5
+
 return config

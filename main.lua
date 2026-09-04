@@ -19,6 +19,10 @@ local renderMain = require('render.renderMain')
 local touch = require('core.touch')
 local achievementsMod = require('systems.achievements')
 
+local FIXED_DT = 1 / 60
+local accumulator = 0
+local MAX_ACCUMULATOR = 0.25
+
 -- pending achievements queue (global) - populated by achievementsMod
 world.state.pendingAchievements = world.state.pendingAchievements or {}
 -- scheduled toast system: delayed, overlay-aware
@@ -144,8 +148,13 @@ function love.load()
 end
 
 function love.update(dt)
-    dt = dt * (world.state.timeScale or 1)
-    states.update(dt)
+    local scaled = dt * (world.state.timeScale or 1)
+    accumulator = accumulator + scaled
+    if accumulator > MAX_ACCUMULATOR then accumulator = MAX_ACCUMULATOR end
+    while accumulator >= FIXED_DT do
+        states.update(FIXED_DT)
+        accumulator = accumulator - FIXED_DT
+    end
 
     -- Screenshot suite automation
     if world.state.screenshotSuite then
