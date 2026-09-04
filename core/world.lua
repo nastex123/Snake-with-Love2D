@@ -306,4 +306,64 @@ function World.clearListeners(key)
     end
 end
 
+World.DEBUG = false
+World.SCHEMA = {
+    puntuacion = "number",
+    monedas = "number",
+    comboCount = "number",
+    gameState = "number",
+    fadeDir = "number",
+    fadeAlpha = "number",
+    time = "number",
+    introTimer = "number",
+    shakeTimer = "number",
+    comboFlashTimer = "number",
+    debugImmune = "boolean",
+    debugMenuOpen = "boolean",
+    ["shop.shieldActive"] = "boolean",
+    ["shop.magnetTimer"] = "number",
+    ["shop.ghostActive"] = "boolean",
+    ["enemies.list"] = "table",
+    ["enemies.boss"] = "table",
+}
+
+function World.enableDebug()
+    World.DEBUG = true
+end
+
+function World.disableDebug()
+    World.DEBUG = false
+end
+
+function World.validate()
+    local ok = true
+    local errors = {}
+    for key, expected in pairs(World.SCHEMA) do
+        local val = World.get(key, nil)
+        if val ~= nil and type(val) ~= expected then
+            ok = false
+            table.insert(errors, string.format("World.validate: %s expected %s got %s", key, expected, type(val)))
+            if World.DEBUG and Log and Log.error then Log.error(errors[#errors]) end
+            if World.DEBUG then assert(type(val) == expected, errors[#errors]) end
+        end
+    end
+    if World.DEBUG and #errors > 0 then
+        return false, table.concat(errors, "; ")
+    end
+    return ok
+end
+
+local _origSet = World.set
+function World.set(key, val)
+    if World.DEBUG and World.SCHEMA and World.SCHEMA[key] then
+        local expected = World.SCHEMA[key]
+        if val ~= nil and type(val) ~= expected then
+            local msg = string.format("World.set type mismatch %s: expected %s got %s", key, expected, type(val))
+            if Log and Log.warn then Log.warn(msg) end
+            assert(type(val) == expected, msg)
+        end
+    end
+    return _origSet(key, val)
+end
+
 return World

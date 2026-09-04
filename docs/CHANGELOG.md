@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 15:00
+
+- **Chore** (completed - 2026-09-03 15:00): P13 — Contrato API `World.state` + `World.validate()` debug (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `core/world.lua` 309→380L**: `World.DEBUG=false` + `World.SCHEMA` 12 keys (`puntuacion/monedas/comboCount/gameState/fadeDir/fadeAlpha/time/introTimer/shakeTimer/comboFlashTimer/debugImmune` + `shop.shieldActive/magnetTimer` + `enemies.list/boss`) + `World.validate()` itera SCHEMA vía `World.get` y `assert` si `DEBUG` con `Log.error`, `World.enableDebug/disableDebug`, `World.set` wrapper con `assert` tipo si `DEBUG` y `SCHEMA[key]` existe; `main.lua` `love.load` `if World.DEBUG then pcall(World.validate)` con `Log.error`.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P13 y AGENTS.md `World.validate` debug; `World.set` sin contrato permitía `shop.shieldActive="bad"` string y `World.state` corrupto; `validate` en `love.load` detecta desincronización tras `World.reset` y prepara `Phase 9` `fixed timestep`.
+  3. **Verificación**: `World.DEBUG` false no aserta (`test_scope_05_world` PASS), `World.enableDebug()` + `World.set("monedas","bad")` aserta; `TODO` P13 [x] 15:00.
+
 ## 2026-09-03 14:30
 
 - **Refactor** (completed - 2026-09-03 14:30): P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
