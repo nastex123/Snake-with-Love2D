@@ -137,7 +137,7 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 
 ### Fase 3 — Resiliencia (RECOMENDADO + OPCIONAL)
 
-- [ ] **P09 — Escritura atómica `profiles.dat` + `schema_version`** (`profiles.dat.tmp` + `os.rename` + `.bak`, `pcall` + validación, `schema_version=2`) — Branch: `fix/persistence-atomic` — Verifica: corte simulado, `test_scope_15_shopPersistence` corrupción PASS
+- [x] **P09 — Escritura atómica `profiles.dat` + `schema_version`** (`profiles.dat.tmp` + `os.rename` + `.bak`, `pcall` + validación, `schema_version=2`) — Branch: `chore/phase3-resiliencia` (P09) — **Completado 2026-09-03 13:00 America/Bogota (consola-only)**: `systems/persistence.lua` `atomicWrite(path,data)` escribe `tmp` vía `love.filesystem.write` + `os.rename` con `getSaveDirectory` y `.bak` fallback a `love.filesystem` (VFS compatible), `saveProfiles` valida `lua_decode` antes de escribir y setea `schema_version=2`/`version=2`, `initProfiles` intenta `profiles.dat` luego `.bak` y restaura vía `atomicWrite`, migra `schema_version<2` → `2`, `love tests` VFS `__clearVFS` compat, `error.log` 0
 - [ ] **P10 — Split `tests/test_systems.lua` 1135 → 3 suites + smoke headless** (`test_gamestates`, `test_shop`, `smoke.lua` `love . --test`) — Branch: `chore/tests-split` — Verifica: `love tests` <1.0s, 3 ficheros <400L
 - [ ] **P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns`** (32/64 tablas pre-alocadas con `active` flag; iteración sin `table.insert/remove` en loop) — Branch: `perf/pools-attacks` — Verifica: `collectgarbage("count")` estable
 - [ ] **P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua`** (`obstacles.lua` 723→~380L; `BiomeHazards.update(dt)` unifica `isIce/isSlime/lava/pressure_spike`) — Branch: `refactor/biome-hazards` — Verifica: `obstacles.lua` <500L
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-03 12:30 (P07 Input centralizado + P08 Asset Manager — Input.isHeld/KEYBINDS, Assets.getFont/getCanvas, Zero-GC)
+*Last updated: 2026-09-03 13:00 (P09 escritura atómica profiles.dat + schema_version=2 — tmp+rename+bak, VFS fallback)

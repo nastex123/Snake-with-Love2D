@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 13:00
+
+- **Fix** (completed - 2026-09-03 13:00): P09 — Escritura atómica `profiles.dat` + `schema_version=2` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `systems/persistence.lua` `atomicWrite(path,data)`**: escribe `path.tmp` vía `love.filesystem.write` + `pcall`, verifica `getInfo(tmp)`, intenta `os.rename` con `getSaveDirectory()` (`fullPath`/`fullBak`/`fullTmp`) y `.bak` backup del original, fallback a `love.filesystem` copy + `remove(tmp)` para VFS tests (`test_harness` `__clearVFS`); `saveProfiles` setea `schema_version=2`/`version=2` antes de `lua_encode`, valida `lua_decode` antes de escribir y usa `atomicWrite` con `createDirectory` fallback.
+  2. **QUÉ — `initProfiles` resiliente**: `tryLoad(path)` helper pcall `read`+`decode`; intenta `profiles.dat` luego `profiles.dat.bak` y restaura vía `atomicWrite`; migra `schema_version<2` → `2`; sanitiza `profiles`/`monedas`/`stats` igual que antes; crea nuevo con `schema_version=2` si ambos fallan (corrupción total).
+  3. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P09 y GDD §21.4 `escritura atómica`; `love.filesystem.write` directo a `profiles.dat` corría riesgo de corrupción en corte de energía (0 bytes), sin `schema_version` no había migración.
+  4. **Verificación**: `atomicWrite` compatible VFS (`test_scope_15` `__clearVFS` + `love.filesystem.write` mock), `test_scope_15` suites 6-10 `createProfile`/`syncActiveProfile` + corrupt `BAD LUA` recovery simula corte y restaura desde `.bak` (si existe); `TODO` P09 [x] 13:00, `error.log` 0.
+
 ## 2026-09-03 12:30
 
 - **Refactor** (completed - 2026-09-03 12:30): P07+P08 — Input centralizado + Asset Manager (America/Bogota, consola-only, guiado):

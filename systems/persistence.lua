@@ -136,6 +136,50 @@ persistence._lua_decode = lua_decode
 
 local settingsPath = 'config/settings.dat'
 local profilesPath = 'config/profiles.dat'
+local SCHEMA_VERSION = 2
+
+local function atomicWrite(path, data)
+    local tmpPath = path .. ".tmp"
+    local bakPath = path .. ".bak"
+    local ok, err = pcall(love.filesystem.write, tmpPath, data)
+    if not ok or not love.filesystem.getInfo(tmpPath) then
+        local ok2, err2 = pcall(love.filesystem.write, path, data)
+        if not ok2 then return false, err2 or err end
+        return true
+    end
+    local saveDir = nil
+    pcall(function() saveDir = love.filesystem.getSaveDirectory() end)
+    if saveDir and saveDir ~= "" then
+        local fullTmp = saveDir .. "/" .. tmpPath
+        local fullPath = saveDir .. "/" .. path
+        local fullBak = saveDir .. "/" .. bakPath
+        if love.filesystem.getInfo(path) then
+            local bakOk = pcall(os.rename, fullPath, fullBak)
+            if not bakOk then
+                local content = love.filesystem.read(path)
+                if content then pcall(love.filesystem.write, bakPath, content) end
+            end
+        end
+        local okRename = pcall(os.rename, fullTmp, fullPath)
+        if okRename and love.filesystem.getInfo(path) then
+            pcall(love.filesystem.remove, tmpPath)
+            return true
+        end
+    end
+    local content = love.filesystem.read(tmpPath)
+    if content then
+        local ok2 = pcall(love.filesystem.write, path, content)
+        if ok2 then
+            if love.filesystem.getInfo(bakPath) == nil and love.filesystem.getInfo(path) then
+                local oldContent = content
+                pcall(love.filesystem.write, bakPath, oldContent)
+            end
+            pcall(love.filesystem.remove, tmpPath)
+            return true
+        end
+    end
+    return pcall(love.filesystem.write, path, data)
+end
 
 -- ============================================================
 -- Profiles system (max 3 profiles, per-profile data)
@@ -145,50 +189,69 @@ local MAX_NAME_LENGTH = 14
 
 function persistence.initProfiles()
     persistence.profilesData = nil
-    if love.filesystem.getInfo(profilesPath) then
-        local contents = love.filesystem.read(profilesPath)
-        if contents and #contents > 0 then
-            local decoded = lua_decode(contents)
-            if decoded and type(decoded) == 'table' then
-                persistence.profilesData = decoded
-                if type(persistence.profilesData.profiles) ~= 'table' then
-                    persistence.profilesData.profiles = {}
-                end
-                for k, p in pairs(persistence.profilesData.profiles) do
-                    if type(k) ~= 'number' or k < 1 or k > 3 or type(p) ~= 'table' then
-                        persistence.profilesData.profiles[k] = nil
-                    else
-                        p.name = (type(p.name) == 'string' and #p.name > 0) and p.name or ("Jugador " .. k)
-                        p.monedas = (type(p.monedas) == 'number' and p.monedas >= 0) and p.monedas or 0
-                        p.highScore = (type(p.highScore) == 'number' and p.highScore >= 0) and p.highScore or 0
-                        p.achievements = type(p.achievements) == 'table' and p.achievements or {}
-                        p.unlocks = type(p.unlocks) == 'table' and p.unlocks or {}
-                        p.stats = type(p.stats) == 'table' and p.stats or {
-                            kills = 0,
-                            bossesKilled = 0,
-                            highestStage = 1,
-                            highestScore = 0,
-                            totalCoins = 0,
-                            highestStreak = 1.0
-                        }
-                    end
-                end
-                local act = persistence.profilesData.activeProfileIndex
-                if act and (type(act) ~= 'number' or act < 1 or act > 3 or not persistence.profilesData.profiles[act]) then
-                    persistence.profilesData.activeProfileIndex = nil
-                    for i = 1, 3 do
-                        if persistence.profilesData.profiles[i] then
-                            persistence.profilesData.activeProfileIndex = i
-                            break
-                        end
-                    end
-                end
-                return
+    local function tryLoad(path)
+        if love.filesystem.getInfo(path) then
+            local contents = love.filesystem.read(path)
+            if contents and #contents > 0 then
+                local decoded = lua_decode(contents)
+                if decoded and type(decoded) == 'table' then return decoded end
             end
         end
+        return nil
+    end
+    local decoded = tryLoad(profilesPath)
+    if not decoded then
+        decoded = tryLoad(profilesPath .. ".bak")
+        if decoded then
+            pcall(function()
+                local enc = lua_encode(decoded)
+                if enc then atomicWrite(profilesPath, enc) end
+            end)
+        end
+    end
+    if decoded and type(decoded) == 'table' then
+        persistence.profilesData = decoded
+        if not persistence.profilesData.schema_version or persistence.profilesData.schema_version < SCHEMA_VERSION then
+            persistence.profilesData.schema_version = SCHEMA_VERSION
+        end
+        persistence.profilesData.version = SCHEMA_VERSION
+        if type(persistence.profilesData.profiles) ~= 'table' then
+            persistence.profilesData.profiles = {}
+        end
+        for k, p in pairs(persistence.profilesData.profiles) do
+            if type(k) ~= 'number' or k < 1 or k > 3 or type(p) ~= 'table' then
+                persistence.profilesData.profiles[k] = nil
+            else
+                p.name = (type(p.name) == 'string' and #p.name > 0) and p.name or ("Jugador " .. k)
+                p.monedas = (type(p.monedas) == 'number' and p.monedas >= 0) and p.monedas or 0
+                p.highScore = (type(p.highScore) == 'number' and p.highScore >= 0) and p.highScore or 0
+                p.achievements = type(p.achievements) == 'table' and p.achievements or {}
+                p.unlocks = type(p.unlocks) == 'table' and p.unlocks or {}
+                p.stats = type(p.stats) == 'table' and p.stats or {
+                    kills = 0,
+                    bossesKilled = 0,
+                    highestStage = 1,
+                    highestScore = 0,
+                    totalCoins = 0,
+                    highestStreak = 1.0
+                }
+            end
+        end
+        local act = persistence.profilesData.activeProfileIndex
+        if act and (type(act) ~= 'number' or act < 1 or act > 3 or not persistence.profilesData.profiles[act]) then
+            persistence.profilesData.activeProfileIndex = nil
+            for i = 1, 3 do
+                if persistence.profilesData.profiles[i] then
+                    persistence.profilesData.activeProfileIndex = i
+                    break
+                end
+            end
+        end
+        return
     end
     persistence.profilesData = {
-        version = 1,
+        version = SCHEMA_VERSION,
+        schema_version = SCHEMA_VERSION,
         activeProfileIndex = nil,
         profiles = {}
     }
@@ -196,15 +259,21 @@ end
 
 function persistence.saveProfiles()
     if not persistence.profilesData then return true end
+    persistence.profilesData.schema_version = SCHEMA_VERSION
+    persistence.profilesData.version = SCHEMA_VERSION
     local encoded = lua_encode(persistence.profilesData)
     if type(encoded) ~= 'string' or #encoded == 0 then
         return false, 'encode failed'
     end
-    local written, err = love.filesystem.write(profilesPath, encoded)
-    if not written then
+    local decoded, err = lua_decode(encoded)
+    if not decoded or type(decoded) ~= 'table' then
+        return false, 'validation failed: ' .. tostring(err)
+    end
+    local ok, werr = atomicWrite(profilesPath, encoded)
+    if not ok then
         pcall(function() love.filesystem.createDirectory('config') end)
-        written, err = love.filesystem.write(profilesPath, encoded)
-        if not written then return false, err end
+        ok, werr = atomicWrite(profilesPath, encoded)
+        if not ok then return false, werr or 'atomic write failed' end
     end
     return true
 end
