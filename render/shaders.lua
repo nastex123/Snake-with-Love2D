@@ -187,6 +187,40 @@ vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
 }
 ]]
 
+local SRC_VORONOI = [[
+extern vec2 resolution;
+extern float time;
+extern float scale;
+extern float progress;
+vec2 hash2(vec2 p) {
+    p = vec2(dot(p, vec2(127.1, 311.7)), dot(p, vec2(269.5, 183.3)));
+    return -1.0 + 2.0 * fract(sin(p) * 43758.5453123);
+}
+float voronoi(vec2 x) {
+    vec2 n = floor(x);
+    vec2 f = fract(x);
+    float minDist = 8.0;
+    for (int j = -1; j <= 1; j++) {
+        for (int i = -1; i <= 1; i++) {
+            vec2 g = vec2(float(i), float(j));
+            vec2 o = hash2(n + g);
+            vec2 r = g + o - f;
+            float d = dot(r, r);
+            minDist = min(minDist, d);
+        }
+    }
+    return sqrt(minDist);
+}
+vec4 effect(vec4 color, Image tex, vec2 uv, vec2 sc) {
+    if (progress <= 0.01) return Texel(tex, uv) * color;
+    float v = voronoi(uv * scale);
+    float crack = smoothstep(0.0, 0.15, v) * progress;
+    vec4 base = Texel(tex, uv);
+    vec3 tint = mix(vec3(1.0), vec3(0.9, 0.2, 0.3), crack * 0.4);
+    return vec4(base.rgb * tint, base.a) * color;
+}
+]]
+
 -- ============================================================
 -- Balatro background: domain warping + spiral (original style)
 -- ============================================================
@@ -236,9 +270,9 @@ vec4 effect( vec4 colour, Image texture, vec2 texture_coords, vec2 screen_coords
 }
 ]]
 
-local canvasScene, canvasGlow, canvasGlowLow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal, canvasPost
-local shCRT, shBlurH, shBlurV, shShadow, shHeat, shBalatro, shColorblind
-local W, H, BW, BH
+local canvasScene, canvasGlow, canvasGlowLow, canvasBlurH, canvasBlurV, canvasShadow, canvasShadowBlur, canvasFinal, canvasPost, canvasReflection
+local shCRT, shBlurH, shBlurV, shShadow, shHeat, shBalatro, shColorblind, shVoronoi
+local W, H, BW, BH, RW, RH
 
 -- Estado de efectos (feedback de daño): decae en shaders.update(dt)
 local fx = {
@@ -278,10 +312,12 @@ function shaders.releaseCanvases()
     releaseCanvas(canvasShadowBlur)
     releaseCanvas(canvasFinal)
     releaseCanvas(canvasPost)
+    releaseCanvas(canvasReflection)
     canvasScene, canvasGlow, canvasGlowLow = nil, nil, nil
     canvasBlurH, canvasBlurV = nil, nil
     canvasShadow, canvasShadowBlur = nil, nil
     canvasFinal, canvasPost = nil, nil
+    canvasReflection = nil
 end
 
 function shaders.getCanvases()
@@ -294,7 +330,8 @@ function shaders.getCanvases()
         shadow = canvasShadow,
         shadowBlur = canvasShadowBlur,
         final = canvasFinal,
-        post = canvasPost
+        post = canvasPost,
+        reflection = canvasReflection
     }
 end
 
@@ -306,7 +343,8 @@ function shaders.getShaders()
         shadow = shShadow,
         heat = shHeat,
         balatro = shBalatro,
-        colorblind = shColorblind
+        colorblind = shColorblind,
+        voronoi = shVoronoi
     }
 end
 
@@ -325,6 +363,9 @@ function shaders.load()
     H = love.graphics.getHeight()
     BW = math.max(1, math.floor(W / 2))
     BH = math.max(1, math.floor(H / 2))
+    local refScale = constants.REFLECTION_SCALE or 0.5
+    RW = math.max(1, math.floor(W * refScale))
+    RH = math.max(1, math.floor(H * refScale))
 
     shCRT    = tryShader(SRC_CRT)
     shBlurH  = tryShader(SRC_BLUR_H_FIXED)
@@ -333,6 +374,7 @@ function shaders.load()
     shHeat   = tryShader(SRC_HEAT)
     shBalatro = tryShader(SRC_BALATRO_BG)
     shColorblind = tryShader(SRC_COLORBLIND)
+    shVoronoi = (constants.ENABLE_VORONOI and tryShader(SRC_VORONOI)) or nil
 
     local function newC()
         local c = love.graphics.newCanvas(W, H)
@@ -348,6 +390,12 @@ function shaders.load()
         return c
     end
 
+    local function newCRef()
+        local c = love.graphics.newCanvas(RW, RH)
+        c:setFilter("linear", "linear")
+        return c
+    end
+
     canvasScene       = newC()
     canvasGlow        = newC()
     canvasGlowLow     = newCLow()
@@ -357,6 +405,7 @@ function shaders.load()
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
     canvasPost        = newC()
+    canvasReflection  = newCRef()
 end
 
 function shaders.setFilter(filter)
@@ -370,6 +419,7 @@ function shaders.setFilter(filter)
     if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter(f, f) end) end
     if canvasFinal and canvasFinal.setFilter then pcall(function() canvasFinal:setFilter(f, f) end) end
     if canvasPost and canvasPost.setFilter then pcall(function() canvasPost:setFilter(f, f) end) end
+    if canvasReflection and canvasReflection.setFilter then pcall(function() canvasReflection:setFilter("linear", "linear") end) end
 end
 
 function shaders.needsRecreate(oldG, newG)
@@ -397,6 +447,9 @@ function shaders.recreateCanvases(pixelScale, filter)
     H = love.graphics.getHeight()
     BW = math.max(1, math.floor(W / 2))
     BH = math.max(1, math.floor(H / 2))
+    local refScale = constants.REFLECTION_SCALE or 0.5
+    RW = math.max(1, math.floor(W * refScale))
+    RH = math.max(1, math.floor(H * refScale))
     local function newC()
         local c = love.graphics.newCanvas(W, H)
         c:setFilter(f, f)
@@ -404,6 +457,11 @@ function shaders.recreateCanvases(pixelScale, filter)
     end
     local function newCLow()
         local c = love.graphics.newCanvas(BW, BH)
+        c:setFilter("linear", "linear")
+        return c
+    end
+    local function newCRef()
+        local c = love.graphics.newCanvas(RW, RH)
         c:setFilter("linear", "linear")
         return c
     end
@@ -416,6 +474,10 @@ function shaders.recreateCanvases(pixelScale, filter)
     canvasShadowBlur  = newC()
     canvasFinal       = newC()
     canvasPost        = newC()
+    canvasReflection  = newCRef()
+    if shVoronoi == nil and constants.ENABLE_VORONOI then
+        shVoronoi = tryShader(SRC_VORONOI)
+    end
 end
 
 function shaders.beginScene(br, bg, bb)

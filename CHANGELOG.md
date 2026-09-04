@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 16:00
+
+- **Perf** (completed - 2026-09-04 16:00): P14+P15 — Fixed timestep 60Hz + Voronoi hook (America/Bogota, consola-only, rama `feat/phase9-prep`):
+  1. **QUÉ — P14 `main.lua:146` fixed timestep**: `FIXED_DT=1/60` + `accumulator` + `MAX_ACCUMULATOR=0.25` + `while accumulator>=FIXED_DT do states.update(FIXED_DT) end` desacoplado de Hz, `world.state.time` avanza `FIXED_DT` por tick, `love.draw` con `getDelta` variable pero lógica fija 60Hz, test `collectgarbage` 3600 frames Δ0KB.
+  2. **QUÉ — P15 `core/config.lua:315` + `render/shaders.lua:190`**: `ENABLE_VORONOI=false` + `VORONOI_SCALE=8` + `REFLECTION_SCALE=0.5`, `SRC_VORONOI` (hash2+voronoi+progress), `canvasReflection` `RW=W*0.5` `RH=H*0.5` half-res + `shVoronoi` tryShader solo si `ENABLE_VORONOI`, `getCanvases/getShaders` incluyen `reflection/voronoi`, `releaseCanvases/setFilter/recreateCanvases` manejan `canvasReflection` 0 costo si flag off.
+  3. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` Futuro P14/P15 y GDD §21.4 `fixed timestep` + `Voronoi`; `dt` variable causaba desync a 144Hz y `Voronoi` no tenía hook; fixed timestep deja `World.validate` y `collectgarbage` estable para `Phase 9`.
+  4. **Verificación**: `TODO` P14+P15 [x] 16:00, `error.log` 0, `wc -l` `main.lua` 532, `shaders.lua` 639.
+
 ## 2026-09-04 15:50
 
 - **Fix** (completed - 2026-09-04 15:50): Circular `core.touch` ↔ `core.input` — `render/renderMain.lua:17` loop (America/Bogota, consola-only):

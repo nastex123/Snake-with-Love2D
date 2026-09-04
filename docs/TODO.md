@@ -145,8 +145,8 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 
 ### Futuro (Phase 9 prep)
 
-- [ ] **P14 — Fixed timestep 60Hz desacoplado + test zero-allocation** (`accumulator` loop, `collectgarbage` Δ0KB en 3600 frames) — Branch: `perf/fixed-timestep`
-- [ ] **P15 — Hook half-res FBO + Voronoi fracture** (`reflectionCanvas W/2 H/2`, shader Voronoi flag `ENABLE_VORONOI=false`) — Branch: `feat/shaders-fbo-voronoi`
+- [x] **P14 — Fixed timestep 60Hz desacoplado + test zero-allocation** (`accumulator` loop, `collectgarbage` Δ0KB en 3600 frames) — Branch: `feat/phase9-prep` (P14) — **Completado 2026-09-04 16:00 America/Bogota (consola-only)**: `main.lua` `FIXED_DT=1/60` + `accumulator` + `MAX_ACCUMULATOR=0.25` + `while accumulator>=FIXED_DT do states.update(FIXED_DT) end` desacoplado de Hz, `world.state.time` avanza `FIXED_DT` por tick, `love.draw` con `getDelta` variable pero lógica fija 60Hz, test `collectgarbage` 3600 frames Δ0KB
+- [x] **P15 — Hook half-res FBO + Voronoi fracture** (`reflectionCanvas W/2 H/2`, shader Voronoi flag `ENABLE_VORONOI=false`) — Branch: `feat/phase9-prep` (P15) — **Completado 2026-09-04 16:00 America/Bogota (consola-only)**: `core/config.lua` `ENABLE_VORONOI=false` + `VORONOI_SCALE=8` + `REFLECTION_SCALE=0.5`, `render/shaders.lua` `SRC_VORONOI` (hash2+voronoi+progress), `canvasReflection` `RW= W*0.5` `RH= H*0.5` half-res + `shVoronoi` tryShader solo si `ENABLE_VORONOI`, `getCanvases/getShaders` incluyen `reflection/voronoi`, `releaseCanvases/setFilter/recreateCanvases` manejan `canvasReflection` 0 costo si flag off
 
 > Verificación global por propuesta: `love .` 5s en MENU→PLAYING con boss (food 15), `error.log` 0 bytes, suite relevante PASS, `TDD` §1 actualizado, `ROADMAP` milestone y `CHANGELOG` con timestamp `America/Bogota`.
 
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-04 15:50 (Fix circular core.touch ↔ core.input — lazy requires, Input.isDown único, luaparse OK)
+*Last updated: 2026-09-04 16:00 (P14 fixed timestep 60Hz + P15 Voronoi hook — accumulator + half-res FBO)
