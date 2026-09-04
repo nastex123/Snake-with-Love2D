@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 14:00
+
+- **Perf** (completed - 2026-09-03 14:00): P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — `entities/enemyAttackRegistry.lua` 139→260L pools**: `TELEGRAPH_POOL=32`/`ATTACK_POOL=64`/`RESPAWN_POOL=32` pre-alocados `telegraphPool/attackPool/respawnPool` + `freeTelegraphs/freeAttacks/freeRespawns` + `activeTelegraphs/activeAttacks/activeRespawns`; `addTelegraph/addProjectile/addRadialPulse/addPendingRespawn` vía `acquireFree` sin `table.insert({})` nuevo, `updateTelegraphs/updateAttackObjects` reciclan vía `releaseToFree` y `table.remove(activeList)` + `release` sin crear tablas; `entities/enemies.lua` pending loop usa `removePendingRespawn(i)`; 32/64 tablas pre-alocadas con `active` flag.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P11 y AGENTS.md pooling; `table.insert({gx=...})` por ataque creaba GC churn y `update` con `table.remove` en hot loop; pool deja `collectgarbage("count")` estable en boss con 4 proyectiles + 3 patrollers.
+  3. **Verificación**: `test_scope_09_enemies` `#getTelegraphs/#getAttackObjects` sigue vía `activeTelegraphs` length; `TODO` P11 [x] 14:00.
+
 ## 2026-09-03 13:30
 
 - **Chore** (completed - 2026-09-03 13:30): P10 — Split `tests/test_systems.lua` 1135→3 suites + smoke headless (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):

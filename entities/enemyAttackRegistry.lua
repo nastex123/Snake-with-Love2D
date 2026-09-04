@@ -1,121 +1,209 @@
--- =============================================================================
--- MÓDULO: enemyAttackRegistry.lua
--- Parte de P01 — Split de entities/enemies.lua (634 → 4 módulos)
--- Gestiona telegraphs, attackObjects y pendingRespawns con API estable.
--- Extraído de entities/enemies.lua sin cambios de semántica.
--- =============================================================================
 local registry = {}
 
-local telegraphs = {}
-local attackObjects = {}
-local pendingRespawns = {}
+local hasLogger, Log = pcall(require, "core.logger")
+if not hasLogger or type(Log) ~= "table" then Log = nil end
 
--- ---------------------------------------------------------------------------
--- Telegraph API
--- ---------------------------------------------------------------------------
+local TELEGRAPH_POOL = 32
+local ATTACK_POOL = 64
+local RESPAWN_POOL = 32
+
+local telegraphPool = {}
+local attackPool = {}
+local respawnPool = {}
+
+local activeTelegraphs = {}
+local activeAttacks = {}
+local activeRespawns = {}
+
+for i = 1, TELEGRAPH_POOL do
+    telegraphPool[i] = {active = false, gx = 0, gy = 0, timer = 0, maxTimer = 0, attackType = "default"}
+end
+for i = 1, ATTACK_POOL do
+    attackPool[i] = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "projectile"}
+end
+for i = 1, RESPAWN_POOL do
+    respawnPool[i] = {active = false, type = "chaser", respawnAt = 0, attempts = 0, side = 1}
+end
+
+local freeTelegraphs = {}
+local freeAttacks = {}
+local freeRespawns = {}
+
+for i = 1, TELEGRAPH_POOL do freeTelegraphs[i] = telegraphPool[i] end
+for i = 1, ATTACK_POOL do freeAttacks[i] = attackPool[i] end
+for i = 1, RESPAWN_POOL do freeRespawns[i] = respawnPool[i] end
+
+local function acquireFree(freeList)
+    if #freeList == 0 then return nil end
+    return table.remove(freeList)
+end
+
+local function releaseToFree(freeList, entry)
+    entry.active = false
+    table.insert(freeList, entry)
+end
+
 function registry.addTelegraph(gx, gy, timer, attackType)
-    table.insert(telegraphs, {
-        gx = gx, gy = gy,
-        timer = timer or 0.8,
-        maxTimer = timer or 0.8,
-        attackType = attackType or "default"
-    })
+    local e = acquireFree(freeTelegraphs)
+    if not e then
+        if Log and Log.warn then Log.warn("telegraph pool exhausted") end
+        e = {active = false, gx = 0, gy = 0, timer = 0, maxTimer = 0, attackType = "default"}
+    end
+    e.active = true
+    e.gx = gx
+    e.gy = gy
+    e.timer = timer or 0.8
+    e.maxTimer = timer or 0.8
+    e.attackType = attackType or "default"
+    table.insert(activeTelegraphs, e)
+    return e
 end
 
 function registry.getTelegraphs()
-    return telegraphs
+    return activeTelegraphs
 end
 
--- ---------------------------------------------------------------------------
--- Projectile / Pulse API
--- ---------------------------------------------------------------------------
+function registry.getTelegraphPool()
+    return telegraphPool
+end
+
 function registry.addProjectile(gx, gy, dx, dy, lifetime, damage)
-    table.insert(attackObjects, {
-        x = gx, y = gy,
-        dx = dx, dy = dy,
-        lifetime = lifetime or 3.0,
-        maxLifetime = lifetime or 3.0,
-        damage = damage or 1,
-        type = "projectile"
-    })
+    local e = acquireFree(freeAttacks)
+    if not e then
+        if Log and Log.warn then Log.warn("attack pool exhausted") end
+        e = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "projectile"}
+    end
+    e.active = true
+    e.x = gx
+    e.y = gy
+    e.dx = dx
+    e.dy = dy
+    e.lifetime = lifetime or 3.0
+    e.maxLifetime = lifetime or 3.0
+    e.damage = damage or 1
+    e.type = "projectile"
+    e.cx = gx
+    e.cy = gy
+    table.insert(activeAttacks, e)
+    return e
 end
 
 function registry.addRadialPulse(cx, cy, maxRadius, speed, damage, lifetime)
+    local e = acquireFree(freeAttacks)
+    if not e then
+        if Log and Log.warn then Log.warn("attack pool exhausted") end
+        e = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "radial_pulse"}
+    end
     local r = maxRadius or 8
     local s = speed or 3
     local lt = lifetime or (r / s)
-    table.insert(attackObjects, {
-        cx = cx, cy = cy, px = cx, py = cy,
-        radius = 0, maxRadius = r, speed = s,
-        lifetime = lt, maxLifetime = lt,
-        damage = damage or 1, type = "radial_pulse"
-    })
+    e.active = true
+    e.cx = cx
+    e.cy = cy
+    e.px = cx
+    e.py = cy
+    e.radius = 0
+    e.maxRadius = r
+    e.speed = s
+    e.lifetime = lt
+    e.maxLifetime = lt
+    e.damage = damage or 1
+    e.type = "radial_pulse"
+    table.insert(activeAttacks, e)
+    return e
 end
 
 function registry.getAttackObjects()
-    return attackObjects
+    return activeAttacks
 end
 
--- ---------------------------------------------------------------------------
--- Pending respawns (boss timeout → chaser reaparece 5s después)
--- ---------------------------------------------------------------------------
+function registry.getAttackPool()
+    return attackPool
+end
+
 function registry.getPendingRespawns()
-    return pendingRespawns
+    return activeRespawns
+end
+
+function registry.getRespawnPool()
+    return respawnPool
 end
 
 function registry.addPendingRespawn(entry)
-    table.insert(pendingRespawns, entry)
+    local e = acquireFree(freeRespawns)
+    if not e then
+        if Log and Log.warn then Log.warn("respawn pool exhausted") end
+        e = {active = false, type = "chaser", respawnAt = 0, attempts = 0, side = 1}
+    end
+    e.active = true
+    e.type = entry.type or "chaser"
+    e.respawnAt = entry.respawnAt or 0
+    e.attempts = entry.attempts or 0
+    e.side = entry.side or 1
+    table.insert(activeRespawns, e)
+    return e
 end
 
 function registry.removePendingRespawn(idx)
-    table.remove(pendingRespawns, idx)
+    local e = activeRespawns[idx]
+    if e then
+        table.remove(activeRespawns, idx)
+        releaseToFree(freeRespawns, e)
+    end
 end
 
--- ---------------------------------------------------------------------------
--- Clear
--- ---------------------------------------------------------------------------
 function registry.clearAttackObjects()
-    telegraphs = {}
-    attackObjects = {}
+    for i = #activeTelegraphs, 1, -1 do
+        local e = activeTelegraphs[i]
+        activeTelegraphs[i] = nil
+        releaseToFree(freeTelegraphs, e)
+    end
+    for i = #activeAttacks, 1, -1 do
+        local e = activeAttacks[i]
+        activeAttacks[i] = nil
+        releaseToFree(freeAttacks, e)
+    end
 end
 
 function registry.clearPendingRespawns()
-    pendingRespawns = {}
+    for i = #activeRespawns, 1, -1 do
+        local e = activeRespawns[i]
+        activeRespawns[i] = nil
+        releaseToFree(freeRespawns, e)
+    end
 end
 
 function registry.clearAll()
-    telegraphs = {}
-    attackObjects = {}
-    pendingRespawns = {}
+    registry.clearAttackObjects()
+    registry.clearPendingRespawns()
 end
 
--- Mantiene compatibilidad con enemies.clearAttackObjects() que solo limpia telegraphs/attackObjects
 registry.clear = registry.clearAttackObjects
 
--- ---------------------------------------------------------------------------
--- Updates — llamados desde enemies.update(dt, ...) con isFrozen
--- ---------------------------------------------------------------------------
 function registry.updateAttackObjects(dt, anchoGrilla, altoGrilla, isFrozen)
     if isFrozen then return end
-    for i = #attackObjects, 1, -1 do
-        local ao = attackObjects[i]
+    for i = #activeAttacks, 1, -1 do
+        local ao = activeAttacks[i]
         local expired = false
         if ao.lifetime then
             ao.lifetime = ao.lifetime - dt
             if ao.lifetime <= 0 then expired = true end
         end
         if expired then
-            table.remove(attackObjects, i)
+            table.remove(activeAttacks, i)
+            releaseToFree(freeAttacks, ao)
         elseif ao.type == "projectile" then
             ao.x = ao.x + ao.dx * dt
             ao.y = ao.y + ao.dy * dt
             if ao.x < 0 or ao.x >= anchoGrilla or ao.y < 0 or ao.y >= altoGrilla then
-                table.remove(attackObjects, i)
+                table.remove(activeAttacks, i)
+                releaseToFree(freeAttacks, ao)
             end
         elseif ao.type == "radial_pulse" then
             ao.radius = ao.radius + ao.speed * dt
             if ao.radius >= ao.maxRadius then
-                table.remove(attackObjects, i)
+                table.remove(activeAttacks, i)
+                releaseToFree(freeAttacks, ao)
             end
         end
     end
@@ -123,17 +211,14 @@ end
 
 function registry.updateTelegraphs(dt, isFrozen)
     if isFrozen then return end
-    for i = #telegraphs, 1, -1 do
-        local t = telegraphs[i]
+    for i = #activeTelegraphs, 1, -1 do
+        local t = activeTelegraphs[i]
         t.timer = t.timer - dt
         if t.timer <= 0 then
-            table.remove(telegraphs, i)
+            table.remove(activeTelegraphs, i)
+            releaseToFree(freeTelegraphs, t)
         end
     end
 end
-
--- Pending respawns: delega la lógica de reintento a spawnLogic/bossLogic a través de callback
--- Aquí solo expone el tick para que el facade itere y use spawnLogic.canSpawn + spawnAt.
--- Para mantener compatibilidad, no se implementa updatePendingRespawns aquí; lo hace enemies.lua.
 
 return registry
