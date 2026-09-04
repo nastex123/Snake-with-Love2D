@@ -138,7 +138,7 @@ Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 
 ### Fase 3 — Resiliencia (RECOMENDADO + OPCIONAL)
 
 - [x] **P09 — Escritura atómica `profiles.dat` + `schema_version`** (`profiles.dat.tmp` + `os.rename` + `.bak`, `pcall` + validación, `schema_version=2`) — Branch: `chore/phase3-resiliencia` (P09) — **Completado 2026-09-03 13:00 America/Bogota (consola-only)**: `systems/persistence.lua` `atomicWrite(path,data)` escribe `tmp` vía `love.filesystem.write` + `os.rename` con `getSaveDirectory` y `.bak` fallback a `love.filesystem` (VFS compatible), `saveProfiles` valida `lua_decode` antes de escribir y setea `schema_version=2`/`version=2`, `initProfiles` intenta `profiles.dat` luego `.bak` y restaura vía `atomicWrite`, migra `schema_version<2` → `2`, `love tests` VFS `__clearVFS` compat, `error.log` 0
-- [ ] **P10 — Split `tests/test_systems.lua` 1135 → 3 suites + smoke headless** (`test_gamestates`, `test_shop`, `smoke.lua` `love . --test`) — Branch: `chore/tests-split` — Verifica: `love tests` <1.0s, 3 ficheros <400L
+- [x] **P10 — Split `tests/test_systems.lua` 1135 → 3 suites + smoke headless** (`test_gamestates`, `test_shop`, `smoke.lua` `love . --test`) — Branch: `chore/phase3-resiliencia` (P10) — **Completado 2026-09-03 13:30 America/Bogota (consola-only)**: `tests/test_systems.lua` 1135 → `tests/test_shop.lua` 384L (Suites 1-3 Items/Shop/Persistence) + `tests/test_settings.lua` 397L (Suites 4-7 Settings/Profiles/Achievements/Player) + `tests/test_gamestates.lua` 326L (Suites 8-10 Gameflow/Gamestates/Debug) + `tests/test_systems_helper.lua` 104L `setupCleanWorld` + `tests/test_systems.lua` 5L shim + `tests/smoke.lua` 32L headless `love . --test`; `tests/main.lua` ahora `require test_shop/test_settings/test_gamestates`; 3 ficheros <400L, `love tests` <1.0s compat (VFS mock)
 - [ ] **P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns`** (32/64 tablas pre-alocadas con `active` flag; iteración sin `table.insert/remove` en loop) — Branch: `perf/pools-attacks` — Verifica: `collectgarbage("count")` estable
 - [ ] **P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua`** (`obstacles.lua` 723→~380L; `BiomeHazards.update(dt)` unifica `isIce/isSlime/lava/pressure_spike`) — Branch: `refactor/biome-hazards` — Verifica: `obstacles.lua` <500L
 - [ ] **P13 — Contrato API `World.state` + `World.validate()` debug** (assertType en `World.set` modo debug, `World.validate()` en `love.load`) — Branch: `chore/world-validate` — Verifica: asserts de tipo en `test_core` PASS
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-03 13:00 (P09 escritura atómica profiles.dat + schema_version=2 — tmp+rename+bak, VFS fallback)
+*Last updated: 2026-09-03 13:30 (P10 split test_systems 1135→3 suites + smoke — 384/397/326 <400L, helper 104L)

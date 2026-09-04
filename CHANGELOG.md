@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 13:30
+
+- **Chore** (completed - 2026-09-03 13:30): P10 — Split `tests/test_systems.lua` 1135→3 suites + smoke headless (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
+  1. **QUÉ — Split 1135→3**: `tests/test_systems.lua` 1135L → `tests/test_shop.lua` 384L (Suites 1-3 Items/Shop/Persistence) + `tests/test_settings.lua` 397L (Suites 4-7 Settings/Profiles/Achievements/Player) + `tests/test_gamestates.lua` 326L (Suites 8-10 Gameflow/Gamestates/Debug) + `tests/test_systems_helper.lua` 104L `setupCleanWorld` común + `tests/test_systems.lua` 5L shim + `tests/smoke.lua` 32L headless `love . --test`; `tests/main.lua` ahora `require test_shop/test_settings/test_gamestates` en vez de `test_systems` monolítico.
+  2. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P10 y AGENTS.md límite 300-500; `test_systems.lua` era 1135L (>2× límite) y bloqueaba `love tests` <1.0s y reporte de cobertura; helper evita duplicar `setupCleanWorld` (40 líneas) y 20 requires.
+  3. **Verificación**: `wc -l` 384/397/326 <400L, `test_systems_helper` 104L, `smoke` 32L; `tests/main.lua` 3 requires <1.0s compat (VFS mock); `TODO` P10 [x] 13:30.
+
 ## 2026-09-03 13:00
 
 - **Fix** (completed - 2026-09-03 13:00): P09 — Escritura atómica `profiles.dat` + `schema_version=2` (America/Bogota, consola-only, guiado, rama `chore/phase3-resiliencia`):
