@@ -22,6 +22,8 @@ local persistence = require("systems.persistence")
 local gameflow = require("systems.gameflow")
 local playerMod = require("systems.player")
 local timers = require("core.timers")
+local hasEvents, Events = pcall(require, "core.events")
+if not hasEvents or type(Events) ~= "table" then Events = nil end
 
 function playing.update(dt)
     local st = world.state
@@ -63,8 +65,13 @@ function playing.update(dt)
                     ps = particles.fireTrail(fk.px, fk.py)
                 })
                 sound.play("enemyKill")
-                achievementsMod.check("enemyKilled")
-                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                if Events then
+                    Events.emit("enemyKilled")
+                    Events.emit("coinsChanged", {totalCoins = st.monedas})
+                else
+                    achievementsMod.check("enemyKilled")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
             end
         end
     end
@@ -93,8 +100,13 @@ function playing.update(dt)
                     table.insert(st.activePS, {
                         ps = particles.constrictorBurst(res.px, res.py)
                     })
-                    achievementsMod.check("enemyKilled")
-                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    if Events then
+                        Events.emit("enemyKilled")
+                        Events.emit("coinsChanged", {totalCoins = st.monedas})
+                    else
+                        achievementsMod.check("enemyKilled")
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    end
                 end
             end
             st.comboCount = st.comboCount + 2
@@ -203,8 +215,13 @@ function playing.update(dt)
                 })
             end
             sound.play("enemyKill")
-            achievementsMod.check("enemyKilled")
-            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+            if Events then
+                Events.emit("enemyKilled")
+                Events.emit("coinsChanged", {totalCoins = st.monedas})
+            else
+                achievementsMod.check("enemyKilled")
+                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+            end
         end
 
         if bossResult then
@@ -219,8 +236,13 @@ function playing.update(dt)
                     ps = particles.enemyKill(bossResult.px, bossResult.py, 1, 0.4, 0.6)
                 })
                 sound.play("enemyKill")
-                achievementsMod.check("bossDefeated")
-                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                if Events then
+                    Events.emit("bossDefeated")
+                    Events.emit("coinsChanged", {totalCoins = st.monedas})
+                else
+                    achievementsMod.check("bossDefeated")
+                    achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                end
                 st.bossHealthDisplay = nil
                 if worldMod.isLastRoom() then
                     st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
@@ -286,7 +308,11 @@ function playing.update(dt)
                     st.comboCount = st.comboCount + 1
                     st.comboFlashTimer = 0.3
                     if st.comboCount >= 4 then
-                        achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                        if Events then
+                            Events.emit("comboAchieved", {count = st.comboCount + 1})
+                        else
+                            achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                        end
                     end
                 else
                     st.comboCount = 0
@@ -346,8 +372,13 @@ function playing.update(dt)
                         })
                         sound.play("boss_defeated")
                         sound.play("enemyKill")
-                        achievementsMod.check("bossDefeated")
-                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        if Events then
+                            Events.emit("bossDefeated")
+                            Events.emit("coinsChanged", {totalCoins = st.monedas})
+                        else
+                            achievementsMod.check("bossDefeated")
+                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        end
                         if worldMod.isLastRoom() then
                             st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
                             st.transitionPhase = 1

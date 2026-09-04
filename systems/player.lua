@@ -5,6 +5,8 @@ local world = require("core.world")
 local timers = require("core.timers")
 local hasLogger, Log = pcall(require, "core.logger")
 if not hasLogger or type(Log) ~= "table" then Log = nil end
+local hasEvents, Events = pcall(require, "core.events")
+if not hasEvents or type(Events) ~= "table" then Events = nil end
 local shop = require("systems.shop")
 local foodMod = require("entities.food")
 local obstaclesMod = require("entities.obstacles")
@@ -265,8 +267,13 @@ function player.aplicarItem(itemId)
                                     ps = particles.enemyKill(result.px, result.py, c[1], c[2], c[3])
                                 })
                             end
-                            achievementsMod.check("enemyKilled")
-                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                            if Events then
+                                Events.emit("enemyKilled")
+                                Events.emit("coinsChanged", {totalCoins = st.monedas})
+                            else
+                                achievementsMod.check("enemyKilled")
+                                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                            end
                         end
                     end
                 end
@@ -400,8 +407,13 @@ function player.aplicarComida(tipo)
                         local earnedCoins = math.floor((result.coins or 1) * streak)
                         st.monedas = (st.monedas or 0) + earnedCoins
                         uiMod.addPopup("+" .. earnedCoins .. "$", result.gx, result.gy)
-                        achievementsMod.check("enemyKilled")
-                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        if Events then
+                            Events.emit("enemyKilled")
+                            Events.emit("coinsChanged", {totalCoins = st.monedas})
+                        else
+                            achievementsMod.check("enemyKilled")
+                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        end
                     end
                 end
             end

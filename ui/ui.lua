@@ -144,6 +144,13 @@ function ui.showToast(payload)
     toastsUI.show(ui, payload)
 end
 
+-- P06 Event Bus wiring for toasts (sin circular: Events no requiere ui)
+local okEvents, Events = pcall(require, "core.events")
+if okEvents and Events and Events.on then
+    Events.on("toast", function(payload) ui.showToast(payload) end)
+    Events.on("achievementToast", function(payload) ui.showToast(payload) end)
+end
+
 function ui.updateToasts(dt)
     toastsUI.update(ui, dt)
 end

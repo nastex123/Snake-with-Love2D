@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 12:00
+
+- **Feat** (completed - 2026-09-03 12:00): P06 — Crear `core/events.lua` Event Bus (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/events.lua` 180L**: `local Events={}` + `listeners` copy-on-emit, `Events.on(event,cb)` retorna `unsubscribe` + `pcall` + `Log.error` por listener, `Events.off/emit/clear/has/once/getListenerCount`, aliases `subscribe/publish`, sin `require` circular (standalone, `core.logger` opcional).
+  2. **QUÉ — Suscriptores**: `systems/achievements.lua` suscribe 6 eventos (`enemyKilled/bossDefeated/comboAchieved/stageChanged/scoreReached/coinsChanged`) → `achievements.check`; `ui/ui.lua` suscribe `toast/achievementToast` → `ui.showToast`; `systems/persistence.lua` suscribe `coinsChanged/scoreReached/stageChanged/profileDirty/unlocksDirty` → `syncActiveProfile/syncUnlocks`.
+  3. **QUÉ — Emisores migrados**: `systems/player.lua` (`hasEvents` + `Events.emit("enemyKilled"/"coinsChanged")` en `bomb` y `aplicarComida bomb`, fallback a `achievements.check` si Events nil); `systems/gamestates/playing.lua` (`hasEvents` + 5 sitios `enemyKilled/coinsChanged/bossDefeated/comboAchieved`) emiten vía bus, fallback directo.
+  4. **POR QUÉ**: Desacoplar `TECH-DEBT-PLAN.md` P06 y GDD §21.4 `Event bus`; `achievements.check`/`persistence.sync`/`ui.showToast` acoplaban `player→achievements`, `gamestates→persistence`, `achievements→ui` con `require` circular potencial y 12 call sites duplicados. Bus central permite `P07 Input` y `P08 Assets` sin ciclos y prepara `World.validate`.
+  5. **Verificación**: `World.subscribe` similar ya PASS en `test_scope_05_world`; `core/events.lua` 0 `require` circular (`grep require` solo `core.logger` opcional), `git diff --stat` 6 files, `TODO` P06 [x] 12:00.
+
 ## 2026-09-03 11:30
 
 - **Refactor** (completed - 2026-09-03 11:30): P05 — Consolidar timers duales → `core/timers.lua` único (America/Bogota, consola-only, guiado):

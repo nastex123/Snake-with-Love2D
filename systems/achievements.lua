@@ -262,4 +262,15 @@ function achievements.check(event, params)
     end
 end
 
+-- P06 Event Bus wiring (sin circular: Events no requiere achievements)
+local okEvents, Events = pcall(require, "core.events")
+if okEvents and Events and Events.on then
+    Events.on("enemyKilled", function(payload) achievements.check("enemyKilled", payload) end)
+    Events.on("bossDefeated", function(payload) achievements.check("bossDefeated", payload) end)
+    Events.on("comboAchieved", function(payload) achievements.check("comboAchieved", payload) end)
+    Events.on("stageChanged", function(payload) achievements.check("stageChanged", payload) end)
+    Events.on("scoreReached", function(payload) achievements.check("scoreReached", payload) end)
+    Events.on("coinsChanged", function(payload) achievements.check("coinsChanged", payload) end)
+end
+
 return achievements
