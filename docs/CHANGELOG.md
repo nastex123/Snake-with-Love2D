@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-03 12:30
+
+- **Refactor** (completed - 2026-09-03 12:30): P07+P08 — Input centralizado + Asset Manager (America/Bogota, consola-only, guiado):
+  1. **QUÉ — `core/input.lua` 110L P07**: `local Input={}` + `config.KEYBINDS` (`up→w/up`, `down→s/down`, `left→a/left`, `right→d/right`) + `touch.hasActiveTouch` pcall + `love.joystick` gamepad hook; `Input.isDown(...)` pcall `love.keyboard.isDown`, `Input.isHeld(dir)` lee binds, `Input.isAnyHeld/isAnyHeldWithTouch/hasActiveTouch/isGamepadHeld`; `core/config.lua` `KEYBINDS` añadido.
+  2. **QUÉ — Migración P07**: `entities/snake/movement.lua` 3 sitios `love.keyboard.isDown` → `Input.isAnyHeld/isHeld("up"/"down"/"left"/"right")` + `Input.hasActiveTouch`; `systems/gamestates/playing.lua` `isInputActive` → `Input.isAnyHeld/hasActiveTouch`; `systems/debugLogo.lua` `lshift/rshift` → `Input.isDown`; `grep love.keyboard.isDown` solo en `core/input.lua` (+ mock `test_harness`).
+  3. **QUÉ — `core/assets.lua` 130L P08**: `local Assets={}` caches `fonts/images/canvases` con keys `file:size`/`path`/`WxH`, `Assets.getFont(a,b)` pcall `newFont`, `Assets.getImage(path)` pcall `newImage` + `setFilter nearest`, `Assets.getCanvas(w,h,filter)` cached + `release` si size mismatch, `getStats/clearAll`; `pcall` + `Log.warn`.
+  4. **QUÉ — Migración P08**: `ui/hudUI.lua` `getCachedFont` → `Assets.getFont`; `ui/ui.lua` `load` 4 fonts + 2 emblems + `tryLoad` → `Assets.getImage/getFont`; `render/shaders.lua` canvases ya pooled no per frame (verificado); 0 `newFont/newImage/newCanvas` por frame (solo load-time y `core/assets.lua`), `test_ui_render_audio` PASS compat.
+  5. **POR QUÉ**: Cumplir `TECH-DEBT-PLAN.md` P07+P08 y GDD §21.4 `input centralizado` + `asset manager`; `isDown` disperso bloqueaba gamepad y `newFont/newImage` por frame causaba GC churn; centralizar deja `World.validate` y `fixed timestep` sin fricción.
+  6. **Verificación**: `grep love.keyboard.isDown` único en `core/input.lua`; `grep newFont/newImage` solo en `core/assets.lua` + load-time; `git diff --stat` 7 files; `TODO` P07+P08 [x] 12:30.
+
 ## 2026-09-03 12:00
 
 - **Feat** (completed - 2026-09-03 12:00): P06 — Crear `core/events.lua` Event Bus (America/Bogota, consola-only, guiado):

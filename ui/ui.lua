@@ -3,6 +3,7 @@
 local ui = {}
 local constants = require("constants")
 
+local Assets = require("core.assets")
 local intro = require("ui.introUI")
 local menu = require("ui.menuUI")
 local hud = require("ui.hudUI")
@@ -23,44 +24,24 @@ ui.highContrast = false
 ui.colorblind = 'off'
 
 function ui.load()
-    local ok, err = pcall(function()
-        ui.fontTitle = love.graphics.newFont(constants.FONT_FILE, constants.FONT_TITLE)
-        ui.fontLarge = love.graphics.newFont(constants.FONT_FILE, constants.FONT_LARGE)
-        ui.fontNormal = love.graphics.newFont(constants.FONT_FILE, constants.FONT_NORMAL)
-        ui.fontSmall = love.graphics.newFont(constants.FONT_FILE, constants.FONT_SMALL)
+    local ok = pcall(function()
+        ui.fontTitle = Assets.getFont(constants.FONT_FILE, constants.FONT_TITLE)
+        ui.fontLarge = Assets.getFont(constants.FONT_FILE, constants.FONT_LARGE)
+        ui.fontNormal = Assets.getFont(constants.FONT_FILE, constants.FONT_NORMAL)
+        ui.fontSmall = Assets.getFont(constants.FONT_FILE, constants.FONT_SMALL)
     end)
-    if not ok then
-        ui.fontTitle = love.graphics.newFont(constants.FONT_TITLE)
-        ui.fontLarge = love.graphics.newFont(constants.FONT_LARGE)
-        ui.fontNormal = love.graphics.newFont(constants.FONT_NORMAL)
-        ui.fontSmall = love.graphics.newFont(constants.FONT_SMALL)
+    if not ok or not ui.fontTitle then
+        ui.fontTitle = Assets.getFont(constants.FONT_TITLE)
+        ui.fontLarge = Assets.getFont(constants.FONT_LARGE)
+        ui.fontNormal = Assets.getFont(constants.FONT_NORMAL)
+        ui.fontSmall = Assets.getFont(constants.FONT_SMALL)
     end
 
+    ui.emblemTexture = Assets.getImage("assets/diamond_emblem.png")
+    ui.emblemGlowTexture = Assets.getImage("assets/diamond_emblem_glow.png")
 
-
-    -- Carga de textura del Diamante Emblema (Base + Glow)
-    local embOk, embTex = pcall(love.graphics.newImage, "assets/diamond_emblem.png")
-    if embOk and embTex then
-        ui.emblemTexture = embTex
-    else
-        ui.emblemTexture = nil
-    end
-
-    local glowOk, glowTex = pcall(love.graphics.newImage, "assets/diamond_emblem_glow.png")
-    if glowOk and glowTex then
-        ui.emblemGlowTexture = glowTex
-    else
-        ui.emblemGlowTexture = nil
-    end
-
-    -- Carga de Sprites PNG del Botón Maestro (Opción A)
     local function tryLoad(path)
-        local ok, img = pcall(love.graphics.newImage, path)
-        if ok and img then
-            img:setFilter("nearest", "nearest")
-            return img
-        end
-        return nil
+        return Assets.getImage(path)
     end
 
     ui.btnTexNormal = tryLoad("assets/ui_button_normal.png")

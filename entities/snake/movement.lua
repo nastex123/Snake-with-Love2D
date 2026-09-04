@@ -10,6 +10,7 @@ local constants = require("constants")
 local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
+local Input = require("core.input")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -46,14 +47,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
 
     local controlMode = world.get("controlMode") or "tactical"
     if controlMode == "tactical" then
-        local isHeld = false
-        if love.keyboard and love.keyboard.isDown then
-            isHeld = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
-        end
-        local touchMod = package.loaded["core.touch"]
-        if touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
-            isHeld = true
-        end
+        local isHeld = Input.isAnyHeld() or Input.hasActiveTouch()
         if #s.inputQueue > 0 then isHeld = true end
 
         if not isHeld then
@@ -67,16 +61,16 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         s.standstill = false
     end
 
-    if #s.inputQueue == 0 and love.keyboard and love.keyboard.isDown then
+    if #s.inputQueue == 0 and (Input.isHeld("up") or Input.isHeld("down") or Input.isHeld("left") or Input.isHeld("right")) then
         local refY = s.lastMovedDirY or s.dirY
         local refX = s.lastMovedDirX or s.dirX
-        if (love.keyboard.isDown("up") or love.keyboard.isDown("w")) and refY == 0 then
+        if Input.isHeld("up") and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = -1})
-        elseif (love.keyboard.isDown("down") or love.keyboard.isDown("s")) and refY == 0 then
+        elseif Input.isHeld("down") and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = 1})
-        elseif (love.keyboard.isDown("left") or love.keyboard.isDown("a")) and refX == 0 then
+        elseif Input.isHeld("left") and refX == 0 then
             table.insert(s.inputQueue, {x = -1, y = 0})
-        elseif (love.keyboard.isDown("right") or love.keyboard.isDown("d")) and refX == 0 then
+        elseif Input.isHeld("right") and refX == 0 then
             table.insert(s.inputQueue, {x = 1, y = 0})
         end
     end

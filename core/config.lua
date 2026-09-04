@@ -187,6 +187,18 @@ config.BOSS_FOOD_TARGET = 15
 config.MAX_GRID_COLS = 40
 config.MAX_GRID_ROWS = 28
 
+config.KEYBINDS = {
+    up = {"w", "up"},
+    down = {"s", "down"},
+    left = {"a", "left"},
+    right = {"d", "right"},
+    action_autotomy = {"q"},
+    action_reverse = {"r"},
+    action_shield = {"1", "2", "3"},
+    pause = {"space", "escape"},
+    shift = {"lshift", "rshift"},
+}
+
 config.BOSS_HEALTH_BAR = {
     width = 96,
     height = 8,

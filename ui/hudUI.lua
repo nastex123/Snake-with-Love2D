@@ -63,18 +63,10 @@ function hud.drawGrid(ui, anchoGrilla, altoGrilla, time, comboIntensity)
     end
 end
 
-local fontCache = {}
+local Assets = require("core.assets")
 
 local function getCachedFont(fontSize)
-    if not fontCache[fontSize] then
-        local font
-        local ok = pcall(function() font = love.graphics.newFont(constants.FONT_FILE, fontSize) end)
-        if not ok or not font then
-            font = love.graphics.newFont(fontSize)
-        end
-        fontCache[fontSize] = font
-    end
-    return fontCache[fontSize]
+    return Assets.getFont(constants.FONT_FILE, fontSize) or Assets.getFont(fontSize)
 end
 
 function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)

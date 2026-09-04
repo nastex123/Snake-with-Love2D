@@ -24,6 +24,7 @@ local playerMod = require("systems.player")
 local timers = require("core.timers")
 local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
+local Input = require("core.input")
 
 function playing.update(dt)
     local st = world.state
@@ -165,14 +166,7 @@ function playing.update(dt)
     end
 
     local controlMode = world.get("controlMode") or "tactical"
-    local isInputActive = (#st.player.inputQueue > 0)
-    if not isInputActive and love.keyboard and love.keyboard.isDown then
-        isInputActive = love.keyboard.isDown("up", "w", "down", "s", "left", "a", "right", "d")
-    end
-    local touchMod = package.loaded["core.touch"]
-    if not isInputActive and touchMod and touchMod.hasActiveTouch and touchMod.hasActiveTouch() then
-        isInputActive = true
-    end
+    local isInputActive = (#st.player.inputQueue > 0) or Input.isAnyHeld() or Input.hasActiveTouch()
 
     if controlMode == "tactical" and st.player.standstill then
         if isInputActive then
