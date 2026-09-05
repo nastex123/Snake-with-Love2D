@@ -27,6 +27,12 @@ local BOSS_ATTACKS = {
         cooldown = 4.0,
         minPhase = 2,
     },
+    laser_perimeter = {
+        name = "laser_perimeter",
+        telegraphTime = 1.0,
+        cooldown = 7.0,
+        minPhase = 2,
+    },
 }
 
 -- Exponer definiciones para inspección, pruebas y sistemas externos
@@ -38,6 +44,7 @@ local ATTACK_KEYS = {
     "spawn_adds",
     "radial_pulse",
     "teleport",
+    "laser_perimeter",
 }
 
 function bossAttacks.get(name)
@@ -109,6 +116,27 @@ function bossAttacks.computePositions(boss, attack, ctx)
         end
     elseif attackName == "teleport" then
         -- No telegraph tiles previos; el teleport se telegrafía en origen al ejecutarse
+    elseif attackName == "laser_perimeter" then
+        -- Celdas del rectangulo laser para los markers de telegrafiado
+        local half = constants.BOSS_LASER_HALF or 6
+        local cx0 = math.floor(boss.x)
+        local cy0 = math.floor(boss.y)
+        for dx = -half, half do
+            for _, dy in ipairs({-half, half}) do
+                local tx, ty = cx0 + dx, cy0 + dy
+                if tx >= 0 and tx < anchoGrilla and ty >= 0 and ty < altoGrilla then
+                    table.insert(positions, {x = tx, y = ty})
+                end
+            end
+        end
+        for dy = -half + 1, half - 1 do
+            for _, dx in ipairs({-half, half}) do
+                local tx, ty = cx0 + dx, cy0 + dy
+                if tx >= 0 and tx < anchoGrilla and ty >= 0 and ty < altoGrilla then
+                    table.insert(positions, {x = tx, y = ty})
+                end
+            end
+        end
     end
     return positions
 end
@@ -181,6 +209,18 @@ function bossAttacks.execute(boss, attack, dt, ctx)
         end
     elseif attackName == "radial_pulse" then
         enemiesMod.addRadialPulse(boss.x, boss.y, 8, 3, 1)
+    elseif attackName == "laser_perimeter" then
+        -- 4 rayos continuos en rectangulo centrado en la sala (GDD Jaula Laser)
+        local half = constants.BOSS_LASER_HALF or 6
+        local duration = constants.BOSS_LASER_DURATION or 4.0
+        local cx0 = math.max(half + 1, math.min(anchoGrilla - half - 2, math.floor(anchoGrilla / 2)))
+        local cy0 = math.max(half + 1, math.min(altoGrilla - half - 2, math.floor(altoGrilla / 2)))
+        local x1, x2 = cx0 - half, cx0 + half
+        local y1, y2 = cy0 - half, cy0 + half
+        enemiesMod.addLaser(x1, y1, x2, y1, duration, 1)
+        enemiesMod.addLaser(x1, y2, x2, y2, duration, 1)
+        enemiesMod.addLaser(x1, y1, x1, y2, duration, 1)
+        enemiesMod.addLaser(x2, y1, x2, y2, duration, 1)
     elseif attackName == "teleport" then
         local minX = 2
         local maxX = math.max(minX, anchoGrilla - 3)

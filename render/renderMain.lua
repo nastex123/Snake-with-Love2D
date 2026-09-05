@@ -184,6 +184,34 @@ function renderMain.drawGame(dt)
             love.graphics.setLineWidth(1)
             love.graphics.circle("line", hx, hy, mr)
         end
+
+        -- Pua de Cola (GDD item 51): trampas fijas con parpadeo
+        if st.placedTraps and #st.placedTraps > 0 then
+            local tam = constants.TAMANIO_BLOQUE
+            for _, trap in ipairs(st.placedTraps) do
+                local blink = math.sin((st.time or 0) * 6 + trap.x) * 0.2 + 0.8
+                love.graphics.setColor(1, 0.25 * blink, 0.2 * blink, 0.9)
+                love.graphics.polygon("fill",
+                    trap.x * tam + tam / 2, trap.y * tam + 2,
+                    trap.x * tam + 2, trap.y * tam + tam - 2,
+                    trap.x * tam + tam - 2, trap.y * tam + tam - 2)
+            end
+        end
+
+        -- Rayo Orbital (GDD item 53): haz vertical en la columna con flicker
+        if st.orbitalBeam and st.orbitalBeam.timer and st.orbitalBeam.timer > 0 then
+            local tam = constants.TAMANIO_BLOQUE
+            local bx = st.orbitalBeam.x * tam + tam / 2
+            local gh = (st.altoGrilla or constants.MAX_GRID_ROWS) * tam
+            local flick = math.sin((st.time or 0) * 25) * 0.15 + 0.85
+            love.graphics.setColor(0.4, 0.9, 1, 0.3 * flick)
+            love.graphics.setLineWidth(6)
+            love.graphics.line(bx, 0, bx, gh)
+            love.graphics.setColor(1, 1, 1, 0.9 * flick)
+            love.graphics.setLineWidth(2)
+            love.graphics.line(bx, 0, bx, gh)
+            love.graphics.setLineWidth(1)
+        end
     end
 
     for _, entry in ipairs(st.activePS) do

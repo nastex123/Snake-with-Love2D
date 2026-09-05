@@ -354,6 +354,22 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
             love.graphics.circle("line", px, py, r)
             love.graphics.setColor(1, 0.6, 0.2, alpha * 0.3)
             love.graphics.circle("fill", px, py, r * 0.8)
+        elseif ao.type == "laser" then
+            -- Jaula laser: halo rojo + nucleo blanco con flicker, fade al expirar
+            local flick = math.sin(time * 25) * 0.15 + 0.85
+            local lifeFrac = math.max(0, math.min(1, (ao.lifetime or 1) / (ao.maxLifetime or 1)))
+            local fade = math.min(1, lifeFrac * 3)
+            local x1 = ao.x1 * tam + tam / 2
+            local y1 = ao.y1 * tam + tam / 2
+            local x2 = ao.x2 * tam + tam / 2
+            local y2 = ao.y2 * tam + tam / 2
+            love.graphics.setColor(1, 0.1, 0.15, 0.35 * flick * fade)
+            love.graphics.setLineWidth(7)
+            love.graphics.line(x1, y1, x2, y2)
+            love.graphics.setColor(1, 0.9, 0.9, 0.95 * flick * fade)
+            love.graphics.setLineWidth(2)
+            love.graphics.line(x1, y1, x2, y2)
+            love.graphics.setLineWidth(1)
         end
     end
 
@@ -376,6 +392,13 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
             g = 0.2 * vidaFrac * pulse
             b = 0.6 * pulse
         end
+        -- Fase de Furia: tinte carmesi intenso con pulso acelerado (GDD)
+        if boss.enraged then
+            local rage = math.sin(time * 10) * 0.25 + 0.75
+            r = math.min(1, r + 0.35 * rage)
+            g = g * 0.35
+            b = b * 0.45
+        end
 
         love.graphics.setColor(r, g, b)
         local size = tam * 1.5
@@ -390,6 +413,16 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
         love.graphics.setLineWidth(2)
         love.graphics.polygon("line", pts)
         love.graphics.setLineWidth(1)
+
+        -- Pulso carmesi expansivo al entrar en furia
+        if boss.enrageFlash and boss.enrageFlash > 0 then
+            local frac = math.max(0, boss.enrageFlash / (constants.BOSS_ENRAGE_FLASH or 1.2))
+            local ringR = (1 - frac) * tam * 4 + tam
+            love.graphics.setColor(1, 0.15, 0.2, frac * 0.8)
+            love.graphics.setLineWidth(3)
+            love.graphics.circle("line", cx, cy, ringR)
+            love.graphics.setLineWidth(1)
+        end
 
         -- Ojo del boss
         love.graphics.setColor(1, 1, 1, 0.8)

@@ -184,6 +184,15 @@ config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para c
 config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
+config.BOSS_ENRAGE_THRESHOLD = 3      -- Comidas restantes para activar la furia (12/15)
+config.BOSS_ENRAGE_MULT = 1.35        -- Acelerador de telegrafiados y ataques en furia (-35% tiempos)
+config.BOSS_ENRAGE_PITCH = 1.15       -- Tempo musical en furia (pitch del segmento boss)
+config.BOSS_ENRAGE_FLASH = 1.2        -- Duracion del pulso carmesi al entrar en furia (s)
+config.BOSS_LASER_TELEGRAPH = 1.0   -- Aviso telegrafiado del perimetro laser (s)
+config.BOSS_LASER_DURATION = 4.0    -- Duracion de los rayos continuos (s)
+config.BOSS_LASER_COOLDOWN = 7.0    -- Recarga del ataque laser (s)
+config.BOSS_LASER_HALF = 6          -- Semi-lado del rectangulo laser en celdas
+config.BOSS_LASER_HIT_DIST = 0.45   -- Distancia de impacto cabeza-rayo (celdas)
 config.MAX_GRID_COLS = 40
 config.MAX_GRID_ROWS = 28
 
@@ -233,6 +242,28 @@ config.REPELLING_MOVE_INTERVAL = 1.5
 config.FOOD_COUNTDOWN_TIMER = 5.0
 config.FOOD_TWIN_TIMER = 4.0
 config.FOOD_TWIN_WINDOW = 4.0
+
+-- Arsenal extendido 51-60 (GDD Fase 8)
+config.TAIL_SPIKE_COST = 20
+config.TRAP_MAX = 3
+config.TRAP_LIFETIME = 60
+config.HOURGLASS_COST = 35
+config.HISTORY_FRAMES = 120
+config.ORBITAL_COST = 30
+config.ORBITAL_DURATION = 2.5
+config.HOLO_DECOY_COST = 25
+config.HOLO_DECOY_DURATION = 4.0
+config.LIGHT_BOOTS_COST = 20
+config.GOLDEN_TOOTH_COST = 25
+config.EMERGENCY_BATTERY_COST = 30
+config.EMERGENCY_BULLET_TIME = 0.1
+config.EMERGENCY_DURATION = 1.5
+config.DOUBLE_HARVEST_COST = 30
+config.DOUBLE_HARVEST_CHANCE = 0.15
+config.LOTTERY_COST = 5
+config.LOTTERY_MAX = 35
+config.REFRACTOR_COST = 25
+config.REFRACTOR_COINS = 3
 
 -- Parámetros de Biomas y Peligros Ambientales (Fase 8)
 config.ICE_SLIP_DISTANCE = 1

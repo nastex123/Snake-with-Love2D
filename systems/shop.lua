@@ -191,6 +191,11 @@ local function drawIcon(id, x, y, size)
             table.insert(pts, y + half - math.sin(angle) * r)
         end
         love.graphics.polygon("fill", pts)
+    else
+        -- Fallback generico para el arsenal 51-60: diamante dorado
+        love.graphics.setColor(1, 0.84, 0)
+        local pts = {x + half, y + 2, x + size - 2, y + half, x + half, y + size - 2, x + 2, y + half}
+        love.graphics.polygon("fill", pts)
     end
 end
 

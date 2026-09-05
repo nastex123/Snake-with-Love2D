@@ -8,6 +8,33 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-05
+
+- **feature** (completed - 2026-09-05): Extended Items Arsenal 51-60 (America/Bogota, consola-only, rama `feature/phase8-items-arsenal`):
+  1. **QUÉ — `systems/items.lua` + `core/config.lua`**: 10 items GDD (22 totales) con costes/duraciones data-driven + `itemType="consumable"` (lottery → slots, 1 uso) + `itemColor` + fallback diamante en `shop.drawIcon`.
+  2. **QUÉ — `systems/player.lua`**: 10 ramas `aplicarItem` (trampas max 3, rewind con copia profunda, rayo 2.5s, señuelo 4s, 5 pasivos a `shop.inventory`, lotería 0-35$).
+  3. **QUÉ — Hooks**: `mover` (harvest 15%, prism flag, slime detect), `core` (`slimeSlowTimer`), `calcSpeed` boots 1.125x, `playing` (historial 120f, trampas/rayo kills, batería bullet-time, tooth/prism/harvest popups, slime recompute), `resetGame` limpia por sala, `renderMain` dibuja trampas + rayo.
+  4. **QUÉ — Tests**: suite scope_21 (15 tests) + conteos 12→22: 560 tests, 540 PASS, 20 pre-existentes.
+  5. **POR QUÉ**: TODO Extended Items Arsenal: la tienda estaba estancada en 12 items desde Fase 3.
+  6. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 540/560 PASS; `error.log` 0 bytes.
+- **feature** (completed - 2026-09-05): Laser Perimeter — Jaula Laser del boss (America/Bogota, consola-only, rama `feature/phase8-enrage`):
+  1. **QUÉ — `entities/bossAttacks.lua`**: `laser_perimeter` 5º ataque (telegraph 1.0s, cooldown 7.0s, minPhase 2); `computePositions` celdas del rectángulo (`8*half`, half 6) + `execute` 4 rayos `addLaser` 4.0s centrados en sala. Cierra el bloque TODO Boss Enrage+Laser.
+  2. **QUÉ — Pool + colisión + render**: `addLaser` en `enemyAttackRegistry` (pool P11 + campos `x1/y1/x2/y2`), passthrough `enemies.addLaser`, `helpers.point_seg_dist`, colisión en `snake/movement.lua` (< 0.45, shield/armor/ghost), halo rojo + núcleo blanco con flicker/fade en `enemiesDraw.lua`, `BOSS_LASER_*` en config.
+  3. **QUÉ — Tests**: suite Scope 11 Laser (6 tests) + `test_scope_11_bossAttacks` cableado en runner (llevaba sin cargar tras P10 + `end)` fantasma): 582 tests, 562 PASS, 20 pre-existentes.
+  4. **POR QUÉ**: GDD Jaula Laser + TDD §10.20: al boss le faltaba su ataque de encierro — ahora fuerza reposicionamiento táctico.
+  5. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 562/582 PASS; `error.log` 0 bytes.
+
+## 2026-09-04 20:20
+
+- **feature** (completed - 2026-09-04 20:20): Boss Enrage Phase — furia a 12/15 comidas (America/Bogota, consola-only, rama `feature/phase8-enrage`):
+  1. **QUÉ — `core/config.lua`**: `BOSS_ENRAGE_THRESHOLD=3`, `BOSS_ENRAGE_MULT=1.35`, `BOSS_ENRAGE_PITCH=1.15`, `BOSS_ENRAGE_FLASH=1.2` (data-driven, sin hardcode).
+  2. **QUÉ — `entities/enemyBossLogic.lua`**: telegrafiado `/1.35` en furia (antes solo el cooldown), flanco de activación `enrageFlash` 1.2s con decay por `dt`, `spawnBoss` inicializa `enrageFlash=0`.
+  3. **QUÉ — `audio/sound.lua` + `systems/gamestates.lua`**: `setMusicRate/getMusicRate` (pitch `pcall`-seguro, persiste en `startSegment`); tempo `1.15x` con boss en furia y retorno a `1.0x` sin boss (guardado por comparación, sin `setPitch` por frame).
+  4. **QUÉ — Feedback**: `playing.lua` popup `FURIA DEL JEFE!` + shake 0.3 + SFX + shockwave al cruzar el umbral; `enemiesDraw.lua` tinte carmesí pulsante + anillo expansivo con `enrageFlash`.
+  5. **QUÉ — Tests**: suite `Scope 11 - Boss Enrage Phase` (4 tests) + `test_scope_11_bossAttacks` cableado en `tests/main.lua` (llevaba roto-silencioso tras el split de suites; además faltaba `end)` fantasma): 576 tests, 556 PASS, 20 fallos pre-existentes.
+  6. **POR QUÉ**: GDD Fase de Furia + TODO Boss Enrage: el flag `enraged` existía pero sin efecto en telegrafiados, música ni visual — el boss no tenía clímax.
+  7. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 556/576 PASS, 20 fallos pre-existentes sin regresión; `error.log` 0 bytes.
+
 ## 2026-09-04 19:59
 
 - **docs** (updated - 2026-09-04 19:59): Sync Phase 8.5 docs cierre (America/Bogota, rama `chore/docs-sync-8-5`):
@@ -193,7 +220,9 @@ Categories: feature, fix, refactor, docs, balance, polish
 ## 2026-08-27 19:02
 
 - **Fixed** (completed - 2026-08-27 19:02): Grid centrado en gameplay (America/Bogota):
-  1. **Qué**: systems/gameflow.recalcularGrilla ahora usa getDimensions high-DPI-safe, clamp y fallback, calcula gridOffsetX = floor((w-gridW)/2) y gameOffsetY = floor((h-gameH)/2) con clamp 0; systems/persistence._applyHeavy y previewResolution ahora disparan _recalcGrid() tras setMode+ecreateCanvases; ender/renderMain.drawGame y drawGameGlow/Shadow añaden fallback defensivo si offsets son nil y corrigen separador line(ox, GRID_OFFSET_Y-1, ox+gridW, ...) para centrado horizontal.
+  1. **Qué**: systems/gameflow.recalcularGrilla ahora usa getDimensions high-DPI-safe, clamp y fallback, calcula gridOffsetX = floor((w-gridW)/2) y gameOffsetY = floor((h-gameH)/2) con clamp 0; systems/persistence._applyHeavy y previewResolution ahora disparan _recalcGrid() tras setMode+
+ecreateCanvases; 
+ender/renderMain.drawGame y drawGameGlow/Shadow añaden fallback defensivo si offsets son nil y corrigen separador line(ox, GRID_OFFSET_Y-1, ox+gridW, ...) para centrado horizontal.
   2. **Por qué**: Grid se veía arriba-izquierda por offsets stales tras cambio de resolución (no se recalculaba grilla) y por 
 il en primera frame; ahora permanece perfectamente centrado en 640x480, 800x600, 1024x768 y 1920x1080.
   3. **Verificación**: love . 3s error.log 0 bytes, love.resize y preview 5s mantienen centrado.

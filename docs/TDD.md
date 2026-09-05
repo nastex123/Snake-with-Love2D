@@ -687,18 +687,21 @@ config.SKIN_REGISTRY = {
   - `autotomy(player)`: Remueve 4 segmentos de `player.body`, genera una entidad señuelo `enemies.decoy` en `(seg.x, seg.y)` con `timer = 3.0`.
   - `reverseSlither(player)`: Invierte el array `player.body` (`body[1] = tail`), recalcula `(dirX, dirY)` hacia el vector libre anterior.
   - `tailSnap(player)`: En flanco de giro 180°, evalúa celdas adyacentes a `body[#body]` y aplica `enemy.pushback(1)` + `enemy.stun(0.8)`.
-* **Registro de Nuevos Ítems (51–60) en `systems/items.lua`**:
-  - `tail_spike`: Activo que añade coordenadas a `world.state.placedTraps` (máx 3).
-  - `hourglass`: Mantiene un búfer circular de 120 estados pasados (`historyBuffer`) para restaurar posición en $t - 2.0\,\text{s}$.
-  - `orbital_beam`: Genera un colisionador continuo vertical `rect(head.x * tam, 0, tam, canvasHeight)` durante 2.5s.
-  - `emergency_battery`: Hook en `snake.mover()` cuando `vivo == false`: activa `timeScale = 0.1` durante 1.5s antes de confirmar la muerte.
+* **Registro de Nuevos Ítems (51–60) en `systems/items.lua`** (implementado 2026-09-05, 22 items):
+  - `tail_spike`: Activo que añade coordenadas a `world.state.placedTraps` (máx 3); `playing.lua` mata al primer enemigo que pise + recompensa normal.
+  - `hourglass`: Anillo de 120 snapshots/frame en `playing.lua` (`historyBuffer`); restaura body + dir + enemigos + boss y limpia ataques, conserva puntos.
+  - `orbital_beam`: `world.state.orbitalBeam={x,timer 2.5s}`; `playing.lua` vaporiza enemigos en la columna + apaga proyectiles; render en `renderMain.lua`.
+  - `emergency_battery`: Hook en `playing.lua` (`not vivo` y colisión letal): `timeScale = 0.1` + `pendingDeathTimer` 0.15 escalado (≈1.5s reales) antes del modal; 1 uso por sala (`batteryUsed`, reset en `gameflow.resetGame`).
+  - `holoDecoy`: Señuelo estático en la cabeza 4.0s (reutiliza `s.decoys`, los chasers ya priorizan señuelos).
+  - `light_boots`/`golden_tooth`/`double_harvest`/`refractor_prism`: pasivos en `shop.inventory`; boots mitigan `calcSpeed` isSlime a 1.125x + `slimeSlowTimer` 1.0s al pisar slime; tooth +`floor(len/10)` en comida normal; harvest 15% sin crecer en `mover` (flag `doubleHarvestProc`); prism +3$ con flag `prismRefract` en `playing.lua`.
+  - `lottery`: consumible (`itemType="consumable"` → slots, 1 uso): `love.math.random(0,35)` monedas al activar.
 
 ### 10.20 Boss Enrage & Laser Perimeter Collision Pipeline
 
-* **Enrage State Machine**: En `entities/enemies.lua` `updateBoss()`, si `boss.foodCollected >= boss.foodTarget - 3`, conmuta `boss.enraged = true`, multiplica velocidades de ataque por $1.35$ y ajusta el pitch musical a $1.15$.
-* **Laser Perimeter Pipeline**:
-  - Telegrafiado: 4 líneas en `render/renderMain.lua` con `telegraphTimer = 1.0`.
-  - Fase Activa: Genera 4 rayos continuos `(x1, y1) → (x2, y2)`. `snake.mover()` comprueba intersección de segmento de línea con la cabeza mediante `mathHelpers.lineIntersectsCell()`.
+* **Enrage State Machine** (implementado 2026-09-04): En `entities/enemyBossLogic.lua` `updateBoss()`, si `boss.foodCollected >= boss.foodTarget - BOSS_ENRAGE_THRESHOLD(3)`, conmuta `boss.enraged = true` + `enrageFlash = 1.2s`; telegrafiado y cooldown `/BOSS_ENRAGE_MULT(1.35)`; `sound.setMusicRate(BOSS_ENRAGE_PITCH 1.15)` en `gamestates.lua` con retorno a `1.0x`; popup `FURIA DEL JEFE!` + tinte carmesí en `enemiesDraw.lua`.
+* **Laser Perimeter Pipeline** (implementado 2026-09-05):
+  - Telegrafiado: celdas del rectángulo (`8*BOSS_LASER_HALF`, half 6) como markers con `BOSS_LASER_TELEGRAPH=1.0` (visor estándar en `enemiesDraw.lua`).
+  - Fase Activa: `bossAttacks.execute` genera 4 rayos `addLaser(x1,y1,x2,y2,BOSS_LASER_DURATION=4.0s)` en rectángulo centrado en la sala (pool P11, `minPhase=2`, `cooldown=7.0s`). `snake.mover()` comprueba distancia punto-segmento de la cabeza mediante `helpers.point_seg_dist()` (< `BOSS_LASER_HIT_DIST=0.45`). Render: halo rojo + núcleo blanco con flicker y fade en `enemiesDraw.lua`.
 
 ### 10.21 Accessibility, Keybind Mapping & Performance Metrics Engine
 

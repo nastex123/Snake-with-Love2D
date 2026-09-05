@@ -34,6 +34,7 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
         foodTarget = constants.BOSS_FOOD_TARGET,
         invulnerable = true,
         enraged = false,
+        enrageFlash = 0,
         _uiBarFill = 1.0,
         _uiBarTarget = 1.0,
     }
@@ -105,15 +106,25 @@ function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
         boss.phase = 1
     end
 
-    if boss.foodTarget and (boss.foodCollected or 0) >= (boss.foodTarget - 3) then
+    local enrageAt = (boss.foodTarget or constants.BOSS_FOOD_TARGET) - (constants.BOSS_ENRAGE_THRESHOLD or 3)
+    local wasEnraged = boss.enraged
+    if boss.foodTarget and (boss.foodCollected or 0) >= enrageAt then
         boss.enraged = true
     else
         boss.enraged = false
     end
+    -- Flanco de activacion: pulso carmesi visible al entrar en furia
+    if boss.enraged and not wasEnraged then
+        boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
+    end
+    if boss.enrageFlash and boss.enrageFlash > 0 then
+        boss.enrageFlash = math.max(0, boss.enrageFlash - dt)
+    end
 
+    local enrageMult = constants.BOSS_ENRAGE_MULT or 1.35
     local speedMult = 1.0 + (boss.phase - 1) * 0.2
     if boss.enraged then
-        speedMult = speedMult * 1.35
+        speedMult = speedMult * enrageMult
     end
 
     local innerCtx = {
@@ -133,11 +144,16 @@ function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
                 local chosen = attacks[love.math.random(1, #attacks)]
                 boss.currentAttack = chosen
                 boss.telegraphPositions = bossAttacks.computePositions(boss, chosen, innerCtx)
+                -- Furia: telegrafiados 35% mas rapidos (GDD Fase de Furia)
+                local telegraphTime = chosen.telegraphTime
+                if boss.enraged then
+                    telegraphTime = telegraphTime / enrageMult
+                end
                 for _, pos in ipairs(boss.telegraphPositions) do
-                    attackRegistry.addTelegraph(pos.x, pos.y, chosen.telegraphTime, chosen.name)
+                    attackRegistry.addTelegraph(pos.x, pos.y, telegraphTime, chosen.name)
                 end
                 boss.state = "telegraph"
-                boss.stateTimer = chosen.telegraphTime
+                boss.stateTimer = telegraphTime
             end
         end
 
@@ -148,10 +164,10 @@ function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
             -- Limpia telegraphs visibles al ejecutar
             local telegraphs = attackRegistry.getTelegraphs()
             for i = #telegraphs, 1, -1 do table.remove(telegraphs, i) end
-            boss.state = "cooldown"
-            local cd = boss.currentAttack.cooldown * (boss.phase == 3 and 0.7 or 1.0)
-            if boss.enraged then cd = cd / 1.35 end
-            boss.stateTimer = cd
+                boss.state = "cooldown"
+                local cd = boss.currentAttack.cooldown * (boss.phase == 3 and 0.7 or 1.0)
+                if boss.enraged then cd = cd / enrageMult end
+                boss.stateTimer = cd
         end
 
     elseif boss.state == "cooldown" then

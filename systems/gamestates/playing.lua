@@ -26,12 +26,91 @@ local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 
+-- Batería de Emergencia (GDD item 57): bullet-time 0.1x con dt escalado
+-- (pendingDeathTimer en tiempo escalado ≈ 1.5s reales); retorna true si se activó
+local function triggerBattery(st)
+    if shop.inventory and shop.inventory.emergencyBattery and not st.batteryUsed then
+        st.batteryUsed = true
+        st.timeScale = constants.EMERGENCY_BULLET_TIME or 0.1
+        st.pendingDeathTimer = (constants.EMERGENCY_DURATION or 1.5) * (constants.EMERGENCY_BULLET_TIME or 0.1)
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("BATERIA! TIEMPO LENTO", head.x, head.y) end
+        sound.play("shieldBreak")
+        return true
+    end
+    return false
+end
+
+-- Recompensa kills de Púa de Cola y Rayo Orbital (igual que enemyKilled normal)
+local function awardItemKill(st, res)
+    local streak = st.survivalStreak or 1.0
+    local earnedCoins = math.floor((res.coins or 1) * streak)
+    st.monedas = st.monedas + earnedCoins
+    uiMod.addPopup("+" .. earnedCoins .. "$", res.gx, res.gy)
+    local cols = {
+        chaser = constants.COLOR_ENEMY_CHASER,
+        patroller = constants.COLOR_ENEMY_PATROLLER,
+        spawner = constants.COLOR_ENEMY_SPAWNER
+    }
+    local c = cols[res.type]
+    if c then
+        table.insert(st.activePS, {
+            ps = particles.enemyKill(res.px, res.py, c[1], c[2], c[3])
+        })
+    end
+    sound.play("enemyKill")
+    if Events then
+        Events.emit("enemyKilled")
+        Events.emit("coinsChanged", {totalCoins = st.monedas})
+    else
+        achievementsMod.check("enemyKilled")
+        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+    end
+end
+
 function playing.update(dt)
     local st = world.state
     if st.deathModalOpen then return end
 
+    -- Batería de Emergencia (GDD item 57): cuenta atrás del bullet-time con dt escalado
+    -- (0.15 escalado ≈ 1.5s reales a timeScale 0.1); el mundo gatea en cámara lenta
+    if st.pendingDeathTimer and st.pendingDeathTimer > 0 then
+        st.pendingDeathTimer = st.pendingDeathTimer - dt
+        if st.pendingDeathTimer <= 0 then
+            st.pendingDeathTimer = nil
+            st.timeScale = 1
+            st.roomDamaged = true
+            st.deathModalOpen = true
+            return true
+        end
+        return
+    end
+
     if st.enemyFreezeTimer and st.enemyFreezeTimer > 0 then
         st.enemyFreezeTimer = math.max(0, st.enemyFreezeTimer - dt)
+    end
+
+    -- Reloj de Arena (GDD item 52): anillo de 120 estados (2.0s a 60Hz)
+    if st.player and st.player.body then
+        st.historyBuffer = st.historyBuffer or {}
+        local snap = {body = {}, enemies = {}, boss = nil}
+        for i, seg in ipairs(st.player.body) do
+            snap.body[i] = {x = seg.x, y = seg.y}
+        end
+        for i, e in ipairs(enemiesMod.list) do
+            local c = {}
+            for k, v in pairs(e) do
+                if type(v) ~= "table" then c[k] = v end
+            end
+            snap.enemies[i] = c
+        end
+        if enemiesMod.boss and enemiesMod.boss.alive then
+            snap.boss = {x = enemiesMod.boss.x, y = enemiesMod.boss.y}
+        end
+        table.insert(st.historyBuffer, snap)
+        while #st.historyBuffer > (constants.HISTORY_FRAMES or 120) do
+            table.remove(st.historyBuffer, 1)
+        end
     end
 
     if snakeMod.update then snakeMod.update(st.player, dt) end
@@ -77,6 +156,41 @@ function playing.update(dt)
         end
     end
 
+    -- Púa de Cola (GDD item 51): el primer enemigo que pise la trampa muere
+    if st.placedTraps and #st.placedTraps > 0 then
+        for ti = #st.placedTraps, 1, -1 do
+            local trap = st.placedTraps[ti]
+            for i = #enemiesMod.list, 1, -1 do
+                local e = enemiesMod.list[i]
+                if e.alive and e.x == trap.x and e.y == trap.y then
+                    local res = enemiesMod.killEnemy(i)
+                    table.remove(st.placedTraps, ti)
+                    if res then awardItemKill(st, res) end
+                    break
+                end
+            end
+        end
+    end
+
+    -- Rayo Orbital (GDD item 53): vaporiza enemigos en la columna + proyectiles
+    if st.orbitalBeam and st.orbitalBeam.timer and st.orbitalBeam.timer > 0 then
+        st.orbitalBeam.timer = st.orbitalBeam.timer - dt
+        local bx = st.orbitalBeam.x
+        for i = #enemiesMod.list, 1, -1 do
+            local e = enemiesMod.list[i]
+            if e.alive and e.x == bx then
+                local res = enemiesMod.killEnemy(i)
+                if res then awardItemKill(st, res) end
+            end
+        end
+        for _, ao in ipairs(enemiesMod.getAttackObjects()) do
+            if ao.type == "projectile" and math.abs(ao.x - bx) < 0.6 then
+                ao.lifetime = 0
+            end
+        end
+        if st.orbitalBeam.timer <= 0 then st.orbitalBeam = nil end
+    end
+
     if snakeMod.checkTailSnap then
         local snap = snakeMod.checkTailSnap(st.player)
         if snap then
@@ -119,6 +233,7 @@ function playing.update(dt)
         local col = snakeMod.checkEnemyCollisions(st.player, enemiesMod.list)
         if col then
             if col.type == "death" then
+                if triggerBattery(st) then return end
                 st.roomDamaged = true
                 st.deathModalOpen = true
                 return true
@@ -142,6 +257,15 @@ function playing.update(dt)
                 shadersMod.triggerDamage(0.5, 0.3)
             end
         end
+    end
+
+    -- Baba Slime + Botas Ligeras (GDD item 55): recalcular paso while en slime
+    if st.player.slimeSlowTimer and st.player.slimeSlowTimer > 0 then
+        st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador, {isSlime = true})
+        st._wasSlimeSlowed = true
+    elseif st._wasSlimeSlowed then
+        st._wasSlimeSlowed = false
+        st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
     end
 
     -- P05: magnetTimer ahora via core/timers (player.addOrRefreshTimer usa timers.after)
@@ -249,6 +373,8 @@ function playing.update(dt)
         end
 
         if not vivo then
+            -- Batería de Emergencia (GDD item 57): bullet-time 0.1x antes del modal
+            if triggerBattery(st) then return end
             st.roomDamaged = true
             st.deathModalOpen = true
             return true
@@ -258,6 +384,24 @@ function playing.update(dt)
             st.roomDamaged = true
             sound.play("shieldBreak")
             shadersMod.triggerDamage(0.5, 0.5)
+        end
+
+        -- Prisma Refractor (GDD item 60): el proyectil absorbido vale 3 monedas
+        if st.player.prismRefract then
+            st.player.prismRefract = false
+            local pc = constants.REFRACTOR_COINS or 3
+            st.monedas = st.monedas + pc
+            local head = st.player.body and st.player.body[1]
+            if head then uiMod.addPopup("PRISMA +" .. pc .. "$", head.x, head.y) end
+            sound.play("buy")
+        end
+
+        -- Cosecha Doble (GDD item 58): aviso del proc sin crecimiento
+        if st.player.doubleHarvestProc then
+            st.player.doubleHarvestProc = false
+            local head = st.player.body and st.player.body[1]
+            if head then uiMod.addPopup("COSECHA DOBLE!", head.x, head.y) end
+            sound.play("eat")
         end
 
         if comio then
@@ -318,6 +462,14 @@ function playing.update(dt)
                 st.puntuacion = st.puntuacion + total
                 st.frutasContador = st.frutasContador + 1
                 st.monedas = st.monedas + math.floor((monedasExtra + st.coinBonus) * streak)
+                -- Diente de Oro (GDD item 56): +1 moneda por fruta cada 10 segmentos
+                if shop.inventory and shop.inventory.goldenTooth then
+                    local tooth = math.floor(#st.player.body / 10)
+                    if tooth > 0 then
+                        st.monedas = st.monedas + tooth
+                        uiMod.addPopup("DIENTE +" .. tooth .. "$", foodMod.pos.x, foodMod.pos.y)
+                    end
+                end
                 st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
                 st.player.flashTimer = constants.DURACION_FLASH_COMER
 
@@ -348,10 +500,25 @@ function playing.update(dt)
             end
 
             if enemiesMod.boss and enemiesMod.boss.alive and foodMod.tipo ~= constants.FOOD_COIN then
+                local wasEnraged = enemiesMod.boss.enraged
                 enemiesMod.boss.foodCollected = enemiesMod.boss.foodCollected + 1
                 local ratio = enemiesMod.boss.foodCollected / enemiesMod.boss.foodTarget
                 enemiesMod.boss._uiBarTarget = math.max(0, 1 - ratio)
                 sound.play("boss_food_tick")
+                -- Fase de Furia (GDD): al quedar BOSS_ENRAGE_THRESHOLD comidas, pulso carmesi + aviso
+                local enrageAt = enemiesMod.boss.foodTarget - (constants.BOSS_ENRAGE_THRESHOLD or 3)
+                if not wasEnraged and enemiesMod.boss.foodCollected >= enrageAt then
+                    enemiesMod.boss.enraged = true
+                    enemiesMod.boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
+                    uiMod.addPopup("FURIA DEL JEFE!", enemiesMod.boss.x, enemiesMod.boss.y)
+                    sound.play("enemyKill")
+                    st.shakeTimer = 0.3
+                    shadersMod.triggerDamage(0.8, 0.6)
+                    local tamE = constants.TAMANIO_BLOQUE
+                    table.insert(st.activePS, {
+                        ps = particles.bossFoodTick(enemiesMod.boss.x * tamE + tamE / 2, enemiesMod.boss.y * tamE + tamE / 2)
+                    })
+                end
                 local tam2 = constants.TAMANIO_BLOQUE
                 table.insert(st.activePS, {
                     ps = particles.bossFoodTick(foodMod.pos.x * tam2 + tam2 / 2, foodMod.pos.y * tam2 + tam2 / 2)
