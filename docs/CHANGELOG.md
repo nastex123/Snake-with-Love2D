@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-05
+
+- **feature** (completed - 2026-09-05): Laser Perimeter — Jaula Laser del boss (America/Bogota, consola-only, rama `feature/phase8-enrage`):
+  1. **QUÉ — `entities/bossAttacks.lua`**: `laser_perimeter` 5º ataque (telegraph 1.0s, cooldown 7.0s, minPhase 2); `computePositions` celdas del rectángulo (`8*half`, half 6) + `execute` 4 rayos `addLaser` 4.0s centrados en sala. Cierra el bloque TODO Boss Enrage+Laser.
+  2. **QUÉ — Pool + colisión + render**: `addLaser` en `enemyAttackRegistry` (pool P11 + campos `x1/y1/x2/y2`), passthrough `enemies.addLaser`, `helpers.point_seg_dist`, colisión en `snake/movement.lua` (< 0.45, shield/armor/ghost), halo rojo + núcleo blanco con flicker/fade en `enemiesDraw.lua`, `BOSS_LASER_*` en config.
+  3. **QUÉ — Tests**: suite Scope 11 Laser (6 tests) + `test_scope_11_bossAttacks` cableado en runner (llevaba sin cargar tras P10 + `end)` fantasma): 582 tests, 562 PASS, 20 pre-existentes.
+  4. **POR QUÉ**: GDD Jaula Laser + TDD §10.20: al boss le faltaba su ataque de encierro — ahora fuerza reposicionamiento táctico.
+  5. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 562/582 PASS; `error.log` 0 bytes.
+
 ## 2026-09-04 20:20
 
 - **feature** (completed - 2026-09-04 20:20): Boss Enrage Phase — furia a 12/15 comidas (America/Bogota, consola-only, rama `feature/phase8-enrage`):

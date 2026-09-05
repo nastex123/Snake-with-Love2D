@@ -35,12 +35,13 @@ describe("Scope 11 - Boss Attack Definitions & Metadata", function()
         assert_equal(bossAttacks.ATTACKS, bossAttacks.definitions, "definitions alias must match ATTACKS")
     end)
 
-    it("should contain exactly the 4 canonical boss attack patterns", function()
+    it("should contain exactly the 5 canonical boss attack patterns", function()
         local attacks = bossAttacks.ATTACKS
         assert_not_nil(attacks.projectile_spread, "projectile_spread pattern must exist")
         assert_not_nil(attacks.spawn_adds, "spawn_adds pattern must exist")
         assert_not_nil(attacks.radial_pulse, "radial_pulse pattern must exist")
         assert_not_nil(attacks.teleport, "teleport pattern must exist")
+        assert_not_nil(attacks.laser_perimeter, "laser_perimeter pattern must exist (GDD Jaula Laser)")
     end)
 
     it("should specify valid numerical parameters for each attack pattern", function()
@@ -100,12 +101,12 @@ describe("Scope 11 - Attack Phase Progression", function()
         assert_nil(names.teleport, "teleport must NOT be available in Phase 1")
     end)
 
-    it("should return all 4 attacks when phase is 2 or 3", function()
+    it("should return all 5 attacks when phase is 2 or 3", function()
         local phase2 = bossAttacks.getAvailable(2)
-        assert_equal(4, #phase2, "Phase 2 must provide all 4 attacks")
+        assert_equal(5, #phase2, "Phase 2 must provide all 5 attacks")
 
         local phase3 = bossAttacks.getAvailable(3)
-        assert_equal(4, #phase3, "Phase 3 must provide all 4 attacks")
+        assert_equal(5, #phase3, "Phase 3 must provide all 5 attacks")
 
         local names = {}
         for _, atk in ipairs(phase2) do names[atk.name] = true end
@@ -113,6 +114,7 @@ describe("Scope 11 - Attack Phase Progression", function()
         assert_true(names.spawn_adds)
         assert_true(names.radial_pulse)
         assert_true(names.teleport)
+        assert_true(names.laser_perimeter)
     end)
 
     it("should handle default / nil phase safely", function()
@@ -547,5 +549,91 @@ describe("Scope 11 - Boss Enrage Phase", function()
     it("defines enrage tuning constants", function()
         assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 foods")
         assert_almost_equal(1.35, constants.BOSS_ENRAGE_MULT, 0.001, "Enrage mult must be 1.35")
+    end)
+end)
+
+-- =========================================================================
+-- SUITE: Laser Perimeter Attack (Jaula Laser, GDD)
+-- =========================================================================
+describe("Scope 11 - Laser Perimeter Attack", function()
+    it("defines laser_perimeter with telegraph 1.0s and cooldown 7.0s", function()
+        local atk = bossAttacks.get("laser_perimeter")
+        assert_not_nil(atk, "laser_perimeter pattern must exist")
+        assert_almost_equal(1.0, atk.telegraphTime, 0.001, "Laser telegraph must be 1.0s")
+        assert_almost_equal(7.0, atk.cooldown, 0.001, "Laser cooldown must be 7.0s")
+        assert_equal(2, atk.minPhase, "Laser must unlock at phase 2")
+        local avail = bossAttacks.getAvailable(2)
+        local found = false
+        for _, a in ipairs(avail) do
+            if a.name == "laser_perimeter" then found = true; break end
+        end
+        assert_true(found, "Laser must be available at phase 2")
+    end)
+
+    it("computes telegraph cells along the room-center rectangle", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 40, 28, 5, 10)
+        local atk = bossAttacks.get("laser_perimeter")
+        local positions = bossAttacks.computePositions(boss, atk, {anchoGrilla = 40, altoGrilla = 28})
+        local half = constants.BOSS_LASER_HALF or 6
+        assert_equal(8 * half, #positions, "Rectangle perimeter must have 8*half cells")
+        for _, pos in ipairs(positions) do
+            assert_gte(pos.x, 0)
+            assert_lt(pos.x, 40)
+            assert_gte(pos.y, 0)
+            assert_lt(pos.y, 28)
+        end
+    end)
+
+    it("execute() spawns 4 continuous beams lasting 4.0s", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 40, 28, 5, 10)
+        boss.phase = 2
+        bossAttacks.execute(boss, "laser_perimeter", 0.016, {anchoGrilla = 40, altoGrilla = 28, enemies = enemies})
+        local objs = enemies.getAttackObjects()
+        assert_equal(4, #objs, "Laser perimeter must spawn 4 beams")
+        for _, ao in ipairs(objs) do
+            assert_equal("laser", ao.type)
+            assert_almost_equal(4.0, ao.lifetime, 0.001, "Beams must last 4.0s")
+        end
+    end)
+
+    it("expires laser beams after their duration", function()
+        enemies.init()
+        enemies.spawnBoss(1, 40, 28, 5, 10)
+        enemies.addLaser(5, 5, 10, 5, 4.0, 1)
+        assert_equal(1, #enemies.getAttackObjects())
+        enemies.update(4.5, {{x = 0, y = 0}}, 40, 28, {pos = {}}, 1, {})
+        assert_equal(0, #enemies.getAttackObjects(), "Laser must expire after 4.0s")
+    end)
+
+    it("kills the snake head crossing an active beam", function()
+        local s = snake.reset()
+        coreWorld.set("controlMode", "classic")
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}}
+        s.dirX = 1
+        s.dirY = 0
+        s.inputQueue = {{x = 1, y = 0}}
+        enemies.init()
+        enemies.addLaser(6, 4, 6, 6, 4.0, 1)
+        local vivo, comio, enemyKilled, bossResult, attackHit = snake.mover(s, {x = 99, y = 99}, 20, 20, {})
+        assert_false(vivo, "Snake must die crossing a laser beam")
+        assert_not_nil(attackHit, "attackHit result should be returned")
+        assert_true(attackHit.hit)
+    end)
+
+    it("shield absorbs a laser hit without player death", function()
+        local s = snake.reset()
+        coreWorld.set("controlMode", "classic")
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}}
+        s.dirX = 1
+        s.dirY = 0
+        s.inputQueue = {{x = 1, y = 0}}
+        shop.shieldActive = true
+        enemies.init()
+        enemies.addLaser(6, 4, 6, 6, 4.0, 1)
+        local vivo, comio, enemyKilled, bossResult, attackHit = snake.mover(s, {x = 99, y = 99}, 20, 20, {})
+        assert_true(vivo, "Shield absorbs laser hit")
+        assert_false(shop.shieldActive, "Shield is consumed")
     end)
 end)

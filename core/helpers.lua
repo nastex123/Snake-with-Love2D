@@ -184,6 +184,30 @@ function helpers.rect_center(x, y, w, h)
 end
 helpers.rectCenter = helpers.rect_center
 
+-- Distancia minima de un punto a un segmento (x1,y1)-(x2,y2), para colision con rayos laser
+function helpers.point_seg_dist(px, py, x1, y1, x2, y2)
+    px = px or 0
+    py = py or 0
+    x1 = x1 or 0
+    y1 = y1 or 0
+    x2 = x2 or x1
+    y2 = y2 or y1
+    local dx = x2 - x1
+    local dy = y2 - y1
+    local lenSq = dx * dx + dy * dy
+    local t = 0
+    if lenSq > 0 then
+        t = ((px - x1) * dx + (py - y1) * dy) / lenSq
+        t = math.max(0, math.min(1, t))
+    end
+    local cx = x1 + t * dx
+    local cy = y1 + t * dy
+    local ox = px - cx
+    local oy = py - cy
+    return math.sqrt(ox * ox + oy * oy)
+end
+helpers.pointSegDist = helpers.point_seg_dist
+
 -- Mezcla aleatoriamente los elementos de un array usando Fisher-Yates
 function helpers.shuffle(list, rng)
     if type(list) ~= "table" then
