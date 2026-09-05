@@ -2,10 +2,10 @@
 
 ## 1. Architecture Overview
 
-**Pattern**: Procedural module-based with global state management  
-**Entry Point**: `main.lua`  
-**Total Modules**: 55 .lua files (P01 +3, P02 +4, P03 +3: gamestates/playing, transition, death)  
-**Total Lines**: ~10,200 (post-P03 31:08:2026: gamestates 643→196+389+64+72, snake 922→257+97+105+152+393, enemies 634→341+139+170+121)
+**Pattern**: Procedural module-based with global state management
+**Entry Point**: `main.lua` (541L fixed timestep `FIXED_DT=1/60`)
+**Total Modules**: 60 juego (62 con `conf.lua`+`scratch_test_debug.lua`, 93 con 31 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), P10 tests 1→6
+**Total Lines**: ~11,500 src (post-P15 04:09:2026: `obstacles` 723→495L, `registry` 139→224L pools, `world` 29→369L SCHEMA, `shaders` 496→652L Voronoi, `main` 380→541L timestep, `persistence` 362→862L atomic)
 
 ### Folder Structure
 
@@ -13,11 +13,14 @@
 Snake-with-Love2D/
 ├── main.lua, constants.lua     ← raíz (constants.lua = shim → core/config.lua)
 ├── core/
-│   ├── config.lua              ← configuracion central (canvas, gameplay, colores, boss)
+│   ├── config.lua              ← configuracion central + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15)
 │   ├── logger.lua              ← Log.info/warn/error/debug
-│   ├── timers.lua              ← timer manager (after/every/cancel/clear, object pooling)
-│   ├── world.lua               ← World.state (estado global, reemplaza globals)
-│   ├── touch.lua               ← input táctil (swipes)
+│   ├── timers.lua              ← timer manager único pooled (P05: `activeTimers` deprecado)
+│   ├── world.lua               ← 369L World.state dot-notation + `SCHEMA` 12 keys + `validate()` (P04/P13)
+│   ├── events.lua              ← 134L Event Bus `on/off/emit` (P06)
+│   ├── input.lua               ← 89L `isDown/isHeld/isAnyHeld` + gamepad (P07)
+│   ├── assets.lua              ← 144L `getFont/getImage/getCanvas` cache (P08)
+│   ├── touch.lua               ← input táctil (swipes, lazy require P-fix circular)
 │   └── helpers.lua             ← deep_copy, math/rect utilities
 ├── entities/
 │   ├── snake.lua               ← fachada 257L (P02: delega a 4 submódulos, draw + hsv2rgb)
@@ -27,9 +30,9 @@ Snake-with-Love2D/
 │   │   ├── collisions.lua      ← checkEnemyCollisions (+fromIndex) / checkPatrollerSlice / checkConstrictorLoop (P02 152L)
 │   │   └── movement.lua        ← mover + encolarDireccion/cambiarDireccion/checkTailSnap (P02 393L)
 │   ├── food.lua                ← 3 tipos de comida
-│   ├── obstacles.lua           ← obstáculos (723L → pendiente P12)
+│   ├── obstacles.lua           ← 495L fachada hazards (P12: delega a `world/biomeHazards.lua`)
 │   ├── enemies.lua             ← fachada 341L (P01: delega a 3 submódulos)
-│   ├── enemyAttackRegistry.lua ← telegraphs/attackObjects/pendingRespawns (P01 139L)
+│   ├── enemyAttackRegistry.lua ← 224L pools 32/64/32 `active` sin GC (P01+P11)
 │   ├── enemyBossLogic.lua      ← spawnBoss/hitBoss/onBossDefeated + máquina de estados boss (P01 170L)
 │   ├── enemySpawnLogic.lua     ← canSpawn/spawnAt/generar (P01 121L)
 │   ├── chaserAI.lua            ← IA social Chaser (SOLO/DUPLA/MANADA)
@@ -37,6 +40,7 @@ Snake-with-Love2D/
 │   └── enemyHelpers.lua        ← validarPos, sampleFreeTile, etc.
 ├── world/
 │   ├── world.lua               ← facade: estado etapa/sala/objetivoSala + getters
+│   ├── biomeHazards.lua        ← 254L `DEFAULTS` + `isLethal/update/draw` (P12)
 │   ├── dungeonGen.lua          ← BSP, templates de sala, stage modifiers
 │   └── populate.lua            ← población de sala
 ├── systems/
