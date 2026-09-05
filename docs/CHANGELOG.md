@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-05
+
+- **feature** (completed - 2026-09-05): Extended Items Arsenal 51-60 (America/Bogota, consola-only, rama `feature/phase8-items-arsenal`):
+  1. **QUÉ — `systems/items.lua` + `core/config.lua`**: 10 items GDD (22 totales) con costes/duraciones data-driven + `itemType="consumable"` (lottery → slots, 1 uso) + `itemColor` + fallback diamante en `shop.drawIcon`.
+  2. **QUÉ — `systems/player.lua`**: 10 ramas `aplicarItem` (trampas max 3, rewind con copia profunda, rayo 2.5s, señuelo 4s, 5 pasivos a `shop.inventory`, lotería 0-35$).
+  3. **QUÉ — Hooks**: `mover` (harvest 15%, prism flag, slime detect), `core` (`slimeSlowTimer`), `calcSpeed` boots 1.125x, `playing` (historial 120f, trampas/rayo kills, batería bullet-time, tooth/prism/harvest popups, slime recompute), `resetGame` limpia por sala, `renderMain` dibuja trampas + rayo.
+  4. **QUÉ — Tests**: suite scope_21 (15 tests) + conteos 12→22: 560 tests, 540 PASS, 20 pre-existentes.
+  5. **POR QUÉ**: TODO Extended Items Arsenal: la tienda estaba estancada en 12 items desde Fase 3.
+  6. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 540/560 PASS; `error.log` 0 bytes.
+
 ## 2026-09-04 19:59
 
 - **docs** (updated - 2026-09-04 19:59): Sync Phase 8.5 docs cierre (America/Bogota, rama `chore/docs-sync-8-5`):

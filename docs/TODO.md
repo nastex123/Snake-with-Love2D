@@ -58,8 +58,8 @@
   - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
 
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
-- [ ] **Extended Items Arsenal (51-60)**:
-  - [ ] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
+- [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):
+  - [x] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
 - [x] **Stage Biomes & Hazards (100% Completado)**:
   - [x] Stage 1: Stone Catacombs (framework base de biomas, muros estándar, paleta de mazmorra, banner y badge HUD)
   - [x] Stage 2: Frozen Crypt (losetas de hielo con deslizamiento inercial `+1` al girar y partículas de escarcha)
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-05 (docs-sync-8-5: ROADMAP 8.5 ✅, TECH-DEBT v2.0, TDD 60 módulos, GDD §21.4 implementados — rama chore/docs-sync-8-5)*
+*Last updated: 2026-09-05 (Extended Items 51-60 ✅ en feature/phase8-items-arsenal — 22 items, scope_21 15 tests, 560 tests 540 PASS)*
