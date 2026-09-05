@@ -32,6 +32,7 @@ if pcall(require, "tests.test_scope_16_profiles") then end
 if pcall(require, "tests.test_scope_18_gamestatesDebug") then end
 if pcall(require, "tests.test_scope_19_biomes_hazards") then end
 if pcall(require, "tests.test_scope_20_patroller_ai") then end
+if pcall(require, "tests.test_scope_22_miniboss") then end
 if pcall(require, "tests.test_scope_21_items_arsenal") then end
 
 -- Source files for full coverage reporting

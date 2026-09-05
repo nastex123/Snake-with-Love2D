@@ -543,6 +543,7 @@ miniboss = {
 }
 ```
 * **Integración con Render**: `render/enemiesDraw.lua` incluye `drawMiniBoss(mb, dt)` con interpolación suave de posición, sombra proyectada y barra de salud superior.
+* **Implementación (2026-09-05, `feature/phase8-minibosses`)**: `entities/enemyMiniBoss.lua` (~400L, `MINIBOSS_DEFS` 5 + máquina idle/telegraph/execute/cooldown) + API en fachada `enemies` (`spawnMiniBoss/getMiniBoss/hitMiniBoss/addMiniBossFood`) + estado en `World.state.enemies.miniboss`; sala 3 marcada `isElite` en `dungeonGen.generar` y poblada en `populate` (paso 6); `playing.lua` premia (`awardMiniBoss`: monedas + streak + cofre-buff temático) y resuelve contacto 2x2, comidas, fuego, bomba y singularidad; `drawMiniBoss` 2x2 con borde dorado al telegrafiar. Desviaciones honestas: wyrm = 1 entidad hp 6 (no 6 segmentos), red = 3x3 slime, crusher/wyrm sin daño directo a serpiente, sin variante élite-chaser (la sala 3 la ocupa el mini-jefe).
 
 ### 10.11 Object Pooling & Zero-GC Memory Architecture
 

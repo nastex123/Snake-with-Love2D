@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 22:18
+
+- **feature** (completed - 2026-09-04 22:18): Elite Encounters & 5 Mini-Bosses sala 3 (America/Bogota, consola-only, rama `feature/phase8-minibosses`):
+  1. **QUÉ — `entities/enemyMiniBoss.lua` (nuevo, ~400L)**: `MINIBOSS_DEFS` 5 (stats GDD: hp 3/4/6/5/6, comidas 6/7/8/9/10, monedas 15/20/25/30/40) + `spawn/hit/defeat/addFood` + máquina idle/telegraph/execute/cooldown + 5 ataques (charge sísmica, aliento+nova, rastro lava 4s, enjambre+red, singularidad+teleport); estado en `World.state.enemies.miniboss`.
+  2. **QUÉ — Integración**: fachada `enemies` (spawn/get/hit/food + fuse 2s en update + draw), `dungeonGen` marca `isElite` sala 3, `populate` paso 6 spawnea, `playing` premia (monedas+racha+cofre-buff) y resuelve contacto/comidas/fuego/bomba/singularidad, `gameflow` popup sala 3, `drawMiniBoss` 2x2 borde dorado.
+  3. **QUÉ — Tests**: suite scope_22 (14 tests) cableada en runner: 610 tests, 590 PASS, 20 pre-existentes.
+  4. **POR QUÉ**: TODO Elite+Mini-Bosses: la sala 3 no tenía identidad; el encuentro élite ahora es temático por etapa.
+  5. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 590/610 PASS; `error.log` 0 bytes.
+
 ## 2026-09-05
 
 - **feature** (completed - 2026-09-05): Extended Items Arsenal 51-60 (America/Bogota, consola-only, rama `feature/phase8-items-arsenal`):
