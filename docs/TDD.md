@@ -695,7 +695,7 @@ config.SKIN_REGISTRY = {
 
 ### 10.20 Boss Enrage & Laser Perimeter Collision Pipeline
 
-* **Enrage State Machine**: En `entities/enemies.lua` `updateBoss()`, si `boss.foodCollected >= boss.foodTarget - 3`, conmuta `boss.enraged = true`, multiplica velocidades de ataque por $1.35$ y ajusta el pitch musical a $1.15$.
+* **Enrage State Machine** (implementado 2026-09-04): En `entities/enemyBossLogic.lua` `updateBoss()`, si `boss.foodCollected >= boss.foodTarget - BOSS_ENRAGE_THRESHOLD(3)`, conmuta `boss.enraged = true` + `enrageFlash = 1.2s`; telegrafiado y cooldown `/BOSS_ENRAGE_MULT(1.35)`; `sound.setMusicRate(BOSS_ENRAGE_PITCH 1.15)` en `gamestates.lua` con retorno a `1.0x`; popup `FURIA DEL JEFE!` + tinte carmesí en `enemiesDraw.lua`.
 * **Laser Perimeter Pipeline**:
   - Telegrafiado: 4 líneas en `render/renderMain.lua` con `telegraphTimer = 1.0`.
   - Fase Activa: Genera 4 rayos continuos `(x1, y1) → (x2, y2)`. `snake.mover()` comprueba intersección de segmento de línea con la cabeza mediante `mathHelpers.lineIntersectsCell()`.

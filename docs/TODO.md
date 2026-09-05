@@ -82,7 +82,7 @@
 - [ ] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)**:
   - [ ] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards
 - [ ] **Boss Enrage Phase & Laser Attacks**:
-  - [ ] 3-food threshold enrage state (35% faster telegraphs & high tempo music)
+  - [x] 3-food threshold enrage state (35% faster telegraphs & high tempo music) — `feature/phase8-enrage` 2026-09-05: `BOSS_ENRAGE_*` config, telegraph `/1.35`, pitch `1.15x`, pulso carmesí + popup `FURIA DEL JEFE!`, 4 tests scope_11 (576 tests, 556 PASS)
   - [ ] Laser Perimeter attack (center dividing continuous beams)
 - [ ] **Room Modifiers, Curses & Blessings**:
   - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-05 (docs-sync-8-5: ROADMAP 8.5 ✅, TECH-DEBT v2.0, TDD 60 módulos, GDD §21.4 implementados — rama chore/docs-sync-8-5)*
+*Last updated: 2026-09-04 20:20 (Boss Enrage Phase ✅ en feature/phase8-enrage — queda Laser Perimeter; docs-sync-8-5 mergeado en dev@fef57af)*

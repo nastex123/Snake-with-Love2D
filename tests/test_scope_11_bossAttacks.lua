@@ -502,7 +502,50 @@ describe("Scope 11 - Full Combat Lifecycle & enemies.lua Integration", function(
         assert_equal(1, #enemies.getAttackObjects())
 
         enemies.clearAttackObjects()
-        assert_equal(0, #enemies.getTelegraphs())
-        assert_equal(0, #enemies.getAttackObjects())
+        assert_equal(0, #enemies.getTelegraphs(), "Telegraphs must be cleared on boss defeat")
+        assert_equal(0, #enemies.getAttackObjects(), "Attack objects must be cleared on boss defeat")
+    end)
+end)
+
+-- =========================================================================
+-- SUITE: Boss Enrage Phase (Fase de Furia, GDD)
+-- =========================================================================
+describe("Scope 11 - Boss Enrage Phase", function()
+    it("raises enraged flag with crimson flash at foodTarget-3", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
+        boss.foodCollected = 11
+        enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
+        assert_false(boss.enraged, "11/15 food must not enrage")
+        boss.foodCollected = 12
+        enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
+        assert_true(boss.enraged, "12/15 food must enrage")
+        assert_gt(boss.enrageFlash or 0, 0, "Crimson flash must trigger on enrage")
+    end)
+
+    it("scales telegraph time by 1/ENRAGE_MULT when enraged", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
+        boss.foodCollected = 12
+        boss.state = "idle"
+        boss.attackCooldown = 0
+        enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
+        assert_equal("telegraph", boss.state, "Boss must enter telegraph")
+        local expected = boss.currentAttack.telegraphTime / (constants.BOSS_ENRAGE_MULT or 1.35)
+        assert_almost_equal(expected, boss.stateTimer, 0.001, "Telegraph must be 35% faster in enrage")
+    end)
+
+    it("exposes music rate control defaulting to 1.0", function()
+        local soundMod = require("audio.sound")
+        soundMod.setMusicRate(1.0)
+        assert_equal(1.0, soundMod.getMusicRate(), "Default music rate must be 1.0")
+        soundMod.setMusicRate(constants.BOSS_ENRAGE_PITCH or 1.15)
+        assert_equal(1.15, soundMod.getMusicRate(), "Enrage pitch must be 1.15")
+        soundMod.setMusicRate(1.0)
+    end)
+
+    it("defines enrage tuning constants", function()
+        assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 foods")
+        assert_almost_equal(1.35, constants.BOSS_ENRAGE_MULT, 0.001, "Enrage mult must be 1.35")
     end)
 end)

@@ -26,6 +26,7 @@ if pcall(require, "tests.test_scope_07_food") then end
 if pcall(require, "tests.test_scope_08_obstacles") then end
 if pcall(require, "tests.test_scope_09_enemies") then end
 if pcall(require, "tests.test_scope_10_chaserAI") then end
+if pcall(require, "tests.test_scope_11_bossAttacks") then end
 if pcall(require, "tests.test_scope_13_worldFacade") then end
 if pcall(require, "tests.test_scope_16_profiles") then end
 if pcall(require, "tests.test_scope_18_gamestatesDebug") then end

@@ -184,6 +184,10 @@ config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para c
 config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
+config.BOSS_ENRAGE_THRESHOLD = 3      -- Comidas restantes para activar la furia (12/15)
+config.BOSS_ENRAGE_MULT = 1.35        -- Acelerador de telegrafiados y ataques en furia (-35% tiempos)
+config.BOSS_ENRAGE_PITCH = 1.15       -- Tempo musical en furia (pitch del segmento boss)
+config.BOSS_ENRAGE_FLASH = 1.2        -- Duracion del pulso carmesi al entrar en furia (s)
 config.MAX_GRID_COLS = 40
 config.MAX_GRID_ROWS = 28
 

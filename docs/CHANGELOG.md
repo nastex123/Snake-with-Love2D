@@ -8,6 +8,17 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 20:20
+
+- **feature** (completed - 2026-09-04 20:20): Boss Enrage Phase — furia a 12/15 comidas (America/Bogota, consola-only, rama `feature/phase8-enrage`):
+  1. **QUÉ — `core/config.lua`**: `BOSS_ENRAGE_THRESHOLD=3`, `BOSS_ENRAGE_MULT=1.35`, `BOSS_ENRAGE_PITCH=1.15`, `BOSS_ENRAGE_FLASH=1.2` (data-driven, sin hardcode).
+  2. **QUÉ — `entities/enemyBossLogic.lua`**: telegrafiado `/1.35` en furia (antes solo el cooldown), flanco de activación `enrageFlash` 1.2s con decay por `dt`, `spawnBoss` inicializa `enrageFlash=0`.
+  3. **QUÉ — `audio/sound.lua` + `systems/gamestates.lua`**: `setMusicRate/getMusicRate` (pitch `pcall`-seguro, persiste en `startSegment`); tempo `1.15x` con boss en furia y retorno a `1.0x` sin boss (guardado por comparación, sin `setPitch` por frame).
+  4. **QUÉ — Feedback**: `playing.lua` popup `FURIA DEL JEFE!` + shake 0.3 + SFX + shockwave al cruzar el umbral; `enemiesDraw.lua` tinte carmesí pulsante + anillo expansivo con `enrageFlash`.
+  5. **QUÉ — Tests**: suite `Scope 11 - Boss Enrage Phase` (4 tests) + `test_scope_11_bossAttacks` cableado en `tests/main.lua` (llevaba roto-silencioso tras el split de suites; además faltaba `end)` fantasma): 576 tests, 556 PASS, 20 fallos pre-existentes.
+  6. **POR QUÉ**: GDD Fase de Furia + TODO Boss Enrage: el flag `enraged` existía pero sin efecto en telegrafiados, música ni visual — el boss no tenía clímax.
+  7. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 556/576 PASS, 20 fallos pre-existentes sin regresión; `error.log` 0 bytes.
+
 ## 2026-09-04 19:59
 
 - **docs** (updated - 2026-09-04 19:59): Sync Phase 8.5 docs cierre (America/Bogota, rama `chore/docs-sync-8-5`):
