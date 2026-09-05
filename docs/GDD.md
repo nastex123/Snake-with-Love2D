@@ -1203,25 +1203,25 @@ Conjunto de 4 bloques × 20 propuestas para evolución del juego. Marcador: **[N
 59. **Stats de inversión en tienda** — Registro de gasto por ítem y mejor retorno (monedas/combo ganados) en el perfil; datos para balance. **[NUEVA]**
 60. **3 logros ocultos** — Aparecen como "??" con pista críptica (además de los 11 existentes), fomentando experimentación. **[NUEVA]**
 
-### 21.4 Bloque 4: Arquitectura-UX-Accesibilidad (61–80)
-61. **Event bus desacoplado** — Eventos tipados (death, roomCleared, itemBought) que varios sistemas suscriben; reemplaza las llamadas directas de achievements. **[NUEVA]**
-62. **Timers consolidados en core/timers.lua** — Un solo gestor con tipos y prioridad, en vez de timers dispersos por módulo. **[NUEVA]**
+### 21.4 Bloque 4: Arquitectura-UX-Accesibilidad (61–80) — Phase 8.5 ✅ parcial 2026-09-04
+61. **Event bus desacoplado** — `core/events.lua` 134L `on/off/emit` (P06 ✅ PR #11). **[IMPLEMENTADO]**
+62. **Timers consolidados en core/timers.lua** — `timers.update` único pooled, `activeTimers` deprecado (P05 ✅ PR #11). **[IMPLEMENTADO]**
 63. **Presets de dificultad** — Relajado/Normal/Intenso que ajustan spawn counts sin tocar la arquitectura de datos. **[NUEVA]**
 64. **Escalado de UI por resolución** — Fuentes/HUD adaptativos a tamaño de ventana, con percentiles en config. **[NUEVA]**
 65. **Perfilado en runtime (Tab)** — Solapa de ms por sistema (movimiento, IA, render, shaders) con target 60fps en el debug menu. **[solapa → §21.4 #74]**
-66. **Escritura atómica de profiles.dat** — Merge/bloqueo temporal para evitar corrupción al cerrar brusco. **[NUEVA]**
-67. **Asset manager formal** — FBOs/fuentes/canvases creados una vez y compartidos (convierte la práctica actual en un módulo explícito). **[NUEVA]**
+66. **Escritura atómica de profiles.dat** — `.tmp`+`.bak` + `schema_version=2` (P09 ✅ PR #12). **[IMPLEMENTADO]**
+67. **Asset manager formal** — `core/assets.lua` 144L `getFont/getImage/getCanvas` cache (P08 ✅ PR #11). **[IMPLEMENTADO]**
 68. **Modo alto contraste** — Paleta independiente del bioma + toggle que detecta protanopia/deuteranopia. **[solapa → §20.3 #28]**
 69. **Reducción de movimiento** — Toggle único que apaga screen shake, hitstop y flashes intensos (detrás de `settings.accessibility.motion`). **[NUEVA]**
 70. **Tooltips instantáneos en tienda** — Al hoverear un ítem, panel con sinergias conocidas y valor real; delay configurable. **[NUEVA]**
 71. **Reanudar run activa** — Persistir la run completa (incluso a mitad de sala) y retomarla al volver, no solo "última run". **[NUEVA]**
 72. **Metrónomo de grid opcional** — Toggle que muestra dónde caerá el próximo paso para novatos; off por defecto. **[NUEVA]**
-73. **Suíte headless de smoke tests** — Movimiento y colisiones validados sin render vía `love . --test` (lógica pura). **[solapa → TDD §10.23]**
+73. **Suíte headless de smoke tests** — `tests/smoke.lua` 32L + split 384+397+326 (P10 ✅ PR #12). **[IMPLEMENTADO]**
 74. **Escena de estrés fija** — Benchmark reproducible (N enemigos, proyectiles) en debug para medir regresiones de FPS. **[NUEVA]**
 75. **Tweaks para jugadores avanzados** — Algunas constantes (speed, caps) editables vía settings.json con validación de rango. **[NUEVA]**
 76. **Contrato de API de los 42 módulos** — Encabezado de 1 línea por función pública en cada módulo (DX). **[NUEVA]**
-77. **Versionado del perfil** — `schema_version` en profiles.dat para migraciones suaves al actualizar. **[NUEVA]**
+77. **Versionado del perfil** — `schema_version=2` + migración (P09 ✅ PR #12). **[IMPLEMENTADO]**
 78. **i18n con fallback** — Diccionarios `locales/es.lua`, `en.lua`, `pt.lua`; fallback a inglés si falta clave. **[NUEVA]**
-79. **Input centralizado** — `input.lua` que emite acciones desde teclado/ratón/gamepad/touch (prepara el gamepad del ROADMAP Fase 9). **[NUEVA]**
+79. **Input centralizado** — `core/input.lua` 89L + `KEYBINDS` + gamepad (P07 ✅ PR #11). **[IMPLEMENTADO]**
 80. **Guía DX de extensión** — Checklist de 10 pasos + scaffolding para agregar un enemigo/ítem nuevo, en docs/. **[NUEVA]**
 
