@@ -259,6 +259,17 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
         local coins = ((bossRule and bossRule.dropCoins) or 5) + (world.etapa or 1) * 2
         enemiesMod.spawnBoss(world.etapa or 1, anchoGrilla, altoGrilla, hp, coins)
     end
+
+    -- 6. Sala 3 élite: mini-jefe temático de la etapa (GDD §5)
+    if not isBossRoom and (world.sala or 0) == 3 and enemiesMod and enemiesMod.spawnMiniBoss then
+        local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 4)
+        if gx then
+            gx = math.max(0, math.min(anchoGrilla - 2, gx))
+            gy = math.max(0, math.min(altoGrilla - 2, gy))
+            enemiesMod.spawnMiniBoss(world.etapa or 1, gx, gy)
+            reservePosition(avoidList, gx, gy, 2)
+        end
+    end
 end
 
 -- Export helpers for testing

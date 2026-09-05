@@ -16,6 +16,7 @@ local enemiesDraw = require("render.enemiesDraw")
 local attackRegistry = require("entities.enemyAttackRegistry")
 local bossLogic = require("entities.enemyBossLogic")
 local spawnLogic = require("entities.enemySpawnLogic")
+local miniBossLogic = require("entities.enemyMiniBoss")
 local world = require("core.world")
 
 -- P04: World.state.enemies como fuente de verdad (enemies.list / enemies.boss)
@@ -100,6 +101,7 @@ function enemies.init()
     enemies.list = {}
     enemies.boss = nil
     attackRegistry.clearAll()
+    miniBossLogic.clear()
     chaserAI.reset()
 end
 
@@ -127,6 +129,27 @@ end
 
 function enemies.onBossDefeatedByFood()
     return bossLogic.onBossDefeatedByFood(enemies, attackRegistry)
+end
+
+-- ============================================================
+-- Mini-Boss (sala 3) — delega a enemyMiniBoss
+-- ============================================================
+function enemies.spawnMiniBoss(etapa, gx, gy)
+    return miniBossLogic.spawn(etapa, gx, gy)
+end
+
+function enemies.getMiniBoss()
+    return miniBossLogic.get()
+end
+
+function enemies.hitMiniBoss(dmg, ctx)
+    return miniBossLogic.hit(miniBossLogic.get(), dmg, ctx)
+end
+
+function enemies.addMiniBossFood()
+    local mb = miniBossLogic.get()
+    if not mb then return nil end
+    return miniBossLogic.addFood(mb)
 end
 
 -- ============================================================
@@ -236,6 +259,17 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
             e.stunTimer = math.max(0, e.stunTimer - dt)
         end
 
+        -- Larvas suicidas de la Reina: mecha 2s y dejan baba al explotar
+        if e.fuse then
+            e.fuse = e.fuse - dt
+            if e.fuse <= 0 then
+                e.alive = false
+                if e.fuseSlime and obstaclesMod and obstaclesMod.spawnAt then
+                    obstaclesMod.spawnAt(e.x, e.y, "slime")
+                end
+            end
+        end
+
         if enemies.boss and enemies.boss.alive and e.alive then
             local age = now - (e.spawnTime or now)
             if age >= constants.BOSS_ENEMY_LIFETIME then
@@ -312,6 +346,23 @@ function enemies.update(dt, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, et
         bossLogic.updateBarLerp(enemies.boss, dt)
     end
 
+    -- Mini-Boss de sala 3 (nunca coexiste con el boss final)
+    if not isFrozen then
+        local mb = miniBossLogic.get()
+        if mb and mb.alive then
+            miniBossLogic.update(dt, mb, {
+                enemies = enemies,
+                obstacles = obstaclesMod,
+                attackRegistry = attackRegistry,
+                head = targetHead,
+                tail = snakeBody[#snakeBody],
+                body = snakeBody,
+                anchoGrilla = anchoGrilla,
+                altoGrilla = altoGrilla,
+            })
+        end
+    end
+
     -- Pending respawns (chasers)
     local pending = attackRegistry.getPendingRespawns()
     local nowRespawn = love.timer.getTime()
@@ -374,6 +425,7 @@ end
 
 function enemies.draw(snakeHead)
     enemiesDraw.draw(enemies.list, enemies.boss, attackRegistry.getTelegraphs(), attackRegistry.getAttackObjects(), snakeHead)
+    enemiesDraw.drawMiniBoss(miniBossLogic.get())
 end
 
 return enemies

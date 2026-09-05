@@ -453,4 +453,57 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
     end
 end
 
+-- Mini-jefe de sala 3: bloque 2x2 con color temático, barra de vida y borde
+-- dorado al telegrafiar (indicador de vulnerabilidad, GDD #47)
+function draw.drawMiniBoss(mb)
+    if not mb or not mb.alive then return end
+    local tam = constants.TAMANIO_BLOQUE
+    local time = love.timer.getTime()
+    local def = (mb.color or {1, 1, 1})
+    local pulse = math.sin(time * 4) * 0.15 + 0.85
+    local flash = (mb.flash or 0) > 0 and 0.5 or 0
+    local x0 = mb.x * tam
+    local y0 = mb.y * tam
+
+    love.graphics.setColor(0, 0, 0, 0.35)
+    love.graphics.rectangle("fill", x0 + 3, y0 + 4, tam * 2, tam * 2, 3, 3)
+    love.graphics.setColor(
+        math.min(1, def[1] * pulse + flash),
+        math.min(1, def[2] * pulse + flash),
+        math.min(1, def[3] * pulse + flash))
+    love.graphics.rectangle("fill", x0, y0, tam * 2, tam * 2, 3, 3)
+    -- Núcleo + ojos
+    love.graphics.setColor(1, 1, 1, 0.85)
+    love.graphics.circle("fill", x0 + tam * 0.7, y0 + tam * 0.7, 3)
+    love.graphics.circle("fill", x0 + tam * 1.3, y0 + tam * 0.7, 3)
+    love.graphics.setColor(0, 0, 0)
+    love.graphics.circle("fill", x0 + tam * 0.7, y0 + tam * 0.7, 1.5)
+    love.graphics.circle("fill", x0 + tam * 1.3, y0 + tam * 0.7, 1.5)
+    -- Borde: dorado telegrafiando, blanco normal
+    if mb.state == "telegraph" then
+        love.graphics.setColor(1, 0.84, 0, 0.9 + math.sin(time * 12) * 0.1)
+    else
+        love.graphics.setColor(1, 1, 1, 0.5)
+    end
+    love.graphics.setLineWidth(2)
+    love.graphics.rectangle("line", x0 - 1, y0 - 1, tam * 2 + 2, tam * 2 + 2, 3, 3)
+    love.graphics.setLineWidth(1)
+    -- Barra de vida
+    local frac = math.max(0, math.min(1, (mb.hp or 1) / (mb.maxHp or 1)))
+    love.graphics.setColor(0.12, 0.12, 0.12, 1)
+    love.graphics.rectangle("fill", x0, y0 - 10, tam * 2, 6)
+    love.graphics.setColor(0.88, 0.2, 0.2, 1)
+    love.graphics.rectangle("fill", x0, y0 - 10, math.floor(tam * 2 * frac), 6)
+    -- Anillo de singularidad activa
+    if mb.singu then
+        local cx = mb.singu.cx * tam + tam / 2
+        local cy = mb.singu.cy * tam + tam / 2
+        local rr = (3 - math.min(3, mb.singu.timer)) * tam + tam
+        love.graphics.setColor(0.6, 0.2, 1.0, 0.6)
+        love.graphics.setLineWidth(2)
+        love.graphics.circle("line", cx, cy, rr)
+        love.graphics.setLineWidth(1)
+    end
+end
+
 return draw
