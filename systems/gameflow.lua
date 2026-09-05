@@ -135,6 +135,10 @@ function gameflow.iniciarSala(keepInventory)
     if enemiesMod.boss and enemiesMod.boss.alive then
         uiMod.addPopup("Derrota al jefe recogiendo " .. constants.BOSS_FOOD_TARGET .. " comidas", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
     end
+    local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+    if mb and mb.alive then
+        uiMod.addPopup("MINI-JEFE: " .. (mb.name or "ELITE"), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
+    end
 end
 
 function gameflow.revivePlayer()

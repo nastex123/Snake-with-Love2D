@@ -287,6 +287,24 @@ function player.aplicarItem(itemId)
                     end
                 end
             end
+            -- Ítem Bomba vs mini-jefe sala 3 (GDD §5: 2 de daño directo)
+            do
+                local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+                if mb and mb.alive and math.abs(mb.x - p.x) <= r and math.abs(mb.y - p.y) <= r then
+                    local loot = enemiesMod.hitMiniBoss(2, {enemies = enemiesMod})
+                    if loot then
+                        st.monedas = (st.monedas or 0) + (loot.coins or 5)
+                        uiMod.addPopup("+" .. (loot.coins or 5) .. "$ JEFE!", loot.gx, loot.gy)
+                        if Events then
+                            Events.emit("enemyKilled")
+                            Events.emit("coinsChanged", {totalCoins = st.monedas})
+                        else
+                            achievementsMod.check("enemyKilled")
+                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                        end
+                    end
+                end
+            end
             sound.play("enemyKill")
         end
 
@@ -537,6 +555,24 @@ function player.aplicarComida(tipo)
                             achievementsMod.check("enemyKilled")
                             achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
                         end
+                    end
+                end
+            end
+        end
+        -- Bomba vs mini-jefe sala 3 (GDD §5: vulnerable al daño directo, 2 de daño)
+        do
+            local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+            if mb and mb.alive and math.abs(mb.x - p.x) <= r and math.abs(mb.y - p.y) <= r then
+                local loot = enemiesMod.hitMiniBoss(2, {enemies = enemiesMod})
+                if loot then
+                    st.monedas = (st.monedas or 0) + (loot.coins or 5)
+                    uiMod.addPopup("+" .. (loot.coins or 5) .. "$ JEFE!", loot.gx, loot.gy)
+                    if Events then
+                        Events.emit("enemyKilled")
+                        Events.emit("coinsChanged", {totalCoins = st.monedas})
+                    else
+                        achievementsMod.check("enemyKilled")
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
                     end
                 end
             end
