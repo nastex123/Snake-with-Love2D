@@ -196,15 +196,17 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 ## 4. Data Flow
 
-### Game Loop (`main.lua`)
+### Game Loop (`main.lua` 541L P14)
 ```
 love.load()
     └── persistence.initProfiles()
     └── applyActiveProfile()  (hacia world.state)
+    └── if World.DEBUG then pcall(World.validate) (P13)
 
 love.update(dt)
+    └── accumulator += min(dt,0.25); while accumulator>=FIXED_DT(1/60) do states.update(FIXED_DT) end (P14)
     └── sound.update(dt)  ← FIRST, before movement
-    └── state-specific update
+    └── timers.update(dt) único (P05) + Events.emit (P06)
 
 love.draw()
     └── state-specific render
@@ -306,7 +308,7 @@ El menú principal opera con una composición asimétrica de alto impacto visual
 ### Files
 | File | Format | Content |
 |------|--------|---------|
-| config/profiles.dat | Lua native | Profile data (max 3) |
+| config/profiles.dat | Lua native + `schema_version=2` | Profile data (max 3), atomic `.tmp`+`.bak` (P09) |
 
 ### Sync Points
 | Event | Action |
@@ -839,20 +841,18 @@ Las propuestas del Bloque 4 del GDD §21.4 que afectan arquitectura se catalogan
 | **Input centralizado** | `core/input.lua` (nuevo) | `Input.action("left")` unifica teclado/ratón/gamepad/touch; prepara gamepad ROADMAP Fase 9; `Input.update()` en `love.update()`. |
 | **Guía DX de extensión** | `docs/` | Checklist 10 pasos + scaffolding para añadir enemigo/ítem; referencia la convención `local X = {}` / `return X`. |
 
-### 10.26 Plan de Saneamiento de Deuda Técnica Viva (2026-08-31 23:04 America/Bogota)
+### 10.26 Plan de Saneamiento de Deuda Técnica Viva ✅ Completed (2026-09-04 America/Bogota)
 
-Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro, rama `chore/tech-debt-plan` desde `main@87d5ac4`.
+Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@8691a29` (PRs #9 #10 #11 #12 #13).
 
-| Fase | Propuestas | Objetivo métrico | Branch tipo |
+| Fase | Propuestas | Métrica cierre | Branch |
 | :--- | :--- | :--- | :--- |
-| **Fase 1 — Desmonolitizar** | P01 `enemies.lua` 341+139+170+121 ✅, P02 `snake.lua` 257+97+105+152+393 ✅, P03 `gamestates.lua` 196+389+64+72 ✅ | 3 módulos críticos <500L, `love .` 0 errs, `test_scope_09/06/18` 529/545 PASS | `refactor/split-*` |
-| **Fase 2 — Desacoplar** | P04 globals→`World.state`, P05 timers único, P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua` | 0 globals dispersos, 1 `timers.update`, 1 `Input.isHeld`, 0 `newCanvas` por frame | `refactor/*`, `feat/core-events` |
-| **Fase 3 — Resiliencia** | P09 atomic write + `schema_version`, P10 tests split 1135→3, P11 pools 32/64, P12 `biomeHazards.lua` 723→380L, P13 `World.validate()` | `profiles.dat.tmp`+`.bak`, `love tests` <1.0s, `collectgarbage` estable, `obstacles.lua` <500L | `fix/persistence-atomic`, `chore/*`, `perf/*` |
-| **Futuro (Phase 9 prep)** | P14 fixed timestep 60Hz + zero-alloc 3600f, P15 half-res FBO + Voronoi hook `ENABLE_VORONOI=false` | `accumulator` loop, `reflectionCanvas W/2 H/2` reservado 0 costo | `perf/fixed-timestep`, `feat/shaders-fbo-voronoi` |
+| **Fase 1 — Desmonolitizar ✅ M1** | P01 `enemies` 341+139+170+121, P02 `snake` 257+97+105+152+393, P03 `gamestates` 196+389+64+72 | 3 críticos <500L, 529/545 PASS | `refactor/split-*` PR #9 |
+| **Fase 2 — Desacoplar ✅ M2** | P04 dot-notation+proxy, P05 timers único, P06 `events.lua` 134L, P07 `input.lua` 89L+KEYBINDS, P08 `assets.lua` 144L | 0 globals, 1 `timers.update`, `isDown` único, 0 alloc/frame | `refactor/world-state-globals` PR #10, `feat/core-events` PR #11 |
+| **Fase 3 — Resiliencia ✅ M3** | P09 atomic+`schema_version=2`, P10 tests 384+397+326+helper+shim+smoke, P11 pools 32/64/32, P12 `biomeHazards.lua` 254L (`obstacles` 495L), P13 `SCHEMA`+`validate()` | `.tmp`+`.bak`, <1.0s, GC estable, <500L | `chore/phase3-resiliencia` PR #12 |
+| **Futuro Phase 9 prep ✅** | P14 `FIXED_DT=1/60` accumulator 3600f Δ0KB, P15 half-res + Voronoi `ENABLE_VORONOI=false` | 60Hz fijo, 0 costo off | `feat/phase9-prep` PR #13 |
 
-**Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
-
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 23:30 (341+139+170+121) ✅, P02 23:45 (257+97+105+152+393) ✅, P03 23:55 (196+389+64+72) ✅ — **Fase 1 (M1) ✅**, P04 `World.state` 23:XX ✅ (World dot-notation + shop/enemies proxy + snake/playing migrados), P05–P15 planificados.
+**Estado:** `completed` 2026-09-04 16:00 — P01-P15 ✅ en `dev@8691a29`. Deuda residual: `persistence.lua` 862L (split futuro).
 
 ## 11. Love2D Gotchas
 
