@@ -37,6 +37,7 @@ function core.reset()
         reverseSlitherTimer = 0,
         reverseSlitherCooldown = 0,
         firePepperTimer = 0,
+        slimeSlowTimer = 0,
         fireTrail = {},
         turnHistory = {},
         pendingTailSnap = false,
@@ -74,6 +75,9 @@ function core.update(s, dt)
     end
     if s.firePepperTimer and s.firePepperTimer > 0 then
         s.firePepperTimer = math.max(0, s.firePepperTimer - dt)
+    end
+    if s.slimeSlowTimer and s.slimeSlowTimer > 0 then
+        s.slimeSlowTimer = math.max(0, s.slimeSlowTimer - dt)
     end
     if s.fireTrail then
         for i = #s.fireTrail, 1, -1 do

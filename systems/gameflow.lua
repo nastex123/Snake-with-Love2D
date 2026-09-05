@@ -110,6 +110,13 @@ function gameflow.resetGame(keepShopInventory)
     else
         shop.reset()
     end
+    -- Arsenal 51-60: limpiar estado por sala (trampas, rayo, historial, bateria)
+    st.placedTraps = {}
+    st.orbitalBeam = nil
+    st.historyBuffer = {}
+    st.batteryUsed = false
+    st.pendingDeathTimer = nil
+    st._wasSlimeSlowed = false
 end
 
 function gameflow.iniciarSala(keepInventory)

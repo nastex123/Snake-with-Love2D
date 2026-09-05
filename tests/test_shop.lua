@@ -22,18 +22,20 @@ harness.describe("Systems: Items Registry & Configuration", function()
         setupCleanWorld()
     end)
 
-    harness.it("should contain exactly 12 items in registry", function()
+    harness.it("should contain exactly 22 items in registry (12 base + 10 arsenal 51-60)", function()
         local count = 0
         for _, _ in pairs(items.registry) do
             count = count + 1
         end
-        harness.assert_equal(12, count, "items.registry should have 12 items")
+        harness.assert_equal(22, count, "items.registry should have 22 items")
     end)
 
     harness.it("should have valid schema for each registered item", function()
         local expectedItems = {
             "shield", "armor", "ghost", "magnet", "bomb", "hunger",
-            "speedReducer", "turbo", "slow", "doubler", "extraCoin", "star"
+            "speedReducer", "turbo", "slow", "doubler", "extraCoin", "star",
+            "tailSpike", "hourglass", "orbitalBeam", "holoDecoy", "lightBoots",
+            "goldenTooth", "emergencyBattery", "doubleHarvest", "lottery", "refractorPrism"
         }
         for _, id in ipairs(expectedItems) do
             local def = items.registry[id]
@@ -48,23 +50,25 @@ harness.describe("Systems: Items Registry & Configuration", function()
             harness.assert_type(def.category, "string", "def.category must be a string")
             harness.assert_type(def.type, "string", "def.type must be a string")
             harness.assert_type(def.itemType, "string", "def.itemType must be a string")
-            harness.assert_true(def.itemType == "active" or def.itemType == "passive", "def.itemType must be active or passive")
+            harness.assert_true(def.itemType == "active" or def.itemType == "passive" or def.itemType == "consumable", "def.itemType must be active, passive or consumable")
         end
     end)
 
-    harness.it("should categorize 3 items per category across 4 categories", function()
+    harness.it("should categorize all items across 4 categories", function()
         harness.assert_equal(4, #items.categories, "items.categories must have 4 categories")
+        local total = 0
         for _, cat in ipairs(items.categories) do
             local catItems = items.getByCategory(cat)
-            harness.assert_equal(3, #catItems, "Category " .. cat .. " must have 3 items")
             for _, def in ipairs(catItems) do
                 harness.assert_equal(cat, def.category, "Item category must match")
             end
+            total = total + #catItems
         end
+        harness.assert_equal(22, total, "All 22 items must belong to a category")
     end)
 
-    harness.it("should build items.pages containing all 12 items", function()
-        harness.assert_equal(12, #items.pages, "items.pages must have 12 items")
+    harness.it("should build items.pages containing all 22 items", function()
+        harness.assert_equal(22, #items.pages, "items.pages must have 22 items")
     end)
 
     harness.it("player.itemColor should return valid RGB components for all 12 items and fallback", function()

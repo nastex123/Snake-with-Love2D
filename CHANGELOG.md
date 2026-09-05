@@ -10,6 +10,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 2026-09-05
 
+- **feature** (completed - 2026-09-05): Extended Items Arsenal 51-60 (America/Bogota, consola-only, rama `feature/phase8-items-arsenal`):
+  1. **QUÉ — `systems/items.lua` + `core/config.lua`**: 10 items GDD (22 totales) con costes/duraciones data-driven + `itemType="consumable"` (lottery → slots, 1 uso) + `itemColor` + fallback diamante en `shop.drawIcon`.
+  2. **QUÉ — `systems/player.lua`**: 10 ramas `aplicarItem` (trampas max 3, rewind con copia profunda, rayo 2.5s, señuelo 4s, 5 pasivos a `shop.inventory`, lotería 0-35$).
+  3. **QUÉ — Hooks**: `mover` (harvest 15%, prism flag, slime detect), `core` (`slimeSlowTimer`), `calcSpeed` boots 1.125x, `playing` (historial 120f, trampas/rayo kills, batería bullet-time, tooth/prism/harvest popups, slime recompute), `resetGame` limpia por sala, `renderMain` dibuja trampas + rayo.
+  4. **QUÉ — Tests**: suite scope_21 (15 tests) + conteos 12→22: 560 tests, 540 PASS, 20 pre-existentes.
+  5. **POR QUÉ**: TODO Extended Items Arsenal: la tienda estaba estancada en 12 items desde Fase 3.
+  6. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 540/560 PASS; `error.log` 0 bytes.
 - **feature** (completed - 2026-09-05): Laser Perimeter — Jaula Laser del boss (America/Bogota, consola-only, rama `feature/phase8-enrage`):
   1. **QUÉ — `entities/bossAttacks.lua`**: `laser_perimeter` 5º ataque (telegraph 1.0s, cooldown 7.0s, minPhase 2); `computePositions` celdas del rectángulo (`8*half`, half 6) + `execute` 4 rayos `addLaser` 4.0s centrados en sala. Cierra el bloque TODO Boss Enrage+Laser.
   2. **QUÉ — Pool + colisión + render**: `addLaser` en `enemyAttackRegistry` (pool P11 + campos `x1/y1/x2/y2`), passthrough `enemies.addLaser`, `helpers.point_seg_dist`, colisión en `snake/movement.lua` (< 0.45, shield/armor/ghost), halo rojo + núcleo blanco con flicker/fade en `enemiesDraw.lua`, `BOSS_LASER_*` en config.
@@ -213,7 +220,9 @@ Categories: feature, fix, refactor, docs, balance, polish
 ## 2026-08-27 19:02
 
 - **Fixed** (completed - 2026-08-27 19:02): Grid centrado en gameplay (America/Bogota):
-  1. **Qué**: systems/gameflow.recalcularGrilla ahora usa getDimensions high-DPI-safe, clamp y fallback, calcula gridOffsetX = floor((w-gridW)/2) y gameOffsetY = floor((h-gameH)/2) con clamp 0; systems/persistence._applyHeavy y previewResolution ahora disparan _recalcGrid() tras setMode+ecreateCanvases; ender/renderMain.drawGame y drawGameGlow/Shadow añaden fallback defensivo si offsets son nil y corrigen separador line(ox, GRID_OFFSET_Y-1, ox+gridW, ...) para centrado horizontal.
+  1. **Qué**: systems/gameflow.recalcularGrilla ahora usa getDimensions high-DPI-safe, clamp y fallback, calcula gridOffsetX = floor((w-gridW)/2) y gameOffsetY = floor((h-gameH)/2) con clamp 0; systems/persistence._applyHeavy y previewResolution ahora disparan _recalcGrid() tras setMode+
+ecreateCanvases; 
+ender/renderMain.drawGame y drawGameGlow/Shadow añaden fallback defensivo si offsets son nil y corrigen separador line(ox, GRID_OFFSET_Y-1, ox+gridW, ...) para centrado horizontal.
   2. **Por qué**: Grid se veía arriba-izquierda por offsets stales tras cambio de resolución (no se recalculaba grilla) y por 
 il en primera frame; ahora permanece perfectamente centrado en 640x480, 800x600, 1024x768 y 1920x1080.
   3. **Verificación**: love . 3s error.log 0 bytes, love.resize y preview 5s mantienen centrado.
