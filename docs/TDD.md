@@ -2,10 +2,10 @@
 
 ## 1. Architecture Overview
 
-**Pattern**: Procedural module-based with global state management  
-**Entry Point**: `main.lua`  
-**Total Modules**: 55 .lua files (P01 +3, P02 +4, P03 +3: gamestates/playing, transition, death)  
-**Total Lines**: ~10,200 (post-P03 31:08:2026: gamestates 643→196+389+64+72, snake 922→257+97+105+152+393, enemies 634→341+139+170+121)
+**Pattern**: Procedural module-based with global state management
+**Entry Point**: `main.lua` (541L fixed timestep `FIXED_DT=1/60`)
+**Total Modules**: 60 juego (62 con `conf.lua`+`scratch_test_debug.lua`, 93 con 31 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), P10 tests 1→6
+**Total Lines**: ~11,500 src (post-P15 04:09:2026: `obstacles` 723→495L, `registry` 139→224L pools, `world` 29→369L SCHEMA, `shaders` 496→652L Voronoi, `main` 380→541L timestep, `persistence` 362→862L atomic)
 
 ### Folder Structure
 
@@ -13,11 +13,14 @@
 Snake-with-Love2D/
 ├── main.lua, constants.lua     ← raíz (constants.lua = shim → core/config.lua)
 ├── core/
-│   ├── config.lua              ← configuracion central (canvas, gameplay, colores, boss)
+│   ├── config.lua              ← configuracion central + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15)
 │   ├── logger.lua              ← Log.info/warn/error/debug
-│   ├── timers.lua              ← timer manager (after/every/cancel/clear, object pooling)
-│   ├── world.lua               ← World.state (estado global, reemplaza globals)
-│   ├── touch.lua               ← input táctil (swipes)
+│   ├── timers.lua              ← timer manager único pooled (P05: `activeTimers` deprecado)
+│   ├── world.lua               ← 369L World.state dot-notation + `SCHEMA` 12 keys + `validate()` (P04/P13)
+│   ├── events.lua              ← 134L Event Bus `on/off/emit` (P06)
+│   ├── input.lua               ← 89L `isDown/isHeld/isAnyHeld` + gamepad (P07)
+│   ├── assets.lua              ← 144L `getFont/getImage/getCanvas` cache (P08)
+│   ├── touch.lua               ← input táctil (swipes, lazy require P-fix circular)
 │   └── helpers.lua             ← deep_copy, math/rect utilities
 ├── entities/
 │   ├── snake.lua               ← fachada 257L (P02: delega a 4 submódulos, draw + hsv2rgb)
@@ -27,9 +30,9 @@ Snake-with-Love2D/
 │   │   ├── collisions.lua      ← checkEnemyCollisions (+fromIndex) / checkPatrollerSlice / checkConstrictorLoop (P02 152L)
 │   │   └── movement.lua        ← mover + encolarDireccion/cambiarDireccion/checkTailSnap (P02 393L)
 │   ├── food.lua                ← 3 tipos de comida
-│   ├── obstacles.lua           ← obstáculos (723L → pendiente P12)
+│   ├── obstacles.lua           ← 495L fachada hazards (P12: delega a `world/biomeHazards.lua`)
 │   ├── enemies.lua             ← fachada 341L (P01: delega a 3 submódulos)
-│   ├── enemyAttackRegistry.lua ← telegraphs/attackObjects/pendingRespawns (P01 139L)
+│   ├── enemyAttackRegistry.lua ← 224L pools 32/64/32 `active` sin GC (P01+P11)
 │   ├── enemyBossLogic.lua      ← spawnBoss/hitBoss/onBossDefeated + máquina de estados boss (P01 170L)
 │   ├── enemySpawnLogic.lua     ← canSpawn/spawnAt/generar (P01 121L)
 │   ├── chaserAI.lua            ← IA social Chaser (SOLO/DUPLA/MANADA)
@@ -37,6 +40,7 @@ Snake-with-Love2D/
 │   └── enemyHelpers.lua        ← validarPos, sampleFreeTile, etc.
 ├── world/
 │   ├── world.lua               ← facade: estado etapa/sala/objetivoSala + getters
+│   ├── biomeHazards.lua        ← 254L `DEFAULTS` + `isLethal/update/draw` (P12)
 │   ├── dungeonGen.lua          ← BSP, templates de sala, stage modifiers
 │   └── populate.lua            ← población de sala
 ├── systems/
@@ -80,8 +84,8 @@ Snake-with-Love2D/
 ```
 main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, audio/sound.lua
 ├── constants.lua (raíz) ──→ core/config.lua
-├── core/world.lua ← estado del juego (World.state, reemplaza globals)
-├── core/timers.lua, core/logger.lua, core/touch.lua, core/helpers.lua
+├── core/world.lua ← 369L World.state dot-notation + SCHEMA + validate() (P04/P13)
+├── core/timers.lua único pooled, core/events.lua 134L bus, core/input.lua 89L, core/assets.lua 144L, core/logger.lua, core/touch.lua, core/helpers.lua
 ├── entities/snake.lua (fachada 257L) ──→ entities/snake/core.lua, entities/snake/abilities.lua, entities/snake/collisions.lua, entities/snake/movement.lua; draw usa shop/constants
 ├── entities/snake/movement.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua, entities/obstacles.lua
 ├── entities/snake/collisions.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua
@@ -103,13 +107,16 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 380 | — | Game loop, state machine, orchestration (split 08:08:2026) |
+| main.lua | raíz | 541 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) |
 | constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
-| config.lua | core/ | 184 | — | Centralized configuration |
+| config.lua | core/ | 184+ | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) |
 | logger.lua | core/ | 45 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 91 | — | Timer manager with object pooling |
-| world.lua | core/ | 29 | world | World state container (World.state, no globals) |
-| touch.lua | core/ | 113 | — | Touch input (swipes) |
+| timers.lua | core/ | 91+ | — | Timer manager único pooled (P05) |
+| events.lua | core/ | 134 | — | P06 Event Bus `on/off/emit` |
+| input.lua | core/ | 89 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad |
+| assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache |
+| world.lua | core/ | 369 | world | World.state dot-notation + SCHEMA + validate() (P04/P13) |
+| touch.lua | core/ | 113 | — | Touch input (swipes, lazy require) |
 | helpers.lua | core/ | 52 | — | Utility functions |
 | snake.lua | entities/ | 257 | snakeMod | Fachada P02 257L (delega a 4 submódulos, draw + hsv2rgb, API idéntica) |
 | snake/core.lua | entities/snake/ | 97 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
@@ -117,20 +124,20 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | snake/collisions.lua | entities/snake/ | 152 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
 | snake/movement.lua | entities/snake/ | 393 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail) + encolarDireccion/cambiarDireccion/checkTailSnap |
 | enemies.lua | entities/ | 341 | enemiesMod | Fachada P01 341L (delega a 3 submódulos, API idéntica) |
-| enemyAttackRegistry.lua | entities/ | 139 | — | P01: telegraphs/attackObjects/pendingRespawns + updateAttackObjects/updateTelegraphs |
+| enemyAttackRegistry.lua | entities/ | 224 | — | P01+P11: pools 32/64/32 `active` sin GC |
 | enemyBossLogic.lua | entities/ | 170 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
 | enemySpawnLogic.lua | entities/ | 121 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
 | chaserAI.lua | entities/ | 310 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
 | bossAttacks.lua | entities/ | 146 | — | 4 ataques del boss (projectile_spread, spawn_adds, radial_pulse, teleport) |
 | enemyHelpers.lua | entities/ | 61 | — | validarPos, sampleFreeTile, tiles seguros |
 | food.lua | entities/ | 133 | foodMod | Food spawning and types (NORMAL/GOLD/COIN) |
-| obstacles.lua | entities/ | 103 | obstaclesMod | Obstacle placement |
+| obstacles.lua | entities/ | 495 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
 | world.lua | world/ | 122 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
 | dungeonGen.lua | world/ | 355 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
 | populate.lua | world/ | 193 | — | Room population (enemies/food/obstacles) (split 17:08:2026) |
 | items.lua | systems/ | 100 | itemsMod | Item definitions (registry + 4 categorías) |
 | shop.lua | systems/ | 376 | shopMod | Shop logic and UI |
-| persistence.lua | systems/ | 362 | persistenceMod | Save/load system (profiles.dat + settings.dat con logo {offsetX,offsetY,scale,spacing,depth}, syncActiveProfile) |
+| persistence.lua | systems/ | 862 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) |
 | profiles.lua | systems/ | 344 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
 | profilesDraw.lua | systems/ | 509 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
 | achievements.lua | systems/ | 184 | achievementsMod | Achievement tracking (11 logros) |
@@ -153,7 +160,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | toastsUI.lua | ui/ | 88 | — | Toasts |
 | popupsUI.lua | ui/ | 49 | — | Popups |
 | overlaysUI.lua | ui/ | 118 | — | Pausa/minimapa/dungeon debug |
-| shaders.lua | render/ | 496 | shadersMod | Post-processing pipeline (bloom/CRT/shadow/heat, dedup SRC_BLUR 23:08:2026) |
+| shaders.lua | render/ | 652 | shadersMod | Bloom/CRT/shadow/heat + half-res reflection + Voronoi off (P15) |
 | particles.lua | render/ | 156 | particlesMod | Particle effects (textura 4x4 procedural) |
 | renderMain.lua | render/ | 308 | — | drawScene, dibujo menú/glow/shadow (split 08:08:2026) |
 | enemiesDraw.lua | render/ | 285 | — | Draw enemigos + Chaser estrella de espinas |
@@ -189,15 +196,17 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 ## 4. Data Flow
 
-### Game Loop (`main.lua`)
+### Game Loop (`main.lua` 541L P14)
 ```
 love.load()
     └── persistence.initProfiles()
     └── applyActiveProfile()  (hacia world.state)
+    └── if World.DEBUG then pcall(World.validate) (P13)
 
 love.update(dt)
+    └── accumulator += min(dt,0.25); while accumulator>=FIXED_DT(1/60) do states.update(FIXED_DT) end (P14)
     └── sound.update(dt)  ← FIRST, before movement
-    └── state-specific update
+    └── timers.update(dt) único (P05) + Events.emit (P06)
 
 love.draw()
     └── state-specific render
@@ -299,7 +308,7 @@ El menú principal opera con una composición asimétrica de alto impacto visual
 ### Files
 | File | Format | Content |
 |------|--------|---------|
-| config/profiles.dat | Lua native | Profile data (max 3) |
+| config/profiles.dat | Lua native + `schema_version=2` | Profile data (max 3), atomic `.tmp`+`.bak` (P09) |
 
 ### Sync Points
 | Event | Action |
@@ -811,8 +820,8 @@ shaders.reflectionCanvas = love.graphics.newCanvas(VIRTUAL_WIDTH / 2, VIRTUAL_HE
 #### 6. Voronoi Glass Fracture Shader (`render/shaders.lua`)
 * Shader GLSL que toma 8 semillas precalculadas y calcula la distancia euclidiana mínima $d = \min_{i} \|p - s_i\|$. Si $\left|d_1 - d_2\right| < 0.015$, dibuja una arista blanca brillante simulando grietas de vidrio en Game Over.
 
-### 10.25 Architecture & DX Proposals (GDD §21.4) — Implementación Pendiente
-Las propuestas del Bloque 4 del GDD §21.4 que afectan arquitectura se catalogan aquí con su módulo destino. Estado inicial: backlog (pendiente de priorización y resolución de duplicados).
+### 10.25 Architecture & DX Proposals (GDD §21.4) — Parcial ✅ 2026-09-04
+Implementados P05 (timers), P06 (events), P08 (assets), P09 (atomic+schema), P10 (smoke), P07 (input). Pendientes: difficulty presets, UI scaling, runtime profiler, motion reduction, resume run, tweaks, i18n, DX guide.
 
 | Propuesta (§21.4) | Módulo(s) destino | Nota de implementación |
 |---|---|---|
@@ -832,20 +841,18 @@ Las propuestas del Bloque 4 del GDD §21.4 que afectan arquitectura se catalogan
 | **Input centralizado** | `core/input.lua` (nuevo) | `Input.action("left")` unifica teclado/ratón/gamepad/touch; prepara gamepad ROADMAP Fase 9; `Input.update()` en `love.update()`. |
 | **Guía DX de extensión** | `docs/` | Checklist 10 pasos + scaffolding para añadir enemigo/ítem; referencia la convención `local X = {}` / `return X`. |
 
-### 10.26 Plan de Saneamiento de Deuda Técnica Viva (2026-08-31 23:04 America/Bogota)
+### 10.26 Plan de Saneamiento de Deuda Técnica Viva ✅ Completed (2026-09-04 America/Bogota)
 
-Plan formal en `docs/TECH-DEBT-PLAN.md` — 15 propuestas en 3 fases + 2 futuro, rama `chore/tech-debt-plan` desde `main@87d5ac4`.
+Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@8691a29` (PRs #9 #10 #11 #12 #13).
 
-| Fase | Propuestas | Objetivo métrico | Branch tipo |
+| Fase | Propuestas | Métrica cierre | Branch |
 | :--- | :--- | :--- | :--- |
-| **Fase 1 — Desmonolitizar** | P01 `enemies.lua` 341+139+170+121 ✅, P02 `snake.lua` 257+97+105+152+393 ✅, P03 `gamestates.lua` 196+389+64+72 ✅ | 3 módulos críticos <500L, `love .` 0 errs, `test_scope_09/06/18` 529/545 PASS | `refactor/split-*` |
-| **Fase 2 — Desacoplar** | P04 globals→`World.state`, P05 timers único, P06 `core/events.lua`, P07 `core/input.lua`, P08 `core/assets.lua` | 0 globals dispersos, 1 `timers.update`, 1 `Input.isHeld`, 0 `newCanvas` por frame | `refactor/*`, `feat/core-events` |
-| **Fase 3 — Resiliencia** | P09 atomic write + `schema_version`, P10 tests split 1135→3, P11 pools 32/64, P12 `biomeHazards.lua` 723→380L, P13 `World.validate()` | `profiles.dat.tmp`+`.bak`, `love tests` <1.0s, `collectgarbage` estable, `obstacles.lua` <500L | `fix/persistence-atomic`, `chore/*`, `perf/*` |
-| **Futuro (Phase 9 prep)** | P14 fixed timestep 60Hz + zero-alloc 3600f, P15 half-res FBO + Voronoi hook `ENABLE_VORONOI=false` | `accumulator` loop, `reflectionCanvas W/2 H/2` reservado 0 costo | `perf/fixed-timestep`, `feat/shaders-fbo-voronoi` |
+| **Fase 1 — Desmonolitizar ✅ M1** | P01 `enemies` 341+139+170+121, P02 `snake` 257+97+105+152+393, P03 `gamestates` 196+389+64+72 | 3 críticos <500L, 529/545 PASS | `refactor/split-*` PR #9 |
+| **Fase 2 — Desacoplar ✅ M2** | P04 dot-notation+proxy, P05 timers único, P06 `events.lua` 134L, P07 `input.lua` 89L+KEYBINDS, P08 `assets.lua` 144L | 0 globals, 1 `timers.update`, `isDown` único, 0 alloc/frame | `refactor/world-state-globals` PR #10, `feat/core-events` PR #11 |
+| **Fase 3 — Resiliencia ✅ M3** | P09 atomic+`schema_version=2`, P10 tests 384+397+326+helper+shim+smoke, P11 pools 32/64/32, P12 `biomeHazards.lua` 254L (`obstacles` 495L), P13 `SCHEMA`+`validate()` | `.tmp`+`.bak`, <1.0s, GC estable, <500L | `chore/phase3-resiliencia` PR #12 |
+| **Futuro Phase 9 prep ✅** | P14 `FIXED_DT=1/60` accumulator 3600f Δ0KB, P15 half-res + Voronoi `ENABLE_VORONOI=false` | 60Hz fijo, 0 costo off | `feat/phase9-prep` PR #13 |
 
-**Dependencias:** P01→P02→P03→P04→P05→P06→P07→P08; P01→P11; P04→P09→P12; P03→P10. Ver `docs/TECH-DEBT-PLAN.md` §6 para Gantt Mermaid y branching por propuesta.
-
-**Estado:** `created` 2026-08-31 23:04 America/Bogota — P01 23:30 (341+139+170+121) ✅, P02 23:45 (257+97+105+152+393) ✅, P03 23:55 (196+389+64+72) ✅ — **Fase 1 (M1) ✅**, P04 `World.state` 23:XX ✅ (World dot-notation + shop/enemies proxy + snake/playing migrados), P05–P15 planificados.
+**Estado:** `completed` 2026-09-04 16:00 — P01-P15 ✅ en `dev@8691a29`. Deuda residual: `persistence.lua` 862L (split futuro).
 
 ## 11. Love2D Gotchas
 

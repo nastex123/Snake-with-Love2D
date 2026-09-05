@@ -64,10 +64,10 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
 
 ## 🏗️ Arquitectura del Proyecto
 
-El proyecto está estructurado en 45 módulos desacoplados con límites estrictos de $<300$–$500$ líneas por archivo:
-- **`core/`**: Configuración central (`config.lua`), logger (`logger.lua`), timers con pooling (`timers.lua`), estado global encapsulado (`world.lua`), helpers matemáticos (`helpers.lua`) e input táctil (`touch.lua`).
-- **`entities/`**: Lógica de serpiente (`snake.lua`), enemigos (`enemies.lua`), ataques de jefe (`bossAttacks.lua`), IA social de chasers (`chaserAI.lua`), comida (`food.lua`) y obstáculos (`obstacles.lua`).
-- **`world/`**: Fachada del mundo (`world.lua`), generador BSP (`dungeonGen.lua`) y poblador de salas (`populate.lua`).
+El proyecto está estructurado en 60 módulos juego (93 con 31 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residual `persistence.lua` 862L pendiente):
+- **`core/`**: Configuración central (`config.lua` + `KEYBINDS`), logger (`logger.lua`), timers único pooled (`timers.lua`), estado dot-notation + `SCHEMA`/`validate()` (`world.lua` 369L), Event Bus (`events.lua` 134L), input centralizado (`input.lua` 89L), asset manager cache (`assets.lua` 144L), helpers (`helpers.lua`) e input táctil (`touch.lua`).
+- **`entities/`**: Serpiente fachada + `snake/` 4 (`snake.lua` 257L), enemigos fachada + 3 (`enemies.lua` 341L, `enemyAttackRegistry.lua` 224L pools), `bossAttacks.lua`, `chaserAI.lua`, `patrollerAI.lua`, `enemyHelpers.lua`, comida (`food.lua`) y obstáculos fachada 495L (`obstacles.lua` delega a `world/biomeHazards.lua`).
+- **`world/`**: Fachada del mundo (`world.lua`), peligros `biomeHazards.lua` 254L, generador BSP (`dungeonGen.lua`) y poblador de salas (`populate.lua`).
 - **`systems/`**: Objetos (`items.lua`), tienda (`shop.lua`), persistencia (`persistence.lua`), ajustes (`settings.lua`, `settingsDraw.lua`), perfiles (`profiles.lua`, `profilesDraw.lua`), logros (`achievements.lua`), jugador (`player.lua`), flujo de juego (`gameflow.lua`), estados (`gamestates.lua`), menú debug (`debugTools.lua`) y calibrador de logo (`debugLogo.lua`).
 - **`ui/`**: Fachada de interfaz (`ui.lua`), cinemática Balatro (`introUI.lua`), menú principal (`menuUI.lua`, `menuLogo.lua`, `menuCard.lua`), HUD (`hudUI.lua`), toasts (`toastsUI.lua`), popups (`popupsUI.lua`) y overlays (`overlaysUI.lua`).
 - **`render/`**: Shaders GLSL (`shaders.lua`), partículas procedurales (`particles.lua`), escena principal (`renderMain.lua`) y render de enemigos (`enemiesDraw.lua`).

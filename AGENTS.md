@@ -9,11 +9,11 @@
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (45 módulos + helpers)
+## Arquitectura (60 módulos juego + helpers, 93 con 31 tests)
 Estructura de carpetas por sistema:
-- `main.lua` (loop, 7 estados), `constants.lua` — raíz (constants.lua es shim de `core/config.lua`)
-- `core/` → `config.lua` (config central), `logger.lua` (Log.info/warn/error/debug), `timers.lua` (timer manager con pooling), `world.lua` (World.state, estado global sin globals), `touch.lua` (input táctil), `helpers.lua` (deep_copy, rect/math utils)
-- `entities/` → `snake.lua` (mov/colisiones), `enemies.lua` (chasers/patrollers/spawners/boss) + `bossAttacks.lua` (4 ataques) + `enemyHelpers.lua` + `chaserAI.lua` (IA social SOLO/DUPLA/MANADA), `food.lua` (3 tipos), `obstacles.lua`
+- `main.lua` (541L loop fixed timestep `FIXED_DT=1/60`, 7 estados), `constants.lua` — raíz (shim de `core/config.lua`)
+- `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (369L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 134L bus P06, `input.lua` 89L centralizado P07, `assets.lua` 144L cache P08, `touch.lua` (lazy), `helpers.lua`
+- `entities/` → `snake.lua` 257L fachada + `snake/` 4, `enemies.lua` 341L fachada + `enemyAttackRegistry.lua` 224L pools + `enemyBossLogic.lua` + `enemySpawnLogic.lua` + `bossAttacks.lua` + `enemyHelpers.lua` + `chaserAI.lua` + `patrollerAI.lua`, `food.lua`, `obstacles.lua` 495L fachada (delega a `world/biomeHazards.lua`)
 - `world/` → `world.lua` (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` (BSP, templates, stage modifiers) + `populate.lua` (población de sala)
 - `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade panel ajustes) + `settingsDraw.lua` (render pestañas/controles), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug Tab) + `debugLogo.lua` (calibrador logo F2)
 - `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` (intro Balatro + diamante), `menuUI.lua` (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` (render 2.5D cian isométrico), `menuCard.lua` (tarjeta Chunky perfil #11), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug).

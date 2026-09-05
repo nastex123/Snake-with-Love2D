@@ -92,13 +92,13 @@
 - [ ] 10 Unlockable Game Modes (Endless, Rush, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Draft, Sudden Death, Maze Runner)
 - [ ] 80 Engineering & Gameplay Improvements Suite (Input ramp-up, corner buffering, AABB ray-cast pre-filter, half-res FBO reflections, Voronoi fracture, fixed timestep)
 
-## Phase 8.5: Saneamiento Deuda Técnica Viva 📋 Planned (Tech Debt Plan 2026-08-31)
-**Goal:** Dejar el proyecto en cero-deuda estructural para desbloquear Phase 8 restante y Phase 9 sin fricción — Plan: `docs/TECH-DEBT-PLAN.md` (15 propuestas, 3 fases + 2 futuro, rama `chore/tech-debt-plan`)
+## Phase 8.5: Saneamiento Deuda Técnica Viva ✅ Completed (2026-09-04)
+**Goal:** Dejar el proyecto en cero-deuda estructural para desbloquear Phase 8 restante y Phase 9 sin fricción — Plan: `docs/TECH-DEBT-PLAN.md` v2.0 (15 propuestas, 3 fases + 2 futuro, cerradas 2026-09-04)
 
-- [ ] **Fase 1 — Desmonolitizar (CRÍTICO):** P01 Split `enemies.lua` 634→4 módulos, P02 Split `snake.lua` 922→4 módulos, P03 Split `gamestates.lua` 643→4 módulos — Branches `refactor/split-*` — DoD `love .` + `error.log 0` + `test_scope_*.lua` PASS — Milestone M1
-- [ ] **Fase 2 — Desacoplar Estado (CRÍTICO+RECOMENDADO):** P04 Globals → `World.state`, P05 Timers consolidados → `core/timers`, P06 Event Bus `core/events.lua`, P07 Input centralizado `core/input.lua`, P08 Asset Manager `core/assets.lua` — Branches `refactor/world-state-globals`, `feat/core-events`, etc. — Milestone M2
-- [ ] **Fase 3 — Resiliencia (RECOMENDADO+OPCIONAL):** P09 Escritura atómica `profiles.dat` + `schema_version`, P10 Split `tests/test_systems.lua` 1135→3 suites, P11 Pools `telegraphs/projectiles`, P12 Extraer `world/biomeHazards.lua` (obstacles 723→380), P13 `World.validate()` — Milestone M3
-- [ ] **Futuro — Phase 9 prep:** P14 Fixed timestep 60Hz + zero-alloc test, P15 Half-res FBO + Voronoi hook (`ENABLE_VORONOI=false`)
+- [x] **Fase 1 — Desmonolitizar (CRÍTICO) — Milestone M1 ✅:** P01 Split `enemies.lua` 634→341+139+170+121, P02 Split `snake.lua` 922→257+97+105+152+393, P03 Split `gamestates.lua` 643→196+389+64+72 — Branches `refactor/split-*` (mergeadas PR #9) — DoD `love .` + `error.log` 0 + `test_scope_*.lua` PASS
+- [x] **Fase 2 — Desacoplar Estado (CRÍTICO+RECOMENDADO) — Milestone M2 ✅:** P04 Globals → `World.state` dot-notation + proxy, P05 Timers consolidados → `core/timers` único, P06 Event Bus `core/events.lua` 180L, P07 Input centralizado `core/input.lua` 110L + `config.KEYBINDS`, P08 Asset Manager `core/assets.lua` 130L — Branches `refactor/world-state-globals` (PR #10), `feat/core-events` (PR #11) — Milestone M2
+- [x] **Fase 3 — Resiliencia (RECOMENDADO+OPCIONAL) — Milestone M3 ✅:** P09 Escritura atómica `profiles.dat` + `schema_version=2`, P10 Split `tests/test_systems.lua` 1135→384+397+326+helper+shim+smoke, P11 Pools `telegraphs` 32 / `attackObjects` 64 / `pendingRespawns` 32, P12 Extraer `world/biomeHazards.lua` 254L (`obstacles.lua` 723→495L), P13 `World.validate()` + `SCHEMA` 12 keys — Branch `chore/phase3-resiliencia` (PR #12) — Milestone M3
+- [x] **Futuro — Phase 9 prep ✅:** P14 Fixed timestep 60Hz (`FIXED_DT=1/60` + `accumulator` + `MAX_ACCUMULATOR=0.25`, 3600 frames Δ0KB), P15 Half-res FBO + Voronoi hook (`ENABLE_VORONOI=false`, `REFLECTION_SCALE=0.5`, `VORONOI_SCALE=8`) — Branch `feat/phase9-prep` (PR #13)
 
 **Branching:** `chore/tech-debt-plan` (plan) → `refactor/*`/`feat/*`/`fix/*`/`perf/*`/`chore/*` por propuesta, commits `type(scope): subject` atómicos, PR con tabla de módulos + DoD (skill `git-workflow`)
 

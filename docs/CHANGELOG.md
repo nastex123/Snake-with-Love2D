@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-04 19:59
+
+- **docs** (updated - 2026-09-04 19:59): Sync Phase 8.5 docs cierre (America/Bogota, rama `chore/docs-sync-8-5`):
+  1. **QUÉ**: `docs/ROADMAP.md` 8.5 Planned→Completed, `docs/TECH-DEBT-PLAN.md` v1.0→v2.0, `docs/TDD.md` 55→60 módulos + §10.26 completed + loop/timestep, `README.md`/`AGENTS.md` 45→60, `docs/GDD.md` §21.4 7× IMPLEMENTADO, `docs/TODO.md` timestamp.
+  2. **POR QUÉ**: TODO marcaba P01-P15 [x] pero ROADMAP/TDD/GDD seguían Planned/55/45/NUEVA; cerrar deuda documental antes de Phase 8 contenido.
+  3. **Verificación**: consola-only, `git diff --stat` revisado, ambos CHANGELOGs sincronizados.
+
 ## 2026-09-04 16:00
 
 - **Perf** (completed - 2026-09-04 16:00): P14+P15 — Fixed timestep 60Hz + Voronoi hook (America/Bogota, consola-only, rama `feat/phase9-prep`):

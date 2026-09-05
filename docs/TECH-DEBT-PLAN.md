@@ -1,10 +1,10 @@
 # Plan de Saneamiento de Deuda Técnica — Snake Dungeon Crawler
 
-**Versión:** 1.0 — Plan Formal  
-**Fecha:** 2026-08-31 23:04 (America/Bogota)  
-**Rama base:** `main` @ `87d5ac4` — Rama de plan: `chore/tech-debt-plan`  
-**Autor:** Chibi-chan / Equipo Técnico — Skill `documentation` + `git-workflow` + `technical-partner`  
-**Estado:** `created` — Documento de planificación (sin cambios de código)
+**Versión:** 2.0 — Cierre ✅ Completed (2026-09-04 America/Bogota)
+**Fecha plan:** 2026-08-31 23:04 (America/Bogota) — **Cierre:** 2026-09-04 16:00 (America/Bogota)
+**Rama base:** `main` @ `87d5ac4` — Rama de plan: `chore/tech-debt-plan` (mergeada) — Ejecución: `dev` @ `8691a29` (PRs #9 #10 #11 #12 #13)
+**Autor:** Chibi-chan / Equipo Técnico — Skill `documentation` + `git-workflow` + `technical-partner`
+**Estado:** `completed` — P01-P15 cerradas, Fase 1 M1 ✅, Fase 2 M2 ✅, Fase 3 M3 ✅, Futuro P14-P15 ✅
 
 ---
 
@@ -336,4 +336,8 @@ git diff --stat; git status --short
 
 ---
 
-*Última actualización: 2026-08-31 23:04 (America/Bogota) — Plan creado, sin cambios de código. Próxima actualización al cierre de Fase 1 / Milestone M1.*
+## 12. Cierre (2026-09-04 16:00 America/Bogota)
+
+Fase 1 M1 ✅ (P01-P03 PR #9), Fase 2 M2 ✅ (P04 PR #10, P05-P08 PR #11), Fase 3 M3 ✅ (P09-P13 PR #12), Futuro ✅ (P14-P15 PR #13). Métricas cierre: 60 módulos juego (62 con `conf.lua`+`scratch_test_debug.lua`, 93 con 31 tests), `obstacles.lua` 723→495L ✅, `enemyAttackRegistry` 224L pools, `core/world.lua` 369L SCHEMA+validate, `render/shaders.lua` 652L Voronoi hook off, `main.lua` 541L fixed timestep. Deuda residual: `systems/persistence.lua` 862L (nuevo split pendiente fuera de este plan).
+
+*Última actualización: 2026-09-04 16:00 (America/Bogota) — Plan v2.0 cerrado, P01-P15 completadas en `dev@8691a29`.*
