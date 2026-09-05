@@ -203,6 +203,7 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [ ] Add more room variety (currently 7 templates)
 - [ ] Performance profiling for large rooms
 - [ ] Add controller support documentation
+- [ ] **Follow-up Mini-Bosses (deuda GDD §5, ver TDD §10.10)**: Wyrm como 6 segmentos destruibles individualmente (hoy 1 entidad hp 6); Red Pegajosa que bloquee giros rápidos (hoy 3x3 slime); daño directo de contacto en Crusher/Wyrm; variante élite-chaser con `ELITE_*MULT` + cofre dorado (hoy la sala 3 la ocupa el mini-jefe)
 
 ## Low Priority
 - [ ] Consider adding new enemy types
