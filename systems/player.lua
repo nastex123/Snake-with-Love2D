@@ -55,6 +55,10 @@ function player.calcSpeed(base, fruits, opts)
     -- Evaluar ralentizaciones de terreno o debuffs (e.g. Baba Slime 1.25x)
     if opts.isSlime or opts.slowdown then
         local factor = type(opts.slowdown) == "number" and opts.slowdown or 1.25
+        -- Botas Ligeras (GDD item 55): reducen la penalizacion a la mitad
+        if opts.isSlime and shop.inventory and shop.inventory.lightBoots then
+            factor = 1 + (factor - 1) * 0.5
+        end
         current = current * factor
     end
 
@@ -349,6 +353,120 @@ function player.aplicarItem(itemId)
             st.scoreMultiplier = 1
             st.coinBonus = (shop.inventory and shop.inventory.extraCoin) and 1 or 0
         end)
+
+    -- Arsenal extendido 51-60 (GDD Fase 8)
+    elseif canonicalId == "tailSpike" then
+        local tail = st.player.body and st.player.body[#st.player.body]
+        if tail then
+            st.placedTraps = st.placedTraps or {}
+            table.insert(st.placedTraps, {x = tail.x, y = tail.y})
+            while #st.placedTraps > (constants.TRAP_MAX or 3) do
+                table.remove(st.placedTraps, 1)
+            end
+            uiMod.addPopup("TRAMPA +1", tail.x, tail.y)
+            sound.play("buy")
+        end
+
+    elseif canonicalId == "hourglass" then
+        local hist = st.historyBuffer
+        if hist and #hist > 0 then
+            local snap = hist[1]
+            if snap.body and #snap.body >= 2 then
+                local newBody = {}
+                for i, seg in ipairs(snap.body) do
+                    newBody[i] = {x = seg.x, y = seg.y}
+                end
+                st.player.body = newBody
+                st.player.prevBody = {}
+                for i, seg in ipairs(newBody) do
+                    st.player.prevBody[i] = {x = seg.x, y = seg.y}
+                end
+                local h, n = newBody[1], newBody[2]
+                st.player.dirX = (h.x ~= n.x) and (h.x > n.x and 1 or -1) or 0
+                st.player.dirY = (h.x == n.x and h.y ~= n.y) and (h.y > n.y and 1 or -1) or 0
+                st.player.lastMovedDirX = st.player.dirX
+                st.player.lastMovedDirY = st.player.dirY
+                st.player.inputQueue = {}
+                if snap.enemies then
+                    local newList = {}
+                    for i, e in ipairs(snap.enemies) do
+                        local c = {}
+                        for k, v in pairs(e) do
+                            if type(v) ~= "table" then c[k] = v end
+                        end
+                        newList[i] = c
+                    end
+                    enemiesMod.list = newList
+                end
+                if snap.boss and enemiesMod.boss then
+                    enemiesMod.boss.x = snap.boss.x
+                    enemiesMod.boss.y = snap.boss.y
+                end
+                enemiesMod.clearAttackObjects()
+                uiMod.addPopup("REBOBINADO -2s", h.x, h.y)
+                sound.play("highScore")
+            end
+        end
+
+    elseif canonicalId == "orbitalBeam" then
+        local head = st.player.body and st.player.body[1]
+        if head then
+            st.orbitalBeam = {x = head.x, timer = constants.ORBITAL_DURATION or 2.5}
+            uiMod.addPopup("RAYO ORBITAL!", head.x, head.y)
+            sound.play("enemyKill")
+        end
+
+    elseif canonicalId == "holoDecoy" then
+        local head = st.player.body and st.player.body[1]
+        if head then
+            st.player.decoys = st.player.decoys or {}
+            local dur = constants.HOLO_DECOY_DURATION or 4.0
+            table.insert(st.player.decoys, {x = head.x, y = head.y, timer = dur, maxTimer = dur})
+            uiMod.addPopup("SENUUELO!", head.x, head.y)
+            sound.play("buy")
+        end
+
+    elseif canonicalId == "lightBoots" then
+        shop.inventory.lightBoots = true
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("BOTAS LIGERAS", head.x, head.y) end
+        sound.play("buy")
+
+    elseif canonicalId == "goldenTooth" then
+        shop.inventory.goldenTooth = true
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("DIENTE DE ORO", head.x, head.y) end
+        sound.play("buy")
+
+    elseif canonicalId == "emergencyBattery" then
+        shop.inventory.emergencyBattery = true
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("BATERIA LISTA", head.x, head.y) end
+        sound.play("buy")
+
+    elseif canonicalId == "doubleHarvest" then
+        shop.inventory.doubleHarvest = true
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("COSECHA DOBLE", head.x, head.y) end
+        sound.play("buy")
+
+    elseif canonicalId == "lottery" then
+        local win = love.math.random(0, constants.LOTTERY_MAX or 35)
+        st.monedas = (st.monedas or 0) + win
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("LOTERIA +" .. win .. "$", head.x, head.y) end
+        sound.play("highScore")
+        if Events then
+            Events.emit("coinsChanged", {totalCoins = st.monedas})
+        else
+            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+        end
+
+    elseif canonicalId == "refractorPrism" then
+        shop.inventory.refractorPrism = true
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("PRISMA LISTO", head.x, head.y) end
+        sound.play("buy")
     end
 end
 

@@ -210,8 +210,15 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 if s.ghost or immune() then
                 elseif world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
+                    -- Prisma Refractor (GDD item 60): el proyectil se vuelve 3 monedas
+                    if ao.type == "projectile" and shop.inventory and shop.inventory.refractorPrism then
+                        s.prismRefract = true
+                    end
                 elseif s.armor and s.armor > 0 then
                     s.armor = s.armor - 1
+                    if ao.type == "projectile" and shop.inventory and shop.inventory.refractorPrism then
+                        s.prismRefract = true
+                    end
                 else
                     return false, false, nil, nil, {hit = true, damage = ao.damage or 1}
                 end
@@ -242,6 +249,16 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     end
 
     table.insert(s.body, 1, {x = nuevaCabezaX, y = nuevaCabezaY})
+
+    -- Baba Slime (GDD item 55): pisar slime ralentiza el paso 1.0s (ver calcSpeed)
+    if obstaclePos then
+        for _, obs in ipairs(obstaclePos) do
+            if obs.type == "slime" and nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
+                s.slimeSlowTimer = 1.0
+                break
+            end
+        end
+    end
 
     local comio = false
     local comioTwin = false
@@ -278,6 +295,13 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
             comio = true
             comioTwin = true
         end
+    end
+
+    -- Cosecha Doble (GDD item 58): 15% de no crecer conservando el premio
+    if comio and shop.inventory and shop.inventory.doubleHarvest
+        and love.math.random() < (constants.DOUBLE_HARVEST_CHANCE or 0.15) then
+        table.remove(s.body)
+        s.doubleHarvestProc = true
     end
 
     if comio then
