@@ -70,6 +70,9 @@ local function startSegment(name)
     activeSource = makeSrc()
     if activeSource then
         activeSource:seek(seg.start)
+        if sound.musicRate and sound.musicRate ~= 1.0 and activeSource.setPitch then
+            pcall(function() activeSource:setPitch(sound.musicRate) end)
+        end
         activeSource:play()
     end
     currentSegment = name
@@ -286,6 +289,21 @@ end
 
 function sound:getCurrentSegment()
     return currentSegment
+end
+
+-- Tempo musical (pitch) — usado por la Fase de Furia del Boss (GDD: 1.15x).
+-- Seguro en headless/tests: pcall sobre el source activo, que puede ser nil o mock.
+sound.musicRate = 1.0
+
+function sound.setMusicRate(rate)
+    sound.musicRate = rate or 1.0
+    if activeSource and activeSource.setPitch then
+        pcall(function() activeSource:setPitch(sound.musicRate) end)
+    end
+end
+
+function sound.getMusicRate()
+    return sound.musicRate or 1.0
 end
 
 function sound.getActiveSource()

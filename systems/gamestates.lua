@@ -78,6 +78,12 @@ function states.updateCommon(dt)
     processToasts()
 
     sound:update(dt)
+    -- Sin boss vivo el tempo siempre vuelve a 1.0 (evita heredar el pitch de furia)
+    if sound.getMusicRate and sound.getMusicRate() ~= 1.0 then
+        if not (enemiesMod.boss and enemiesMod.boss.alive and enemiesMod.boss.enraged) then
+            sound.setMusicRate(1.0)
+        end
+    end
     if st.gameState == constants.GAME_STATE_MENU then
         if sound:getCurrentSegment() ~= "intro" or not sound:isPlaying() then
             sound:playSegment("intro")
@@ -88,6 +94,11 @@ function states.updateCommon(dt)
         if enemiesMod.boss and enemiesMod.boss.alive then
             if sound:getCurrentSegment() ~= "boss" or not sound:isPlaying() then
                 sound:playSegment("boss")
+            end
+            -- Fase de Furia: tempo musical acelerado mientras el boss esta en furia
+            local wantRate = enemiesMod.boss.enraged and (constants.BOSS_ENRAGE_PITCH or 1.15) or 1.0
+            if sound.getMusicRate and sound.getMusicRate() ~= wantRate then
+                sound.setMusicRate(wantRate)
             end
             prevComboActive = false
         elseif comboActive then

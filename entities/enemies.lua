@@ -69,6 +69,10 @@ function enemies.addRadialPulse(cx, cy, maxRadius, speed, damage, lifetime)
     return attackRegistry.addRadialPulse(cx, cy, maxRadius, speed, damage, lifetime)
 end
 
+function enemies.addLaser(x1, y1, x2, y2, lifetime, damage)
+    return attackRegistry.addLaser(x1, y1, x2, y2, lifetime, damage)
+end
+
 function enemies.getAttackObjects()
     return attackRegistry.getAttackObjects()
 end

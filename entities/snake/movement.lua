@@ -205,6 +205,16 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 if dist >= ao.radius - 0.5 and dist <= ao.radius + 0.5 then
                     hit = true
                 end
+            elseif ao.type == "laser" then
+                local helpers = package.loaded["core.helpers"]
+                if not helpers then
+                    local ok, res = pcall(require, "core.helpers")
+                    if ok then helpers = res end
+                end
+                local d = helpers and helpers.point_seg_dist(nuevaCabezaX, nuevaCabezaY, ao.x1, ao.y1, ao.x2, ao.y2) or 999
+                if d < (constants.BOSS_LASER_HIT_DIST or 0.45) then
+                    hit = true
+                end
             end
             if hit then
                 if s.ghost or immune() then

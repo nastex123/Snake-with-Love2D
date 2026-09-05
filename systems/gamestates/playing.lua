@@ -500,10 +500,25 @@ function playing.update(dt)
             end
 
             if enemiesMod.boss and enemiesMod.boss.alive and foodMod.tipo ~= constants.FOOD_COIN then
+                local wasEnraged = enemiesMod.boss.enraged
                 enemiesMod.boss.foodCollected = enemiesMod.boss.foodCollected + 1
                 local ratio = enemiesMod.boss.foodCollected / enemiesMod.boss.foodTarget
                 enemiesMod.boss._uiBarTarget = math.max(0, 1 - ratio)
                 sound.play("boss_food_tick")
+                -- Fase de Furia (GDD): al quedar BOSS_ENRAGE_THRESHOLD comidas, pulso carmesi + aviso
+                local enrageAt = enemiesMod.boss.foodTarget - (constants.BOSS_ENRAGE_THRESHOLD or 3)
+                if not wasEnraged and enemiesMod.boss.foodCollected >= enrageAt then
+                    enemiesMod.boss.enraged = true
+                    enemiesMod.boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
+                    uiMod.addPopup("FURIA DEL JEFE!", enemiesMod.boss.x, enemiesMod.boss.y)
+                    sound.play("enemyKill")
+                    st.shakeTimer = 0.3
+                    shadersMod.triggerDamage(0.8, 0.6)
+                    local tamE = constants.TAMANIO_BLOQUE
+                    table.insert(st.activePS, {
+                        ps = particles.bossFoodTick(enemiesMod.boss.x * tamE + tamE / 2, enemiesMod.boss.y * tamE + tamE / 2)
+                    })
+                end
                 local tam2 = constants.TAMANIO_BLOQUE
                 table.insert(st.activePS, {
                     ps = particles.bossFoodTick(foodMod.pos.x * tam2 + tam2 / 2, foodMod.pos.y * tam2 + tam2 / 2)

@@ -81,9 +81,9 @@
   - [x] Suite de pruebas unitarias `tests/test_scope_20_patroller_ai.lua` en PASS (100% verde).
 - [ ] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)**:
   - [ ] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards
-- [ ] **Boss Enrage Phase & Laser Attacks**:
-  - [ ] 3-food threshold enrage state (35% faster telegraphs & high tempo music)
-  - [ ] Laser Perimeter attack (center dividing continuous beams)
+- [x] **Boss Enrage Phase & Laser Attacks** — `feature/phase8-enrage` 2026-09-05 ✅ bloque cerrado:
+  - [x] 3-food threshold enrage state (35% faster telegraphs & high tempo music) — `BOSS_ENRAGE_*` config, telegraph `/1.35`, pitch `1.15x`, pulso carmesí + popup `FURIA DEL JEFE!`, 4 tests scope_11
+  - [x] Laser Perimeter attack (center dividing continuous beams) — `laser_perimeter` minPhase 2 (telegraph 1.0s, cooldown 7.0s), rectángulo 4 rayos 4.0s en centro de sala, `addLaser` pooled, colisión `point_seg_dist` < 0.45, render glow rojo + núcleo blanco, 6 tests scope_11 (582 tests, 562 PASS)
 - [ ] **Room Modifiers, Curses & Blessings**:
   - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
 - [ ] **Stage Tarot Draft System**:
@@ -223,3 +223,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 
 ---
 *Last updated: 2026-09-05 (Extended Items 51-60 ✅ en feature/phase8-items-arsenal — 22 items, scope_21 15 tests, 560 tests 540 PASS)*
+*Last updated: 2026-09-05 (Laser Perimeter ✅ en feature/phase8-enrage — bloque Boss Enrage+Laser cerrado; 582 tests, 562 PASS)*

@@ -19,7 +19,7 @@ for i = 1, TELEGRAPH_POOL do
     telegraphPool[i] = {active = false, gx = 0, gy = 0, timer = 0, maxTimer = 0, attackType = "default"}
 end
 for i = 1, ATTACK_POOL do
-    attackPool[i] = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "projectile"}
+    attackPool[i] = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "projectile", x1 = 0, y1 = 0, x2 = 0, y2 = 0}
 end
 for i = 1, RESPAWN_POOL do
     respawnPool[i] = {active = false, type = "chaser", respawnAt = 0, attempts = 0, side = 1}
@@ -109,6 +109,27 @@ function registry.addRadialPulse(cx, cy, maxRadius, speed, damage, lifetime)
     e.maxLifetime = lt
     e.damage = damage or 1
     e.type = "radial_pulse"
+    table.insert(activeAttacks, e)
+    return e
+end
+
+function registry.addLaser(x1, y1, x2, y2, lifetime, damage)
+    local e = acquireFree(freeAttacks)
+    if not e then
+        if Log and Log.warn then Log.warn("attack pool exhausted") end
+        e = {active = false, x = 0, y = 0, dx = 0, dy = 0, cx = 0, cy = 0, px = 0, py = 0, radius = 0, maxRadius = 0, speed = 0, lifetime = 0, maxLifetime = 0, damage = 0, type = "projectile", x1 = 0, y1 = 0, x2 = 0, y2 = 0}
+    end
+    e.active = true
+    e.x1 = x1
+    e.y1 = y1
+    e.x2 = x2
+    e.y2 = y2
+    e.cx = (x1 + x2) / 2
+    e.cy = (y1 + y2) / 2
+    e.lifetime = lifetime or 4.0
+    e.maxLifetime = lifetime or 4.0
+    e.damage = damage or 1
+    e.type = "laser"
     table.insert(activeAttacks, e)
     return e
 end
@@ -205,6 +226,8 @@ function registry.updateAttackObjects(dt, anchoGrilla, altoGrilla, isFrozen)
                 table.remove(activeAttacks, i)
                 releaseToFree(freeAttacks, ao)
             end
+        elseif ao.type == "laser" then
+            -- Rayo estatico: solo decae por lifetime (manejado arriba)
         end
     end
 end
