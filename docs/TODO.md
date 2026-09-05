@@ -222,4 +222,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-04 16:00 (P14 fixed timestep 60Hz + P15 Voronoi hook — accumulator + half-res FBO)
+*Last updated: 2026-09-05 (docs-sync-8-5: ROADMAP 8.5 ✅, TECH-DEBT v2.0, TDD 60 módulos, GDD §21.4 implementados — rama chore/docs-sync-8-5)*
