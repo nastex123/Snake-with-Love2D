@@ -4,7 +4,7 @@
 
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (541L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 60 juego (62 con `conf.lua`+`scratch_test_debug.lua`, 93 con 31 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), P10 tests 1→6
+**Total Modules**: 61 juego (63 con `conf.lua`+`scratch_test_debug.lua`, 96 con 33 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), P10 tests 1→6 + scope_11/21/22
 **Total Lines**: ~11,500 src (post-P15 04:09:2026: `obstacles` 723→495L, `registry` 139→224L pools, `world` 29→369L SCHEMA, `shaders` 496→652L Voronoi, `main` 380→541L timestep, `persistence` 362→862L atomic)
 
 ### Folder Structure
@@ -35,6 +35,7 @@ Snake-with-Love2D/
 │   ├── enemyAttackRegistry.lua ← 224L pools 32/64/32 `active` sin GC (P01+P11)
 │   ├── enemyBossLogic.lua      ← spawnBoss/hitBoss/onBossDefeated + máquina de estados boss (P01 170L)
 │   ├── enemySpawnLogic.lua     ← canSpawn/spawnAt/generar (P01 121L)
+│   ├── enemyMiniBoss.lua        ← MINIBOSS_DEFS 5 + máquina estados + 5 ataques (minibosses ~400L)
 │   ├── chaserAI.lua            ← IA social Chaser (SOLO/DUPLA/MANADA)
 │   ├── bossAttacks.lua         ← 4 ataques del boss
 │   └── enemyHelpers.lua        ← validarPos, sampleFreeTile, etc.
@@ -89,7 +90,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── entities/snake.lua (fachada 257L) ──→ entities/snake/core.lua, entities/snake/abilities.lua, entities/snake/collisions.lua, entities/snake/movement.lua; draw usa shop/constants
 ├── entities/snake/movement.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua, entities/obstacles.lua
 ├── entities/snake/collisions.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua
-├── entities/enemies.lua (fachada 341L) ──→ entities/enemyAttackRegistry.lua, entities/enemyBossLogic.lua, entities/enemySpawnLogic.lua, entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua, entities/patrollerAI.lua
+├── entities/enemies.lua (fachada 341L) ──→ entities/enemyAttackRegistry.lua, entities/enemyBossLogic.lua, entities/enemySpawnLogic.lua, entities/enemyMiniBoss.lua, entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua, entities/patrollerAI.lua
 ├── entities/food.lua, entities/obstacles.lua
 ├── world/world.lua (facade) ──→ world/dungeonGen.lua, world/populate.lua, core/helpers.lua
 ├── systems/items.lua, systems/shop.lua ──→ systems/items.lua
@@ -127,6 +128,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | enemyAttackRegistry.lua | entities/ | 224 | — | P01+P11: pools 32/64/32 `active` sin GC |
 | enemyBossLogic.lua | entities/ | 170 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
 | enemySpawnLogic.lua | entities/ | 121 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
+| enemyMiniBoss.lua | entities/ | ~400 | — | MiniBosses sala 3: MINIBOSS_DEFS 5 + spawn/hit/defeat/food + charge/breath+nova/trail/swarm+web/singu+teleport |
 | chaserAI.lua | entities/ | 310 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
 | bossAttacks.lua | entities/ | 146 | — | 4 ataques del boss (projectile_spread, spawn_adds, radial_pulse, teleport) |
 | enemyHelpers.lua | entities/ | 61 | — | validarPos, sampleFreeTile, tiles seguros |
