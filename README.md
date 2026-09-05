@@ -64,7 +64,7 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
 
 ## 🏗️ Arquitectura del Proyecto
 
-El proyecto está estructurado en 60 módulos juego (93 con 31 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residual `persistence.lua` 862L pendiente):
+El proyecto está estructurado en 61 módulos juego (96 con 33 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residual `persistence.lua` 862L pendiente):
 - **`core/`**: Configuración central (`config.lua` + `KEYBINDS`), logger (`logger.lua`), timers único pooled (`timers.lua`), estado dot-notation + `SCHEMA`/`validate()` (`world.lua` 369L), Event Bus (`events.lua` 134L), input centralizado (`input.lua` 89L), asset manager cache (`assets.lua` 144L), helpers (`helpers.lua`) e input táctil (`touch.lua`).
 - **`entities/`**: Serpiente fachada + `snake/` 4 (`snake.lua` 257L), enemigos fachada + 3 (`enemies.lua` 341L, `enemyAttackRegistry.lua` 224L pools), `bossAttacks.lua`, `chaserAI.lua`, `patrollerAI.lua`, `enemyHelpers.lua`, comida (`food.lua`) y obstáculos fachada 495L (`obstacles.lua` delega a `world/biomeHazards.lua`).
 - **`world/`**: Fachada del mundo (`world.lua`), peligros `biomeHazards.lua` 254L, generador BSP (`dungeonGen.lua`) y poblador de salas (`populate.lua`).

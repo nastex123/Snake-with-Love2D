@@ -68,6 +68,63 @@ local function awardItemKill(st, res)
     end
 end
 
+local miniBossRewards = {
+    wall_crusher = "shield", frost_golem = "freeze", magma_wyrm = "fire",
+    brood_queen = "constrictor", void_phantom = "streak",
+}
+
+-- Recompensa de mini-jefe sala 3: monedas + bonus de racha + cofre dorado (buff temático)
+local function awardMiniBoss(st, loot)
+    local streak = st.survivalStreak or 1.0
+    local earnedCoins = math.floor((loot.coins or 5) * streak)
+    st.monedas = st.monedas + earnedCoins
+    local bonus = (loot.id == "void_phantom") and 0.3 or 0.2
+    st.survivalStreak = (st.survivalStreak or 1.0) + bonus
+    st.highestStreak = math.max(st.highestStreak or 1.0, st.survivalStreak)
+    uiMod.addPopup("+" .. earnedCoins .. "$ JEFE! +" .. bonus .. "x", loot.gx, loot.gy)
+    table.insert(st.activePS, {ps = particles.bossDeath(loot.px, loot.py)})
+    sound.play("boss_defeated")
+    local reward = miniBossRewards[loot.id]
+    if reward == "shield" then
+        shop.shieldActive = true
+        uiMod.addPopup("COFRE: ESCUDO", loot.gx, loot.gy)
+    elseif reward == "freeze" then
+        st.enemyFreezeTimer = 2.5
+        uiMod.addPopup("COFRE: CONGELACION", loot.gx, loot.gy)
+    elseif reward == "fire" then
+        st.player.firePepperTimer = 3.5
+        uiMod.addPopup("COFRE: FUEGO", loot.gx, loot.gy)
+    elseif reward == "constrictor" then
+        st.player.constrictorBuffTimer = 5.0
+        uiMod.addPopup("COFRE: LAZO", loot.gx, loot.gy)
+    elseif reward == "streak" then
+        uiMod.addPopup("COFRE LEGENDARIO!", loot.gx, loot.gy)
+    end
+    if Events then
+        Events.emit("enemyKilled")
+        Events.emit("coinsChanged", {totalCoins = st.monedas})
+    else
+        achievementsMod.check("enemyKilled")
+        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+    end
+end
+
+-- Daño directo al mini-jefe (escudo, armadura, bomba, fuego). Premia si muere.
+local function damageMiniBoss(st, dmg)
+    local mb = enemiesMod.getMiniBoss()
+    if not mb or not mb.alive then return nil end
+    local loot = enemiesMod.hitMiniBoss(dmg, {enemies = enemiesMod})
+    if loot then awardMiniBoss(st, loot) end
+    return loot
+end
+
+-- ¿Cabeza dentro del bloque 2x2 del mini-jefe?
+local function headOnMiniBoss(st, mb)
+    local head = st.player.body and st.player.body[1]
+    if not head or not mb then return false end
+    return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
+end
+
 function playing.update(dt)
     local st = world.state
     if st.deathModalOpen then return end
@@ -131,6 +188,19 @@ function playing.update(dt)
     enemiesMod.update(dt, st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod, worldMod.etapa, worldMod.getModifier(), st.player.decoys)
     if st.player.flashTimer > 0 then
         st.player.flashTimer = st.player.flashTimer - dt
+    end
+
+    -- Rastro de fuego vs mini-jefe (GDD: vulnerable al fuego)
+    do
+        local mb = enemiesMod.getMiniBoss()
+        if mb and mb.alive and st.player.fireTrail then
+            for _, ft in ipairs(st.player.fireTrail) do
+                if ft.x >= mb.x and ft.x <= mb.x + 1 and ft.y >= mb.y and ft.y <= mb.y + 1 then
+                    damageMiniBoss(st, 1)
+                    break
+                end
+            end
+        end
     end
 
     if st.player.fireTrail and #st.player.fireTrail > 0 then
@@ -256,6 +326,57 @@ function playing.update(dt)
                 st.shakeTimer = 0.2
                 shadersMod.triggerDamage(0.5, 0.3)
             end
+        end
+    end
+
+    -- Contacto con mini-jefe sala 3: letal salvo escudo/armadura (que lo dañan, GDD §5)
+    do
+        local mb = enemiesMod.getMiniBoss()
+        if mb and mb.alive and headOnMiniBoss(st, mb) then
+            if world.get("shop.shieldActive", false) then
+                shop.shieldActive = false
+                sound.play("shieldBreak")
+                shadersMod.triggerDamage(0.5, 0.5)
+                damageMiniBoss(st, 1)
+            elseif st.player.armor and st.player.armor > 0 then
+                st.player.armor = st.player.armor - 1
+                sound.play("shieldBreak")
+                shadersMod.triggerDamage(0.4, 0.4)
+                damageMiniBoss(st, 1)
+            else
+                if triggerBattery(st) then return end
+                st.roomDamaged = true
+                st.deathModalOpen = true
+                return true
+            end
+        end
+        -- Detonación de singularidad del Espectro: golpe letal telegrafiado
+        if mb and mb.pendingHit then
+            mb.pendingHit = false
+            if not (st.player.ghost or world.get("debugImmune", false)) then
+                if world.get("shop.shieldActive", false) then
+                    shop.shieldActive = false
+                    sound.play("shieldBreak")
+                    shadersMod.triggerDamage(0.5, 0.5)
+                elseif st.player.armor and st.player.armor > 0 then
+                    st.player.armor = st.player.armor - 1
+                    sound.play("shieldBreak")
+                    shadersMod.triggerDamage(0.4, 0.4)
+                else
+                    if triggerBattery(st) then return end
+                    st.roomDamaged = true
+                    st.deathModalOpen = true
+                    return true
+                end
+            end
+        end
+        -- Embestida del Triturador: sacudida no letal (aturdido, GDD)
+        if mb and mb.slammed then
+            mb.slammed = false
+            st.shakeTimer = 0.3
+            shadersMod.triggerDamage(0.6, 0.4)
+            uiMod.addPopup("TERREMOTO!", mb.x, mb.y)
+            sound.play("shieldBreak")
         end
     end
 
@@ -549,6 +670,15 @@ function playing.update(dt)
                             return true
                         end
                     end
+                end
+            end
+
+            -- Mini-jefe sala 3: las comidas no-moneda también lo debilitan (GDD §5)
+            do
+                local mb = enemiesMod.getMiniBoss()
+                if mb and mb.alive and foodMod.tipo ~= constants.FOOD_COIN then
+                    local fed = enemiesMod.addMiniBossFood()
+                    if fed then awardMiniBoss(st, fed) end
                 end
             end
 

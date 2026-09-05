@@ -455,7 +455,7 @@ function dungeonGen.generar(worldOrW, anchoVirtualOrH, altoVirtualOrRooms, targe
     -- Sort rooms left to right for natural progression
     table.sort(rooms, function(a, b) return a.x + a.y * 0.1 < b.x + b.y * 0.1 end)
     
-    -- Assign templates
+    -- Assign templates (sala 3 = encuentro élite con mini-jefe, GDD §5)
     for i, rect in ipairs(rooms) do
         local tid = selectTemplateForRoom(rect, i, #rooms)
         local tpl = dungeonGen.roomTemplates[tid] or dungeonGen.roomTemplates.arena
@@ -469,6 +469,7 @@ function dungeonGen.generar(worldOrW, anchoVirtualOrH, altoVirtualOrRooms, targe
             centerY = rect.y + rect.h / 2,
             visited = (i == 1),
             cleared = false,
+            isElite = (i == 3),
         }
     end
     

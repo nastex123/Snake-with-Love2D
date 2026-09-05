@@ -80,7 +80,7 @@
 - [x] Enemy Pixel-Art Sprite Identity (Patroller 5x5 Delta Interceptor, Chaser 7x7 Plasma Hyper Shuriken with decoupled gyroscopic eye tracking)
 - [x] Patroller Tactical AI Evolution (Modular patrollerAI.lua, 4 contextual patrol modes, 90-degree corner turns, Line-of-Sight Dash, and Guillotine Slice tail-cutting mechanic)
 - [ ] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism)
-- [ ] Elite Encounters & 5 Mini-Bosses (Mid-stage room 3 challenges with guaranteed golden rewards)
+- [x] Elite Encounters & 5 Mini-Bosses (sala 3 `isElite` + `enemyMiniBoss.lua` ~400L: Triturador/Gólem/Sierpe/Reina/Espectro con telegraphs y cofre-buff dorado, scope_22 14 tests)
 - [ ] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks)
 - [ ] Room Modifiers, Curses & Blessings (10 mutators: Zero Gravity, Midas Curse, Phoenix Blessing, Tunnel Vision, etc.)
 - [ ] Stage Tarot Draft System (12 fate cards drafted on rooms 1, 2, 4)

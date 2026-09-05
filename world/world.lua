@@ -236,6 +236,7 @@ function world.getDungeonMapData()
             id = r.id,
             rect = r.rect,
             template = r.template,
+            isElite = r.isElite,
             name = r.name,
             centerX = r.centerX,
             centerY = r.centerY,
