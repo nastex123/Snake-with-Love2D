@@ -820,8 +820,8 @@ shaders.reflectionCanvas = love.graphics.newCanvas(VIRTUAL_WIDTH / 2, VIRTUAL_HE
 #### 6. Voronoi Glass Fracture Shader (`render/shaders.lua`)
 * Shader GLSL que toma 8 semillas precalculadas y calcula la distancia euclidiana mínima $d = \min_{i} \|p - s_i\|$. Si $\left|d_1 - d_2\right| < 0.015$, dibuja una arista blanca brillante simulando grietas de vidrio en Game Over.
 
-### 10.25 Architecture & DX Proposals (GDD §21.4) — Implementación Pendiente
-Las propuestas del Bloque 4 del GDD §21.4 que afectan arquitectura se catalogan aquí con su módulo destino. Estado inicial: backlog (pendiente de priorización y resolución de duplicados).
+### 10.25 Architecture & DX Proposals (GDD §21.4) — Parcial ✅ 2026-09-04
+Implementados P05 (timers), P06 (events), P08 (assets), P09 (atomic+schema), P10 (smoke), P07 (input). Pendientes: difficulty presets, UI scaling, runtime profiler, motion reduction, resume run, tweaks, i18n, DX guide.
 
 | Propuesta (§21.4) | Módulo(s) destino | Nota de implementación |
 |---|---|---|
