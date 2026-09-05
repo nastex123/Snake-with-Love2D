@@ -73,7 +73,12 @@ function player.itemColor(itemId)
         speedReducer = {0.2, 0.9, 0.3}, speed_reducer = {0.2, 0.9, 0.3},
         turbo = {0, 1, 0.5}, slow = {0.5, 0.5, 1},
         doubler = {1, 0.84, 0}, extraCoin = {1, 0.84, 0}, extra_coin = {1, 0.84, 0},
-        star = {1, 0.84, 0}
+        star = {1, 0.84, 0},
+        tailSpike = {1, 0.3, 0.3}, hourglass = {0.5, 0.8, 1},
+        orbitalBeam = {0.4, 0.9, 1}, holoDecoy = {0.7, 0.2, 0.9},
+        lightBoots = {0.4, 1, 0.6}, goldenTooth = {1, 0.75, 0.1},
+        emergencyBattery = {1, 0.2, 0.2}, doubleHarvest = {0.3, 1, 0.3},
+        lottery = {1, 0.9, 0.3}, refractorPrism = {0.8, 0.5, 1}
     }
     local c = colors[itemId]
     if not c and itemsMod and itemsMod.get then

@@ -73,6 +73,67 @@ items.registry = {
         desc = "Puntos x3 x5s", desc2 = "0 monedas",
         cost = constants.STAR_COST, icon = "star",
         category = "score", type = "timer", duration = constants.STAR_DURATION, itemType = "active"
+    },
+    -- Arsenal extendido 51-60 (GDD Fase 8)
+    tailSpike = {
+        id = "tailSpike", name = "PUA DE COLA",
+        desc = "Trampa en cola", desc2 = "mata x3 max",
+        cost = constants.TAIL_SPIKE_COST, icon = "tailSpike",
+        category = "defense", type = "instant", itemType = "active"
+    },
+    hourglass = {
+        id = "hourglass", name = "RELOJ ARENA",
+        desc = "Rebobina 2.0s", desc2 = "conserva puntos",
+        cost = constants.HOURGLASS_COST, icon = "hourglass",
+        category = "defense", type = "instant", itemType = "active"
+    },
+    orbitalBeam = {
+        id = "orbitalBeam", name = "RAYO ORBITAL",
+        desc = "Haz columna", desc2 = "x2.5s vaporiza",
+        cost = constants.ORBITAL_COST, icon = "orbitalBeam",
+        category = "score", type = "timer", duration = constants.ORBITAL_DURATION, itemType = "active"
+    },
+    holoDecoy = {
+        id = "holoDecoy", name = "SENUELO",
+        desc = "Atrae chasers", desc2 = "x4.0s",
+        cost = constants.HOLO_DECOY_COST, icon = "holoDecoy",
+        category = "score", type = "instant", itemType = "active"
+    },
+    lightBoots = {
+        id = "lightBoots", name = "BOTAS LIGERAS",
+        desc = "-50% lentitud", desc2 = "baba/slimes",
+        cost = constants.LIGHT_BOOTS_COST, icon = "lightBoots",
+        category = "speed", type = "instant", itemType = "passive"
+    },
+    goldenTooth = {
+        id = "goldenTooth", name = "DIENTE ORO",
+        desc = "+1 moneda/fruta", desc2 = "x10 segmentos",
+        cost = constants.GOLDEN_TOOTH_COST, icon = "goldenTooth",
+        category = "score", type = "instant", itemType = "passive"
+    },
+    emergencyBattery = {
+        id = "emergencyBattery", name = "BATERIA",
+        desc = "Bullet time", desc2 = "al morir x1.5s",
+        cost = constants.EMERGENCY_BATTERY_COST, icon = "emergencyBattery",
+        category = "defense", type = "instant", itemType = "passive"
+    },
+    doubleHarvest = {
+        id = "doubleHarvest", name = "COSECHA DOBLE",
+        desc = "15% sin crecer", desc2 = "conserva premio",
+        cost = constants.DOUBLE_HARVEST_COST, icon = "doubleHarvest",
+        category = "score", type = "instant", itemType = "passive"
+    },
+    lottery = {
+        id = "lottery", name = "LOTERIA",
+        desc = "Rasca 0-35$", desc2 = "cuesta 5$",
+        cost = constants.LOTTERY_COST, icon = "lottery",
+        category = "food", type = "instant", itemType = "consumable"
+    },
+    refractorPrism = {
+        id = "refractorPrism", name = "PRISMA",
+        desc = "Proyectil->3$", desc2 = "con escudo",
+        cost = constants.REFRACTOR_COST, icon = "refractorPrism",
+        category = "score", type = "instant", itemType = "passive"
     }
 }
 
@@ -80,7 +141,10 @@ items.canonicalKeys = {
     "shield", "armor", "ghost",
     "magnet", "bomb", "hunger",
     "speedReducer", "turbo", "slow",
-    "doubler", "extraCoin", "star"
+    "doubler", "extraCoin", "star",
+    "tailSpike", "hourglass", "orbitalBeam", "holoDecoy",
+    "lightBoots", "goldenTooth", "emergencyBattery", "doubleHarvest",
+    "lottery", "refractorPrism"
 }
 
 items.categories = {"defense", "food", "speed", "score"}

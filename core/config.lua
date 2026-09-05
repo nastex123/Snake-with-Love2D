@@ -234,6 +234,28 @@ config.FOOD_COUNTDOWN_TIMER = 5.0
 config.FOOD_TWIN_TIMER = 4.0
 config.FOOD_TWIN_WINDOW = 4.0
 
+-- Arsenal extendido 51-60 (GDD Fase 8)
+config.TAIL_SPIKE_COST = 20
+config.TRAP_MAX = 3
+config.TRAP_LIFETIME = 60
+config.HOURGLASS_COST = 35
+config.HISTORY_FRAMES = 120
+config.ORBITAL_COST = 30
+config.ORBITAL_DURATION = 2.5
+config.HOLO_DECOY_COST = 25
+config.HOLO_DECOY_DURATION = 4.0
+config.LIGHT_BOOTS_COST = 20
+config.GOLDEN_TOOTH_COST = 25
+config.EMERGENCY_BATTERY_COST = 30
+config.EMERGENCY_BULLET_TIME = 0.1
+config.EMERGENCY_DURATION = 1.5
+config.DOUBLE_HARVEST_COST = 30
+config.DOUBLE_HARVEST_CHANCE = 0.15
+config.LOTTERY_COST = 5
+config.LOTTERY_MAX = 35
+config.REFRACTOR_COST = 25
+config.REFRACTOR_COINS = 3
+
 -- Parámetros de Biomas y Peligros Ambientales (Fase 8)
 config.ICE_SLIP_DISTANCE = 1
 config.MAGMA_WARNING_TIME = 1.2
