@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Tarot Cards — Propuestas de texturas 20x20 (PixiJS)</title>
-<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
+<script src="pixi.min.js"></script>
 <style>
   :root { color-scheme: dark; }
   body { background: #0a0a14; color: #e8e8f0; font-family: Consolas, monospace; margin: 0; padding: 24px; }
@@ -119,32 +119,71 @@ function buildPixels(def) {
   return px;
 }
 
+const hex = (n) => "#" + n.toString(16).padStart(6, "0");
+const HAS_PIXI = (typeof window.PIXI !== "undefined");
+if (HAS_PIXI) PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+else {
+  const warn = document.createElement("div");
+  warn.className = "sub";
+  warn.innerHTML = "⚠️ <b>pixi.min.js local no cargó</b>: usando fallback Canvas2D (misma retícula 20x20).";
+  document.querySelector(".sub").after(warn);
+}
+
+// Lienzo base 20x20 (siempre: sirve al PNG y al fallback; Pixi lo usa como textura)
+function makeBaseCanvas(def, px) {
+  const c = document.createElement("canvas");
+  c.width = 20; c.height = 20;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = hex(def.bg);
+  ctx.fillRect(0, 0, 20, 20);
+  for (let y = 0; y < 20; y++)
+    for (let x = 0; x < 20; x++)
+      if (px[y][x] !== null) { ctx.fillStyle = hex(px[y][x]); ctx.fillRect(x, y, 1, 1); }
+  return c;
+}
+
 const gallery = document.getElementById("gallery");
 for (const def of CARDS) {
   const px = buildPixels(def);
-  const app = new PIXI.Application({ width: 200, height: 200, backgroundColor: 0x000000, forceCanvas: true });
-  const g = new PIXI.Graphics();
-  g.beginFill(def.bg).drawRect(0, 0, 20, 20).endFill();
-  for (let y = 0; y < 20; y++)
-    for (let x = 0; x < 20; x++)
-      if (px[y][x] !== null) { g.beginFill(px[y][x]).drawRect(x, y, 1, 1).endFill(); }
-  const rt = PIXI.RenderTexture.create({ width: 20, height: 20 });
-  app.renderer.render(g, { renderTexture: rt });
-  g.destroy();
-  const big = new PIXI.Sprite(rt);
-  big.scale.set(8); big.x = 20; big.y = 8;      // 160px
-  const mini = new PIXI.Sprite(rt);
-  mini.scale.set(2); mini.x = 20; mini.y = 8 + 160 + 6; // 40px, tamaño real aprox. en HUD
-  app.stage.addChild(big, mini);
+  const base = makeBaseCanvas(def, px);
+  let view, pngURL;
+  if (HAS_PIXI) {
+    const app = new PIXI.Application({ width: 200, height: 214, backgroundColor: 0x000000, forceCanvas: true });
+    const tex = PIXI.Texture.from(base);
+    const big = new PIXI.Sprite(tex);
+    big.scale.set(8); big.x = 20; big.y = 8;      // 160px
+    const mini = new PIXI.Sprite(tex);
+    mini.scale.set(2); mini.x = 20; mini.y = 8 + 160 + 6; // 40px, tamaño real aprox. en HUD
+    app.stage.addChild(big, mini);
+    view = app.view;
+    pngURL = () => app.renderer.extract.canvas(tex).toDataURL("image/png");
+  } else {
+    const wrap = document.createElement("div");
+    const big = document.createElement("canvas");
+    big.width = 160; big.height = 160;
+    const bctx = big.getContext("2d");
+    bctx.imageSmoothingEnabled = false;
+    bctx.drawImage(base, 0, 0, 160, 160);
+    const mini = document.createElement("canvas");
+    mini.width = 40; mini.height = 40;
+    const mctx = mini.getContext("2d");
+    mctx.imageSmoothingEnabled = false;
+    mctx.drawImage(base, 0, 0, 40, 40);
+    const lab = document.createElement("div");
+    lab.style.cssText = "font-size:10px;color:#8a8aa0;margin-top:4px";
+    lab.textContent = "×8 izq · ×2 der (tamaño HUD)";
+    wrap.append(big, mini, lab);
+    view = wrap;
+    pngURL = () => base.toDataURL("image/png");
+  }
 
   const box = document.createElement("div");
   box.className = "card";
-  box.innerHTML = `<h2 style="color:#${def.bg.toString(16).padStart(6, "0")}">${def.name}</h2>
-    <div class="arc">${def.arc}</div>`;
+  box.innerHTML = `<h2>${def.name}</h2><div class="arc">${def.arc}</div>`;
   // Tiñe el título con el color principal de la carta
   const mainKey = Object.keys(def.pal).includes("C") ? "C" : "L";
-  box.querySelector("h2").style.color = "#" + def.pal[mainKey].toString(16).padStart(6, "0");
-  box.appendChild(app.view);
+  box.querySelector("h2").style.color = hex(def.pal[mainKey]);
+  box.appendChild(view);
   const palDiv = document.createElement("div");
   palDiv.className = "pal";
   for (const [k, v] of Object.entries(def.pal))
@@ -153,9 +192,8 @@ for (const def of CARDS) {
   const btn = document.createElement("button");
   btn.textContent = "⬇ PNG 20x20";
   btn.onclick = () => {
-    const url = app.renderer.extract.canvas(rt).toDataURL("image/png");
     const a = document.createElement("a");
-    a.href = url; a.download = def.id + "-20x20.png"; a.click();
+    a.href = pngURL(); a.download = def.id + "-20x20.png"; a.click();
   };
   box.appendChild(btn);
   gallery.appendChild(box);
