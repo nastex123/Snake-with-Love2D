@@ -325,6 +325,7 @@ World.SCHEMA = {
     ["shop.ghostActive"] = "boolean",
     ["enemies.list"] = "table",
     ["enemies.boss"] = "table",
+    stageCards = "table",
 }
 
 function World.enableDebug()

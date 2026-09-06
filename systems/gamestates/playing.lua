@@ -25,6 +25,7 @@ local timers = require("core.timers")
 local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
+local tarotMod = require("systems.tarot")
 
 -- Batería de Emergencia (GDD item 57): bullet-time 0.1x con dt escalado
 -- (pendingDeathTimer en tiempo escalado ≈ 1.5s reales); retorna true si se activó
@@ -708,6 +709,11 @@ function playing.update(dt)
             end
 
             if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not st.transitionTarget then
+                -- Tarot Draft (GDD §14): salas 1/2/4 abren el tapete antes de la transición
+                if tarotMod.shouldOffer(worldMod.sala or worldMod.getSala()) then
+                    tarotMod.open(worldMod.sala or worldMod.getSala())
+                    return true
+                end
                 st.transitionTarget = "siguienteSala"
                 st.transitionPhase = 1
                 st.fadeDir = 1

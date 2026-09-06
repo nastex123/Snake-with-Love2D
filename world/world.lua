@@ -3,6 +3,7 @@ local coreWorld = require("core.world")
 local dungeonGen = require("world.dungeonGen")
 local populate = require("world.populate")
 local constants = require("constants")
+local tarotMod = require("systems.tarot")
 
 -- Tracked state
 world.etapa = 1
@@ -62,6 +63,7 @@ function world.init()
     world.objetivoSala = 50
     world.dungeon = nil
     world.generarMazmorra()
+    tarotMod.reset()
     coreWorld.set("mundoCompletado", false)
 end
 
@@ -206,6 +208,7 @@ end
 function world.avanzarEtapa()
     world.etapa = world.etapa + 1
     world.generarMazmorra()
+    tarotMod.reset()
     world.puntajeSala = 0
     world.objetivoSala = world.calcularObjetivo()
 end
