@@ -120,12 +120,24 @@ function buildPixels(def) {
 }
 
 const hex = (n) => "#" + n.toString(16).padStart(6, "0");
-const HAS_PIXI = (typeof window.PIXI !== "undefined");
-if (HAS_PIXI) PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
-else {
+let HAS_PIXI = (typeof window.PIXI !== "undefined");
+let pixiFailReason = "";
+if (HAS_PIXI) {
+  try {
+    PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
+    const probe = new PIXI.Application({ width: 8, height: 8, forceCanvas: true });
+    probe.destroy(true);
+  } catch (e) {
+    HAS_PIXI = false;
+    pixiFailReason = e && e.message ? e.message : String(e);
+    console.warn("Pixi renderer no disponible, usando fallback 2D:", pixiFailReason);
+  }
+}
+if (!HAS_PIXI) {
   const warn = document.createElement("div");
   warn.className = "sub";
-  warn.innerHTML = "⚠️ <b>pixi.min.js local no cargó</b>: usando fallback Canvas2D (misma retícula 20x20).";
+  warn.innerHTML = "⚠️ <b>PixiJS sin renderer" + (pixiFailReason ? " (" + pixiFailReason + ")" : " (pixi.min.js no cargó)") +
+    "</b>: usando fallback Canvas2D (misma retícula 20x20). Revisa los escudos de Brave para este sitio.";
   document.querySelector(".sub").after(warn);
 }
 
@@ -134,6 +146,7 @@ function makeBaseCanvas(def, px) {
   const c = document.createElement("canvas");
   c.width = 20; c.height = 20;
   const ctx = c.getContext("2d");
+  if (!ctx) throw new Error("Canvas2D bloqueado por el navegador");
   ctx.fillStyle = hex(def.bg);
   ctx.fillRect(0, 0, 20, 20);
   for (let y = 0; y < 20; y++)
