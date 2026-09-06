@@ -4,7 +4,7 @@
 
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (541L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 61 juego (63 con `conf.lua`+`scratch_test_debug.lua`, 96 con 33 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), P10 tests 1→6 + scope_11/21/22
+**Total Modules**: 62 juego (64 con `conf.lua`+`scratch_test_debug.lua`, 97 con 34 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), P10 tests 1→6 + scope_11/21/22
 **Total Lines**: ~11,500 src (post-P15 04:09:2026: `obstacles` 723→495L, `registry` 139→224L pools, `world` 29→369L SCHEMA, `shaders` 496→652L Voronoi, `main` 380→541L timestep, `persistence` 362→862L atomic)
 
 ### Folder Structure
@@ -151,6 +151,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | gamestates/playing.lua | systems/gamestates/ | 389 | — | P03: updatePlaying (economía, fuego, tailSnap, constrictor, slice, mover + combo) |
 | gamestates/transition.lua | systems/gamestates/ | 64 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
 | gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
+| tarot.lua | systems/ | ~290 | — | Tarot Draft GDD §14: TAROT_DEFS 12 + sample/open/choose/has + helpers hooks + draw modal |
 | debugTools.lua | systems/ | 196 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
 | debugLogo.lua | systems/ | 189 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
 | ui.lua | ui/ | 143 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
@@ -570,14 +571,19 @@ El pipeline de shaders en `render/shaders.lua` se amplía con 3 nuevos efectos a
 
 ### 10.13 Tarot Draft Engine & Stage Card Architecture
 
-* **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con hasta 3 IDs de cartas activas).
+* **Módulo**: `systems/tarot.lua` (~230L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 24 tests).
+* **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con hasta 3 IDs), `world.state.tarotDraft` (opciones abiertas), `world.state.astralWrapUsed` (flag por sala).
 * **Ciclo de Vida**:
-  - `worldMod.avanzarEtapa()`: reinicia `stageCards = {}`.
-  - Al completar salas 1, 2 y 4: `gamestates.lua` abre el estado `GAME_STATE_TAROT_DRAFT` (o modal integrado en `TRANSITION`).
-  - Muestreo: selecciona 3 cartas aleatorias de `config.TAROT_CARDS` garantizando que no estén ya equipadas.
-* **Hooks de Ejecución**:
-  - `snake.mover()` consulta `hasTarot("mercury")` (+15% velocidad), `hasTarot("iron_spine")` (inmunidad en últimos 3 segmentos) y `hasTarot("astral_mirror")` (1 wrap de pared extra).
-  - `foodMod.generar()` consulta `hasTarot("alchemical_digestion")` para aplicar el +25% de transformación a oro.
+  - `worldMod.avanzarEtapa()` y `worldMod.init()`: `tarot.reset()`.
+  - Al completar salas 1, 2 y 4: `playing.lua` llama `tarot.open(sala)` → `GAME_STATE_TAROT = 7` (config); `choose(i)` aplica y continúa a `TRANSITION` (`siguienteSala`).
+  - Muestreo: Fisher-Yates parcial sobre `TAROT_DEFS` (12) excluyendo equipadas; input click + teclas 1/2/3.
+* **Hooks de Ejecución** (helpers puros en `tarot.*`):
+  - `player.calcSpeed()` × `speedFactor()` (mercury 0.85); `playing` eat: `comboWindow()` (eagle_eye 12.0) + `comboMult()` (mercury ×2).
+  - `collisions.checkEnemyCollisions()`: `ironSpineProtects()` mata chasers en últimos 3 (`iron_spine_block`); `isShatterFrozen()` quiebra congelados (`frozen_shatter`); ambos con recompensa en `playing`.
+  - `movement.mover()`: Espejo Astral 1 wrap/sala sin wall-wrap; `checkConstrictorLoop()`: `constrictReach()` +1 adyacencia.
+  - `foodMod.generar()`: Digestión Alquímica 25% oro; `player.aplicarComida()`: `fireBuffDuration()` 6.0 / `freezeDuration()` 4.0.
+  - `playing` (paso): Ladrón de Sombras near-miss +1$ (nueva adyacencia Chebyshev); kills: `extendBuffs(0.5)` (Segador, pooled `delay` + legacy `remaining`).
+  - `gameflow.iniciarSala()`: Bolsa de Midas +3$; `transition.update()`: Corazón de Hierro escudo gratis (sala superada con <5 segmentos).
 
 ### 10.14 Mystery Room Templates & Generation Hooks
 

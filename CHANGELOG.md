@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-06 00:08
+
+- **feature** (completed - 2026-09-06 00:08): Stage Tarot Draft System (America/Bogota, consola-only, rama `feature/phase8-tarot`):
+  1. **QUE — `systems/tarot.lua` (nuevo, ~290L)**: `TAROT_DEFS` 12 cartas (GDD §14) + `sampleOptions` Fisher-Yates sin reemplazo + `open/choose/has` + `GAME_STATE_TAROT = 7` (config) con dispatcher/render/input (click + teclas 1/2/3); trigger en `playing` al completar salas 1/2/4 (max 3/etapa, reset en `avanzarEtapa`/`init`).
+  2. **QUE — 12 hooks**: mercury x0.85 + combo x2 (`calcSpeed`/eat), iron_spine mata chasers en cola, eagle_eye ventana 12s, astral_mirror 1 wrap/sala, alchemical 25% oro, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 alcance, shadow_thief near-miss +1$, midas +3$/sala, iron_heart escudo gratis, reaper +0.5s buffs; ramas de recompensa `iron_spine_block`/`frozen_shatter` en `playing`.
+  3. **QUE — Tests**: suite scope_23 (24 tests) cableada en runner: 634 tests, 614 PASS, 20 pre-existentes.
+  4. **POR QUE**: TODO Stage Tarot Draft: las salas 1/2/4 no tenían momento de decisión; el draft ahora bendice cada etapa.
+  5. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 614/634 PASS; `error.log` 0 bytes.
+
 ## 2026-09-04 22:18
 
 - **feature** (completed - 2026-09-04 22:18): Elite Encounters & 5 Mini-Bosses sala 3 (America/Bogota, consola-only, rama `feature/phase8-minibosses`):

@@ -86,8 +86,9 @@
   - [x] Laser Perimeter attack (center dividing continuous beams) — `laser_perimeter` minPhase 2 (telegraph 1.0s, cooldown 7.0s), rectángulo 4 rayos 4.0s en centro de sala, `addLaser` pooled, colisión `point_seg_dist` < 0.45, render glow rojo + núcleo blanco, 6 tests scope_11 (582 tests, 562 PASS)
 - [ ] **Room Modifiers, Curses & Blessings**:
   - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
-- [ ] **Stage Tarot Draft System**:
-  - [ ] Draft UI on rooms 1, 2, 4 with 12 Tarot Cards (Mercury, Iron Spine, Eagle Eye, Shadow Thief, etc.)
+- [x] **Stage Tarot Draft System** — `feature/phase8-tarot` 2026-09-06 ✅ (suite scope_23, 24 tests):
+  - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
+  - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs
 - [ ] **Special Mystery Rooms**:
   - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
 - [ ] **Status Effects Engine**:
@@ -223,4 +224,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-04 22:18 (Elite+Mini-Bosses ✅ en feature/phase8-minibosses — 5 minis sala 3, scope_22 14 tests, 610 tests 590 PASS)*
+*Last updated: 2026-09-06 00:08 (Stage Tarot Draft en feature/phase8-tarot - draft salas 1/2/4 + 12 hooks, scope_23 24 tests, 634 tests 614 PASS)*
