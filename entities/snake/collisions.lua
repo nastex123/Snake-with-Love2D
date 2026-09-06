@@ -39,6 +39,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
     for idx, e in ipairs(enemiesList) do
         if e.alive then
             if head and e.x == head.x and e.y == head.y then
+                -- Tarot VII. Cero Absoluto: congelados frágiles se quiebran (GDD §14)
+                if tarotMod.isShatterFrozen() then
+                    local res = enemies.killEnemy(idx)
+                    return {type = "frozen_shatter", result = res}
+                end
                 if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     local res = enemies.killEnemy(idx)
@@ -125,18 +130,25 @@ end
 
 function collisions.checkConstrictorLoop(s, enemiesList)
     if not s or not s.body or #s.body < 8 or not enemiesList then return nil end
+    local reach = 0
+    if tarotMod and tarotMod.constrictReach then reach = tarotMod.constrictReach() end
     local killed = {}
     for i = #enemiesList, 1, -1 do
         local e = enemiesList[i]
         if e.alive then
             local onBody = false
+            local attracted = false
             for _, seg in ipairs(s.body) do
                 if seg.x == e.x and seg.y == e.y then
                     onBody = true
                     break
                 end
+                -- Tarot VIII. Círculo Mágico: atracción +1 casilla (GDD §14)
+                if reach > 0 and math.abs(seg.x - e.x) <= reach and math.abs(seg.y - e.y) <= reach then
+                    attracted = true
+                end
             end
-            if not onBody and pointInPolygon(e.x + 0.5, e.y + 0.5, s.body) then
+            if not onBody and (attracted or pointInPolygon(e.x + 0.5, e.y + 0.5, s.body)) then
                 table.insert(killed, {
                     index = i,
                     enemy = e,

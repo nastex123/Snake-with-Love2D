@@ -293,6 +293,7 @@ function playing.update(dt)
                         achievementsMod.check("enemyKilled")
                         achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
                     end
+                    tarotMod.extendBuffs(0.5)
                 end
             end
             st.comboCount = st.comboCount + 2
@@ -316,6 +317,24 @@ function playing.update(dt)
                 st.roomDamaged = true
                 sound.play("shieldBreak")
                 shadersMod.triggerDamage(0.4, 0.4)
+            elseif col.type == "iron_spine_block" or col.type == "frozen_shatter" then
+                -- Tarot II/VII: la cola de hierro y el hielo frágil matan con recompensa
+                local res = col.result
+                if res then
+                    local earnedCoins = math.floor((res.coins or 1) * (st.survivalStreak or 1.0))
+                    st.monedas = st.monedas + earnedCoins
+                    local label = col.type == "iron_spine_block" and "ESPINA +" or "QUEBRADO +"
+                    uiMod.addPopup(label .. earnedCoins .. "$", res.gx, res.gy)
+                    sound.play("enemyKill")
+                    if Events then
+                        Events.emit("enemyKilled")
+                        Events.emit("coinsChanged", {totalCoins = st.monedas})
+                    else
+                        achievementsMod.check("enemyKilled")
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    end
+                    tarotMod.extendBuffs(0.5)
+                end
             elseif col.type == "slice" then
                 local tam = constants.TAMANIO_BLOQUE or 20
                 local px = col.gx * tam + tam / 2
@@ -462,6 +481,27 @@ function playing.update(dt)
                 achievementsMod.check("enemyKilled")
                 achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
             end
+            tarotMod.extendBuffs(0.5)
+        end
+
+        -- Tarot IV. Ladrón de Sombras: rozar (nueva adyacencia) da +1 moneda
+        if vivo and tarotMod.has("shadow_thief") and st.player.prevBody and st.player.prevBody[1] then
+            local head = st.player.body[1]
+            local prev = st.player.prevBody[1]
+            for _, e in ipairs(enemiesMod.list) do
+                if e.alive then
+                    local function adj(p)
+                        return math.abs(e.x - p.x) <= 1 and math.abs(e.y - p.y) <= 1
+                            and not (e.x == p.x and e.y == p.y)
+                    end
+                    if adj(head) and not adj(prev) then
+                        st.monedas = st.monedas + 1
+                        uiMod.addPopup("+1$", head.x, head.y)
+                        sound.play("buttonClick")
+                        break
+                    end
+                end
+            end
         end
 
         if bossResult then
@@ -483,6 +523,7 @@ function playing.update(dt)
                     achievementsMod.check("bossDefeated")
                     achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
                 end
+                tarotMod.extendBuffs(0.5)
                 st.bossHealthDisplay = nil
                 if worldMod.isLastRoom() then
                     st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"

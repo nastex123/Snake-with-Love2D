@@ -504,13 +504,13 @@ function player.aplicarComida(tipo)
     local cy = p.y * tam + tam / 2
 
     if tipo == "fire_pepper" then
-        st.player.firePepperTimer = constants.FIRE_PEPPER_DURATION or 3.5
+        st.player.firePepperTimer = tarotMod.fireBuffDuration()
         table.insert(st.activePS, { ps = particles.fireTrail(cx, cy) })
         uiMod.addPopup("FUEGO INCENDIARIO!", p.x, p.y)
         sound.play("eat")
 
     elseif tipo == "frost_berry" then
-        st.enemyFreezeTimer = constants.FROST_BERRY_DURATION or 2.5
+        st.enemyFreezeTimer = tarotMod.freezeDuration()
         table.insert(st.activePS, { ps = particles.frostFreeze(cx, cy) })
         uiMod.addPopup("CONGELACIÓN!", p.x, p.y)
         sound.play("shieldBreak")

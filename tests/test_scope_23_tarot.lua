@@ -231,6 +231,137 @@ harness.describe("Scope 23 - Tarot hook helpers (B1 movement/combo)", function()
     end)
 end)
 
+harness.describe("Scope 23 - Tarot hook helpers (B2 food/buffs)", function()
+    harness.it("fire/freeze durations upgrade with dragon_blood/absolute_zero", function()
+        tarot.reset()
+        harness.assert_equal(3.5, tarot.fireBuffDuration(), "base fire")
+        harness.assert_equal(2.5, tarot.freezeDuration(), "base freeze")
+        harness.assert_equal(0, tarot.constrictReach(), "base reach")
+        harness.assert_false(tarot.isShatterFrozen(), "no shatter unfrozen")
+        world.state.stageCards = {"dragon_blood", "absolute_zero", "magic_circle"}
+        harness.assert_equal(6.0, tarot.fireBuffDuration(), "dragon fire")
+        harness.assert_equal(4.0, tarot.freezeDuration(), "zero freeze")
+        harness.assert_equal(1, tarot.constrictReach(), "circle reach")
+        world.state.enemyFreezeTimer = 3.0
+        harness.assert_true(tarot.isShatterFrozen(), "shatter while frozen")
+        world.state.enemyFreezeTimer = 0
+        harness.assert_false(tarot.isShatterFrozen(), "no shatter expired")
+        tarot.reset()
+    end)
+
+    harness.it("alchemical_digestion converts rolled normal into gold (25%)", function()
+        local foodMod = require("entities.food")
+        local realRandom = love.math.random
+        local function stubRandom(seq)
+            local i = 0
+            love.math.random = function()
+                i = i + 1
+                return seq[i] or seq[#seq]
+            end
+        end
+        local body = {{x = 1, y = 1}, {x = 1, y = 2}, {x = 1, y = 3}}
+        tarot.reset()
+        stubRandom({0.99})
+        foodMod.generar(body, 32, 18, nil, nil, 5, 5)
+        harness.assert_equal(constants.FOOD_NORMAL, foodMod.tipo, "normal without card")
+        world.state.stageCards = {"alchemical_digestion"}
+        stubRandom({0.99, 0.10})
+        foodMod.generar(body, 32, 18, nil, nil, 5, 5)
+        harness.assert_equal(constants.FOOD_GOLD, foodMod.tipo, "gold with card + lucky roll")
+        stubRandom({0.99, 0.90})
+        foodMod.generar(body, 32, 18, nil, nil, 5, 5)
+        harness.assert_equal(constants.FOOD_NORMAL, foodMod.tipo, "normal with card + unlucky roll")
+        love.math.random = realRandom
+        tarot.reset()
+    end)
+
+    harness.it("frozen enemies shatter on head contact with absolute_zero", function()
+        local enemiesMod = require("entities.enemies")
+        local collisions = require("entities.snake.collisions")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        tarot.reset()
+        world.state.enemyFreezeTimer = 3.0
+        local e1 = enemiesMod.spawnAt("chaser", 5, 5)
+        local col1 = collisions.checkEnemyCollisions({body = {{x = 5, y = 5}}}, enemiesMod.list)
+        harness.assert_equal("death", col1.type, "frozen still lethal without card")
+        enemiesMod.init()
+        world.state.stageCards = {"absolute_zero"}
+        world.state.enemyFreezeTimer = 3.0
+        local e2 = enemiesMod.spawnAt("chaser", 5, 5)
+        local col2 = collisions.checkEnemyCollisions({body = {{x = 5, y = 5}}}, enemiesMod.list)
+        harness.assert_equal("frozen_shatter", col2.type, "shatters with card")
+        harness.assert_false(e2.alive, "enemy destroyed")
+        harness.assert_not_nil(col2.result, "kill result attached")
+        tarot.reset()
+        world.state.enemyFreezeTimer = 0
+        enemiesMod.init()
+    end)
+
+    harness.it("magic_circle attracts adjacent enemies into constrictor kills", function()
+        local enemiesMod = require("entities.enemies")
+        local collisions = require("entities.snake.collisions")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        local function lineSnake()
+            local body = {}
+            for x = 5, 12 do body[#body + 1] = {x = x, y = 5} end
+            return {body = body}
+        end
+        tarot.reset()
+        enemiesMod.spawnAt("chaser", 5, 6)
+        local k1 = collisions.checkConstrictorLoop(lineSnake(), enemiesMod.list)
+        harness.assert_nil(k1, "adjacent not killed without card")
+        enemiesMod.init()
+        world.state.stageCards = {"magic_circle"}
+        enemiesMod.spawnAt("chaser", 5, 6)
+        local k2 = collisions.checkConstrictorLoop(lineSnake(), enemiesMod.list)
+        harness.assert_not_nil(k2, "adjacent killed with card")
+        harness.assert_equal(1, #k2, "one attracted kill")
+        tarot.reset()
+        enemiesMod.init()
+    end)
+
+    harness.it("reaper extendBuffs adds +0.5s only with card equipped", function()
+        tarot.reset()
+        world.state.activeTimers = {{remaining = 2.0}, {_handle = {delay = 3.0, accum = 1.0}}}
+        harness.assert_equal(0, tarot.extendBuffs(0.5), "no-op without card")
+        harness.assert_equal(2.0, world.state.activeTimers[1].remaining, "legacy untouched")
+        world.state.stageCards = {"reaper"}
+        harness.assert_equal(2, tarot.extendBuffs(0.5), "two buffs extended")
+        harness.assert_equal(2.5, world.state.activeTimers[1].remaining, "legacy extended")
+        harness.assert_equal(3.5, world.state.activeTimers[2]._handle.delay, "pooled extended")
+        world.state.activeTimers = {}
+        tarot.reset()
+    end)
+
+    harness.it("iron_heart grants a free shield on short-body room clear", function()
+        local worldMod = require("world.world")
+        local shop = require("systems.shop")
+        local snakeMod = require("entities.snake")
+        local transition = require("systems.gamestates.transition")
+        world.reset()
+        shop.reset(false)
+        worldMod.init()
+        tarot.reset()
+        world.state.stageCards = {"iron_heart"}
+        world.state.player = snakeMod.reset()
+        world.state.player.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        world.state.transitionTarget = "siguienteSala"
+        world.state.transitionPhase = 1
+        world.state.fadeAlpha = 1
+        transition.update(0.016)
+        harness.assert_true(world.get("shop.shieldActive", false), "shield granted")
+        harness.assert_equal("hold", world.state.transitionPhase, "room advanced")
+        tarot.reset()
+        worldMod.init()
+    end)
+end)
+
 harness.describe("Scope 23 - Tarot stage lifecycle (avanzarEtapa)", function()
     harness.it("avanzarEtapa clears the stage deck", function()
         local worldMod = require("world.world")

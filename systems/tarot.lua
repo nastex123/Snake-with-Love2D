@@ -137,6 +137,46 @@ function tarot.ironSpineProtects(segIdx, bodyLen)
     return tarot.has("iron_spine") and segIdx ~= nil and bodyLen ~= nil and segIdx > bodyLen - 3
 end
 
+-- Sangre de Dragón: rastro de fuego 6.0s (base 3.5s, GDD §14)
+function tarot.fireBuffDuration()
+    if tarot.has("dragon_blood") then return 6.0 end
+    return constants.FIRE_PEPPER_DURATION or 3.5
+end
+
+-- Cero Absoluto: congelación 4.0s + fragilidad letal (GDD §14)
+function tarot.freezeDuration()
+    if tarot.has("absolute_zero") then return 4.0 end
+    return constants.FROST_BERRY_DURATION or 2.5
+end
+
+function tarot.isShatterFrozen()
+    return tarot.has("absolute_zero") and (world.state.enemyFreezeTimer or 0) > 0
+end
+
+-- Círculo Mágico: alcance de constricción +1 casilla (adyacencia Chebyshev)
+function tarot.constrictReach()
+    return tarot.has("magic_circle") and 1 or 0
+end
+
+-- El Segador: cada kill extiende buffs activos +0.5s (no-op sin la carta)
+function tarot.extendBuffs(amount)
+    if not tarot.has("reaper") then return 0 end
+    amount = amount or 0.5
+    local st = world.state
+    if type(st.activeTimers) ~= "table" then return 0 end
+    local n = 0
+    for _, t in ipairs(st.activeTimers) do
+        if t._handle and t._handle.delay then
+            t._handle.delay = t._handle.delay + amount
+            n = n + 1
+        elseif t.remaining and t.remaining > 0 then
+            t.remaining = t.remaining + amount
+            n = n + 1
+        end
+    end
+    return n
+end
+
 function tarot.mousepressed(x, y)
     local g = tarot.g
     if not tarot.isOpen() or not g.cards then return nil end

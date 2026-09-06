@@ -1,5 +1,6 @@
 local food = {}
 local constants = require("constants")
+local tarotMod = require("systems.tarot")
 
 food.pos = {x = 0, y = 0}
 food.twinPos = nil
@@ -188,6 +189,11 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
         else
             food.tipo = constants.FOOD_NORMAL
         end
+    end
+    -- Tarot V. Digestión Alquímica: 25% de que lo normal nazca Oro (GDD §14)
+    if not forcedType and food.tipo == constants.FOOD_NORMAL
+        and tarotMod.has("alchemical_digestion") and love.math.random() < 0.25 then
+        food.tipo = constants.FOOD_GOLD
     end
     return true
 end
