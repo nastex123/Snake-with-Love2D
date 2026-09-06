@@ -9,6 +9,7 @@ local constants = require("constants")
 local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
+local tarotMod = require("systems.tarot")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -54,6 +55,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
             for segIdx = 2, #s.body do
                 local seg = s.body[segIdx]
                 if seg and seg.x == e.x and seg.y == e.y then
+                    -- Tarot II. Espina Dorsal: cola de hierro destruye Chasers (GDD §14)
+                    if e.type == "chaser" and tarotMod.ironSpineProtects(segIdx, #s.body) then
+                        local res = enemies.killEnemy(idx)
+                        return {type = "iron_spine_block", result = res}
+                    end
                     local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
                     if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then
                         if world.get("shop.shieldActive", false) then

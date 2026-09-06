@@ -117,6 +117,26 @@ function tarot.update(dt)
     -- El draft es modal estático; st.time (updateCommon) anima el brillo.
 end
 
+-- === Helpers de hooks (puros, testeables sin love.graphics) ===
+function tarot.speedFactor()
+    return tarot.has("mercury") and 0.85 or 1.0
+end
+
+function tarot.comboWindow()
+    if tarot.has("eagle_eye") then return 12.0 end
+    return constants.COMBO_WINDOW or 8.0
+end
+
+function tarot.comboMult(m)
+    if tarot.has("mercury") then return m * 2 end
+    return m
+end
+
+-- Espina Dorsal: protege los 3 últimos segmentos contra mordiscos Chaser
+function tarot.ironSpineProtects(segIdx, bodyLen)
+    return tarot.has("iron_spine") and segIdx ~= nil and bodyLen ~= nil and segIdx > bodyLen - 3
+end
+
 function tarot.mousepressed(x, y)
     local g = tarot.g
     if not tarot.isOpen() or not g.cards then return nil end

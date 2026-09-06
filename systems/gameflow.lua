@@ -110,6 +110,8 @@ function gameflow.resetGame(keepShopInventory)
     else
         shop.reset()
     end
+    -- Tarot IX. Espejo Astral: el wrap gratis se recarga cada sala
+    st.astralWrapUsed = false
     -- Arsenal 51-60: limpiar estado por sala (trampas, rayo, historial, bateria)
     st.placedTraps = {}
     st.orbitalBeam = nil

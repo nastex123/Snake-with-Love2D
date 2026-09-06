@@ -564,7 +564,7 @@ function playing.update(dt)
                     textPopup = "+10"
                 end
 
-                if st.time - st.lastEatTime <= constants.COMBO_WINDOW then
+                if st.time - st.lastEatTime <= tarotMod.comboWindow() then
                     st.comboCount = st.comboCount + 1
                     st.comboFlashTimer = 0.3
                     if st.comboCount >= 4 then
@@ -578,7 +578,7 @@ function playing.update(dt)
                     st.comboCount = 0
                 end
                 st.lastEatTime = st.time
-                local comboMult = 1 + st.comboCount * constants.COMBO_MULTIPLIER
+                local comboMult = tarotMod.comboMult(1 + st.comboCount * constants.COMBO_MULTIPLIER)
                 local total = math.floor(puntosBase * comboMult * (st.scoreMultiplier or 1) * streak)
 
                 st.puntuacion = st.puntuacion + total

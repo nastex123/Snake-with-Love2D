@@ -118,6 +118,119 @@ harness.describe("Scope 23 - Tarot draft lifecycle", function()
     end)
 end)
 
+harness.describe("Scope 23 - Tarot hook helpers (B1 movement/combo)", function()
+    harness.it("speedFactor 0.85 with mercury, 1.0 without", function()
+        tarot.reset()
+        harness.assert_equal(1.0, tarot.speedFactor(), "no card = 1.0")
+        world.state.stageCards = {"mercury"}
+        harness.assert_equal(0.85, tarot.speedFactor(), "mercury = 0.85")
+        tarot.reset()
+    end)
+
+    harness.it("calcSpeed is faster (lower) with mercury equipped", function()
+        local playerMod = require("systems.player")
+        tarot.reset()
+        local base = playerMod.calcSpeed(0.13, 0)
+        world.state.stageCards = {"mercury"}
+        local fast = playerMod.calcSpeed(0.13, 0)
+        harness.assert_true(fast < base, "mercury speeds up")
+        tarot.reset()
+    end)
+
+    harness.it("comboWindow 12.0 with eagle_eye, base otherwise", function()
+        tarot.reset()
+        harness.assert_equal(constants.COMBO_WINDOW, tarot.comboWindow(), "base window")
+        world.state.stageCards = {"eagle_eye"}
+        harness.assert_equal(12.0, tarot.comboWindow(), "eagle eye window")
+        tarot.reset()
+    end)
+
+    harness.it("comboMult doubles with mercury", function()
+        tarot.reset()
+        harness.assert_equal(2.5, tarot.comboMult(2.5), "passthrough")
+        world.state.stageCards = {"mercury"}
+        harness.assert_equal(5.0, tarot.comboMult(2.5), "doubled")
+        tarot.reset()
+    end)
+
+    harness.it("ironSpineProtects covers last 3 segments only", function()
+        tarot.reset()
+        harness.assert_false(tarot.ironSpineProtects(6, 6), "no card = false")
+        world.state.stageCards = {"iron_spine"}
+        harness.assert_false(tarot.ironSpineProtects(3, 6), "seg 3 of 6 unprotected")
+        harness.assert_true(tarot.ironSpineProtects(4, 6), "seg 4 of 6 protected")
+        harness.assert_true(tarot.ironSpineProtects(6, 6), "tail protected")
+        tarot.reset()
+    end)
+
+    harness.it("iron spine kills chaser biting the tail, death without it", function()
+        local enemiesMod = require("entities.enemies")
+        local collisions = require("entities.snake.collisions")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        local function tailBiteSetup()
+            local e = enemiesMod.spawnAt("chaser", 10, 5)
+            local s = {
+                body = {{x = 5, y = 5}, {x = 6, y = 5}, {x = 7, y = 5},
+                        {x = 8, y = 5}, {x = 9, y = 5}, {x = 10, y = 5}},
+            }
+            return e, s
+        end
+        tarot.reset()
+        local e1, s1 = tailBiteSetup()
+        local col1 = collisions.checkEnemyCollisions(s1, enemiesMod.list)
+        harness.assert_equal("death", col1.type, "tail bite kills without card")
+        harness.assert_true(e1.alive, "chaser survives")
+        enemiesMod.init()
+        world.state.stageCards = {"iron_spine"}
+        local e2, s2 = tailBiteSetup()
+        local col2 = collisions.checkEnemyCollisions(s2, enemiesMod.list)
+        harness.assert_equal("iron_spine_block", col2.type, "iron spine blocks")
+        harness.assert_false(e2.alive, "chaser destroyed")
+        tarot.reset()
+        enemiesMod.init()
+    end)
+
+    harness.it("astral mirror grants 1 wall wrap per room on no-wrap biome", function()
+        local worldMod = require("world.world")
+        local snakeMod = require("entities.snake")
+        local shop = require("systems.shop")
+        local enemiesMod = require("entities.enemies")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        worldMod.setEtapa(5) -- vacio: wallWrap = false
+        world.set("controlMode", "tactical")
+        local function wallSnake()
+            local s = snakeMod.reset()
+            s.body = {{x = 0, y = 5}}
+            s.dirX, s.dirY = -1, 0
+            s.inputQueue = {{x = -1, y = 0}}
+            return s
+        end
+        tarot.reset()
+        local s1 = wallSnake()
+        local vivo1 = snakeMod.mover(s1, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_false(vivo1, "wall kills without card")
+        world.state.stageCards = {"astral_mirror"}
+        world.state.astralWrapUsed = false
+        local s2 = wallSnake()
+        local vivo2 = snakeMod.mover(s2, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_true(vivo2, "mirror wrap saves once")
+        harness.assert_equal(31, s2.body[1].x, "wrapped to far edge")
+        harness.assert_true(world.state.astralWrapUsed, "wrap charge spent")
+        local s3 = wallSnake()
+        s3.body = {{x = 0, y = 6}}
+        local vivo3 = snakeMod.mover(s3, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_false(vivo3, "second wall kills (charge spent)")
+        tarot.reset()
+        worldMod.init()
+        world.set("controlMode", "classic")
+    end)
+end)
+
 harness.describe("Scope 23 - Tarot stage lifecycle (avanzarEtapa)", function()
     harness.it("avanzarEtapa clears the stage deck", function()
         local worldMod = require("world.world")

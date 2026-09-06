@@ -17,6 +17,7 @@ local sound = require("audio.sound")
 local uiMod = require("ui.ui")
 local achievementsMod = require("systems.achievements")
 local itemsMod = require("systems.items")
+local tarotMod = require("systems.tarot")
 
 --- Cálculo exhaustivo de velocidad del jugador considerando base, frutas y modificadores.
 -- @param base number: velocidad base (segundos por paso, default VELOCIDAD_INICIAL)
@@ -50,6 +51,11 @@ function player.calcSpeed(base, fruits, opts)
     end
     if hasTurbo then
         current = current * (constants.TURBO_MULTIPLIER or 0.7)
+    end
+
+    -- Tarot I. El Mercurio: +15% velocidad (menos segundos por paso)
+    if tarotMod and tarotMod.speedFactor then
+        current = current * tarotMod.speedFactor()
     end
 
     -- Evaluar ralentizaciones de terreno o debuffs (e.g. Baba Slime 1.25x)

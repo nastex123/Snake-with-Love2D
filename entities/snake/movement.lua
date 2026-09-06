@@ -11,6 +11,7 @@ local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
 local Input = require("core.input")
+local tarotMod = require("systems.tarot")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -102,7 +103,17 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         end
     else
         if nuevaCabezaX < 0 or nuevaCabezaX >= anchoGrilla or nuevaCabezaY < 0 or nuevaCabezaY >= altoGrilla then
-            if not immune() then
+            -- Tarot IX. Espejo Astral: 1 wrap por sala aun sin wall-wrap (GDD §14)
+            local st = world.state
+            if tarotMod.has("astral_mirror") and st and not st.astralWrapUsed then
+                st.astralWrapUsed = true
+                if nuevaCabezaX < 0 then nuevaCabezaX = anchoGrilla - 1
+                elseif nuevaCabezaX >= anchoGrilla then nuevaCabezaX = 0
+                end
+                if nuevaCabezaY < 0 then nuevaCabezaY = altoGrilla - 1
+                elseif nuevaCabezaY >= altoGrilla then nuevaCabezaY = 0
+                end
+            elseif not immune() then
                 if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     return true, false
