@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mutators P2)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P2 Simples (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Midas (62)**: `midasFruitBonus` +2$/fruta en eat y `midasDrain` -1pto/s en tick (`playing`).
+  2. **QUE — Velo (64)**: `itemsSealed` bloquea slots 1-3 en PLAYING (`main`) + `silentClearBonus` duplica lo ganado al superar (`transition`, base `silentMarkCoins` en `iniciarSala`).
+  3. **QUE — Contrarreloj (66)**: `timeTrialTick/timeTrialWon` (`ROOM_TIME_TRIAL_DURATION=10.0`), pasivo aleatorio no poseido al cumplir a tiempo + aviso al expirar.
+  4. **QUE — Dualidad (69)**: pares espejados de enemigos (direccion invertida) + fruta espejo en slot twin solo comida simple (`populate`, `tileFree`, limpieza `dualTwin` en eat y `generar`).
+  5. **Verificación**: `love tests` 652/632 PASS (20 pre-existentes), scope_24 +6, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mutators P1)
 
 - **feature** (in-progress - 2026-09-07): Room Mutators P1 Framework (America/Bogota, rama `feature/phase8-room-modifiers`):

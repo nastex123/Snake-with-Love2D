@@ -10,6 +10,7 @@ local world = require("core.world")
 local sound = require("audio.sound")
 local shop = require("systems.shop")
 local tarotMod = require("systems.tarot")
+local mutatorsMod = require("systems.roomMutators")
 local worldMod = require("world.world")
 local achievementsMod = require("systems.achievements")
 local persistence = require("systems.persistence")
@@ -43,6 +44,16 @@ function transition.update(dt)
             shop.shieldActive = true
             local head = st.player.body[1]
             uiMod.addPopup("CORAZON +ESCUDO", head.x, head.y)
+        end
+
+        -- Velo Silencioso (GDD §19.64): duplica las monedas ganadas en la sala
+        if st.transitionTarget == "siguienteSala" and mutatorsMod.has("silent_veil") then
+            local bonus = mutatorsMod.silentClearBonus(st.monedas or 0)
+            if bonus > 0 then
+                st.monedas = st.monedas + bonus
+                local head = st.player.body and st.player.body[1]
+                if head then uiMod.addPopup("VELO x2 +" .. bonus .. "$", head.x, head.y) end
+            end
         end
 
         if st.transitionTarget == "siguienteSala" then

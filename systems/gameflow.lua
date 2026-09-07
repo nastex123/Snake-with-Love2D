@@ -132,6 +132,8 @@ function gameflow.iniciarSala(keepInventory)
     st.puntuacion = 0
     -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
     mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
+    -- Velo Silencioso: registra monedas al entrar para duplicar al superar
+    mutatorsMod.silentMarkCoins(st.monedas or 0)
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
     if worldMod.sala == 1 then
         local bName = worldMod.getBiomeName()

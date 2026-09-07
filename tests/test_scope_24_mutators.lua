@@ -83,3 +83,75 @@ harness.describe("Scope 24 - Mutator lifecycle", function()
         mutators.clear()
     end)
 end)
+
+harness.describe("Scope 24 - Simple mutators (Midas/Silent/Trial/Dual)", function()
+    harness.it("midasFruitBonus is +2 only with the curse", function()
+        mutators.clear()
+        harness.assert_equal(0, mutators.midasFruitBonus(), "no curse, no bonus")
+        world.state.roomMutator = "midas_curse"
+        harness.assert_equal(2, mutators.midasFruitBonus(), "curse grants +2")
+        mutators.clear()
+    end)
+
+    harness.it("midasDrain removes 1pt/sec floored at zero", function()
+        mutators.clear()
+        world.state.roomMutator = "midas_curse"
+        world.state.puntuacion = 5
+        local total = mutators.midasDrain(1.0) + mutators.midasDrain(1.0) + mutators.midasDrain(1.0)
+        harness.assert_equal(3, total, "3 seconds drain 3")
+        harness.assert_equal(2, world.state.puntuacion, "score reduced")
+        world.state.puntuacion = 0
+        harness.assert_equal(0, mutators.midasDrain(2.0), "floor at zero")
+        mutators.clear()
+        world.state.puntuacion = 0
+    end)
+
+    harness.it("silent seal + clear bonus doubles room earnings", function()
+        mutators.clear()
+        harness.assert_true(not mutators.itemsSealed(), "unsealed by default")
+        world.state.roomMutator = "silent_veil"
+        harness.assert_true(mutators.itemsSealed(), "sealed with veil")
+        mutators.silentMarkCoins(100)
+        harness.assert_equal(25, mutators.silentClearBonus(125), "bonus equals earnings")
+        harness.assert_equal(0, mutators.silentClearBonus(90), "no negative bonus")
+        mutators.clear()
+        harness.assert_equal(0, mutators.silentClearBonus(200), "no mutator, no bonus")
+    end)
+
+    harness.it("time trial expires once at the limit and reports won", function()
+        mutators.clear()
+        harness.assert_nil(mutators.timeTrialTick(1.0), "no mutator, no tick")
+        harness.assert_true(not mutators.timeTrialWon(), "no mutator, not won")
+        world.state.roomMutator = "time_trial"
+        for _ = 1, 9 do
+            harness.assert_nil(mutators.timeTrialTick(1.0), "ticking under limit")
+        end
+        harness.assert_true(mutators.timeTrialWon(), "won before the limit")
+        harness.assert_equal("expired", mutators.timeTrialTick(1.0), "expires at 10s")
+        harness.assert_true(not mutators.timeTrialWon(), "lost after expiry")
+        harness.assert_nil(mutators.timeTrialTick(1.0), "expiry fires once")
+        harness.assert_equal(10.0, mutators.timeTrialLimit(), "limit is 10s")
+        mutators.clear()
+    end)
+
+    harness.it("randomUnownedPassive picks only unowned passives", function()
+        local reg = {
+            a = {id = "a", itemType = "passive"},
+            b = {id = "b", itemType = "active"},
+            c = {id = "c", itemType = "passive"},
+        }
+        local pick = mutators.randomUnownedPassive(reg, {a = true})
+        harness.assert_not_nil(pick, "must pick the remaining passive")
+        harness.assert_equal("c", pick.id, "picks unowned passive")
+        harness.assert_nil(mutators.randomUnownedPassive(reg, {a = true, c = true}), "nil when all owned")
+        harness.assert_nil(mutators.randomUnownedPassive(nil, {}), "nil without registry")
+    end)
+
+    harness.it("dualActive reflects the room mutator", function()
+        mutators.clear()
+        harness.assert_true(not mutators.dualActive(), "inactive by default")
+        world.state.roomMutator = "dual_room"
+        harness.assert_true(mutators.dualActive(), "active with dual")
+        mutators.clear()
+    end)
+end)

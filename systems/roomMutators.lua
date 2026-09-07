@@ -68,4 +68,89 @@ function mutators.apply(sala, room)
     return id
 end
 
+-- === P2: helpers de mutadores simples (GDD §19.62/64/66/69) ===
+
+-- 62. Midas Avaro: +2 monedas por fruta
+function mutators.midasFruitBonus()
+    return mutators.has("midas_curse") and 2 or 0
+end
+
+-- 62. Midas Avaro: drena 1 punto/seg de la puntuacion; retorna lo drenado
+function mutators.midasDrain(dt)
+    if not mutators.has("midas_curse") then return 0 end
+    local st = world.state
+    local d = mutators.data()
+    d.midasAcc = (d.midasAcc or 0) + (dt or 0)
+    local drained = 0
+    while d.midasAcc >= 1.0 do
+        d.midasAcc = d.midasAcc - 1.0
+        if (st.puntuacion or 0) > 0 then
+            st.puntuacion = st.puntuacion - 1
+            drained = drained + 1
+        end
+    end
+    return drained
+end
+
+-- 64. Velo Silencioso: items de slots sellados en PLAYING
+function mutators.itemsSealed()
+    return mutators.has("silent_veil")
+end
+
+-- 64. Velo: registra monedas al entrar; al superar duplica lo ganado en sala
+function mutators.silentMarkCoins(monedas)
+    mutators.data().startCoins = monedas or 0
+end
+
+function mutators.silentClearBonus(monedas)
+    if not mutators.has("silent_veil") then return 0 end
+    local start = mutators.data().startCoins
+    if type(start) ~= "number" then return 0 end
+    return math.max(0, math.floor((monedas or 0) - start))
+end
+
+-- 66. Contrarreloj: limite en segundos para cumplir el objetivo
+function mutators.timeTrialLimit()
+    return constants.ROOM_TIME_TRIAL_DURATION or 10.0
+end
+
+-- Avanza el crono; retorna "expired" una sola vez al agotarse
+function mutators.timeTrialTick(dt)
+    if not mutators.has("time_trial") then return nil end
+    local d = mutators.data()
+    if d.expired then return nil end
+    d.elapsed = (d.elapsed or 0) + (dt or 0)
+    if d.elapsed >= mutators.timeTrialLimit() then
+        d.expired = true
+        return "expired"
+    end
+    return nil
+end
+
+function mutators.timeTrialWon()
+    if not mutators.has("time_trial") then return false end
+    local d = mutators.data()
+    return not d.expired and (d.elapsed or 0) <= mutators.timeTrialLimit()
+end
+
+-- Elige un pasivo no poseido (registry, inventory) o nil si todos poseidos
+function mutators.randomUnownedPassive(registry, inventory)
+    if type(registry) ~= "table" then return nil end
+    inventory = inventory or {}
+    local pool = {}
+    for id, def in pairs(registry) do
+        if type(def) == "table" and def.itemType == "passive"
+            and not inventory[def.id or id] then
+            pool[#pool + 1] = def
+        end
+    end
+    if #pool == 0 then return nil end
+    return pool[love.math.random(#pool)]
+end
+
+-- 69. Dualidad activa
+function mutators.dualActive()
+    return mutators.has("dual_room")
+end
+
 return mutators
