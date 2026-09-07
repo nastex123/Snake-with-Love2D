@@ -571,7 +571,7 @@ El pipeline de shaders en `render/shaders.lua` se amplía con 3 nuevos efectos a
 
 ### 10.13 Tarot Draft Engine & Stage Card Architecture
 
-* **Módulo**: `systems/tarot.lua` (~230L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 24 tests).
+* **Módulo**: `systems/tarot.lua` (~260L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 28 tests) + `systems/tarotArt.lua` (~70L loader) + 12 PNG 20x20 en `assets/tarot/` (variantes elegidas del prototipo, `nearest`, lazy-load cacheado vía `core/assets.lua` con fallback al rectángulo legacy si falta el asset).
 * **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con hasta 3 IDs), `world.state.tarotDraft` (opciones abiertas), `world.state.astralWrapUsed` (flag por sala).
 * **Ciclo de Vida**:
   - `worldMod.avanzarEtapa()` y `worldMod.init()`: `tarot.reset()`.

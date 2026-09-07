@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (tarot art)
+
+- **feature** (completed - 2026-09-07): Tarot card textures in-game (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `assets/tarot/` (12 PNG 20x20 nuevos)**: variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C, generados por script desde `prototypes/tarot-cards.html` (marco runa/oro + fondo de arquetipo).
+  2. **QUE — `systems/tarotArt.lua` (nuevo, ~70L)**: mapa id→ruta + lazy-load cacheado vía `core/assets.lua` (`nearest`) con `draw()` de escala y fallo suave; `systems/tarot.lua` `draw()` muestra textura x4 con fallback al layout anterior.
+  3. **QUE — Tests**: suite scope_23 +4 (mapeo 12 rutas, cache, draw escalado, id desconocido): 638 tests, 618 PASS, 20 pre-existentes sin regresión.
+  4. **Verificación**: `love tests` consola-only, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07
 
 - **feature** (completed - 2026-09-07): 60 texture proposals for Stage Tarot (America/Bogota, rama `feature/phase8-tarot`):

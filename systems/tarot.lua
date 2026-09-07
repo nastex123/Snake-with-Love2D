@@ -4,6 +4,7 @@
 local tarot = {}
 local constants = require("constants")
 local world = require("core.world")
+local tarotArt = require("systems.tarotArt")
 
 tarot.DRAFT_ROOMS = {1, 2, 4}
 tarot.MAX_STAGE_CARDS = 3
@@ -231,10 +232,17 @@ function tarot.draw()
             love.graphics.rectangle("line", cx, y0, cw, chh, 8, 8)
             love.graphics.setFont(uiMod.fontNormal)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(def.name, cx + 8, y0 + 14, cw - 16, "center")
-            love.graphics.setFont(uiMod.fontSmall)
-            love.graphics.setColor(0.85, 0.85, 0.9)
-            love.graphics.printf(def.desc, cx + 8, y0 + 62, cw - 16, "center")
+            love.graphics.printf(def.name, cx + 8, y0 + 12, cw - 16, "center")
+            -- Textura PNG 20x20 x4; sin asset se conserva el layout anterior
+            if tarotArt.draw(id, cx + (cw - 80) / 2, y0 + 44, 80) then
+                love.graphics.setFont(uiMod.fontSmall)
+                love.graphics.setColor(0.85, 0.85, 0.9)
+                love.graphics.printf(def.desc, cx + 8, y0 + 132, cw - 16, "center")
+            else
+                love.graphics.setFont(uiMod.fontSmall)
+                love.graphics.setColor(0.85, 0.85, 0.9)
+                love.graphics.printf(def.desc, cx + 8, y0 + 62, cw - 16, "center")
+            end
         else
             love.graphics.setColor(0.15, 0.15, 0.2, 1)
             love.graphics.rectangle("fill", cx, y0, cw, chh, 8, 8)

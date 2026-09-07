@@ -373,3 +373,33 @@ harness.describe("Scope 23 - Tarot stage lifecycle (avanzarEtapa)", function()
         worldMod.init()
     end)
 end)
+
+harness.describe("Scope 23 - Tarot art loader (PNG assets/tarot)", function()
+    local tarotArt = require("systems.tarotArt")
+
+    harness.it("maps all 12 catalog ids to .png paths", function()
+        local n = 0
+        for _, d in ipairs(tarot.TAROT_DEFS) do
+            local p = tarotArt.PATHS[d.id]
+            harness.assert_not_nil(p, "missing art path: " .. tostring(d.id))
+            harness.assert_true(p:sub(-4) == ".png", "path must end .png: " .. tostring(p))
+            n = n + 1
+        end
+        harness.assert_equal(12, n, "must map 12 cards")
+    end)
+
+    harness.it("get() lazy-loads and caches the same handle per id", function()
+        local a = tarotArt.get("mercury")
+        harness.assert_not_nil(a, "mocked backend must return an image")
+        harness.assert_true(tarotArt.get("mercury") == a, "second call must hit cache")
+    end)
+
+    harness.it("draw() scales to the requested size without crashing", function()
+        harness.assert_true(tarotArt.draw("reaper", 10, 20, 80), "draw must succeed")
+    end)
+
+    harness.it("unknown id returns nil/false without crashing", function()
+        harness.assert_nil(tarotArt.get("no_existe"), "unknown id must be nil")
+        harness.assert_true(tarotArt.draw("no_existe", 0, 0, 80) == false, "draw must fail soft")
+    end)
+end)
