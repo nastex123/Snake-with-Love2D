@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tienda v2 — Layout A Puestos (prototipo interactivo)</title>
+<style>
+  :root { color-scheme: dark; }
+  body { background: #0a0a14; color: #e8e8f0; font-family: Consolas, monospace; margin: 0; padding: 24px; }
+  h1 { color: #ffc93c; font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #8a8aa0; font-size: 12px; margin-bottom: 16px; }
+  .sub b { color: #3ce0ff; }
+  #hud { display: flex; gap: 18px; align-items: center; background: #12121f; border: 1px solid #3a2a6e;
+    border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; font-size: 14px; }
+  #coins { color: #ffc93c; font-size: 18px; }
+  #hud button { background: #3a2a6e; color: #fff; border: 1px solid #9b5cff; border-radius: 6px;
+    font-family: inherit; font-size: 12px; padding: 6px 12px; cursor: pointer; }
+  #hud button:hover { background: #9b5cff; }
+  #puestos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 1100px; }
+  .puesto { background: #12121f; border: 1px solid #3a2a6e; border-radius: 10px; padding: 12px; }
+  .puesto > h2 { font-size: 13px; color: #8a8aa0; margin: 0 0 10px; text-align: center; }
+  .card { border-radius: 8px; padding: 12px; min-height: 150px; position: relative;
+    animation: rise 0.35s ease-out; background: #1a1a2b; border: 2px solid #3a2a6e; }
+  @keyframes rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
+  .card.tarot { border-color: var(--tier, #9b5cff); }
+  .card .kind { font-size: 10px; letter-spacing: 2px; color: #8a8aa0; }
+  .card.tarot .kind { color: var(--tier, #9b5cff); }
+  .card h3 { font-size: 14px; margin: 4px 0; }
+  .card p { font-size: 11px; color: #b8b8d0; margin: 4px 0 8px; min-height: 28px; }
+  .card .price { font-size: 15px; color: #ffc93c; }
+  .card button { width: 100%; margin-top: 8px; background: #3a2a6e; color: #fff; border: 1px solid #9b5cff;
+    border-radius: 6px; font-family: inherit; font-size: 12px; padding: 7px 0; cursor: pointer; }
+  .card button:hover:not(:disabled) { background: #9b5cff; }
+  .card button:disabled { opacity: 0.45; cursor: default; }
+  .card.sold { border-color: #2a8a4a; }
+  .card.sold button { border-color: #2a8a4a; }
+  .card.flash { animation: flash 0.3s; }
+  @keyframes flash { 0% { box-shadow: 0 0 0 3px #2a8a4a; } 100% { box-shadow: none; } }
+  .dice { display: inline-block; transition: transform 0.3s; }
+  .dice.shake { animation: shake 0.3s; }
+  @keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-20deg); } 75% { transform: rotate(20deg); } }
+  #rerollbar { margin: 16px 0; display: flex; gap: 12px; align-items: center; }
+  #rerollbar button { background: #3a2a6e; color: #fff; border: 1px solid #ffc93c; border-radius: 6px;
+    font-family: inherit; font-size: 13px; padding: 8px 16px; cursor: pointer; }
+  #rerollbar button:hover:not(:disabled) { background: #8a5a00; }
+  #rerollbar button:disabled { opacity: 0.45; cursor: default; }
+  #slots { display: flex; gap: 8px; margin: 12px 0; font-size: 11px; color: #8a8aa0; }
+  .slot { border: 1px dashed #3a2a6e; border-radius: 6px; padding: 6px 10px; min-width: 90px; text-align: center; }
+  .slot.full { border-style: solid; border-color: #3ce0ff; color: #e8e8f0; }
+  #log { background: #000; border: 1px solid #3a2a6e; border-radius: 8px; padding: 10px 14px;
+    font-size: 11px; max-width: 1100px; height: 120px; overflow-y: auto; }
+  #log div { margin: 2px 0; }
+  table.tiers { border-collapse: collapse; font-size: 11px; margin-top: 14px; }
+  table.tiers td, table.tiers th { border: 1px solid #3a2a6e; padding: 4px 10px; text-align: left; }
+  .foot { margin-top: 16px; font-size: 11px; color: #8a8aa0; max-width: 900px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<h1>Tienda v2 — Layout A: 3 Puestos (stock mixto 60/40 + reroll escalado)</h1>
+<div class="sub">Mock interactivo: cada puesto tira <b>60% item / 40% tarot</b> sin duplicados ni poseídos.
+Reroll global <b>5$ +2$/uso</b> (resetea por visita). Precios tarot por tier <b>S60/A45/B30/C20</b>.</div>
+
+<div id="hud">
+  <span>MONEDAS: <b id="coins">120</b>$</span>
+  <span>ETAPA <b id="stage">2</b></span>
+  <button id="btn-funds" type="button">+50$ test</button>
+  <button id="btn-visit" type="button">Nueva visita (resetea reroll)</button>
+</div>
+
+<div id="puestos"></div>
+
+<div id="rerollbar">
+  <button id="btn-reroll" type="button"><span class="dice" id="dice">⚄</span> REROLL (<span id="rcost">5</span>$)</button>
+  <button id="btn-leave" type="button">CONTINUAR →</button>
+</div>
+
+<div id="slots"></div>
+<div id="log"></div>
+
+<table class="tiers">
+  <tr><th>Tier</th><th>Precio</th><th>Cartas</th></tr>
+  <tr><td>S</td><td>60$</td><td>mercury, reaper</td></tr>
+  <tr><td>A</td><td>45$</td><td>absolute_zero, dragon_blood, eagle_eye</td></tr>
+  <tr><td>B</td><td>30$</td><td>iron_spine, magic_circle, astral_mirror, alchemical_digestion</td></tr>
+  <tr><td>C</td><td>20$</td><td>shadow_thief, midas_pouch, iron_heart</td></tr>
+</table>
+
+<div class="foot">Reglas acordadas: stock mixto probabilístico (sin columnas fijas por tipo), sin tope 3/etapa (manda el stock),
+raros no repetidos por visita. Abre la consola (F12) para ver el log de rolls.</div>
+
+<script>
+// Catálogo fiel a systems/items.lua (22) + systems/tarot.lua (12)
+const ITEMS = [
+  {id:"shield",name:"ESCUDO",desc:"Sobrevive a un impacto",cost:30,type:"active"},
+  {id:"armor",name:"ARMADURA",desc:"Sobrevive a 2 impactos",cost:40,type:"active"},
+  {id:"ghost",name:"FANTASMAL",desc:"Atraviesa tu cuerpo x5s",cost:25,type:"active"},
+  {id:"magnet",name:"IMAN",desc:"Atrae comida radio 2 x10s",cost:20,type:"active"},
+  {id:"bomb",name:"BOMBA",desc:"Destruye obstaculos radio 3",cost:25,type:"active"},
+  {id:"hunger",name:"HAMBRE",desc:"Aparecen 2 comidas extra",cost:15,type:"active"},
+  {id:"speedReducer",name:"REDUCTOR",desc:"Reduce velocidad permanente",cost:15,type:"passive"},
+  {id:"turbo",name:"TURBO",desc:"Aumenta velocidad x8s",cost:20,type:"active"},
+  {id:"slow",name:"RALENTIZAR",desc:"Ralentiza el tiempo x5s",cost:25,type:"active"},
+  {id:"doubler",name:"DUPLICADOR",desc:"Puntos x2 x8s",cost:35,type:"active"},
+  {id:"extraCoin",name:"MONEDA EXTRA",desc:"+1 moneda/fruta permanente",cost:20,type:"passive"},
+  {id:"star",name:"ESTRELLA",desc:"Puntos x3 x5s",cost:40,type:"active"},
+  {id:"tailSpike",name:"PUA DE COLA",desc:"Trampa en cola mata x3 max",cost:20,type:"active"},
+  {id:"hourglass",name:"RELOJ ARENA",desc:"Rebobina 2.0s conserva puntos",cost:35,type:"active"},
+  {id:"orbitalBeam",name:"RAYO ORBITAL",desc:"Haz columna x2.5s vaporiza",cost:30,type:"active"},
+  {id:"holoDecoy",name:"SENUELO",desc:"Atrae chasers x4.0s",cost:25,type:"active"},
+  {id:"lightBoots",name:"BOTAS LIGERAS",desc:"-50% lentitud baba",cost:20,type:"passive"},
+  {id:"goldenTooth",name:"DIENTE ORO",desc:"+1 moneda/fruta x10 segm.",cost:25,type:"passive"},
+  {id:"emergencyBattery",name:"BATERIA",desc:"Bullet time al morir x1.5s",cost:30,type:"passive"},
+  {id:"doubleHarvest",name:"COSECHA DOBLE",desc:"15% sin crecer",cost:30,type:"passive"},
+  {id:"lottery",name:"LOTERIA",desc:"Rasca 0-35$",cost:5,type:"consumable"},
+  {id:"refractorPrism",name:"PRISMA",desc:"Proyectil->3$ con escudo",cost:25,type:"passive"}
+];
+const TAROTS = [
+  {id:"mercury",name:"I. El Mercurio",desc:"+15% velocidad, combo x2",price:60,tier:"S"},
+  {id:"reaper",name:"XII. El Segador",desc:"Kills extienden buffs +0.5s",price:60,tier:"S"},
+  {id:"absolute_zero",name:"VII. Cero Absoluto",desc:"Hielo 4.0s + fragiles",price:45,tier:"A"},
+  {id:"dragon_blood",name:"VI. Sangre de Dragon",desc:"Fuego 6.0s",price:45,tier:"A"},
+  {id:"eagle_eye",name:"III. Ojo de Aguila",desc:"Combo 12.0s",price:45,tier:"A"},
+  {id:"iron_spine",name:"II. Espina Dorsal",desc:"Cola mata chasers",price:30,tier:"B"},
+  {id:"magic_circle",name:"VIII. Circulo Magico",desc:"Constriccion +1",price:30,tier:"B"},
+  {id:"astral_mirror",name:"IX. Espejo Astral",desc:"1 wrap/sala",price:30,tier:"B"},
+  {id:"alchemical_digestion",name:"V. Digestion Alquimica",desc:"25% comida oro",price:30,tier:"B"},
+  {id:"shadow_thief",name:"IV. Ladron de Sombras",desc:"Near-miss +1$",price:20,tier:"C"},
+  {id:"midas_pouch",name:"X. Bolsa de Midas",desc:"+3$/sala",price:20,tier:"C"},
+  {id:"iron_heart",name:"XI. Corazon de Hierro",desc:"Escudo si <5 segm.",price:20,tier:"C"}
+];
+const TIER_COLOR = {S:"#ff4d5e", A:"#ffc93c", B:"#e06cff", C:"#3ce0ff"};
+const P_TAROT = 0.40, REROLL_BASE = 5, REROLL_STEP = 2;
+
+const S = {coins: 120, stock: [], owned: {}, tarots: {}, slots: [null, null, null], rerolls: 0};
+
+const $ = (id) => document.getElementById(id);
+function log(msg) {
+  const d = document.createElement("div");
+  d.textContent = msg;
+  $("log").prepend(d);
+  console.log("[shop-v2]", msg);
+}
+function rerollCost() { return REROLL_BASE + S.rerolls * REROLL_STEP; }
+
+function rollStock() {
+  const stock = [];
+  const usedItems = new Set(), usedTarots = new Set();
+  for (let i = 0; i < 3; i++) {
+    let offer = null;
+    for (let attempt = 0; attempt < 30 && !offer; attempt++) {
+      if (Math.random() < P_TAROT) {
+        const pool = TAROTS.filter(t => !usedTarots.has(t.id) && !S.tarots[t.id]);
+        if (pool.length) {
+          const t = pool[Math.floor(Math.random() * pool.length)];
+          usedTarots.add(t.id);
+          offer = {kind: "tarot", ref: t, price: t.price};
+        }
+      } else {
+        const pool = ITEMS.filter(o => !usedItems.has(o.id) && !isOwned(o));
+        if (pool.length) {
+          const o = pool[Math.floor(Math.random() * pool.length)];
+          usedItems.add(o.id);
+          offer = {kind: "item", ref: o, price: o.cost};
+        }
+      }
+    }
+    stock.push(offer);
+  }
+  return stock;
+}
+function isOwned(o) {
+  if (o.type === "passive") return !!S.owned[o.id];
+  return S.slots.includes(o.id);
+}
+function render() {
+  $("coins").textContent = S.coins;
+  $("rcost").textContent = rerollCost();
+  $("btn-reroll").disabled = S.coins < rerollCost();
+  const wrap = $("puestos");
+  wrap.innerHTML = "";
+  S.stock.forEach((offer, i) => {
+    const box = document.createElement("div");
+    box.className = "puesto";
+    box.innerHTML = "<h2>PUESTO " + (i + 1) + "</h2>";
+    const card = document.createElement("div");
+    if (!offer) {
+      card.className = "card";
+      card.innerHTML = "<div class='kind'>VACIO</div><h3>Sin stock</h3><p>Rerollea para más ofertas.</p>";
+    } else if (offer.sold) {
+      card.className = "card sold";
+      card.innerHTML = "<div class='kind'>" + offer.kind.toUpperCase() + "</div><h3>" + offer.ref.name +
+        "</h3><p>ADQUIRIDO</p><button disabled>ADQUIRIDO</button>";
+    } else {
+      const afford = S.coins >= offer.price;
+      card.className = "card" + (offer.kind === "tarot" ? " tarot" : "");
+      if (offer.kind === "tarot") card.style.setProperty("--tier", TIER_COLOR[offer.ref.tier]);
+      card.innerHTML = "<div class='kind'>" + (offer.kind === "tarot" ? "TAROT · TIER " + offer.ref.tier : "ITEM · " + offer.ref.type.toUpperCase()) + "</div>" +
+        "<h3>" + offer.ref.name + "</h3><p>" + offer.ref.desc + "</p>" +
+        "<div class='price'>" + offer.price + "$</div>";
+      const btn = document.createElement("button");
+      btn.textContent = afford ? "COMPRAR" : "SIN FONDOS (" + offer.price + "$)";
+      btn.disabled = !afford;
+      btn.onclick = () => buy(i);
+      card.appendChild(btn);
+    }
+    box.appendChild(card);
+    wrap.appendChild(box);
+  });
+  const sl = $("slots");
+  sl.innerHTML = "<span>SLOTS:</span>" + S.slots.map(s =>
+    "<span class='slot" + (s ? " full" : "") + "'>" + (s || "—") + "</span>").join("") +
+    "<span>PASIVOS: " + (Object.keys(S.owned).filter(k => S.owned[k]).join(", ") || "—") + "</span>" +
+    "<span>TAROTS: " + (Object.keys(S.tarots).join(", ") || "—") + "</span>";
+}
+function buy(i) {
+  const offer = S.stock[i];
+  if (!offer || offer.sold || S.coins < offer.price) return;
+  S.coins -= offer.price;
+  offer.sold = true;
+  if (offer.kind === "tarot") {
+    S.tarots[offer.ref.id] = true;
+    log("Comprado tarot " + offer.ref.id + " por " + offer.price + "$ (tier " + offer.ref.tier + ")");
+  } else if (offer.ref.type === "passive" || offer.ref.type === "consumable") {
+    S.owned[offer.ref.id] = true;
+    log("Comprado pasivo " + offer.ref.id + " por " + offer.price + "$");
+  } else {
+    const slot = S.slots.indexOf(null);
+    if (slot < 0) { S.coins += offer.price; offer.sold = false; log("Sin slots libres, compra cancelada"); render(); return; }
+    S.slots[slot] = offer.ref.id;
+    log("Comprado activo " + offer.ref.id + " por " + offer.price + "$ → slot " + (slot + 1));
+  }
+  render();
+  const cards = document.querySelectorAll(".puesto .card");
+  if (cards[i]) { cards[i].classList.add("flash"); setTimeout(() => cards[i] && cards[i].classList.remove("flash"), 350); }
+}
+function reroll() {
+  const cost = rerollCost();
+  if (S.coins < cost) return;
+  S.coins -= cost;
+  S.rerolls++;
+  S.stock = rollStock();
+  log("Reroll #" + S.rerolls + " por " + cost + "$ → [" + S.stock.map(o => o ? (o.kind === "tarot" ? "T:" + o.ref.id : "I:" + o.ref.id) : "vacio").join(", ") + "]");
+  const dice = $("dice");
+  dice.classList.remove("shake");
+  void dice.offsetWidth;
+  dice.classList.add("shake");
+  render();
+}
+$("btn-reroll").onclick = reroll;
+$("btn-funds").onclick = () => { S.coins += 50; log("+50$ test (total " + S.coins + "$)"); render(); };
+$("btn-visit").onclick = () => { S.rerolls = 0; S.stock = rollStock(); log("Nueva visita: reroll reseteado a 5$, stock renovado"); render(); };
+$("btn-leave").onclick = () => log("CONTINUAR con " + S.coins + "$, " + Object.keys(S.tarots).length + " tarots");
+S.stock = rollStock();
+log("Visita inicial: [" + S.stock.map(o => o ? (o.kind === "tarot" ? "T:" + o.ref.id : "I:" + o.ref.id) : "vacio").join(", ") + "]");
+render();
+</script>
+</body>
+</html>

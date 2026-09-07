@@ -8,6 +8,12 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (shop v2 proto)
+
+- **docs** (prototype - 2026-09-07): Tienda v2 Layout A interactivo (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `prototypes/shop-redesign.html` (nuevo)**: 3 puestos con stock mixto 60/40 (items 22 + tarots 12 con tiers S60/A45/B30/C20), compra con slots/pasivos, reroll escalado 5$+2$ con dados, sin-fondos, log de rolls, TODO re-priorizado a tienda v2.
+  2. **Verificación**: `node --check` OK (sin runtime afectado).
+
 ## 2026-09-07 (docs sync)
 
 - **docs** (sync - 2026-09-07): Auditoría integral de documentación (America/Bogota, rama `feature/phase8-mystery-rooms`):

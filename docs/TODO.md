@@ -57,6 +57,10 @@
   - [x] Anti-overflow: dropdowns clamp 240px + scroll wheel, `panelXY` responsivo, hitboxes `settings.g.*` recalculadas y validadas, sin tablas por frame excesivas (`g={}` único por draw).
   - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
 
+## In Progress (Tienda v2 — rebuild + Tarot comprable + economía)
+- [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
+- [ ] **Código**: config (precios/tiers, reroll, prob. mixta) → `tarot.lua` (`price`, `shopOffer`, `buy`, fuera trigger 1/2/4) → rewrite `shop.lua` (puestos + reroll + anims) → scope_26 → docs (GDD §13/§14, TDD)
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):
   - [x] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
