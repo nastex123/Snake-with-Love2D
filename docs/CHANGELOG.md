@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07
+
+- **feature** (completed - 2026-09-07): 60 texture proposals for Stage Tarot (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `prototypes/tarot-cards.html` (217 → ~380L)**: `CARDS` pasa de 1 diseño a `variants[5]` por carta (rediseño total A-E, 60 retículas 14x14 validadas por script); galería agrupada por carta a tamaño completo con botón PNG por variante; render Pixi + fallback Canvas2D generalizados sin cambios de lógica.
+  2. **QUE — paleta**: `eagle_eye` suma `L: 0xffe9b8` (ala de variante E); resto de paletas y marco runa/oro intactos.
+  3. **POR QUE**: el draft del Tarot necesita dirección de arte elegible por carta antes de integrar texturas en Love2D; sin exportación a PNG, todo vive en el prototipo.
+  4. **Verificación**: script 60x14x14 + claves de paleta 0 errores, `node --check` OK; `love .` 10s sin crash, `error.log` 0 bytes (cambio fuera del runtime).
+
 ## 2026-09-06 00:08
 
 - **feature** (completed - 2026-09-06 00:08): Stage Tarot Draft System (America/Bogota, consola-only, rama `feature/phase8-tarot`):

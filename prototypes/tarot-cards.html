@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tarot Cards — Propuestas de texturas 20x20 (PixiJS)</title>
+<title>Tarot Cards — 60 propuestas de texturas 20x20 (12 cartas x 5 variantes)</title>
 <script src="pixi.min.js"></script>
 <style>
   :root { color-scheme: dark; }
@@ -11,27 +11,29 @@
   h1 { color: #ffc93c; font-size: 20px; margin: 0 0 4px; }
   .sub { color: #8a8aa0; font-size: 12px; margin-bottom: 20px; }
   .sub b { color: #3ce0ff; }
-  #gallery { display: grid; grid-template-columns: repeat(3, 240px); gap: 18px; }
+  .group { margin-bottom: 30px; }
+  .group > h2 { font-size: 16px; margin: 0 0 2px; }
+  .group > .arc { font-size: 12px; color: #8a8aa0; margin-bottom: 12px; }
+  .variants { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 18px; }
   .card { background: #12121f; border: 1px solid #3a2a6e; border-radius: 10px; padding: 12px; text-align: center; }
-  .card h2 { font-size: 13px; margin: 0 0 2px; }
-  .card .arc { font-size: 11px; color: #8a8aa0; margin-bottom: 8px; }
+  .card h3 { font-size: 13px; margin: 0 0 8px; }
   .card canvas { image-rendering: pixelated; background: #000; border-radius: 4px; }
-  .mini { margin-top: 8px; opacity: .9; }
   .pal { display: flex; gap: 5px; justify-content: center; margin: 10px 0; }
   .pal span { width: 16px; height: 16px; border-radius: 3px; border: 1px solid #000; display: inline-block; }
   .card button { background: #3a2a6e; color: #fff; border: 1px solid #9b5cff; border-radius: 6px;
     font-family: inherit; font-size: 11px; padding: 6px 10px; cursor: pointer; }
   .card button:hover { background: #9b5cff; }
-  .foot { margin-top: 22px; font-size: 11px; color: #8a8aa0; max-width: 760px; line-height: 1.6; }
+  .foot { margin-top: 22px; font-size: 11px; color: #8a8aa0; max-width: 900px; line-height: 1.6; }
 </style>
 </head>
 <body>
-<h1>🃏 Stage Tarot — 12 propuestas de textura (20x20 px)</h1>
+<h1>Stage Tarot — 60 propuestas de textura (20x20 px, 12 cartas x 5 variantes)</h1>
 <div class="sub">Renderizadas con <b>PixiJS 7</b> (Graphics → RenderTexture 20x20 → Sprite ×8 NEAREST).
-Abre la consola (F12) para ver la validación de filas. El botón descarga el PNG 20x20 listo para importar a Love2D vía <b>ImageData</b>.</div>
+Abre la consola (F12) para ver la validación de filas. Cada botón descarga el PNG 20x20 de su variante.</div>
 <div id="gallery"></div>
 <div class="foot">Marco común: borde runa <b>#3A2A6E</b> + esquinas oro <b>#FFC93C</b> (eco del cofre-buff dorado del juego).
-Fondo tintado por arquetipo. Icono centrado en área 14x14. Si algún diseño no convence, dime el número y lo redibujo (tengo la retícula a mano).</div>
+Fondo tintado por arquetipo. Icono centrado en área 14x14. Rediseño total: las 5 variantes de cada carta son nuevas;
+elige una letra por carta (criterio: legibilidad a x2, silueta única entre las 12, color de arquetipo).</div>
 
 <script>
 PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
@@ -39,82 +41,374 @@ PIXI.settings.SCALE_MODE = PIXI.SCALE_MODES.NEAREST;
 // Paleta compartida del marco
 const FRAME = { B: 0x3a2a6e, G: 0xffc93c };
 // '.' = fondo (tintado por carta). Cada fila interior: 14 caracteres (cols 3..16).
+// variants: 5 retículas nuevas por carta (rediseño total A-E).
 const CARDS = [
 { id: "mercury", name: "I. El Mercurio", arc: "Velocidad · cian",
   bg: 0x06222e, pal: { C: 0x35e0ff, L: 0xbff4ff, D: 0x0e6e8c, W: 0xffffff },
-  rows: ["..............","..............","......CC......","......CC......",".....CCCC.....",
-         "..LLLCCCCLLL..",".LLLLCCCCLLLL.",".....CCCC.....","....CCCCCC....","....CCWWCC....",
-         "....CCCCCC....",".....CCCC.....","..............",".............."] },
+  variants: [
+  { key: "A", label: "Rayo alado",
+    rows: ["..............","......CC......",".....CCCC.....",".....CCCC.....",
+           ".LLLCCCCCCLLL.","LLLCCCCCCCCLLL",".LLLCCCCCCLLL.",".....CCCC.....",
+           "....CCCCCC....","....CCWWCC....","....CCCCCC....",".....CCCC.....",
+           "......CC......",".............."] },
+  { key: "B", label: "Triple chevrón",
+    rows: ["..............","..............","..CC..CC..CC..","...CC..CC..CC.",
+           "....CC..CC..CC","...CC..CC..CC.","..CC..CC..CC..","..............",
+           "..WW..WW..WW..","...WW..WW..WW.","....WW..WW..WW","...WW..WW..WW.",
+           "..WW..WW..WW..",".............."] },
+  { key: "C", label: "Espiral de viento",
+    rows: ["..............","...CCCCCCCC...","...C......C...","...C.CCCC.C...",
+           "...C.CWWC.C...","...C.CCC..C...","...C......C...","...CCCCCCCC...",
+           "....LLLLLL....","..LLLLLLLLLL..","....LLLLLL....","..............",
+           "..............",".............."] },
+  { key: "D", label: "Bota alada",
+    rows: ["..............","..............","..LLL.........",".LLLLL..CC....",
+           ".LLLLL.CCCC...","..LLL..CCCC...",".......CCCC...","......CCCCCC..",
+           "......CCCCCC..",".....CCCCCCC..",".....DDDDDDD..","...DDDDDDDDD..",
+           "..............",".............."] },
+  { key: "E", label: "Reloj y rayo",
+    rows: ["..............","....CCCCCC....","..CC......CC..","..C...WW...C..",
+           ".C....WW....C.",".C....W.....C.",".C..........C.",".C....CC....C.",
+           ".C...CCCC...C.","..C...CC...C..","..CC......CC..","....CCCCCC....",
+           "......LL......",".............."] }
+  ] },
 { id: "iron_spine", name: "II. La Espina Dorsal", arc: "Defensa · acero",
   bg: 0x20242c, pal: { C: 0xb9c2cc, L: 0xffffff, D: 0x5a636e },
-  rows: ["..............","......CC......","......CC......","...DCCCCCCD...","......CC......",
-         "......CC......","...DCCCCCCD...","......CC......","......CC......","...DCCCCCCD...",
-         "......CC......","......CC......","....LL..LL....",".............."] },
+  variants: [
+  { key: "A", label: "Columna segmentada",
+    rows: ["..............",".....CCCC.....",".....CCCC.....","....CCCCCC....",
+           ".....CCCC.....",".....CCCC.....","...DCCCCCCD...",".....CCCC.....",
+           ".....CCCC.....","....CCCCCC....",".....CCCC.....",".....CCCC.....",
+           "....LLLLLL....",".............."] },
+  { key: "B", label: "Escudo con columna",
+    rows: ["..............","..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CCDCCCCCCDCC.",
+           ".CCCCCCCCCCCC.",".CCCCCLLCCCCC.",".CCCCCLLCCCCC.",".CCCCCLLCCCCC.",
+           ".CCCCCCCCCCCC.","..CCCCCCCCCC..","...CCCCCCCC...","....CCCCCC....",
+           ".....CCCC.....",".............."] },
+  { key: "C", label: "Triple anilla",
+    rows: ["..............","..............","....CCCCCC....","...CC....CC...",
+           "....CCCCCC....","..............","....CCCCCC....","...CC....CC...",
+           "....CCCCCC....","..............","....CCCCCC....","...CC....CC...",
+           "....CCCCCC....",".............."] },
+  { key: "D", label: "Caparazón",
+    rows: ["..............","..............","..............","....CCCCCC....",
+           "..CCCCCCCCCC..",".CCLLCCCCLLCC.",".CCCCCCCCCCCC.",".CDDCCCCCCDDC.",
+           ".CCCCCCCCCCCC.","..CCCCCCCCCC..","..D..D..D..D..","..............",
+           "..............",".............."] },
+  { key: "E", label: "Remaches de oro",
+    rows: ["..............",".....CCCC.....",".....CCCC.....","....CCCCCC....",
+           "...GCCCCCCG...",".....CCCC.....",".....CCCC.....","....CCCCCC....",
+           "...GCCCCCCG...",".....CCCC.....",".....CCCC.....","....CCCCCC....",
+           "....LLLLLL....",".............."] }
+  ] },
 { id: "eagle_eye", name: "III. El Ojo de Águila", arc: "Puntuación · oro",
-  bg: 0x2a2008, pal: { C: 0xffc93c, D: 0x8a5a00, W: 0xffffff, K: 0x202028 },
-  rows: ["..............","..............","..............","...DDDDDDDD...","....WWWWWW....",
-         "...WWKWKKWW...","....WWWWWW....",".....CCCC.....","..............","..............",
-         "..............","..............","..............",".............."] },
+  bg: 0x2a2008, pal: { C: 0xffc93c, D: 0x8a5a00, W: 0xffffff, K: 0x202028, L: 0xffe9b8 },
+  variants: [
+  { key: "A", label: "Ojo frontal",
+    rows: ["..............","..............","..............","...DDDDDDDD...",
+           "..DWWWWWWWWD..",".DWWWKKKKWWWD.",".DWWKKKKKKWWD.",".DWWWKKKKWWWD.",
+           "..DWWWWWWWWD..","...DDDDDDDD...",".....CCCC.....",".....CCCC.....",
+           "..............",".............."] },
+  { key: "B", label: "Ojo reloj",
+    rows: ["..............","....CCCCCC....","..CC......CC..","..C..DDDD..C..",
+           ".C..DWWWWDD.C.",".C..DWKKWDD.C.",".C..DWWWWDD.C.",".C...DDDD...C.",
+           ".C..........C.","..C........C..","..CC......CC..","....CCCCCC....",
+           "......WW......",".............."] },
+  { key: "C", label: "Cabeza de águila",
+    rows: ["..............","....DDDDDD....","...DDDDDDDD...","...DWWWWWWD...",
+           "...DWWKKWWD...",".....DDDDD....","....CCCCCC....",".....CCCC.....",
+           "......CC......","..............","..............","..............",
+           "..............",".............."] },
+  { key: "D", label: "Diana",
+    rows: ["..............","..............","....CCCCCC....","..CCWWWWWWCC..",
+           "..CWDDDDDDWC..",".CWDDKKKKDDWC.",".CWDDKKKKDDWC.",".CWDDKKKKDDWC.",
+           "..CWDDDDDDWC..","..CCWWWWWWCC..","....CCCCCC....","..............",
+           "..............",".............."] },
+  { key: "E", label: "Ojo alado",
+    rows: ["..............","..............","..............",".LL........LL.",
+           ".LLL..WW..LLL.",".LLL.WKKW.LLL.","..LLLWWWWLLL..","....WWWWWW....",
+           "..............","..............","..............","..............",
+           "..............",".............."] }
+  ] },
 { id: "shadow_thief", name: "IV. Ladrón de Sombras", arc: "Economía · violeta",
   bg: 0x1b0f38, pal: { C: 0x9b5cff, L: 0xd9c2ff, D: 0x3d1f7a, W: 0xffffff },
-  rows: ["..............","...L.......W..","....L.........",".....L........","......L.......",
-         ".......L......","........L.....",".........L....","..........L...","....CCCCCCC...",
-         ".W....DD......","......DD......","......CC......",".............."] },
+  variants: [
+  { key: "A", label: "Daga y moneda",
+    rows: ["..........WW..","...LL....WWWW.","....LL...WWWW.",".....LL...WW..",
+           "......LL......",".......LL.....","........LL....",".....CCCCCC...",
+           ".......CC.....",".......CC.....","......CCCC....","..............",
+           "..............",".............."] },
+  { key: "B", label: "Antifaz y bolsa",
+    rows: ["..............","..............","..............","..............",
+           "..CCCCCCCCCC..",".CCWWCCCCWWCC.",".CCWWCCCCWWCC.","..CCCCCCCCCC..",
+           "......DD......","....CCCCCC....","...CCCCCCCC...","...CCWWWWCC...",
+           "...CCCCCCCC...",".............."] },
+  { key: "C", label: "Garra y moneda",
+    rows: ["..............","..............","...C..C..C....","...C..C..C....",
+           "...C..C..C....","...CCCCCCC....","....CCCCC.....","...WWWWWWW....",
+           "..WWWWWWWWW...","..WWWWWWWWW...","...WWWWWWW....","..............",
+           "..............",".............."] },
+  { key: "D", label: "Huella y estela",
+    rows: ["..............","....CC........","..CC.CC.......","..CC.CC.......",
+           "....CC........","...CCCC.......","..CCCCCC......","..CCCCCC......",
+           "...CCCC.......","........LLLL..","......LLLLLL..","........LLLL..",
+           "..............",".............."] },
+  { key: "E", label: "Luna y moneda",
+    rows: ["..............",".....CCC......","...CCCCC......","..CCCC........",
+           "..CCC.........","..CCCC......WW","...CCCCC..WWWW",".....CCC..WWWW",
+           "..........WWWW","......LL..WWWW","......LL...WW.","..............",
+           "..............",".............."] }
+  ] },
 { id: "alchemical_digestion", name: "V. Digestión Alquímica", arc: "Alquimia · verde",
   bg: 0x0a2618, pal: { C: 0x3dff88, L: 0xc8ffe0, W: 0xffffff },
-  rows: ["..............","......CC......","......CC......","......CC......",".....CCCC.....",
-         ".....CCCC.....","....CCWCCC....","....CCLLCC....","...CCLLLLCC...","...CCLWLLCC...",
-         "..CCLLLLLLCC..","..CCCCCCCCCC..","..............",".............."] },
+  variants: [
+  { key: "A", label: "Matraz",
+    rows: ["..............",".....CCCC.....",".....CCCC.....",".....CCCC.....",
+           "....CCCCCC....","...CCCCCCCC...","..CCCCCCCCCC..","..CCLLLLLLCC..",
+           ".CCCLLLLLLCCC.",".CCLWLLLWLLCC.",".CCLLLLLLLLCC.","..CCCCCCCCCC..",
+           "..............",".............."] },
+  { key: "B", label: "Caldero y moneda",
+    rows: ["..............","....WW........","...WWWW.......","...WWWW.......",
+           "....WW....CC..","..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CCLLLLLLLLCC.",
+           ".CCLWLLLLWLCC.",".CCCCCCCCCCCC.","..CCCCCCCCCC..","...CC.CC.CC...",
+           "..............",".............."] },
+  { key: "C", label: "Doble tubo",
+    rows: ["...W.....W....","..CC...CC.....","..CC...CC.....","..CC...CC.....",
+           "..CC...CC.....","..CC...CC.....","..CCLL.CCLL...","..CCLL.CCLL...",
+           "..CCLL.CCLL...","..CCCC.CCCC...","..............","..............",
+           "..............",".............."] },
+  { key: "D", label: "Símbolo y gota",
+    rows: ["..............","......CC......",".....CCCC.....","....CC..CC....",
+           "....C....C....","...C..WW..C...","...C..WW..C...","..C...WW...C..",
+           "..C........C..",".C..........C.",".CCCCCCCCCCCC.","..............",
+           "..............",".............."] },
+  { key: "E", label: "Transmutación",
+    rows: ["..............","..............","....CCCCCC....","..CCCCCLLLLL..",
+           ".CCCCCLLLLLL..",".CCCCCLLLLLL..",".CCCCCLWLLLL..",".CCCCCLLLLLL..",
+           ".CCCCCLLLLLL..","..CCCCCLLLLL..","....CCCCCC....","......WW......",
+           "..............",".............."] }
+  ] },
 { id: "dragon_blood", name: "VI. Sangre de Dragón", arc: "Ofensivo · fuego",
   bg: 0x2a0e06, pal: { C: 0xff5a2a, L: 0xffd23c, W: 0xfff6d8 },
-  rows: ["..............",".......CC.....","......CCC.....","......CCCC....",".....CCCCC....",
-         ".....CCCCCC...","....CCCLLCC...","....CCLLLLC...","....CCLLLLC...","....CCWWLLC...",
-         "....CCCCCCC...",".....CCCCC....","..............",".............."] },
+  variants: [
+  { key: "A", label: "Llama triple",
+    rows: ["......C.......",".....CCC......",".....CCC..C...","....CCCCC.C...",
+           "....CCCCCCC...","...CCCCCLCC...","...CCCLLLCC...","...CCLLLLCC...",
+           "...CCLWLLCC...","...CCLLLLCC...","....CCCCCC....","....CCCCCC....",
+           "..............",".............."] },
+  { key: "B", label: "Gota ígnea",
+    rows: ["..............","......CC......",".....CCCC.....","....CCCCCC....",
+           "...CCCCCCCC...","...CCCLLCCC...","..CCCLLLLCCC..","..CCLLWWLLCC..",
+           "..CCLLWWLLCC..","..CCCLLLLCCC..","...CCCCCCCC...","....CCCCCC....",
+           "..............",".............."] },
+  { key: "C", label: "Cabeza de dragón",
+    rows: ["..............","..C........C..","..CC......CC..","..CCCCCCCCCC..",
+           ".CCCCCCCCCCCC.",".CCWWCCCCWWCC.",".CCWWCCCCWWCC.",".CCCCCCCCCCCC.",
+           "..CCCLLLLCCC..","...CCLLLLCC...","...CCWWWWCC...","....CCCCCC....",
+           "..............",".............."] },
+  { key: "D", label: "Escama y brasas",
+    rows: ["..............","......CC......",".....CCCC.....","....CCCCCC....",
+           "...CCCCCCCC...","..CCCCCCCCCC..","..CCCLLLLCCC..","..CCCCCCCCCC..",
+           "...CCCCCCCC...","....CCCCCC....","..L..L..L..L..","...L..L..L....",
+           "..............",".............."] },
+  { key: "E", label: "Fauce",
+    rows: ["..............","..............",".CCCCCCCCCCCC.",".CWWCWWCWWCWWC",
+           ".CCCCCCCCCCCC.","..CCCCCCCCCC..","..CCLLLLLLCC..","..CCLLWWLLCC..",
+           "..CCLLLLLLCC..","..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CWWCWWCWWCWWC",
+           "..............",".............."] }
+  ] },
 { id: "absolute_zero", name: "VII. Cero Absoluto", arc: "Control · hielo",
   bg: 0x0a2233, pal: { L: 0x7fd4ff, W: 0xffffff },
-  rows: ["..............","......LL......","....W.LL.W....",".....LLLLL....","....L.LL.L....",
-         ".....LLLLL....","WLLLLLLLLLLLLW",".LLLLLWWLLLLL.",".....LLLLL....","....L.LL.L....",
-         ".....LLLLL....","....W.LL.W....","......LL......",".............."] },
+  variants: [
+  { key: "A", label: "Copo",
+    rows: ["......LL......","......LL......","...W.LL.W.....","....LLLLLL....",
+           ".W.LLLLLLLL.W.","..LLLWWWWLLL..","LLLLLWWWWLLLLL","..LLLWWWWLLL..",
+           ".W.LLLLLLLL.W.","....LLLLLL....","...W.LL.W.....","......LL......",
+           "......LL......",".............."] },
+  { key: "B", label: "Cubo agrietado",
+    rows: ["..............","..............","..............","...WWWWWWWW...",
+           "..WWWWWWWWWW..","..WLWWWWWWWL..","..WLWLLWWWWL..","..WLWWLWWWWL..",
+           "..WLWWWLWWWL..","..WWWWWLWWWL..","..WWWWWWWWWW..","...WWWWWWWW...",
+           "..............",".............."] },
+  { key: "C", label: "Corona",
+    rows: ["..............","...L..LL..L...","...L..LL..L...","....LLLLLL....",
+           "..LL......LL..","..L...WW...L..",".L....WW....L.",".L..........L.",
+           ".L..........L.","..L........L..","..LL......LL..","....LLLLLL....",
+           "..............",".............."] },
+  { key: "D", label: "Pico y aura",
+    rows: ["......WW......",".....WWWW.....",".....WWWW.....","....WWLLWW....",
+           "....WWLLWW....","...WWWLLWWW...","...WWWLLWWW...","..WWWWLLWWWW..",
+           "..WWWWLLWWWW..",".WWWWWLLWWWWW.",".LLLLLLLLLLLL.","..............",
+           "..............",".............."] },
+  { key: "E", label: "Glifo cero",
+    rows: ["..............","..............","....LLLLLL....","..LLWWWWWWLL..",
+           "..LWWWWWWWWL..",".LWWLLLLLLWWL.",".LWWLLLLLLWWL.",".LWWLLLLLLWWL.",
+           ".LWWLLLLLLWWL.","..LWWWWWWWWL..","..LLWWWWWWLL..","....LLLLLL....",
+           "..............",".............."] }
+  ] },
 { id: "magic_circle", name: "VIII. El Círculo Mágico", arc: "Constricción · magenta",
   bg: 0x230f33, pal: { C: 0xe06cff },
-  rows: ["..............",".....CCCC.....","...CC...CC....","..C........C..",".C..........C.",
-         ".C..........C.",".C...GGGG...C.",".C...GGGG...C.",".C..........C.",".C.....G....C.",
-         ".C..........C.","..C........C..","...CC...CC....",".....CCCC....."] },
+  variants: [
+  { key: "A", label: "Anillo y núcleo",
+    rows: ["..............",".....CCCC.....","...CC....CC...","..C........C..",
+           ".C..........C.",".C....GG....C.","C....GGGG....C","C....GGGG....C",
+           ".C....GG....C.",".C..........C.","..C........C..","...CC....CC...",
+           ".....CCCC.....",".............."] },
+  { key: "B", label: "Doble anillo",
+    rows: ["..............","....CCCCCC....","..CCCCCCCCCC..",".CCC......CCC.",
+           ".CC..CCCC..CC.",".C..CC..CC..C.","C...C.GG.C...C","C...C.GG.C...C",
+           ".C..CC..CC..C.",".CC..CCCC..CC.",".CCC......CCC.","..CCCCCCCCCC..",
+           "....CCCCCC....",".............."] },
+  { key: "C", label: "Espiral",
+    rows: ["..............","...CCCCCCCC...","...C......C...","...C.CCCC.C...",
+           "...C.C..C.C...","...C.CG.C.C...","...C......C...","...CCCCCCCC...",
+           ".....CCCC.....","....CC..CC....","....C....C....",".....G..G.....",
+           "..............",".............."] },
+  { key: "D", label: "Lazo",
+    rows: ["..............","..............","..CCCC..CCCC..",".CC..CCCC..CC.",
+           ".CC..CCCC..CC.","..CCCC..CCCC..",".....CCCC.....","....CCCCCC....",
+           "...CC...CC....","..CC.....CC...","..C.......C...","..G.......G...",
+           "..............",".............."] },
+  { key: "E", label: "Pentagrama",
+    rows: ["......C.......","......CC......",".....CCCC.....",".CCCCCCCCCCCC.",
+           "..CCCCCCCCCC..","...CC.GG.CC...","....C.GG.C....","....CC..CC....",
+           "...CC....CC...","...C......C...","..C........C..","...CC....CC...",
+           ".....CCCC.....",".............."] }
+  ] },
 { id: "astral_mirror", name: "IX. Espejo Astral", arc: "Evasión · turquesa",
   bg: 0x06282a, pal: { C: 0x3cffD4, D: 0x0e6e5c, W: 0xffffff },
-  rows: ["..............","..............","...CCCCCCCC...","...CDDDDDDC...","...CDWDDDDC...",
-         "...CDDWDDDC...","...CDDDWDDC...","...CDDDDDDC...","...CDDDDDDC...","...CDDDDDDC...",
-         "...CCCCCCCC...","......CC......","....CCCCCC....",".............."] },
+  variants: [
+  { key: "A", label: "Espejo oval",
+    rows: ["..............","....CCCCCC....","..CCCCCCCCCC..",".CCCDDDDDDCCC.",
+           ".CCDDWWWDDDCC.",".CCDDWWDDDDCC.",".CCDDDWDDDDCC.",".CCDDDDDDDDCC.",
+           ".CCDDDDDDDDCC.",".CCCDDDDDDCCC.","..CCCCCCCCCC..","....CCCCCC....",
+           ".....CCCC.....",".............."] },
+  { key: "B", label: "Portal doble",
+    rows: ["..............","..............","...CC....CC...","..CCC....CCC..",
+           "..CC......CC..","..CC..WW..CC..","..CC..WW..CC..","..CC......CC..",
+           "..CCC....CCC..","...CC....CC...","....C....C....","...CCC..CCC...",
+           "..............",".............."] },
+  { key: "C", label: "Espejo roto",
+    rows: ["..............","....CCCCCC....","..CCCCCCCCCC..",".CCCDDDDDDCCC.",
+           ".CCDDWDDDDCC..",".CCDDDWDDDCC..",".CCDDDDWDDCC..",".CCDDDDDWDC...",
+           ".CCDDDDDDCC.C.",".CCCDDDDDDCCC.","..CCCCCCCCCC..","....CCCCCC....",
+           "..........C...",".............."] },
+  { key: "D", label: "Fase fantasma",
+    rows: ["..............","..............","..CC..........",".CCCCW........",
+           ".CCCCCC.......","..CCCCCC......","...CCCCCC.....","....CCCCCC....",
+           ".....CCCCCC...","......CCCCCC..",".......DDDDD..",".........DD...",
+           "..............",".............."] },
+  { key: "E", label: "Puerta y flecha",
+    rows: ["..............","....CCCCCC....","....C....C....","....C....C....",
+           "..WW.C..C.....",".WWWWCCCCC....","..WW.C..C.....","....C....C....",
+           "....C....C....","....C....C....","...CCC..CCC...","..............",
+           "..............",".............."] }
+  ] },
 { id: "midas_pouch", name: "X. La Bolsa de Midas", arc: "Economía · oro",
   bg: 0x2a2008, pal: { C: 0xffc93c, L: 0xffedb0, W: 0xffffff },
-  rows: ["..............",".........W....","....CCCCCC....","...CCLLLLCC...","...CCCCCCCC...",
-         "..CCCCCC......",".CCLLLLCC.....",".CCCCCCCC.....",".....CCCCCC...","....CCLLLLCC..",
-         "....CCCCCCCC..","..W...........","..............",".............."] },
+  variants: [
+  { key: "A", label: "Bolsa",
+    rows: ["..............",".....CC.......","....CCCC......","...CCCCCC.....",
+           "..CCCCCCCC....",".CCCCCCCCCC...",".CCLLLLLLCC...",".CCLLWWLLCC...",
+           ".CCLLLLLLCC...",".CCCCCCCCCC...","..CCCCCCCC....","...CCCCCC.....",
+           "..............",".............."] },
+  { key: "B", label: "Tres monedas",
+    rows: ["..............","..............",".....CCCC.....","....CCLLCC....",
+           "....CCLLCC....",".....CCCC.....","...CC...CC....","..CCLC.CCLC...",
+           "..CCLC.CCLC...","...CC...CC....","..............","..............",
+           "..............",".............."] },
+  { key: "C", label: "Lluvia",
+    rows: ["..CC...CC...CC","..CC...CC...CC","..............","...CC...CC....",
+           "...CC...CC....","......LL......","..LL..LL..LL..","......LL......",
+           "...CC...CC....","...CC...CC....","..............","..............",
+           "..............",".............."] },
+  { key: "D", label: "Mano y moneda",
+    rows: ["..............","......WW......",".....WWWW.....",".....WWWW.....",
+           "......WW......","..............","..C..C..C..C..","..C..C..C..C..",
+           "..CCCCCCCCCC..","..CCCCCCCCCC..","...CCCCCCCC...","....CCCCCC....",
+           "..............",".............."] },
+  { key: "E", label: "Cofre",
+    rows: ["..............","..............","...CCCCCCCC...","..CCLLLLLLCC..",
+           "..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CCCWWWWWWCCC.",".CCCWWWWWWCCC.",
+           ".CCCCCCCCCCCC.",".CCCCCLLCCCCC.",".CCCCCLLCCCCC.","..CCCCCCCCCC..",
+           "..............",".............."] }
+  ] },
 { id: "iron_heart", name: "XI. Corazón de Hierro", arc: "Supervivencia · acero/rojo",
   bg: 0x2a1218, pal: { C: 0xd7e0ea, W: 0xffffff, R: 0xff4d5e },
-  rows: ["..............","..............","...CC..CC.....","..CCCCCCCCC...","..CCWCCCCCC...",
-         "..CCCCRRCCC...","..CCCCRRCCC...","...CCCRRCCC...","....CCRRCC....",".....CRRC.....",
-         "......CC......","..............","..............",".............."] },
+  variants: [
+  { key: "A", label: "Corazón y núcleo",
+    rows: ["..............","..............","..CC....CC....",".CCCC..CCCC...",
+           ".CCWCCCCWCC...",".CCCCRRCCCC...",".CCCCRRCCCC...","..CCCRRCCC....",
+           "...CCRRCC.....","....CRRC......",".....CC.......","..............",
+           "..............",".............."] },
+  { key: "B", label: "Escudo y corazón",
+    rows: ["..............","..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CCCCCCCCCCCC.",
+           ".CCCCC..CCCCC.",".CCCCRRRRCCCC.",".CCCCRRRRCCCC.",".CCCCCRRCCCCC.",
+           "..CCCCRRCCCC..","...CCCRRCCC...","....CCCRCC....",".....CCC......",
+           "......C.......",".............."] },
+  { key: "C", label: "Corazón y glifo",
+    rows: ["..............","..............","..CC....CC....",".CCCC..CCCC...",
+           ".CCCCCCCCCC...",".CCCCRRCCCC...",".CCCCRRCCCC...","..CCCRRCCC....",
+           "...CCRRCC.....","..........CCC.","..........C...","..........CCC.",
+           "............C.","..........CCC."] },
+  { key: "D", label: "Corazón vendado",
+    rows: ["..............","..............","..CC....CC....",".CCCC..CCCC...",
+           ".CWWCCCCWWCC..",".CCCCCCCCCC...","..CWWWWWWWC...","..CCCCCCCC....",
+           "...CCCCCC.....","....CCCC......",".....CC.......","..............",
+           "..............",".............."] },
+  { key: "E", label: "Núcleo pulsante",
+    rows: ["..............",".....RRR......","..CC.....CC...",".CCC.....CCC..",
+           ".CC...R...CC..",".C...RRR...C..",".C..RRRRR..C..",".C..RRRRR..C..",
+           ".CC..RRR..CC..",".CCC..R..CCC..","..CCC...CCC...","...CC...CC....",
+           ".....R.R......",".............."] }
+  ] },
 { id: "reaper", name: "XII. El Segador", arc: "Ofensivo · púrpura oscuro",
   bg: 0x170f2e, pal: { C: 0x8c4dff, L: 0xc9a8ff, D: 0x6e4dc9 },
-  rows: [".......LLLLLL.","..D......LLLLL","...D.....CCCCC","....D....CCCC.",".....D...CCC..",
-         "......D.....C.",".......D......","........D.....",".........D....","..........D...",
-         "..........C...","..............","..............",".............."] },
+  variants: [
+  { key: "A", label: "Guadaña",
+    rows: [".......LLLLL..","..D....LLLLL..","...D..CCCCCC..","....D.CCCC....",
+           ".....DCCC.....","......DC......",".......D......","........D.....",
+           ".........D....","..........D...","..........C...","..........C...",
+           ".........CCC..",".............."] },
+  { key: "B", label: "Calavera",
+    rows: ["..............","..............","....CCCCCC....","...CCCCCCCC...",
+           "..CCLLCCLLCC..","..CCLLCCLLCC..","..CCCCCCCCCC..","...CCCDDCCC...",
+           "...CCCCCCCC...","...C.C..C.C...","...CCCCCCCC...","..............",
+           "..............",".............."] },
+  { key: "C", label: "Reloj y guadaña",
+    rows: ["..............","....CCCCCC....","..CC..LL..CC..","..C...LL...C..",
+           ".C....LL....C.",".C.....L....C.",".C..........C.","..C........C..",
+           "..CC......CC..","....CCCCCC....","......D.......",".....D.D......",
+           "....D...D.....",".............."] },
+  { key: "D", label: "Encapuchado",
+    rows: ["..............","......CC......",".....CCCC.....","....CCCCCC....",
+           "...CCCCCCCC...","...CCDDDDCC...","...CDLLLDLC...","...CDDDDDDC...",
+           "...CCDDDDCC...","..CCCCCCCCCC..",".CCCCCCCCCCCC.",".CDDCCCCCCDDC.",
+           "..............",".............."] },
+  { key: "E", label: "Vórtice",
+    rows: ["......LL......",".....LLLL.....","......LL......","....CCCCCC....",
+           "..CCCCCCCCCC..",".CCCDDCCDDCCC.",".CCCDDCCDDCCC.","..CCCDDDDCCC..",
+           "...CCCDDCCC...","....CCCDCCC...",".....CCCCC....","......CCC.....",
+           ".......C......",".............."] }
+  ] },
 ];
 
-function buildPixels(def) {
+function buildPixels(def, rows) {
   // Devuelve matriz 20x20 de colores (null = fondo) + validación.
   const px = [];
   const edge = "G" + "B".repeat(18) + "G";
   const blank = "B" + ".".repeat(18) + "B";
   const lines = [edge, blank, blank];
-  for (const r of def.rows) lines.push("B" + ".." + r + ".." + "B");
+  for (const r of rows) lines.push("B" + ".." + r + ".." + "B");
   lines.push(blank, blank, edge);
   console.assert(lines.length === 20, def.id + ": esperaba 20 filas, hay " + lines.length);
   const pal = Object.assign({}, FRAME, def.pal);
   lines.forEach((line, y) => {
     console.assert(line.length === 20, def.id + " fila " + y + ": " + line.length + " chars");
-    px[y] = [...line].map(ch => (ch === "." ? null : pal[ch]));
+    px[y] = [...line].map(ch => {
+      console.assert(ch === "." || pal[ch] !== undefined, def.id + " fila " + y + ": clave '" + ch + "' sin paleta");
+      return ch === "." ? null : pal[ch];
+    });
   });
   return px;
 }
@@ -136,7 +430,7 @@ if (HAS_PIXI) {
 if (!HAS_PIXI) {
   const warn = document.createElement("div");
   warn.className = "sub";
-  warn.innerHTML = "⚠️ <b>PixiJS sin renderer" + (pixiFailReason ? " (" + pixiFailReason + ")" : " (pixi.min.js no cargó)") +
+  warn.innerHTML = "<b>PixiJS sin renderer" + (pixiFailReason ? " (" + pixiFailReason + ")" : " (pixi.min.js no cargó)") +
     "</b>: usando fallback Canvas2D (misma retícula 20x20). Revisa los escudos de Brave para este sitio.";
   document.querySelector(".sub").after(warn);
 }
@@ -155,9 +449,8 @@ function makeBaseCanvas(def, px) {
   return c;
 }
 
-const gallery = document.getElementById("gallery");
-for (const def of CARDS) {
-  const px = buildPixels(def);
+function renderVariant(def, variant) {
+  const px = buildPixels(def, variant.rows);
   const base = makeBaseCanvas(def, px);
   let view, pngURL;
   if (HAS_PIXI) {
@@ -184,7 +477,7 @@ for (const def of CARDS) {
     mctx.drawImage(base, 0, 0, 40, 40);
     const lab = document.createElement("div");
     lab.style.cssText = "font-size:10px;color:#8a8aa0;margin-top:4px";
-    lab.textContent = "×8 izq · ×2 der (tamaño HUD)";
+    lab.textContent = "x8 izq · x2 der (tamaño HUD)";
     wrap.append(big, mini, lab);
     view = wrap;
     pngURL = () => base.toDataURL("image/png");
@@ -192,26 +485,48 @@ for (const def of CARDS) {
 
   const box = document.createElement("div");
   box.className = "card";
-  box.innerHTML = `<h2>${def.name}</h2><div class="arc">${def.arc}</div>`;
-  // Tiñe el título con el color principal de la carta
-  const mainKey = Object.keys(def.pal).includes("C") ? "C" : "L";
-  box.querySelector("h2").style.color = hex(def.pal[mainKey]);
+  const title = document.createElement("h3");
+  title.textContent = variant.key + " · " + variant.label;
+  const mainKey = Object.keys(def.pal).includes("C") ? "C" : Object.keys(def.pal)[0];
+  title.style.color = hex(def.pal[mainKey]);
+  box.appendChild(title);
   box.appendChild(view);
+  const btn = document.createElement("button");
+  btn.textContent = "PNG 20x20";
+  btn.onclick = () => {
+    const a = document.createElement("a");
+    a.href = pngURL(); a.download = def.id + "-" + variant.key + "-20x20.png"; a.click();
+  };
+  box.appendChild(btn);
+  return box;
+}
+
+const gallery = document.getElementById("gallery");
+let total = 0;
+for (const def of CARDS) {
+  const group = document.createElement("div");
+  group.className = "group";
+  const h2 = document.createElement("h2");
+  h2.textContent = def.name;
+  const mainKey = Object.keys(def.pal).includes("C") ? "C" : Object.keys(def.pal)[0];
+  h2.style.color = hex(def.pal[mainKey]);
+  const arc = document.createElement("div");
+  arc.className = "arc";
+  arc.textContent = def.arc;
+  const grid = document.createElement("div");
+  grid.className = "variants";
+  for (const v of def.variants) {
+    grid.appendChild(renderVariant(def, v));
+    total++;
+  }
   const palDiv = document.createElement("div");
   palDiv.className = "pal";
   for (const [k, v] of Object.entries(def.pal))
     palDiv.innerHTML += `<span title="${k}" style="background:#${v.toString(16).padStart(6, "0")}"></span>`;
-  box.appendChild(palDiv);
-  const btn = document.createElement("button");
-  btn.textContent = "⬇ PNG 20x20";
-  btn.onclick = () => {
-    const a = document.createElement("a");
-    a.href = pngURL(); a.download = def.id + "-20x20.png"; a.click();
-  };
-  box.appendChild(btn);
-  gallery.appendChild(box);
+  group.append(h2, arc, grid, palDiv);
+  gallery.appendChild(group);
 }
-console.log("✅ 12 cartas renderizadas a 20x20 (×8 en pantalla, NEAREST).");
+console.log("60 variantes renderizadas a 20x20 (x8 en pantalla, NEAREST): " + total + " celdas.");
 </script>
 </body>
 </html>
