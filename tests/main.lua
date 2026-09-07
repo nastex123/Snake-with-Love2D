@@ -34,6 +34,7 @@ if pcall(require, "tests.test_scope_19_biomes_hazards") then end
 if pcall(require, "tests.test_scope_20_patroller_ai") then end
 if pcall(require, "tests.test_scope_22_miniboss") then end
 if pcall(require, "tests.test_scope_21_items_arsenal") then end
+if pcall(require, "tests.test_scope_23_tarot") then end
 
 -- Source files for full coverage reporting
 local source_files = {

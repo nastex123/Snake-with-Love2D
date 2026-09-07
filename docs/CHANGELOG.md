@@ -8,6 +8,31 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (tarot art)
+
+- **feature** (completed - 2026-09-07): Tarot card textures in-game (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `assets/tarot/` (12 PNG 20x20 nuevos)**: variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C, generados por script desde `prototypes/tarot-cards.html` (marco runa/oro + fondo de arquetipo).
+  2. **QUE — `systems/tarotArt.lua` (nuevo, ~70L)**: mapa id→ruta + lazy-load cacheado vía `core/assets.lua` (`nearest`) con `draw()` de escala y fallo suave; `systems/tarot.lua` `draw()` muestra textura x4 con fallback al layout anterior.
+  3. **QUE — Tests**: suite scope_23 +4 (mapeo 12 rutas, cache, draw escalado, id desconocido): 638 tests, 618 PASS, 20 pre-existentes sin regresión.
+  4. **Verificación**: `love tests` consola-only, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07
+
+- **feature** (completed - 2026-09-07): 60 texture proposals for Stage Tarot (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `prototypes/tarot-cards.html` (217 → ~380L)**: `CARDS` pasa de 1 diseño a `variants[5]` por carta (rediseño total A-E, 60 retículas 14x14 validadas por script); galería agrupada por carta a tamaño completo con botón PNG por variante; render Pixi + fallback Canvas2D generalizados sin cambios de lógica.
+  2. **QUE — paleta**: `eagle_eye` suma `L: 0xffe9b8` (ala de variante E); resto de paletas y marco runa/oro intactos.
+  3. **POR QUE**: el draft del Tarot necesita dirección de arte elegible por carta antes de integrar texturas en Love2D; sin exportación a PNG, todo vive en el prototipo.
+  4. **Verificación**: script 60x14x14 + claves de paleta 0 errores, `node --check` OK; `love .` 10s sin crash, `error.log` 0 bytes (cambio fuera del runtime).
+
+## 2026-09-06 00:08
+
+- **feature** (completed - 2026-09-06 00:08): Stage Tarot Draft System (America/Bogota, consola-only, rama `feature/phase8-tarot`):
+  1. **QUE — `systems/tarot.lua` (nuevo, ~290L)**: `TAROT_DEFS` 12 cartas (GDD §14) + `sampleOptions` Fisher-Yates sin reemplazo + `open/choose/has` + `GAME_STATE_TAROT = 7` (config) con dispatcher/render/input (click + teclas 1/2/3); trigger en `playing` al completar salas 1/2/4 (max 3/etapa, reset en `avanzarEtapa`/`init`).
+  2. **QUE — 12 hooks**: mercury x0.85 + combo x2 (`calcSpeed`/eat), iron_spine mata chasers en cola, eagle_eye ventana 12s, astral_mirror 1 wrap/sala, alchemical 25% oro, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 alcance, shadow_thief near-miss +1$, midas +3$/sala, iron_heart escudo gratis, reaper +0.5s buffs; ramas de recompensa `iron_spine_block`/`frozen_shatter` en `playing`.
+  3. **QUE — Tests**: suite scope_23 (24 tests) cableada en runner: 634 tests, 614 PASS, 20 pre-existentes.
+  4. **POR QUE**: TODO Stage Tarot Draft: las salas 1/2/4 no tenían momento de decisión; el draft ahora bendice cada etapa.
+  5. **Verificación**: `lovec.exe tests` consola-only (sin ventana) 614/634 PASS; `error.log` 0 bytes.
+
 ## 2026-09-04 22:18
 
 - **feature** (completed - 2026-09-04 22:18): Elite Encounters & 5 Mini-Bosses sala 3 (America/Bogota, consola-only, rama `feature/phase8-minibosses`):

@@ -110,6 +110,8 @@ function gameflow.resetGame(keepShopInventory)
     else
         shop.reset()
     end
+    -- Tarot IX. Espejo Astral: el wrap gratis se recarga cada sala
+    st.astralWrapUsed = false
     -- Arsenal 51-60: limpiar estado por sala (trampas, rayo, historial, bateria)
     st.placedTraps = {}
     st.orbitalBeam = nil
@@ -138,6 +140,14 @@ function gameflow.iniciarSala(keepInventory)
     local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     if mb and mb.alive then
         uiMod.addPopup("MINI-JEFE: " .. (mb.name or "ELITE"), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
+    end
+    -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
+    local hasTarot, tarotMod = pcall(require, "systems.tarot")
+    if hasTarot and tarotMod.has("midas_pouch") then
+        st.monedas = (st.monedas or 0) + 3
+        local head = st.player.body and st.player.body[1]
+        uiMod.addPopup("MIDAS +3$", head and head.x or 5, head and head.y or 5)
+        sound.play("buttonClick")
     end
 end
 

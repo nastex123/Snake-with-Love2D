@@ -17,6 +17,7 @@ local sound = require("audio.sound")
 local uiMod = require("ui.ui")
 local achievementsMod = require("systems.achievements")
 local itemsMod = require("systems.items")
+local tarotMod = require("systems.tarot")
 
 --- Cálculo exhaustivo de velocidad del jugador considerando base, frutas y modificadores.
 -- @param base number: velocidad base (segundos por paso, default VELOCIDAD_INICIAL)
@@ -50,6 +51,11 @@ function player.calcSpeed(base, fruits, opts)
     end
     if hasTurbo then
         current = current * (constants.TURBO_MULTIPLIER or 0.7)
+    end
+
+    -- Tarot I. El Mercurio: +15% velocidad (menos segundos por paso)
+    if tarotMod and tarotMod.speedFactor then
+        current = current * tarotMod.speedFactor()
     end
 
     -- Evaluar ralentizaciones de terreno o debuffs (e.g. Baba Slime 1.25x)
@@ -498,13 +504,13 @@ function player.aplicarComida(tipo)
     local cy = p.y * tam + tam / 2
 
     if tipo == "fire_pepper" then
-        st.player.firePepperTimer = constants.FIRE_PEPPER_DURATION or 3.5
+        st.player.firePepperTimer = tarotMod.fireBuffDuration()
         table.insert(st.activePS, { ps = particles.fireTrail(cx, cy) })
         uiMod.addPopup("FUEGO INCENDIARIO!", p.x, p.y)
         sound.play("eat")
 
     elseif tipo == "frost_berry" then
-        st.enemyFreezeTimer = constants.FROST_BERRY_DURATION or 2.5
+        st.enemyFreezeTimer = tarotMod.freezeDuration()
         table.insert(st.activePS, { ps = particles.frostFreeze(cx, cy) })
         uiMod.addPopup("CONGELACIÓN!", p.x, p.y)
         sound.play("shieldBreak")

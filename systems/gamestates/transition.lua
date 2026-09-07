@@ -9,6 +9,7 @@ local constants = require("constants")
 local world = require("core.world")
 local sound = require("audio.sound")
 local shop = require("systems.shop")
+local tarotMod = require("systems.tarot")
 local worldMod = require("world.world")
 local achievementsMod = require("systems.achievements")
 local persistence = require("systems.persistence")
@@ -34,6 +35,15 @@ function transition.update(dt)
             persistence.syncActiveProfile()
         end
         st.roomDamaged = false
+
+        -- Tarot XI. Corazón de Hierro: sala superada con <5 segmentos = Escudo gratis
+        if st.transitionTarget == "siguienteSala" and tarotMod.has("iron_heart")
+            and st.player and st.player.body and #st.player.body < 5
+            and not world.get("shop.shieldActive", false) then
+            shop.shieldActive = true
+            local head = st.player.body[1]
+            uiMod.addPopup("CORAZON +ESCUDO", head.x, head.y)
+        end
 
         if st.transitionTarget == "siguienteSala" then
             worldMod.avanzarSala()
