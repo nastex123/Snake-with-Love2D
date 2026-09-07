@@ -94,8 +94,8 @@
   - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
   - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs
   - [x] 12 texturas PNG 20x20 en `assets/tarot/` (variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C) + `systems/tarotArt.lua` loader con fallback (suite scope_23, 28 tests)
-- [ ] **Special Mystery Rooms** — `feature/phase8-mystery-rooms` 🏗️:
-  - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
+- [x] **Special Mystery Rooms** — `feature/phase8-mystery-rooms` 2026-09-07 ✅ (suite scope_25, 24 tests):
+  - [x] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
   - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
   - [x] **P2 Apuesta+Oro** ✅: Apostador ruleta central apuesta 10$ + 3 doradas secuenciales en 15s (premio 40$ + item + racha, derrota 2 chasers) + Fiebre 20 monedas rebotando 12s con puerta al expirar (`mystery`+`playing`+`gameflow`+`renderMain`)
   - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)

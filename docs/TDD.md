@@ -877,7 +877,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **P3 Medios ✅**: `zeroGDrift` (inercia sin reposo en `movement.mover`), `featherActive` (corte letal en idx>3 en colision propia), `titanGirth/titanFruitBonus` (cruz propia letal salvo cabeza vieja +50 en eat).
 * **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
 
-### 10.28 Special Mystery Rooms Engine (Framework) 🏗️ In Progress (2026-09-07 `feature/phase8-mystery-rooms`)
+### 10.28 Special Mystery Rooms Engine ✅ Completed (2026-09-07 `feature/phase8-mystery-rooms`)
 
 * **Módulo**: `systems/mystery.lua` (~100L, data-driven; suite scope_25 9 tests).
 * **Catálogo**: `MYSTERY_DEFS` 4 salas (GDD §15) con `id/name/tag/type/color/desc`.

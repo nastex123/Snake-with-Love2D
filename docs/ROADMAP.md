@@ -84,7 +84,7 @@
 - [ ] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks)
 - [x] Room Modifiers, Curses & Blessings (10 mutators: Zero Gravity, Midas Curse, Phoenix Blessing, Tunnel Vision, etc. — `systems/roomMutators.lua`, scope_24 22 tests)
 - [x] Stage Tarot Draft System (12 fate cards drafted on rooms 1, 2, 4 — `systems/tarot.lua`, GAME_STATE_TAROT=7, 12 hooks, scope_23 24 tests)
-- [ ] Special Mystery Rooms (Gambler's Den, Doppelgänger Mirror, Gold Rush, Trial of Triads)
+- [x] Special Mystery Rooms (Gambler's Den, Doppelgänger Mirror, Gold Rush, Trial of Triads — `systems/mystery.lua`, scope_25 24 tests)
 - [ ] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis)
 - [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
 - [ ] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts)
