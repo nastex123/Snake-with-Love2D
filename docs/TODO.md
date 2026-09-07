@@ -84,8 +84,8 @@
 - [x] **Boss Enrage Phase & Laser Attacks** — `feature/phase8-enrage` 2026-09-05 ✅ bloque cerrado:
   - [x] 3-food threshold enrage state (35% faster telegraphs & high tempo music) — `BOSS_ENRAGE_*` config, telegraph `/1.35`, pitch `1.15x`, pulso carmesí + popup `FURIA DEL JEFE!`, 4 tests scope_11
   - [x] Laser Perimeter attack (center dividing continuous beams) — `laser_perimeter` minPhase 2 (telegraph 1.0s, cooldown 7.0s), rectángulo 4 rayos 4.0s en centro de sala, `addLaser` pooled, colisión `point_seg_dist` < 0.45, render glow rojo + núcleo blanco, 6 tests scope_11 (582 tests, 562 PASS)
-- [ ] **Room Modifiers, Curses & Blessings**:
-  - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
+- [x] **Room Modifiers, Curses & Blessings** — `feature/phase8-room-modifiers` 2026-09-07 ✅ (suite scope_24, 22 tests):
+  - [x] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
   - [x] **P1 Framework** — `feature/phase8-room-modifiers` ✅: `systems/roomMutators.lua` (10 DEFS + roll/get/has/apply/clear + estado `World.state.roomMutator`), `ROOM_MUTATOR_CHANCE=0.35` (boss/elite excluidos), roll en `iniciarSala` antes de poblar, banner popup + badge HUD, suite scope_24
   - [x] **P2 Simples** ✅: Midas +2$/fruta y -1pto/s (`playing` eat+tick), Velo sellado slots (`main` 1-3) y x2 monedas al superar (`transition`), Contrarreloj 10s + pasivo gratis (`playing`+`transition`), Dualidad pares espejados enemigos + fruta twin (`populate`, limpieza en eat)
   - [x] **P3 Medios** ✅: Gravedad Cero deriva sin reposo tactico (`movement`), Pluma solo 3 segmentos letales (`movement`), Titan cruz propia letal +50/fruta (`movement`+`playing` eat)

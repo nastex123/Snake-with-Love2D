@@ -866,7 +866,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 **Estado:** `completed` 2026-09-04 16:00 — P01-P15 ✅ en `dev@8691a29`. Deuda residual: `persistence.lua` 862L (split futuro).
 
-### 10.27 Room Mutators Engine (Framework) 🏗️ In Progress (2026-09-07 `feature/phase8-room-modifiers`)
+### 10.27 Room Mutators Engine ✅ Completed (2026-09-07 `feature/phase8-room-modifiers`)
 
 * **Módulo**: `systems/roomMutators.lua` (~90L, data-driven; suite scope_24).
 * **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
