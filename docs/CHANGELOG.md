@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mystery P1)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P1 Framework (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/mystery.lua` (nuevo, ~100L)**: `MYSTERY_DEFS` 4 salas (GDD §15) + `roll/canBeMystery/assign/current/begin` + flag `room.mystery` asignado en `world.init/avanzarEtapa`.
+  2. **QUE — cableado**: `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), banner `SALA ESPECIAL` + badge en `ui/hudUI.lua`, runtime `World.state.mysteryData`.
+  3. **QUE — Tests + docs**: suite scope_25 (9 tests) cableada en runner; GDD §15.0, TDD §10.28, TODO.
+  4. **Verificación**: `love tests` 669/649 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mutators P4)
 
 - **feature** (in-progress - 2026-09-07): Room Mutators P4 Pesados (America/Bogota, rama `feature/phase8-room-modifiers`):

@@ -924,6 +924,11 @@ $$I_{\text{chaser}}(E) = \max\left(0.15\,\text{s}, \frac{0.30}{S_{\text{mult}}} 
 
 Aparecen con una probabilidad del 6% en lugar de una sala estándar, introduciendo mecánicas de juego alternativas:
 
+### 15.0 Asignación (implementado 2026-09-07 `feature/phase8-mystery-rooms`)
+* **Roll**: 6% por sala candidata al generar la mazmorra (`ROOM_MYSTERY_CHANCE`), flag persistente `room.mystery`.
+* **Exclusiones**: salas boss, élite y sala 1 nunca son misterio.
+* **Feedback**: banner `SALA ESPECIAL: <nombre>` al entrar + badge permanente en el HUD.
+
 ### 15.1 La Guarida del Apostador (Gambler's Den)
 * **Mecánica**: En el centro de la sala hay una loseta con una Ruleta de la Fortuna. Al pasar la cabeza por encima, se abre una apuesta rápida de 10 monedas.
 * **Desafío**: La sala genera 3 comidas doradas y un temporizador de 15 segundos.

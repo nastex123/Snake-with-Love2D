@@ -34,6 +34,8 @@ config.ROOM_TIME_TRIAL_DURATION = 10.0
 config.ROOM_SHADOW_INTERVAL = 0.9
 -- 68. Tunel: radio visible en celdas alrededor de la cabeza
 config.ROOM_TUNNEL_RADIUS = 5
+-- Mystery Rooms (GDD §15): probabilidad por sala candidata (boss/elite/sala1 excluidos)
+config.ROOM_MYSTERY_CHANCE = 0.06
 
 config.HIGH_SCORE_CELEBRATION_DURATION = 1.3
 

@@ -128,6 +128,14 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         love.graphics.print("FENIX", x, cy)
         x = x + font:getWidth("FENIX") + 14 * s
     end
+    -- Badge de sala especial (GDD §15)
+    local mysMods = package.loaded["systems.mystery"]
+    local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(package.loaded["world.world"])
+    if mysDef then
+        love.graphics.setColor(mysDef.color[1], mysDef.color[2], mysDef.color[3])
+        love.graphics.print(mysDef.tag, x, cy)
+        x = x + font:getWidth(mysDef.tag) + 14 * s
+    end
 
     love.graphics.setColor(1, 0.84, 0.0)
     love.graphics.print("$" .. monedas, x, cy)

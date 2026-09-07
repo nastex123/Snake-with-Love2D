@@ -14,6 +14,7 @@ local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 function gameflow.applyActiveProfile()
     local profile = persistence.getActiveProfile()
@@ -151,6 +152,13 @@ function gameflow.iniciarSala(keepInventory)
     if mutDef then
         uiMod.addPopup("MUTADOR: " .. string.upper(mutDef.tag), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 4)
         sound.play("buttonClick")
+    end
+    -- Mystery Rooms (GDD §15): banner + runtime fresco al entrar
+    local mysDef = mysteryMod.currentDef(worldMod)
+    if mysDef then
+        mysteryMod.begin()
+        uiMod.addPopup("SALA ESPECIAL: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
+        sound.play("highScore")
     end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
     local hasTarot, tarotMod = pcall(require, "systems.tarot")

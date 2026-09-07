@@ -5,6 +5,7 @@ local populate = require("world.populate")
 local constants = require("constants")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 -- Tracked state
 world.etapa = 1
@@ -66,6 +67,7 @@ function world.init()
     world.generarMazmorra()
     tarotMod.reset()
     mutatorsMod.resetStage()
+    mysteryMod.assign(world.dungeon)
     coreWorld.set("mundoCompletado", false)
 end
 
@@ -212,6 +214,7 @@ function world.avanzarEtapa()
     world.generarMazmorra()
     tarotMod.reset()
     mutatorsMod.resetStage()
+    mysteryMod.assign(world.dungeon)
     world.puntajeSala = 0
     world.objetivoSala = world.calcularObjetivo()
 end

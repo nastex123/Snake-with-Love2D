@@ -94,8 +94,9 @@
   - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
   - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs
   - [x] 12 texturas PNG 20x20 en `assets/tarot/` (variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C) + `systems/tarotArt.lua` loader con fallback (suite scope_23, 28 tests)
-- [ ] **Special Mystery Rooms**:
+- [ ] **Special Mystery Rooms** — `feature/phase8-mystery-rooms` 🏗️:
   - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
+  - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
 - [ ] **Status Effects Engine**:
   - [ ] Overdrive on combo x6, Medusa Tail petrification, Venom Spore confusion, Cryo-Stasis
 - [ ] **Meta-Progression Shrine**:
