@@ -67,7 +67,7 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
 
 ## 🏗️ Arquitectura del Proyecto
 
-El proyecto está estructurado en 65 módulos juego (103 con 36 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residuales `persistence.lua` 862L y crecidos Fase 8 —`playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `dungeonGen.lua` 530L— pendientes de split futuro):
+El proyecto está estructurado en 65 módulos juego (104 con 37 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residuales `persistence.lua` 862L y crecidos Fase 8 —`playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `dungeonGen.lua` 530L— pendientes de split futuro):
 - **`core/`**: Configuración central (`config.lua` + `KEYBINDS`), logger (`logger.lua`), timers único pooled (`timers.lua`), estado dot-notation + `SCHEMA`/`validate()` (`world.lua` 369L), Event Bus (`events.lua` 134L), input centralizado (`input.lua` 89L), asset manager cache (`assets.lua` 144L), helpers (`helpers.lua`) e input táctil (`touch.lua`).
 - **`entities/`**: Serpiente fachada + `snake/` 4 (`snake.lua` 257L), enemigos fachada + 3 (`enemies.lua` 431L, `enemyAttackRegistry.lua` 247L pools), `bossAttacks.lua` (5 ataques), `chaserAI.lua`, `patrollerAI.lua`, `enemyHelpers.lua`, `enemyMiniBoss.lua` (5 mini-jefes), comida (`food.lua`) y obstáculos fachada 495L (`obstacles.lua` delega a `world/biomeHazards.lua`).
 - **`world/`**: Fachada del mundo (`world.lua`), peligros `biomeHazards.lua` 254L, generador BSP (`dungeonGen.lua`) y poblador de salas (`populate.lua`).

@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (556L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 65 juego (67 con `conf.lua`+`scratch_test_debug.lua`, 103 con 36 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→36 (scope_24/25)
-**Total Lines**: ~20,600 src juego (medido 2026-09-07; crecidos fase 8 sobre el límite 500L: `playing` 999L, `settingsDraw` 647L, `player` 622L, `timers` 536L, `dungeonGen` 530L, `enemiesDraw` 508L — splits futuros)
+**Total Modules**: 65 juego (67 con `conf.lua`+`scratch_test_debug.lua`, 104 con 37 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→37 (scope_24/25/26)
+**Total Lines**: ~20,800 src juego (medido 2026-09-07; crecidos fase 8 sobre el límite 500L: `playing` 994L, `settingsDraw` 647L, `player` 622L, `shop` 581L, `timers` 536L, `dungeonGen` 530L, `enemiesDraw` 508L — splits futuros)
 
 ### Folder Structure
 
@@ -152,7 +152,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | player.lua | systems/ | 622 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
 | gameflow.lua | systems/ | 307 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
 | gamestates.lua | systems/ | 226 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
-| gamestates/playing.lua | systems/gamestates/ | 999 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
+| gamestates/playing.lua | systems/gamestates/ | 994 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
 | gamestates/transition.lua | systems/gamestates/ | 85 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
 | gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
 | tarot.lua | systems/ | 284 | — | Tarot GDD §14: TAROT_DEFS 12 + sample/open/choose/has/buy/shopPool/price + helpers hooks (draft de sala retirado en tienda v2) |
@@ -203,7 +203,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | SHOP | 4 | Item shop |
 | PAUSED | 5 | Game paused |
 | TRANSITION | 6 | Room transition |
-| TAROT | 7 | Stage tarot draft (GDD §14) |
+| TAROT | 7 | Reservado (draft de sala retirado en tienda v2; draw/modal conservados) |
 
 ## 4. Data Flow
 
@@ -579,12 +579,12 @@ El pipeline de shaders en `render/shaders.lua` se amplía con 3 nuevos efectos a
 
 ### 10.13 Tarot Draft Engine & Stage Card Architecture
 
-* **Módulo**: `systems/tarot.lua` (~260L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 28 tests) + `systems/tarotArt.lua` (~70L loader) + 12 PNG 20x20 en `assets/tarot/` (variantes elegidas del prototipo, `nearest`, lazy-load cacheado vía `core/assets.lua` con fallback al rectángulo legacy si falta el asset).
+* **Módulo**: `systems/tarot.lua` (284L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 28 tests) + `systems/tarotArt.lua` (~70L loader) + 12 PNG 20x20 en `assets/tarot/` (variantes elegidas del prototipo, `nearest`, lazy-load cacheado vía `core/assets.lua` con fallback al rectángulo legacy si falta el asset).
 * **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con hasta 3 IDs), `world.state.tarotDraft` (opciones abiertas), `world.state.astralWrapUsed` (flag por sala).
-* **Ciclo de Vida**:
+* **Ciclo de Vida (tienda v2)**:
   - `worldMod.avanzarEtapa()` y `worldMod.init()`: `tarot.reset()`.
-  - Al completar salas 1, 2 y 4: `playing.lua` llama `tarot.open(sala)` → `GAME_STATE_TAROT = 7` (config); `choose(i)` aplica y continúa a `TRANSITION` (`siguienteSala`).
-  - Muestreo: Fisher-Yates parcial sobre `TAROT_DEFS` (12) excluyendo equipadas; input click + teclas 1/2/3.
+  - Compra en tienda: `shop.rollStock` ofrece tarots de `shopPool()` (no equipadas) → `buy(id)` aplica sin tope (manda el stock); precios `TAROT_PRICES` S60/A45/B30/C20.
+  - Motor de draft (`sample/open/choose`, `GAME_STATE_TAROT=7`) conservado y testeado pero sin trigger en `playing`.
 * **Hooks de Ejecución** (helpers puros en `tarot.*`):
   - `player.calcSpeed()` × `speedFactor()` (mercury 0.85); `playing` eat: `comboWindow()` (eagle_eye 12.0) + `comboMult()` (mercury ×2).
   - `collisions.checkEnemyCollisions()`: `ironSpineProtects()` mata chasers en últimos 3 (`iron_spine_block`); `isShatterFrozen()` quiebra congelados (`frozen_shatter`); ambos con recompensa en `playing`.
@@ -894,7 +894,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **P2 Apuesta+Oro ✅**: `gamblerRoulette/gamblerPlaceBet/gamblerTick/gamblerGoldEaten/gamblerNeedsGold` (apuesta 10$, 15s, 3 doradas secuenciales forzando `foodMod.tipo`, premio 40$ + pasivo/activo via `shop.procesarCompra` costo 0 + racha +0.3, derrota 2 chasers; frutos simples por modelo de comida única) + `beginGoldRush/stepCoins/collectCoins/goldRushTick` (20 monedas 6.0 celdas/s con rebote, recoleccion radio 1.4 Manhattan, puerta a los 12s; sala limpiada con `enemiesMod.init` al entrar; ruleta y monedas dibujadas en `renderMain`).
 * **P3 Espejo+Sellos ✅**: `beginDoppel/doppelTick/doppelTouchesHead/doppelFed/doppelHead` (cuerpo espejado, replica con `DOPPEL_DELAY=1.2`, paso al ritmo de `velocidadActual`, disolver por `pointInPolygon` expuesto en `collisions` o 3 normales, premio 30$ + item) + `triadsRunes/beginTriads/triadsStep` (esquinas 1-2-3, solo al entrar, reset ante desorden, 10s, altar 50$ + 2 items, 2 patrulleros extra al entrar); draw amatista y runas numeradas en `renderMain`.
 
-### 10.29 Tienda v2 — Puestos Mixtos + Reroll 🏗️ In Progress (2026-09-07)
+### 10.29 Tienda v2 — Puestos Mixtos + Reroll ✅ Completed (2026-09-07)
 
 * **Módulo**: `systems/shop.lua` (581L rewrite; suite scope_15 reescrita + scope_26 8 tests).
 * **Stock**: 3 puestos, 60% item / 40% tarot (`SHOP_TAROT_CHANCE`), sin duplicados ni poseídos/equipados; `abrir(monedas, renew)` conserva stock salvo visita fresca (`transitionToShop`, muerte).

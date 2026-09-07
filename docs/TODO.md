@@ -61,6 +61,13 @@
 - [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
 - [x] **Código** ✅: config (`TAROT_PRICES`, `SHOP_REROLL_BASE/STEP/STALLS/TAROT_CHANCE`) + `tarot.lua` (`price`, `shopPool`, `buy` sin tope, fuera trigger draft 1/2/4) + rewrite `shop.lua` 581L (3 puestos mixtos, reroll R/botón, compra tarot con PNG, `abrir` con renew) + scope_15 reescrita + scope_26 (8 tests)
 
+## Próxima sesión (handoff 2026-09-07, rama `feature/phase8-mystery-rooms` en `434e6dd`)
+- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa)
+- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos)
+- [ ] PR de `feature/phase8-mystery-rooms` a `dev` (incluye Mystery + Tienda v2 + docs sync)
+- [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`
+- [ ] Higiene pendiente: `prueba.py` sin seguimiento, `pixi.min.js` vendored, splits fase 8 (TODO Medium), 20 fallos pre-existentes
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):
   - [x] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
@@ -237,4 +244,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-07 (Mystery Rooms en feature/phase8-mystery-rooms - 4 salas + draws, scope_25 24 tests, 684 tests 664 PASS, 20 pre-existentes)*
+*Last updated: 2026-09-07 (Tienda v2 en feature/phase8-mystery-rooms - puestos mixtos + reroll + tarot comprable, scope_26 8 tests, 692 tests 672 PASS, 20 pre-existentes)*

@@ -9,7 +9,7 @@
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (65 módulos juego + helpers, 103 con 36 tests)
+## Arquitectura (65 módulos juego + helpers, 104 con 37 tests)
 Estructura de carpetas por sistema:
 - `main.lua` (556L loop fixed timestep `FIXED_DT=1/60`, 8 estados), `constants.lua` — raíz (shim de `core/config.lua`)
 - `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (369L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 134L bus P06, `input.lua` 89L centralizado P07, `assets.lua` 144L cache P08, `touch.lua` (lazy), `helpers.lua`

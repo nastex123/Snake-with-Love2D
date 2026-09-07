@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (session handoff)
+
+- **docs** (handoff - 2026-09-07): Documentación lista para continuar en otra sesión (America/Bogota, rama `feature/phase8-mystery-rooms` en `434e6dd`):
+  1. **Sync**: 65 juego / 104 con 37 tests, suite 692/672 PASS (20 pre-existentes), `playing` 994L, TAROT reservado, ROADMAP Tienda v2, TODO con bloque Próxima sesión.
+  2. **Pendiente**: playtest economía, destino `GAME_STATE_TAROT`, PR a `dev`, Status Effects (GDD §16).
+  3. **Verificación**: `love tests` 692/672 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (shop v2 code)
 
 - **feature** (in-progress - 2026-09-07): Tienda v2 código (America/Bogota, rama `feature/phase8-mystery-rooms`):
