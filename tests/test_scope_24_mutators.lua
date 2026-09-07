@@ -183,3 +183,71 @@ harness.describe("Scope 24 - Medium mutators (Zero-G/Feather/Titan)", function()
         mutators.clear()
     end)
 end)
+
+harness.describe("Scope 24 - Heavy mutators (Shadow/Phoenix/Tunnel)", function()
+    harness.it("shadowStep moves one Chebyshev cell toward the head", function()
+        local n = mutators.shadowStep({x = 0, y = 0}, {x = 5, y = 3})
+        harness.assert_equal(1, n.x, "steps +x")
+        harness.assert_equal(1, n.y, "steps +y")
+        n = mutators.shadowStep({x = 5, y = 5}, {x = 2, y = 5})
+        harness.assert_equal(4, n.x, "steps -x")
+        harness.assert_equal(5, n.y, "holds y")
+        n = mutators.shadowStep({x = 4, y = 4}, {x = 4, y = 4})
+        harness.assert_equal(4, n.x, "stays on overlap")
+        harness.assert_nil(mutators.shadowStep(nil, {x = 1, y = 1}), "nil-safe")
+    end)
+
+    harness.it("spawnShadowPos picks the farthest free corner", function()
+        local p = mutators.spawnShadowPos({x = 1, y = 1}, 10, 8, {})
+        harness.assert_equal(9, p.x, "farthest corner x")
+        harness.assert_equal(7, p.y, "farthest corner y")
+        p = mutators.spawnShadowPos({x = 1, y = 1}, 10, 8,
+            {{x = 9, y = 7}, {x = 9, y = 0}, {x = 0, y = 7}, {x = 0, y = 0}})
+        harness.assert_true(p.x >= 0 and p.x < 10, "fallback inside grid")
+        harness.assert_true(p.y >= 0 and p.y < 8, "fallback inside grid")
+    end)
+
+    harness.it("shadowTick gates on interval and kills on contact", function()
+        mutators.clear()
+        world.state.stageShadow = false
+        harness.assert_nil(mutators.shadowTick(1.0, {x = 5, y = 5}), "inactive shadow ignores ticks")
+        world.state.stageShadow = true
+        harness.assert_nil(mutators.shadowTick(1.0, {x = 5, y = 5}), "no entity, no kill")
+        mutators.data().shadow = {x = 0, y = 0}
+        harness.assert_nil(mutators.shadowTick(0.5, {x = 9, y = 9}), "under interval")
+        harness.assert_nil(mutators.shadowTick(0.5, {x = 9, y = 9}), "steps without kill")
+        harness.assert_equal(1, mutators.getShadow().x, "shadow advanced")
+        mutators.data().shadow = {x = 4, y = 4}
+        harness.assert_equal("kill", mutators.shadowTick(0.1, {x = 4, y = 4}), "contact kills")
+        mutators.clear()
+        world.state.stageShadow = false
+    end)
+
+    harness.it("phoenix arms on roll, fires once, resets per stage", function()
+        mutators.clear()
+        world.state.stagePhoenixArmed = false
+        world.state.stagePhoenixUsed = false
+        harness.assert_true(not mutators.phoenixAvailable(), "unavailable unarmed")
+        mutators.apply(2, {template = "arena"})
+        if mutators.get() == "phoenix_blessing" then
+            harness.assert_true(mutators.phoenixAvailable(), "armed when rolled")
+            mutators.phoenixConsume()
+            harness.assert_true(not mutators.phoenixAvailable(), "single use")
+        end
+        world.state.stagePhoenixArmed = true
+        world.state.stagePhoenixUsed = false
+        harness.assert_true(mutators.phoenixAvailable(), "armed flag protects")
+        mutators.resetStage()
+        harness.assert_true(not mutators.phoenixAvailable(), "reset disarms")
+        harness.assert_true(not mutators.stageShadowActive(), "reset clears shadow")
+        mutators.clear()
+    end)
+
+    harness.it("tunnelActive reflects the room mutator", function()
+        mutators.clear()
+        harness.assert_true(not mutators.tunnelActive(), "inactive by default")
+        world.state.roomMutator = "tunnel_vision"
+        harness.assert_true(mutators.tunnelActive(), "active with tunnel")
+        mutators.clear()
+    end)
+end)

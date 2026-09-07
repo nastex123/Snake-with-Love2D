@@ -15,6 +15,7 @@ local debugTools = require("systems.debugTools")
 local settingsMod = require("systems.settings")
 local profilesMod = require("systems.profiles")
 local touchMod = require("core.touch")
+local mutatorsMod = require("systems.roomMutators")
 
 local function isGameState(g)
     return g == constants.GAME_STATE_PLAYING or g == constants.GAME_STATE_PAUSED or g == constants.GAME_STATE_DEATH_ANIMATION or g == constants.GAME_STATE_HIGH_SCORE or g == constants.GAME_STATE_SHOP or g == constants.GAME_STATE_TRANSITION or g == constants.GAME_STATE_TAROT
@@ -211,6 +212,41 @@ function renderMain.drawGame(dt)
             love.graphics.setLineWidth(2)
             love.graphics.line(bx, 0, bx, gh)
             love.graphics.setLineWidth(1)
+        end
+
+        -- Sombra Acechante (GDD §19.65): espectro que persigue toda la etapa
+        local sh = mutatorsMod.getShadow and mutatorsMod.getShadow()
+        if sh and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
+            local tam = constants.TAMANIO_BLOQUE
+            local pulse = 0.5 + 0.5 * math.sin((st.time or 0) * 4)
+            love.graphics.setColor(0.45, 0.2, 0.8, 0.35 + 0.25 * pulse)
+            love.graphics.rectangle("fill", sh.x * tam + 1, sh.y * tam + 1, tam - 2, tam - 2)
+            love.graphics.setColor(0.7, 0.4, 1.0, 0.8)
+            love.graphics.rectangle("line", sh.x * tam + 1, sh.y * tam + 1, tam - 2, tam - 2)
+        end
+
+        -- Vision de Tunel (GDD §19.68): oscuridad salvo radio 5 de la cabeza
+        if mutatorsMod.tunnelActive and mutatorsMod.tunnelActive()
+            and st.player and st.player.body and st.player.body[1]
+            and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
+            local tam = constants.TAMANIO_BLOQUE
+            local r = constants.ROOM_TUNNEL_RADIUS or 5
+            local head = st.player.body[1]
+            local hx = head.x * tam + tam / 2
+            local hy = head.y * tam + tam / 2
+            local hr = (r + 0.5) * tam
+            local x0 = math.max(0, hx - hr)
+            local x1 = math.min(gridW, hx + hr)
+            local y0 = math.max(0, hy - hr)
+            local y1 = math.min(gridH, hy + hr)
+            love.graphics.setColor(0, 0, 0.05, 0.88)
+            love.graphics.rectangle("fill", 0, 0, gridW, y0)
+            love.graphics.rectangle("fill", 0, y1, gridW, gridH - y1)
+            love.graphics.rectangle("fill", 0, y0, x0, y1 - y0)
+            love.graphics.rectangle("fill", x1, y0, gridW - x1, y1 - y0)
+            love.graphics.setColor(0.3, 0.4, 0.9, 0.5)
+            love.graphics.setLineWidth(1)
+            love.graphics.rectangle("line", x0, y0, x1 - x0, y1 - y0)
         end
     end
 

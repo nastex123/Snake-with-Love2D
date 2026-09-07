@@ -65,6 +65,9 @@ function mutators.apply(sala, room)
     local id = mutators.roll(sala, room)
     world.state.roomMutator = id
     world.state.roomMutatorData = {}
+    -- Sombra y Fenix persisten toda la etapa una vez sorteados
+    if id == "stalking_shadow" then world.state.stageShadow = true end
+    if id == "phoenix_blessing" then world.state.stagePhoenixArmed = true end
     return id
 end
 
@@ -172,6 +175,90 @@ end
 
 function mutators.titanFruitBonus()
     return mutators.has("titan_pact") and 50 or 0
+end
+
+-- === P4: helpers de mutadores pesados (GDD §19.65/67/68) ===
+
+local function sgn(n)
+    if n > 0 then return 1 elseif n < 0 then return -1 end
+    return 0
+end
+
+-- 65. Sombra: activa toda la etapa una vez sorteada
+function mutators.stageShadowActive()
+    return world.state.stageShadow == true
+end
+
+function mutators.getShadow()
+    return mutators.data().shadow
+end
+
+-- Paso puro de persecucion Chebyshev (testeable sin estado)
+function mutators.shadowStep(sh, head)
+    if not sh then return nil end
+    if not head then return {x = sh.x, y = sh.y} end
+    return {x = sh.x + sgn(head.x - sh.x), y = sh.y + sgn(head.y - sh.y)}
+end
+
+-- Esquina libre mas lejana a la cabeza (spawn del espectro)
+function mutators.spawnShadowPos(head, ancho, alto, obstaclesPos)
+    local w = (type(ancho) == "number" and ancho > 0) and ancho or 10
+    local h = (type(alto) == "number" and alto > 0) and alto or 10
+    local corners = {{x = 0, y = 0}, {x = w - 1, y = 0}, {x = 0, y = h - 1}, {x = w - 1, y = h - 1}}
+    local best, bestD = nil, -1
+    for _, c in ipairs(corners) do
+        local blocked = false
+        for _, o in ipairs(obstaclesPos or {}) do
+            if o.x == c.x and o.y == c.y then blocked = true; break end
+        end
+        if not blocked then
+            local dist = head and (math.abs(c.x - head.x) + math.abs(c.y - head.y)) or 0
+            if dist > bestD then best, bestD = {x = c.x, y = c.y}, dist end
+        end
+    end
+    if best then return best end
+    return {x = math.max(0, w - 2), y = math.max(0, h - 2)}
+end
+
+-- Tick del espectro; retorna "kill" al contactar la cabeza
+function mutators.shadowTick(dt, head)
+    if not mutators.stageShadowActive() then return nil end
+    local d = mutators.data()
+    local sh = d.shadow
+    if not sh then return nil end
+    if head and sh.x == head.x and sh.y == head.y then return "kill" end
+    d.shadowAcc = (d.shadowAcc or 0) + (dt or 0)
+    local interval = constants.ROOM_SHADOW_INTERVAL or 0.9
+    if d.shadowAcc >= interval then
+        d.shadowAcc = 0
+        if head then
+            local nxt = mutators.shadowStep(sh, head)
+            sh.x, sh.y = nxt.x, nxt.y
+            if sh.x == head.x and sh.y == head.y then return "kill" end
+        end
+    end
+    return nil
+end
+
+-- 67. Fenix: armado toda la etapa al sortearse, un solo uso
+function mutators.phoenixAvailable()
+    return world.state.stagePhoenixArmed == true and not world.state.stagePhoenixUsed
+end
+
+function mutators.phoenixConsume()
+    world.state.stagePhoenixUsed = true
+end
+
+-- Limpia banderas de etapa (llamar en init/avanzarEtapa)
+function mutators.resetStage()
+    world.state.stageShadow = false
+    world.state.stagePhoenixArmed = false
+    world.state.stagePhoenixUsed = false
+end
+
+-- 68. Tunel activo en la sala
+function mutators.tunnelActive()
+    return mutators.has("tunnel_vision")
 end
 
 return mutators

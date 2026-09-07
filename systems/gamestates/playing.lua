@@ -127,6 +127,28 @@ local function headOnMiniBoss(st, mb)
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
 end
 
+-- Bendicion del Fenix (GDD §19.67): revive gratis 1 vez por etapa (3 segmentos + 3s fantasma)
+local function phoenixRevive(st)
+    if not mutatorsMod.phoenixAvailable() then return false end
+    local p = st.player
+    if not (p and p.body and #p.body > 0) then return false end
+    mutatorsMod.phoenixConsume()
+    while #p.body > 3 do table.remove(p.body) end
+    p.ghost = true
+    p.ghostTimer = 3.0
+    p.flashTimer = 3.0
+    local head = p.body[1]
+    for i = #enemiesMod.list, 1, -1 do
+        local e = enemiesMod.list[i]
+        if e and e.alive and math.abs(e.x - head.x) <= 3 and math.abs(e.y - head.y) <= 3 then
+            enemiesMod.killEnemy(i)
+        end
+    end
+    uiMod.addPopup("FENIX!", head.x, head.y)
+    sound.play("highScore")
+    return true
+end
+
 function playing.update(dt)
     local st = world.state
     if st.deathModalOpen then return end
@@ -539,6 +561,8 @@ function playing.update(dt)
         if not vivo then
             -- Batería de Emergencia (GDD item 57): bullet-time 0.1x antes del modal
             if triggerBattery(st) then return end
+            -- Bendicion del Fenix (GDD §19.67): revive gratis antes del modal
+            if phoenixRevive(st) then return true end
             st.roomDamaged = true
             st.deathModalOpen = true
             return true
@@ -794,6 +818,13 @@ function playing.update(dt)
     if mutatorsMod.timeTrialTick(dt) == "expired" then
         local head = st.player.body and st.player.body[1]
         if head then uiMod.addPopup("CRONO AGOTADO", head.x, head.y) end
+    end
+    -- Sombra Acechante (GDD §19.65): muerte al contacto (Fenix puede salvar)
+    if mutatorsMod.shadowTick(dt, st.player.body and st.player.body[1]) == "kill" then
+        if phoenixRevive(st) then return true end
+        st.roomDamaged = true
+        st.deathModalOpen = true
+        return true
     end
 
     if st.comboFlashTimer > 0 then

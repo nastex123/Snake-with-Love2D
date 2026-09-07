@@ -875,6 +875,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Hooks por punto**: P2 simples (Midas/Silent/TimeTrial/Dual), P3 medios (Feather/Zero-G/Titan), P4 pesados (Shadow/Phoenix/Tunnel).
 * **P2 Simples ✅**: `midasFruitBonus/midasDrain` (eat + tick 1pto/s en `playing`), `itemsSealed` (bloqueo 1-3 en `main.lua`) + `silentMarkCoins/silentClearBonus` (x2 en `transition`), `timeTrialTick/timeTrialWon/randomUnownedPassive` (`ROOM_TIME_TRIAL_DURATION=10.0`, premio en objetivo + aviso al expirar), `dualActive` (par espejado en `populate` con `tileFree` + fruta twin `dualTwin` con limpieza en eat).
 * **P3 Medios ✅**: `zeroGDrift` (inercia sin reposo en `movement.mover`), `featherActive` (corte letal en idx>3 en colision propia), `titanGirth/titanFruitBonus` (cruz propia letal salvo cabeza vieja +50 en eat).
+* **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
 
 ## 11. Love2D Gotchas
 

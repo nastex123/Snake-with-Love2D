@@ -30,6 +30,10 @@ config.GAME_STATE_TAROT = 7
 config.ROOM_MUTATOR_CHANCE = 0.35
 -- 66. Contrarreloj: segundos para cumplir el objetivo y ganar el pasivo
 config.ROOM_TIME_TRIAL_DURATION = 10.0
+-- 65. Sombra: intervalo de paso del espectro (lento e invulnerable)
+config.ROOM_SHADOW_INTERVAL = 0.9
+-- 68. Tunel: radio visible en celdas alrededor de la cabeza
+config.ROOM_TUNNEL_RADIUS = 5
 
 config.HIGH_SCORE_CELEBRATION_DURATION = 1.3
 

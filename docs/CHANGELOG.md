@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mutators P4)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P4 Pesados (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Sombra (65)**: `shadowStep/spawnShadowPos/shadowTick` (persecucion Chebyshev cada 0.9s, spawn en esquina lejana, persiste toda la etapa, muerte al contacto; draw pulsante en `renderMain` + badge SOMBRA).
+  2. **QUE — Fenix (67)**: `phoenixAvailable/phoenixConsume/resetStage` (revive 1/etapa con 3 segmentos + fantasma 3s + limpieza radio 3, intercepta muerte normal y de sombra; reseteado en `init/avanzarEtapa` + badge FENIX).
+  3. **QUE — Tunel (68)**: mascara de 4 rects con radio 5 alrededor de la cabeza en `renderMain` (`ROOM_TUNNEL_RADIUS`).
+  4. **Verificación**: `love tests` 660/640 PASS (20 pre-existentes), scope_24 +5, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mutators P3)
 
 - **feature** (in-progress - 2026-09-07): Room Mutators P3 Medios (America/Bogota, rama `feature/phase8-room-modifiers`):

@@ -115,6 +115,19 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         love.graphics.print(mutDef.tag, x, cy)
         x = x + font:getWidth(mutDef.tag) + 14 * s
     end
+    -- Banderas de etapa aunque la sala tenga otro mutador (Sombra/Fenix)
+    if mutMods and mutMods.stageShadowActive and mutMods.stageShadowActive()
+        and (not mutDef or mutDef.id ~= "stalking_shadow") then
+        love.graphics.setColor(0.6, 0.3, 0.9)
+        love.graphics.print("SOMBRA", x, cy)
+        x = x + font:getWidth("SOMBRA") + 14 * s
+    end
+    if mutMods and mutMods.phoenixAvailable and mutMods.phoenixAvailable()
+        and (not mutDef or mutDef.id ~= "phoenix_blessing") then
+        love.graphics.setColor(1.0, 0.4, 0.2)
+        love.graphics.print("FENIX", x, cy)
+        x = x + font:getWidth("FENIX") + 14 * s
+    end
 
     love.graphics.setColor(1, 0.84, 0.0)
     love.graphics.print("$" .. monedas, x, cy)

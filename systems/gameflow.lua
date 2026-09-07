@@ -160,6 +160,11 @@ function gameflow.iniciarSala(keepInventory)
         uiMod.addPopup("MIDAS +3$", head and head.x or 5, head and head.y or 5)
         sound.play("buttonClick")
     end
+    -- Sombra Acechante (GDD §19.65): el espectro reaparece cada sala de la etapa
+    if mutatorsMod.stageShadowActive() then
+        local head = st.player.body and st.player.body[1]
+        mutatorsMod.data().shadow = mutatorsMod.spawnShadowPos(head, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+    end
 end
 
 function gameflow.revivePlayer()
