@@ -11,7 +11,7 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
   - **Chasers (Shuriken Plasma Hyper 7x7)**: Aspas con rotación continua a 60 FPS acelerada por estado de combate y ojo giroscópico estabilizado que rastrea a la serpiente. IA social adaptativa (**SOLO**, **DUPLA** con flanqueo lateral, **MANADA** con cerco orbital).
   - **Patrollers (Interceptor Delta 5x5)**: Dron de patrullaje con blindaje cobalto, orientación continua según vector de avance, núcleo fotónico pulsante y micro-llama de plasma.
   - **Spawners**: Generadores estáticos de unidades y obstáculos.
-  - **Jefe (Food-Based Defeat)**: Jefe invulnerable por impacto directo; se derrota recolectando 15 comidas no-moneda esquivando 4 ataques telegrafiados (*projectile spread*, *spawn adds*, *radial pulse*, *teleport*).
+  - **Jefe (Food-Based Defeat)**: Jefe invulnerable por impacto directo; se derrota recolectando 15 comidas no-moneda esquivando 5 ataques telegrafiados (*projectile spread*, *spawn adds*, *radial pulse*, *teleport*, *laser perimeter*) con fase de furia a 12/15. Mini-jefes en sala 3 de cada etapa.
 - **🌋 5 Biomas con Peligros Ambientales Dinámicos**:
   - *Catacumbas de Piedra (1)*: Entorno base con muros estándar.
   - *Cripta Helada (2)*: Losetas de hielo resbaladizas con inercia de deslizamiento `+1`.
@@ -24,7 +24,10 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
   - **Logotipo SNAKE 2.5D Isométrico Cian Neón**: Renderizado procedural en tiempo real con 5 capas de profundidad isométrica a 45°, bisel platino y barrido especular continuo.
   - **Tarjeta Chunky de Perfil & High Score #11**: Marco reforzado con condensadores 6x6, medalla bicolor y moneda circular 3D con rotación elipsoidal.
 - **🛠️ Herramienta de Calibración en Vivo (`F2`)**: Calibrador visual interactivo para posicionar, escalar y ajustar la profundidad del logotipo con guardado persistente en `config/settings.dat`.
-- **🎒 Sistema de Objetos & Tienda**: 12 ítems (activos y pasivos) equipables en slots 1–3 y tienda con paginación 4x3.
+- **🎒 Sistema de Objetos & Tienda**: 22 ítems (activos y pasivos) equipables en slots 1–3 y tienda con paginación 4x3.
+- **🃏 Tarot por Etapa**: Draft de 3 cartas al completar las salas 1, 2 y 4 (máx 3 activas por etapa) con 12 cartas de destino y texturas pixel-art 20x20.
+- **🎲 Mutadores de Sala**: 10 modificadores (gravedad cero, Midas, pluma, velo, sombra, contrarreloj, fénix, túnel, dualidad, titán) con banner y badge en HUD.
+- **🚪 Salas de Misterio**: 4 salas especiales (apostador, espejo, fiebre del oro, sellos) con reglas y premios propios.
 - **✨ Pipeline de Shaders GLSL**: Bloom aditivo multietapa (glow + blurH + blurV), CRT scanlines con curvatura, sombras dinámicas y heat distortion.
 - **💾 Persistencia & Perfiles**: Gestor de hasta 3 perfiles locales con estadísticas detalladas (kills, boss kills, récord, monedas) y panel de ajustes (Audio, Gráficos, Accesibilidad).
 - **🏆 11 Logros del Sistema**: Desbloqueo progresivo por hitos de combate, economía, combo y avance de etapas.
@@ -64,11 +67,11 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
 
 ## 🏗️ Arquitectura del Proyecto
 
-El proyecto está estructurado en 62 módulos juego (97 con 34 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residual `persistence.lua` 862L pendiente):
+El proyecto está estructurado en 65 módulos juego (103 con 36 tests) con límites estrictos de $<300$–$500$ líneas por archivo (residuales `persistence.lua` 862L y crecidos Fase 8 —`playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `dungeonGen.lua` 530L— pendientes de split futuro):
 - **`core/`**: Configuración central (`config.lua` + `KEYBINDS`), logger (`logger.lua`), timers único pooled (`timers.lua`), estado dot-notation + `SCHEMA`/`validate()` (`world.lua` 369L), Event Bus (`events.lua` 134L), input centralizado (`input.lua` 89L), asset manager cache (`assets.lua` 144L), helpers (`helpers.lua`) e input táctil (`touch.lua`).
-- **`entities/`**: Serpiente fachada + `snake/` 4 (`snake.lua` 257L), enemigos fachada + 3 (`enemies.lua` 341L, `enemyAttackRegistry.lua` 224L pools), `bossAttacks.lua`, `chaserAI.lua`, `patrollerAI.lua`, `enemyHelpers.lua`, comida (`food.lua`) y obstáculos fachada 495L (`obstacles.lua` delega a `world/biomeHazards.lua`).
+- **`entities/`**: Serpiente fachada + `snake/` 4 (`snake.lua` 257L), enemigos fachada + 3 (`enemies.lua` 431L, `enemyAttackRegistry.lua` 247L pools), `bossAttacks.lua` (5 ataques), `chaserAI.lua`, `patrollerAI.lua`, `enemyHelpers.lua`, `enemyMiniBoss.lua` (5 mini-jefes), comida (`food.lua`) y obstáculos fachada 495L (`obstacles.lua` delega a `world/biomeHazards.lua`).
 - **`world/`**: Fachada del mundo (`world.lua`), peligros `biomeHazards.lua` 254L, generador BSP (`dungeonGen.lua`) y poblador de salas (`populate.lua`).
-- **`systems/`**: Objetos (`items.lua`), tienda (`shop.lua`), persistencia (`persistence.lua`), ajustes (`settings.lua`, `settingsDraw.lua`), perfiles (`profiles.lua`, `profilesDraw.lua`), logros (`achievements.lua`), jugador (`player.lua`), flujo de juego (`gameflow.lua`), estados (`gamestates.lua`), menú debug (`debugTools.lua`) y calibrador de logo (`debugLogo.lua`).
+- **`systems/`**: Objetos (`items.lua`, 22 ítems), tienda (`shop.lua`), persistencia (`persistence.lua`), ajustes (`settings.lua`, `settingsDraw.lua`), perfiles (`profiles.lua`, `profilesDraw.lua`), logros (`achievements.lua`), jugador (`player.lua`), flujo de juego (`gameflow.lua`), estados (`gamestates.lua`), menú debug (`debugTools.lua`) y calibrador de logo (`debugLogo.lua`), tarot (`tarot.lua`, `tarotArt.lua`), mutadores (`roomMutators.lua`) y misterio (`mystery.lua`).
 - **`ui/`**: Fachada de interfaz (`ui.lua`), cinemática Balatro (`introUI.lua`), menú principal (`menuUI.lua`, `menuLogo.lua`, `menuCard.lua`), HUD (`hudUI.lua`), toasts (`toastsUI.lua`), popups (`popupsUI.lua`) y overlays (`overlaysUI.lua`).
 - **`render/`**: Shaders GLSL (`shaders.lua`), partículas procedurales (`particles.lua`), escena principal (`renderMain.lua`) y render de enemigos (`enemiesDraw.lua`).
 - **`audio/`**: SFX procedurales y gestor de streaming OpenAL (`sound.lua`).

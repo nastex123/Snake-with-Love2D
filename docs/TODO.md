@@ -213,6 +213,7 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [ ] Performance profiling for large rooms
 - [ ] Add controller support documentation
 - [ ] **Follow-up Mini-Bosses (deuda GDD §5, ver TDD §10.10)**: Wyrm como 6 segmentos destruibles individualmente (hoy 1 entidad hp 6); Red Pegajosa que bloquee giros rápidos (hoy 3x3 slime); daño directo de contacto en Crusher/Wyrm; variante élite-chaser con `ELITE_*MULT` + cofre dorado (hoy la sala 3 la ocupa el mini-jefe)
+- [ ] **Deuda splits fase 8 (detectada 2026-09-07, archivos sobre el límite 500L)**: `playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `timers.lua` 536L, `dungeonGen.lua` 530L, `enemiesDraw.lua` 508L, `profilesDraw.lua` 511L, `main.lua` 556L (residual conocido: `persistence.lua` 862L, `shaders.lua` 652L)
 
 ## Low Priority
 - [ ] Consider adding new enemy types
@@ -232,4 +233,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-06 00:08 (Stage Tarot Draft en feature/phase8-tarot - draft salas 1/2/4 + 12 hooks, scope_23 24 tests, 634 tests 614 PASS)*
+*Last updated: 2026-09-07 (Mystery Rooms en feature/phase8-mystery-rooms - 4 salas + draws, scope_25 24 tests, 684 tests 664 PASS, 20 pre-existentes)*

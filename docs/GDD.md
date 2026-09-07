@@ -372,7 +372,7 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 - Only defeated by collecting **15 non-coin foods** during encounter
 
 ### Attacks
-Los 4 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers visibles antes de ejecutarse):
+Los 5 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers visibles antes de ejecutarse):
 
 | Attack (id) | telegraphTime | Description |
 |---|---|---|

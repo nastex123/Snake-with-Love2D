@@ -3,9 +3,9 @@
 ## 1. Architecture Overview
 
 **Pattern**: Procedural module-based with global state management
-**Entry Point**: `main.lua` (541L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 62 juego (64 con `conf.lua`+`scratch_test_debug.lua`, 97 con 34 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), P10 tests 1→6 + scope_11/21/22
-**Total Lines**: ~11,500 src (post-P15 04:09:2026: `obstacles` 723→495L, `registry` 139→224L pools, `world` 29→369L SCHEMA, `shaders` 496→652L Voronoi, `main` 380→541L timestep, `persistence` 362→862L atomic)
+**Entry Point**: `main.lua` (556L fixed timestep `FIXED_DT=1/60`)
+**Total Modules**: 65 juego (67 con `conf.lua`+`scratch_test_debug.lua`, 103 con 36 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→36 (scope_24/25)
+**Total Lines**: ~20,600 src juego (medido 2026-09-07; crecidos fase 8 sobre el límite 500L: `playing` 999L, `settingsDraw` 647L, `player` 622L, `timers` 536L, `dungeonGen` 530L, `enemiesDraw` 508L — splits futuros)
 
 ### Folder Structure
 
@@ -27,17 +27,17 @@ Snake-with-Love2D/
 │   ├── snake/
 │   │   ├── core.lua            ← reset + update timers (P02 97L)
 │   │   ├── abilities.lua       ← triggerReverseSlither/applySlimming/triggerAutotomy (P02 105L)
-│   │   ├── collisions.lua      ← checkEnemyCollisions (+fromIndex) / checkPatrollerSlice / checkConstrictorLoop (P02 152L)
+│   │   ├── collisions.lua      ← checkEnemyCollisions (+fromIndex) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon (172L)
 │   │   └── movement.lua        ← mover + encolarDireccion/cambiarDireccion/checkTailSnap (P02 393L)
 │   ├── food.lua                ← 3 tipos de comida
 │   ├── obstacles.lua           ← 495L fachada hazards (P12: delega a `world/biomeHazards.lua`)
-│   ├── enemies.lua             ← fachada 341L (P01: delega a 3 submódulos)
-│   ├── enemyAttackRegistry.lua ← 224L pools 32/64/32 `active` sin GC (P01+P11)
+│   ├── enemies.lua             ← fachada 431L (P01: delega a 3 submódulos)
+│   ├── enemyAttackRegistry.lua ← 247L pools 32/64/32 `active` sin GC (P01+P11)
 │   ├── enemyBossLogic.lua      ← spawnBoss/hitBoss/onBossDefeated + máquina de estados boss (P01 170L)
 │   ├── enemySpawnLogic.lua     ← canSpawn/spawnAt/generar (P01 121L)
 │   ├── enemyMiniBoss.lua        ← MINIBOSS_DEFS 5 + máquina estados + 5 ataques (minibosses ~400L)
 │   ├── chaserAI.lua            ← IA social Chaser (SOLO/DUPLA/MANADA)
-│   ├── bossAttacks.lua         ← 4 ataques del boss
+│   ├── bossAttacks.lua         ← 5 ataques del boss (4 base + jaula láser)
 │   └── enemyHelpers.lua        ← validarPos, sampleFreeTile, etc.
 ├── world/
 │   ├── world.lua               ← facade: estado etapa/sala/objetivoSala + getters
@@ -45,7 +45,7 @@ Snake-with-Love2D/
 │   ├── dungeonGen.lua          ← BSP, templates de sala, stage modifiers
 │   └── populate.lua            ← población de sala
 ├── systems/
-│   ├── items.lua               ← 12 ítems
+│   ├── items.lua               ← 22 ítems
 │   ├── shop.lua                ← tienda (paginación por categoría 4x3)
 │   ├── persistence.lua         ← save/load + syncActiveProfile
 │   ├── profiles.lua            ← facade gestión de perfiles (max 3)
@@ -57,17 +57,21 @@ Snake-with-Love2D/
 │   ├── gameflow.lua            ← runs/rooms (resets)
 │   ├── gamestates.lua          ← fachada 196L (P03: delega a 3 submódulos, updateCommon + dispatch)
 │   ├── gamestates/
-│   │   ├── playing.lua         ← updatePlaying 389L (P03: movimiento, economía, boss, input buffer)
-│   │   ├── transition.lua      ← updateTransition 64L (fade 1 → hold 2s → fade 2 → SHOP)
+│   │   ├── playing.lua         ← updatePlaying 999L (P03 + fase 8: economía, boss, mutadores, misterio)
+│   │   ├── transition.lua      ← updateTransition 85L (fade 1 → hold 2s → fade 2 → SHOP)
 │   │   └── death.lua           ← updateDeath + updateHighScore 72L (despiece + SHOP)
+│   ├── tarot.lua               ← draft 12 cartas + 12 hooks (GDD §14, TDD §10.13)
+│   ├── tarotArt.lua            ← loader PNG 20x20 cartas (TDD §10.13)
+│   ├── roomMutators.lua        ← 10 mutadores (GDD §19, TDD §10.27)
+│   ├── mystery.lua             ← 4 salas especiales (GDD §15, TDD §10.28)
 │   └── debugTools.lua          ← menú debug (Tab)
 ├── ui/
 │   ├── ui.lua                  ← facade: popups/toasts/menu/fuentes/accesibilidad
 │   ├── introUI.lua             ← intro Balatro + high score
-│   ├── menuUI.lua              ← facade 205l: panel 40% + botones 260×40 gap14, delega logo/card
-│   ├── menuLogo.lua            ← logo procedural cian isométrico 2.5D (getBounds, draw, drawGlow) 129l
-│   ├── menuCard.lua            ← tarjeta #11 Chunky 344×76 circular 3D coin 214l
-│   ├── hudUI.lua               ← grid/HUD/slots/combo
+│   ├── menuUI.lua              ← facade 252L: panel 40% + botones 260×40 gap14, delega logo/card
+│   ├── menuLogo.lua            ← logo procedural cian isométrico 2.5D (getBounds, draw, drawGlow) 110L
+│   ├── menuCard.lua            ← tarjeta #11 Chunky 344×76 circular 3D coin 202L
+│   ├── hudUI.lua               ← grid/HUD/slots/combo + badges mutador/misterio 368L
 │   ├── toastsUI.lua            ← toasts
 │   ├── popupsUI.lua            ← popups
 │   └── overlaysUI.lua          ← pausa/minimapa/overlay dungeon debug
@@ -90,7 +94,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── entities/snake.lua (fachada 257L) ──→ entities/snake/core.lua, entities/snake/abilities.lua, entities/snake/collisions.lua, entities/snake/movement.lua; draw usa shop/constants
 ├── entities/snake/movement.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua, entities/obstacles.lua
 ├── entities/snake/collisions.lua ──→ entities/enemies.lua, systems/shop.lua, core/world.lua
-├── entities/enemies.lua (fachada 341L) ──→ entities/enemyAttackRegistry.lua, entities/enemyBossLogic.lua, entities/enemySpawnLogic.lua, entities/enemyMiniBoss.lua, entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua, entities/patrollerAI.lua
+├── entities/enemies.lua (fachada 431L) ──→ entities/enemyAttackRegistry.lua (247L), entities/enemyBossLogic.lua, entities/enemySpawnLogic.lua, entities/enemyMiniBoss.lua, entities/bossAttacks.lua, entities/enemyHelpers.lua, entities/chaserAI.lua, entities/patrollerAI.lua
 ├── entities/food.lua, entities/obstacles.lua
 ├── world/world.lua (facade) ──→ world/dungeonGen.lua, world/populate.lua, core/helpers.lua
 ├── systems/items.lua, systems/shop.lua ──→ systems/items.lua
@@ -98,7 +102,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 ├── systems/profiles.lua → systems/persistence.lua, ui/ui.lua, systems/achievements.lua, systems/profilesDraw.lua
 ├── systems/settings.lua → systems/persistence.lua, core/helpers.lua, ui/ui.lua, render/shaders.lua, systems/settingsDraw.lua
 ├── systems/achievements.lua → systems/persistence.lua, core/world.lua
-├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua (fachada 196L) → systems/gamestates/playing.lua, systems/gamestates/transition.lua, systems/gamestates/death.lua; systems/debugTools.lua → systems/debugLogo.lua
+├── systems/player.lua, systems/gameflow.lua, systems/gamestates.lua (fachada 226L) → systems/gamestates/playing.lua (999L), systems/gamestates/transition.lua (85L), systems/gamestates/death.lua; systems/debugTools.lua → systems/debugLogo.lua; systems/tarot.lua, systems/tarotArt.lua, systems/roomMutators.lua, systems/mystery.lua
 ├── ui/ui.lua (facade) ──→ ui/introUI.lua, ui/menuUI.lua → ui/menuLogo.lua + ui/menuCard.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua
 ├── render/shaders.lua, render/particles.lua, render/renderMain.lua, render/enemiesDraw.lua
 └── audio/sound.lua
@@ -108,66 +112,69 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 541 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) |
-| constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
-| config.lua | core/ | 184+ | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) |
-| logger.lua | core/ | 45 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 91+ | — | Timer manager único pooled (P05) |
+| main.lua | raíz | 556 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) |
+| constants.lua | raíz | 2 | — | Shim → core/config.lua (legacy compatibility) |
+| config.lua | core/ | 377 | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) + gameplay fase 8 |
+| logger.lua | core/ | 273 | Log | Logging (info/warn/error/debug) |
+| timers.lua | core/ | 536 | — | Timer manager único pooled (P05) |
 | events.lua | core/ | 134 | — | P06 Event Bus `on/off/emit` |
 | input.lua | core/ | 89 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad |
 | assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache |
 | world.lua | core/ | 369 | world | World.state dot-notation + SCHEMA + validate() (P04/P13) |
-| touch.lua | core/ | 113 | — | Touch input (swipes, lazy require) |
-| helpers.lua | core/ | 52 | — | Utility functions |
+| touch.lua | core/ | 268 | — | Touch input (swipes, lazy require) |
+| helpers.lua | core/ | 320 | — | Utility functions |
 | snake.lua | entities/ | 257 | snakeMod | Fachada P02 257L (delega a 4 submódulos, draw + hsv2rgb, API idéntica) |
-| snake/core.lua | entities/snake/ | 97 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
+| snake/core.lua | entities/snake/ | 102 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
 | snake/abilities.lua | entities/snake/ | 105 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
-| snake/collisions.lua | entities/snake/ | 152 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
-| snake/movement.lua | entities/snake/ | 393 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail) + encolarDireccion/cambiarDireccion/checkTailSnap |
-| enemies.lua | entities/ | 341 | enemiesMod | Fachada P01 341L (delega a 3 submódulos, API idéntica) |
-| enemyAttackRegistry.lua | entities/ | 224 | — | P01+P11: pools 32/64/32 `active` sin GC |
-| enemyBossLogic.lua | entities/ | 170 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
+| snake/collisions.lua | entities/snake/ | 172 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
+| snake/movement.lua | entities/snake/ | 445 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
+| enemies.lua | entities/ | 431 | enemiesMod | Fachada P01 (delega a 3 submódulos, API idéntica) |
+| enemyAttackRegistry.lua | entities/ | 247 | — | P01+P11: pools 32/64/32 `active` sin GC |
+| enemyBossLogic.lua | entities/ | 191 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
 | enemySpawnLogic.lua | entities/ | 121 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
-| enemyMiniBoss.lua | entities/ | ~400 | — | MiniBosses sala 3: MINIBOSS_DEFS 5 + spawn/hit/defeat/food + charge/breath+nova/trail/swarm+web/singu+teleport |
-| chaserAI.lua | entities/ | 310 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
-| bossAttacks.lua | entities/ | 146 | — | 4 ataques del boss (projectile_spread, spawn_adds, radial_pulse, teleport) |
-| enemyHelpers.lua | entities/ | 61 | — | validarPos, sampleFreeTile, tiles seguros |
-| food.lua | entities/ | 133 | foodMod | Food spawning and types (NORMAL/GOLD/COIN) |
+| enemyMiniBoss.lua | entities/ | 406 | — | MiniBosses sala 3: MINIBOSS_DEFS 5 + spawn/hit/defeat/food + charge/breath+nova/trail/swarm+web/singu+teleport |
+| chaserAI.lua | entities/ | 389 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
+| bossAttacks.lua | entities/ | 255 | — | 5 ataques del boss (4 base + jaula láser) |
+| enemyHelpers.lua | entities/ | 89 | — | validarPos, sampleFreeTile, tiles seguros |
+| food.lua | entities/ | 484 | foodMod | Food spawning and types (NORMAL/GOLD/COIN + 9 dinámicas/combate) |
 | obstacles.lua | entities/ | 495 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
-| world.lua | world/ | 122 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
-| dungeonGen.lua | world/ | 355 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
-| populate.lua | world/ | 193 | — | Room population (enemies/food/obstacles) (split 17:08:2026) |
-| items.lua | systems/ | 100 | itemsMod | Item definitions (registry + 4 categorías) |
-| shop.lua | systems/ | 376 | shopMod | Shop logic and UI |
+| world.lua | world/ | 263 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
+| dungeonGen.lua | world/ | 530 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
+| populate.lua | world/ | 314 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
+| items.lua | systems/ | 208 | itemsMod | Item definitions (registry 22 + 4 categorías) |
+| shop.lua | systems/ | 475 | shopMod | Shop logic and UI |
 | persistence.lua | systems/ | 862 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) |
-| profiles.lua | systems/ | 344 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
-| profilesDraw.lua | systems/ | 509 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
-| achievements.lua | systems/ | 184 | achievementsMod | Achievement tracking (11 logros) |
-| settings.lua | systems/ | 373 | settingsMod | Facade: audio/graphics/accessibility dat + state, delega draw a settingsDraw (split 17:08:2026) |
-| settingsDraw.lua | systems/ | 261 | — | Settings tabs/controls/toasts rendering (split 17:08:2026) |
-| player.lua | systems/ | 141 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
-| gameflow.lua | systems/ | 105 | — | Runs/rooms: init run, reset sala |
-| gamestates.lua | systems/ | 196 | — | Fachada P03 196L (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
-| gamestates/playing.lua | systems/gamestates/ | 389 | — | P03: updatePlaying (economía, fuego, tailSnap, constrictor, slice, mover + combo) |
-| gamestates/transition.lua | systems/gamestates/ | 64 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
+| profiles.lua | systems/ | 330 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
+| profilesDraw.lua | systems/ | 511 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
+| achievements.lua | systems/ | 276 | achievementsMod | Achievement tracking (11 logros) |
+| settings.lua | systems/ | 565 | settingsMod | Facade: audio/graphics/accessibility dat + state, delega draw a settingsDraw (split 17:08:2026) |
+| settingsDraw.lua | systems/ | 647 | — | Settings tabs/controls/toasts rendering (split 17:08:2026) |
+| player.lua | systems/ | 622 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
+| gameflow.lua | systems/ | 307 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
+| gamestates.lua | systems/ | 226 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
+| gamestates/playing.lua | systems/gamestates/ | 999 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
+| gamestates/transition.lua | systems/gamestates/ | 85 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
 | gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
-| tarot.lua | systems/ | ~290 | — | Tarot Draft GDD §14: TAROT_DEFS 12 + sample/open/choose/has + helpers hooks + draw modal |
-| debugTools.lua | systems/ | 196 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
-| debugLogo.lua | systems/ | 189 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
-| ui.lua | ui/ | 143 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
-| introUI.lua | ui/ | 152 | — | Intro Balatro + high score |
-| menuUI.lua | ui/ | 205 | — | Facade menú (panel 40% + 4 botones 260×40 gap14, delega a menuLogo/menuCard) (split 23:08:2026) |
-| menuLogo.lua | ui/ | 129 | — | Logo procedural cian 2.5D (getBounds, draw, drawGlow) (split 23:08:2026) |
-| menuCard.lua | ui/ | 214 | — | Tarjeta #11 Chunky 344×76 + moneda circular 3D + medalla (split 23:08:2026) |
-| hudUI.lua | ui/ | 235 | — | Grid/HUD/slots/combo |
+| tarot.lua | systems/ | 258 | — | Tarot Draft GDD §14: TAROT_DEFS 12 + sample/open/choose/has + helpers hooks + draw modal |
+| tarotArt.lua | systems/ | 54 | — | Loader PNG 20x20 cartas con cache + fallback (TDD §10.13) |
+| roomMutators.lua | systems/ | 264 | — | 10 mutadores GDD §19: DEFS + roll/hooks P1-P4 (TDD §10.27) |
+| mystery.lua | systems/ | 336 | — | 4 salas GDD §15: DEFS + roll/assign/hooks P1-P3 (TDD §10.28) |
+| debugTools.lua | systems/ | 244 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
+| debugLogo.lua | systems/ | 206 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
+| ui.lua | ui/ | 176 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
+| introUI.lua | ui/ | 285 | — | Intro Balatro + high score |
+| menuUI.lua | ui/ | 252 | — | Facade menú (panel 40% + 4 botones 260×40 gap14, delega a menuLogo/menuCard) (split 23:08:2026) |
+| menuLogo.lua | ui/ | 110 | — | Logo procedural cian 2.5D (getBounds, draw, drawGlow) (split 23:08:2026) |
+| menuCard.lua | ui/ | 202 | — | Tarjeta #11 Chunky 344×76 + moneda circular 3D + medalla (split 23:08:2026) |
+| hudUI.lua | ui/ | 368 | — | Grid/HUD/slots/combo + badges mutador/misterio |
 | toastsUI.lua | ui/ | 88 | — | Toasts |
 | popupsUI.lua | ui/ | 49 | — | Popups |
-| overlaysUI.lua | ui/ | 118 | — | Pausa/minimapa/dungeon debug |
+| overlaysUI.lua | ui/ | 216 | — | Pausa/minimapa/dungeon debug |
 | shaders.lua | render/ | 652 | shadersMod | Bloom/CRT/shadow/heat + half-res reflection + Voronoi off (P15) |
-| particles.lua | render/ | 156 | particlesMod | Particle effects (textura 4x4 procedural) |
-| renderMain.lua | render/ | 308 | — | drawScene, dibujo menú/glow/shadow (split 08:08:2026) |
-| enemiesDraw.lua | render/ | 285 | — | Draw enemigos + Chaser estrella de espinas |
-| sound.lua | audio/ | 341 | — | Audio management (1 .ogg 4 segmentos + 10 SFX) |
+| particles.lua | render/ | 342 | particlesMod | Particle effects (textura 4x4 procedural) |
+| renderMain.lua | render/ | 470 | — | drawScene (juego, mutadores, misterio), dibujo menú/glow/shadow (split 08:08:2026) |
+| enemiesDraw.lua | render/ | 508 | — | Draw enemigos + Chaser estrella de espinas + minibosses |
+| sound.lua | audio/ | 436 | — | Audio management (1 .ogg 4 segmentos + 10 SFX) |
 
 ## 3. State Machine
 
@@ -196,10 +203,11 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | SHOP | 4 | Item shop |
 | PAUSED | 5 | Game paused |
 | TRANSITION | 6 | Room transition |
+| TAROT | 7 | Stage tarot draft (GDD §14) |
 
 ## 4. Data Flow
 
-### Game Loop (`main.lua` 541L P14)
+### Game Loop (`main.lua` 556L P14)
 ```
 love.load()
     └── persistence.initProfiles()
@@ -868,7 +876,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 ### 10.27 Room Mutators Engine ✅ Completed (2026-09-07 `feature/phase8-room-modifiers`)
 
-* **Módulo**: `systems/roomMutators.lua` (~90L, data-driven; suite scope_24).
+* **Módulo**: `systems/roomMutators.lua` (264L, data-driven; suite scope_24 22 tests).
 * **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(sala, room)` — 35% (`ROOM_MUTATOR_CHANCE`) por sala, excluye boss (`template`/sala 5) y élite (`isElite`); `apply()` en `gameflow.iniciarSala` antes de `populateRoom` (Dual duplica spawns); estado en `world.state.roomMutator` + `roomMutatorData`.
 * **Feedback**: banner popup `MUTADOR: <TAG>` al entrar + badge en `ui/hudUI.lua` con color del mutador.
@@ -879,7 +887,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 ### 10.28 Special Mystery Rooms Engine ✅ Completed (2026-09-07 `feature/phase8-mystery-rooms`)
 
-* **Módulo**: `systems/mystery.lua` (~100L, data-driven; suite scope_25 9 tests).
+* **Módulo**: `systems/mystery.lua` (336L, data-driven; suite scope_25 24 tests).
 * **Catálogo**: `MYSTERY_DEFS` 4 salas (GDD §15) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(room, idx)` 6% (`ROOM_MYSTERY_CHANCE`), excluye boss/elite/sala 1; `assign(dungeon)` en `world.init/avanzarEtapa` fija `room.mystery`; runtime por sala en `World.state.mysteryData` (renovado en `iniciarSala`).
 * **Feedback**: banner `SALA ESPECIAL: <nombre>` al entrar + badge en `ui/hudUI.lua`.

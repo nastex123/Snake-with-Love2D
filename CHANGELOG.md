@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (docs sync)
+
+- **docs** (sync - 2026-09-07): Auditoría integral de documentación (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **Conteos reales**: 65 módulos juego (67 con `conf.lua`+`scratch_test_debug.lua`, 103 con 36 tests), suite 684/664 PASS (20 pre-existentes), `main.lua` 556L, 8 estados (`TAROT=7`).
+  2. **TDD**: tabla de responsabilidades con líneas medidas + filas `tarotArt`/`roomMutators`/`mystery`, estados +TAROT, `playing` 999L y crecidos fase 8 documentados.
+  3. **AGENTS/README**: conteos, 22 items, 5 ataques del boss + furia + mini-jefes, `mover` 6 valores, features Tarot/Mutadores/Misterio en README.
+  4. **ROADMAP**: Items Arsenal y Enrage marcados [x] (estaban hechos); TODO pie + deuda splits fase 8; `tests/main.lua` cobertura con 19 módulos faltantes.
+  5. **Verificación**: `love tests` 684/664 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mystery P3)
 
 - **feature** (in-progress - 2026-09-07): Mystery Rooms P3 Espejo+Sellos (America/Bogota, rama `feature/phase8-mystery-rooms`):
