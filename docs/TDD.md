@@ -874,6 +874,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Feedback**: banner popup `MUTADOR: <TAG>` al entrar + badge en `ui/hudUI.lua` con color del mutador.
 * **Hooks por punto**: P2 simples (Midas/Silent/TimeTrial/Dual), P3 medios (Feather/Zero-G/Titan), P4 pesados (Shadow/Phoenix/Tunnel).
 * **P2 Simples ✅**: `midasFruitBonus/midasDrain` (eat + tick 1pto/s en `playing`), `itemsSealed` (bloqueo 1-3 en `main.lua`) + `silentMarkCoins/silentClearBonus` (x2 en `transition`), `timeTrialTick/timeTrialWon/randomUnownedPassive` (`ROOM_TIME_TRIAL_DURATION=10.0`, premio en objetivo + aviso al expirar), `dualActive` (par espejado en `populate` con `tileFree` + fruta twin `dualTwin` con limpieza en eat).
+* **P3 Medios ✅**: `zeroGDrift` (inercia sin reposo en `movement.mover`), `featherActive` (corte letal en idx>3 en colision propia), `titanGirth/titanFruitBonus` (cruz propia letal salvo cabeza vieja +50 en eat).
 
 ## 11. Love2D Gotchas
 

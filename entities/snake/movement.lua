@@ -12,6 +12,7 @@ local enemies = require("entities.enemies")
 local world = require("core.world")
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
+local mutatorsMod = require("systems.roomMutators")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -50,6 +51,8 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     if controlMode == "tactical" then
         local isHeld = Input.isAnyHeld() or Input.hasActiveTouch()
         if #s.inputQueue > 0 then isHeld = true end
+        -- Gravedad Cero (GDD §19.61): deriva con inercia, sin reposo tactico
+        if mutatorsMod.zeroGDrift() then isHeld = true end
 
         if not isHeld then
             s.standstill = true
@@ -130,8 +133,17 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         end
     end
 
-    for _, segmento in ipairs(s.body) do
-        if nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y then
+    local feather = mutatorsMod.featherActive()
+    local titan = mutatorsMod.titanGirth()
+    for idx, segmento in ipairs(s.body) do
+        -- Pluma (GDD §19.63): solo los 3 primeros segmentos son letales
+        if feather and idx > 3 then break end
+        local hit = (nuevaCabezaX == segmento.x and nuevaCabezaY == segmento.y)
+        -- Titan (GDD §19.70): grosor 1.5x, la cruz propia tambien mata (salvo la cabeza vieja)
+        if not hit and titan and idx > 1 then
+            hit = math.abs(nuevaCabezaX - segmento.x) + math.abs(nuevaCabezaY - segmento.y) == 1
+        end
+        if hit then
             if s.ghost or immune() then
             elseif world.get("shop.shieldActive", false) then
                 shop.shieldActive = false

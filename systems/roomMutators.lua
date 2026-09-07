@@ -153,4 +153,25 @@ function mutators.dualActive()
     return mutators.has("dual_room")
 end
 
+-- === P3: helpers de mutadores medios (GDD §19.61/63/70) ===
+
+-- 61. Gravedad Cero: deriva con inercia (ignora el reposo tactico)
+function mutators.zeroGDrift()
+    return mutators.has("zero_gravity")
+end
+
+-- 63. Pluma: solo los 3 primeros segmentos son letales
+function mutators.featherActive()
+    return mutators.has("feather_blessing")
+end
+
+-- 70. Titan: grosor 1.5x (cruz propia letal) + 50 puntos por fruta
+function mutators.titanGirth()
+    return mutators.has("titan_pact")
+end
+
+function mutators.titanFruitBonus()
+    return mutators.has("titan_pact") and 50 or 0
+end
+
 return mutators

@@ -155,3 +155,31 @@ harness.describe("Scope 24 - Simple mutators (Midas/Silent/Trial/Dual)", functio
         mutators.clear()
     end)
 end)
+
+harness.describe("Scope 24 - Medium mutators (Zero-G/Feather/Titan)", function()
+    harness.it("zeroGDrift enables inertia only with gravity room", function()
+        mutators.clear()
+        harness.assert_true(not mutators.zeroGDrift(), "off by default")
+        world.state.roomMutator = "zero_gravity"
+        harness.assert_true(mutators.zeroGDrift(), "on with zero gravity")
+        mutators.clear()
+    end)
+
+    harness.it("featherActive limits lethality only with feather room", function()
+        mutators.clear()
+        harness.assert_true(not mutators.featherActive(), "off by default")
+        world.state.roomMutator = "feather_blessing"
+        harness.assert_true(mutators.featherActive(), "on with feather")
+        mutators.clear()
+    end)
+
+    harness.it("titan grants +50 per fruit only with the pact", function()
+        mutators.clear()
+        harness.assert_equal(0, mutators.titanFruitBonus(), "no pact, no bonus")
+        harness.assert_true(not mutators.titanGirth(), "no girth by default")
+        world.state.roomMutator = "titan_pact"
+        harness.assert_equal(50, mutators.titanFruitBonus(), "pact grants +50")
+        harness.assert_true(mutators.titanGirth(), "girth active with pact")
+        mutators.clear()
+    end)
+end)

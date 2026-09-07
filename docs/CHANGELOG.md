@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mutators P3)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P3 Medios (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Gravedad Cero (61)**: `zeroGDrift` ignora el reposo tactico en `movement.mover` (deriva con la ultima direccion hasta nuevo input).
+  2. **QUE — Pluma (63)**: `featherActive` corta la colision propia en idx>3 (cuello 2-3 sigue letal).
+  3. **QUE — Titan (70)**: `titanGirth` hace letal la cruz propia salvo cabeza vieja + `titanFruitBonus` +50 en eat.
+  4. **Verificación**: `love tests` 655/635 PASS (20 pre-existentes), scope_24 +3, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mutators P2)
 
 - **feature** (in-progress - 2026-09-07): Room Mutators P2 Simples (America/Bogota, rama `feature/phase8-room-modifiers`):

@@ -605,6 +605,8 @@ function playing.update(dt)
                     monedasExtra = constants.COINS_PER_FRUIT
                     textPopup = "+10"
                 end
+                -- Pacto del Titan (GDD §19.70): +50 puntos base por fruta
+                puntosBase = puntosBase + mutatorsMod.titanFruitBonus()
 
                 if st.time - st.lastEatTime <= tarotMod.comboWindow() then
                     st.comboCount = st.comboCount + 1
