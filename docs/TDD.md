@@ -866,6 +866,14 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 **Estado:** `completed` 2026-09-04 16:00 — P01-P15 ✅ en `dev@8691a29`. Deuda residual: `persistence.lua` 862L (split futuro).
 
+### 10.27 Room Mutators Engine (Framework) 🏗️ In Progress (2026-09-07 `feature/phase8-room-modifiers`)
+
+* **Módulo**: `systems/roomMutators.lua` (~90L, data-driven; suite scope_24).
+* **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
+* **Asignación**: `roll(sala, room)` — 35% (`ROOM_MUTATOR_CHANCE`) por sala, excluye boss (`template`/sala 5) y élite (`isElite`); `apply()` en `gameflow.iniciarSala` antes de `populateRoom` (Dual duplica spawns); estado en `world.state.roomMutator` + `roomMutatorData`.
+* **Feedback**: banner popup `MUTADOR: <TAG>` al entrar + badge en `ui/hudUI.lua` con color del mutador.
+* **Hooks por punto**: P2 simples (Midas/Silent/TimeTrial/Dual), P3 medios (Feather/Zero-G/Titan), P4 pesados (Shadow/Phoenix/Tunnel).
+
 ## 11. Love2D Gotchas
 
 | Wrong | Correct |

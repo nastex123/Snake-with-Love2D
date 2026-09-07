@@ -13,6 +13,7 @@ local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
+local mutatorsMod = require("systems.roomMutators")
 
 function gameflow.applyActiveProfile()
     local profile = persistence.getActiveProfile()
@@ -129,6 +130,8 @@ function gameflow.iniciarSala(keepInventory)
     gameflow.resetGame(keepInventory)
     worldMod.puntajeSala = 0
     st.puntuacion = 0
+    -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
+    mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
     if worldMod.sala == 1 then
         local bName = worldMod.getBiomeName()
@@ -140,6 +143,12 @@ function gameflow.iniciarSala(keepInventory)
     local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     if mb and mb.alive then
         uiMod.addPopup("MINI-JEFE: " .. (mb.name or "ELITE"), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
+    end
+    -- Room Mutators (GDD §19): banner del mutador activo de la sala
+    local mutDef = mutatorsMod.getDef()
+    if mutDef then
+        uiMod.addPopup("MUTADOR: " .. string.upper(mutDef.tag), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 4)
+        sound.play("buttonClick")
     end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
     local hasTarot, tarotMod = pcall(require, "systems.tarot")

@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mutators P1)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P1 Framework (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — `systems/roomMutators.lua` (nuevo, ~90L)**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) + `roll/get/has/apply/clear/getDef/data` + estado `World.state.roomMutator/roomMutatorData`.
+  2. **QUE — cableado**: `ROOM_MUTATOR_CHANCE=0.35` (config), roll en `gameflow.iniciarSala` antes de poblar (boss/elite excluidos), banner popup `MUTADOR: <TAG>` + badge en `ui/hudUI.lua`.
+  3. **QUE — Tests + docs**: suite scope_24 (8 tests) cableada en runner; GDD §19.1, TDD §10.27, TODO.
+  4. **Verificación**: `love tests` 646/626 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-06 00:08
 
 - **feature** (completed - 2026-09-06 00:08): Stage Tarot Draft System (America/Bogota, consola-only, rama `feature/phase8-tarot`):

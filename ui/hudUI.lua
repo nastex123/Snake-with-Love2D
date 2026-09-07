@@ -107,6 +107,15 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         x = x + font:getWidth(bName) + 14 * s
     end
 
+    -- Badge del mutador activo de la sala (GDD §19)
+    local mutMods = package.loaded["systems.roomMutators"]
+    local mutDef = mutMods and mutMods.getDef and mutMods.getDef()
+    if mutDef then
+        love.graphics.setColor(mutDef.color[1], mutDef.color[2], mutDef.color[3])
+        love.graphics.print(mutDef.tag, x, cy)
+        x = x + font:getWidth(mutDef.tag) + 14 * s
+    end
+
     love.graphics.setColor(1, 0.84, 0.0)
     love.graphics.print("$" .. monedas, x, cy)
     x = x + font:getWidth("$" .. monedas) + 14 * s
