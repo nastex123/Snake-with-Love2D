@@ -39,15 +39,16 @@
 | `L` | Playing | Debug: +10 monedas |
 | `K` | Playing | Debug: saltar sala actual |
 | `Enter` | Menu | Iniciar partida |
-| `A`/`D` o `← →` | Shop | Cambiar página de ítems |
-| `Space`/`Enter` | Shop | Comprar ítem |
+| `1`–`3` | Shop | Comprar puesto 1-3 |
+| `R` | Shop | Reroll de puestos (5$ +2$/uso) |
+| `Space`/`Enter` | Shop | Continuar a la partida |
 | `Esc` | Shop / Profiles / Settings | Cerrar panel |
 | **Touch swipe** | Playing | Movimiento direccional (`core/touch.lua`) |
 
 ### Collision System
 Order: Body → Obstacles → Boss → Projectiles → Enemies
 
-Returns 5 values: `vivo, comio, enemyKilled, bossResult, attackHit`
+Returns 6 values: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 
 ### Scoring & Survival Streak
 - Points from food and enemy kills
@@ -889,6 +890,7 @@ $$G_{\text{monedas}} = \lfloor (D_{\text{base}} + B_{\text{coin}}) \times M_{\te
 
 * $D_{\text{base}}$: Normal: 1$, Oro: 2$, Moneda: 3$, Chaser: 3$, Patroller: 2$, Spawner: 1$, Boss: $5 + 2 \times \text{etapa}$.
 * $B_{\text{coin}} = 1$ si el pasivo `extraCoin` está activo.
+* **Sumideros Tienda v2**: tarots por tier (S 60$ / A 45$ / B 30$ / C 20$) + reroll global $R(n) = 5 + 2n$ por visita ($n$ = rerolls usados, resetea cada tienda) + ítems 5–40$.
 
 ### 13.4 Escalado de Dificultad e IA por Etapa
 La velocidad de decisión de los enemigos Chaser disminuye su intervalo ($I_{\text{chaser}}$) según la etapa actual $E \in [1, 5]$:
@@ -899,10 +901,11 @@ $$I_{\text{chaser}}(E) = \max\left(0.15\,\text{s}, \frac{0.30}{S_{\text{mult}}} 
 
 ## 14. Stage Tarot Draft System (Cartas del Destino)
 
-### 14.1 Flujo y Ciclo de Vida
-* **Momento de Selección**: Al completar la Sala 1, 2 y 4 de cada etapa (durante la transición "SALA COMPLETADA"), la pantalla se abre en un tapete místico con 3 cartas aleatorias.
-* **Duración**: Las cartas seleccionadas permanecen activas durante toda la etapa en curso. Al derrotar al Boss o Mini-Jefe y avanzar a la siguiente etapa, el mazo se limpia para iniciar un nuevo ciclo de *draft*.
-* **Límite**: Máximo 3 cartas activas simultáneamente por etapa.
+### 14.1 Flujo y Ciclo de Vida (Tienda v2: compra en tienda, sin draft de sala)
+* **Momento de Compra**: las cartas se compran en la Tienda entre etapas (stock mixto 60% items / 40% tarot, 3 puestos, sin duplicados). Ya no hay draft al completar salas.
+* **Duración**: Las cartas compradas permanecen activas durante toda la etapa en curso. Al derrotar al Boss o Mini-Jefe y avanzar a la siguiente etapa, el mazo se limpia para un nuevo ciclo.
+* **Límite**: sin tope fijo; manda el stock de la tienda (precios + reroll escalado como freno económico).
+* **Precios por tier**: S 60$ (Mercurio, Segador), A 45$ (Cero Absoluto, Sangre, Águila), B 30$ (Espina, Círculo, Espejo, Alquímica), C 20$ (Sombras, Midas, Corazón).
 
 ### 14.2 Mazo Completo de 12 Cartas del Destino
 | ID Carta | Arquetipo | Efecto Mecánico | Feedback Visual & SFX |
@@ -1136,7 +1139,7 @@ En cada expedición se activan 2 contratos secundarios con recompensas inmediata
 92. **Frutas Especiales con Halos de Energía**: Auras de fuego, hielo o constricción orbitando alrededor de la fruta.
 93. **Monedas con Giro Tridimensional Falso**: Animación de 4 frames simulando rotación sobre el eje vertical.
 94. **Vendedor de la Tienda con Ojos Animados**: Tendero encapuchado que sigue a la serpiente con la mirada.
-95. **Estanterías de Tienda Iluminadas**: Focos individuales sobre cada uno de los 4 ítems en venta.
+95. **Estanterías de Tienda Iluminadas**: Focos individuales sobre cada uno de los 3 puestos en venta.
 96. **Cofres de Tesoro con Apertura y Resplandor**: Tapa que se abre revelando un cono de luz dorada ascendente.
 97. **Gemas con Refracción de Luz**: Diamantes que emiten destellos en cruz de 4 puntas periódicamente.
 98. **Sellos de Cera Rotos en Cartas**: Animación de fractura del sello de cera al elegir una carta de tarot.

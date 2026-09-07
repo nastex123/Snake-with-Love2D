@@ -2,6 +2,8 @@ local shop = {}
 local constants = require("constants")
 local items = require("systems.items")
 local world = require("core.world")
+local tarotMod = require("systems.tarot")
+local tarotArtMod = require("systems.tarotArt")
 
 -- P04: World.state.shop como fuente de verdad (shop.shieldActive/magnetTimer/ghostActive)
 if not world.state.shop then
@@ -54,45 +56,99 @@ if not world.state.shop then
 end
 
 local fontNormal, fontSmall, fontLarge
-local page = 1
 local openTimer = 0
 local displayCoins = 0
 local purchaseFlash = {}
-local totalPages
+local rerollRect = nil
 
--- Build pages from items registry (3 per page)
-local pageItems = {}
-do
-    local flat = {}
-    for _, def in ipairs(items.pages) do
-        table.insert(flat, def)
+-- Tienda v2: 3 puestos con stock mixto (60% item / 40% tarot), sin duplicados.
+shop.stock = nil
+shop.rerolls = 0
+
+-- Tira una oferta mixta evitando duplicados del roll y poseidos.
+function shop.rollOffer(usedItems, usedTarots, chance)
+    usedItems = usedItems or {}
+    usedTarots = usedTarots or {}
+    chance = chance or tonumber(constants.SHOP_TAROT_CHANCE) or 0.40
+    for _ = 1, 30 do
+        if love.math.random() < chance then
+            local avail = {}
+            for _, id in ipairs(tarotMod.shopPool()) do
+                if not usedTarots[id] then avail[#avail + 1] = id end
+            end
+            if #avail > 0 then
+                local id = avail[love.math.random(#avail)]
+                usedTarots[id] = true
+                return {kind = "tarot", id = id, price = tarotMod.price(id), sold = false}
+            end
+        else
+            local avail = {}
+            for _, key in ipairs(items.canonicalKeys or {}) do
+                local def = items.get(key)
+                if def and not usedItems[def.id] and not shop.isOwned(def.id) then
+                    avail[#avail + 1] = def
+                end
+            end
+            if #avail > 0 then
+                local def = avail[love.math.random(#avail)]
+                usedItems[def.id] = true
+                return {kind = "item", id = def.id, price = def.cost or 0, sold = false}
+            end
+        end
     end
-    for i = 1, #flat, 3 do
-        table.insert(pageItems, {flat[i], flat[i+1], flat[i+2]})
+    return nil
+end
+
+function shop.rollStock()
+    local stalls = tonumber(constants.SHOP_STALLS) or 3
+    local chance = tonumber(constants.SHOP_TAROT_CHANCE) or 0.40
+    local stock = {}
+    local usedItems, usedTarots = {}, {}
+    for i = 1, stalls do
+        stock[i] = shop.rollOffer(usedItems, usedTarots, chance)
     end
-    totalPages = #pageItems
+    shop.stock = stock
+    return stock
 end
 
-function shop.getPage()
-    return page
+function shop.getStock()
+    return shop.stock or {}
 end
 
-function shop.setPage(p)
-    if type(p) == "number" and p >= 1 and p <= totalPages then
-        page = math.floor(p)
-        openTimer = 0
-        return true
+function shop.rerollCost()
+    return (tonumber(constants.SHOP_REROLL_BASE) or 5)
+        + (shop.rerolls or 0) * (tonumber(constants.SHOP_REROLL_STEP) or 2)
+end
+
+-- Reroll global escalado; retorna {reroll=true, costo} o nil sin fondos.
+function shop.doReroll(monedas)
+    local cost = shop.rerollCost()
+    if (monedas or 0) < cost then return nil end
+    shop.rerolls = (shop.rerolls or 0) + 1
+    shop.rollStock()
+    openTimer = 0
+    return {reroll = true, costo = cost}
+end
+
+-- Compra el puesto i; retorna {item, costo[, kind="tarot"]} o nil.
+function shop.buyStall(i, monedas)
+    local offer = shop.stock and shop.stock[i]
+    if not offer or offer.sold then return nil end
+    if offer.kind == "tarot" then
+        if (monedas or 0) < offer.price then return nil end
+        if tarotMod.buy(offer.id) then
+            offer.sold = true
+            table.insert(purchaseFlash, {idx = i, timer = 0.3})
+            return {item = offer.id, costo = offer.price, kind = "tarot"}
+        end
+        return nil
     end
-    return false
-end
-
-function shop.getTotalPages()
-    return totalPages
-end
-
-function shop.getPageItems(p)
-    local targetPage = p or page
-    return pageItems[targetPage] or {}
+    local res = shop.procesarCompra(monedas, offer.id, offer.price)
+    if res then
+        offer.sold = true
+        table.insert(purchaseFlash, {idx = i, timer = 0.3})
+    end
+    return res
 end
 
 function shop.getSlots()
@@ -117,10 +173,6 @@ function shop.loadFonts()
         end)
     end
 end
-
-local CARD_W = 220
-local CARD_H = 100
-local CARD_GAP = 10
 
 local cardRects = {}
 
@@ -199,6 +251,32 @@ local function drawIcon(id, x, y, size)
     end
 end
 
+local STALL_W = 190
+local STALL_H = 215
+local STALL_GAP = 15
+
+local cardRects = {}
+local function offerDef(offer)
+    if not offer then return nil end
+    if offer.kind == "tarot" then
+        for _, d in ipairs(tarotMod.TAROT_DEFS) do
+            if d.id == offer.id then return d end
+        end
+        return nil
+    end
+    return items.get(offer.id)
+end
+
+-- Parte el texto en dos lineas por palabras (sin allocs fuera de draw).
+local function splitDesc(text, maxChars)
+    text = text or ""
+    if #text <= maxChars then return text, "" end
+    local cut = maxChars
+    while cut > 0 and text:sub(cut, cut) ~= " " do cut = cut - 1 end
+    if cut == 0 then cut = maxChars end
+    return text:sub(1, cut), text:sub(cut + 1):gsub("^%s+", "")
+end
+
 function shop.draw(monedas, velocidadActual)
     monedas = monedas or 0
     local w = love.graphics.getWidth()
@@ -222,42 +300,45 @@ function shop.draw(monedas, velocidadActual)
     love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
     love.graphics.printf("MONEDAS: " .. math.floor(displayCoins + 0.5), 0, 42, w, "center")
 
-    -- paginacion
+    -- 3 puestos en fila
     local mx, my = love.mouse.getPosition()
     cardRects = {}
 
-    local currentItems = pageItems[page]
-    if not currentItems then return end
-
-    local totalW = CARD_W + CARD_GAP
+    local stock = shop.getStock()
+    local totalW = STALL_W * 3 + STALL_GAP * 2
     local startX = (w - totalW) / 2
-    local gridStartY = 70
+    local gridStartY = 72
 
-    -- animacion de entrada
+    -- animacion de entrada (tambien al rerollear)
     if openTimer < 1 then
         openTimer = openTimer + 0.03
     end
 
-    for idx, def in ipairs(currentItems) do
-        local cardY = gridStartY + (idx - 1) * (CARD_H + CARD_GAP)
-        local entryDelay = (page - 1) * #pageItems[1] + idx
-        local entryFrac = math.min(1, math.max(0, (openTimer - entryDelay * 0.06) / 0.3))
+    for idx = 1, 3 do
+        local offer = stock[idx]
+        local cardX = startX + (idx - 1) * (STALL_W + STALL_GAP)
+        local entryFrac = math.min(1, math.max(0, (openTimer - (idx - 1) * 0.12) / 0.3))
         local eased = entryFrac * entryFrac * (3 - 2 * entryFrac)
-        local drawY = cardY + (1 - eased) * 40
+        local drawY = gridStartY + (1 - eased) * 40
 
-        cardRects[#cardRects + 1] = {x = startX, y = drawY, w = CARD_W, h = CARD_H, item = def, cardIdx = idx}
-
-        local own = shop.isOwned(def.id)
-        local affordable = monedas >= (def.cost or 0)
-        local hovered = mx >= startX and mx <= startX + CARD_W and my >= drawY and my <= drawY + CARD_H
+        cardRects[idx] = {x = cardX, y = drawY, w = STALL_W, h = STALL_H}
+        local def = offerDef(offer)
+        local sold = offer and offer.sold
+        local affordable = offer and not sold and monedas >= (offer.price or 0)
+        local hovered = mx >= cardX and mx <= cardX + STALL_W and my >= drawY and my <= drawY + STALL_H
 
         -- card bg
-        love.graphics.setColor(constants.COLOR_PANEL[1], constants.COLOR_PANEL[2], constants.COLOR_PANEL[3], constants.COLOR_PANEL[4] * (0.5 + eased * 0.5))
-        love.graphics.rectangle("fill", startX, drawY, CARD_W, CARD_H, 4)
+        local bgA = offer and (0.5 + eased * 0.5) or 0.3
+        love.graphics.setColor(constants.COLOR_PANEL[1], constants.COLOR_PANEL[2], constants.COLOR_PANEL[3], constants.COLOR_PANEL[4] * bgA)
+        love.graphics.rectangle("fill", cardX, drawY, STALL_W, STALL_H, 4)
 
-        -- borde
-        if own then
-            love.graphics.setColor(0.3, 0.8, 0.3, 0.4)
+        -- borde por estado
+        if not offer then
+            love.graphics.setColor(0.3, 0.3, 0.35)
+            love.graphics.setLineWidth(1)
+        elseif sold then
+            love.graphics.setColor(0.3, 0.8, 0.3, 0.6)
+            love.graphics.setLineWidth(2)
         elseif hovered and affordable then
             local pulse = math.sin(time * 4) * 0.3 + 0.7
             love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pulse)
@@ -269,75 +350,114 @@ function shop.draw(monedas, velocidadActual)
             love.graphics.setColor(0.4, 0.4, 0.4)
             love.graphics.setLineWidth(1)
         end
-        love.graphics.rectangle("line", startX, drawY, CARD_W, CARD_H, 4)
+        love.graphics.rectangle("line", cardX, drawY, STALL_W, STALL_H, 4)
         love.graphics.setLineWidth(1)
 
         -- purchase flash
         for i = #purchaseFlash, 1, -1 do
             local pf = purchaseFlash[i]
-            if pf.idx == (page - 1) * #currentItems + idx then
+            if pf.idx == idx then
                 love.graphics.setColor(0.3, 0.9, 0.3, pf.timer / 0.3 * 0.4)
-                love.graphics.rectangle("fill", startX, drawY, CARD_W, CARD_H, 4)
+                love.graphics.rectangle("fill", cardX, drawY, STALL_W, STALL_H, 4)
             end
         end
 
-        -- icono
-        local iconSize = 28
-        local iconX = startX + 10
-        local iconY = drawY + (CARD_H - iconSize) / 2
-        drawIcon(def.icon or def.id, iconX, iconY, iconSize)
-
-        -- texto
-        local textX = iconX + iconSize + 12
-        local textColor = {1, 1, 1}
-        if own then
-            textColor = {0.4, 0.4, 0.4}
-        elseif not affordable then
-            textColor = {0.5, 0.5, 0.5}
-        end
-
-        if fontNormal then love.graphics.setFont(fontNormal) end
-        love.graphics.setColor(textColor[1], textColor[2], textColor[3])
-        love.graphics.print(def.name or def.id, textX, drawY + 12)
-
-        if fontSmall then love.graphics.setFont(fontSmall) end
-        love.graphics.setColor(textColor[1], textColor[2], textColor[3], 0.7)
-        love.graphics.print(def.desc or "", textX, drawY + 34)
-        love.graphics.print(def.desc2 or "", textX, drawY + 46)
-
-        if fontNormal then love.graphics.setFont(fontNormal) end
-        if own then
-            love.graphics.setColor(0.3, 0.8, 0.3)
-            love.graphics.print("ADQUIRIDO", textX, drawY + 68)
+        if not offer or not def then
+            if fontNormal then love.graphics.setFont(fontNormal) end
+            love.graphics.setColor(0.4, 0.4, 0.45)
+            love.graphics.printf("VACIO", cardX, drawY + 90, STALL_W, "center")
         else
-            love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-            love.graphics.print((def.cost or 0) .. " monedas", textX, drawY + 68)
+            -- etiqueta de tipo
+            if fontSmall then love.graphics.setFont(fontSmall) end
+            if offer.kind == "tarot" then
+                love.graphics.setColor(def.color[1], def.color[2], def.color[3])
+                love.graphics.printf("TAROT", cardX, drawY + 8, STALL_W, "center")
+                tarotArtMod.draw(offer.id, cardX + (STALL_W - 56) / 2, drawY + 24, 56)
+            else
+                love.graphics.setColor(0.5, 0.6, 0.7)
+                love.graphics.printf("ITEM", cardX, drawY + 8, STALL_W, "center")
+                drawIcon(def.icon or def.id, cardX + (STALL_W - 40) / 2, drawY + 24, 40)
+            end
+
+            -- nombre + descripcion
+            local textColor = {1, 1, 1}
+            if sold or not affordable then textColor = {0.5, 0.5, 0.5} end
+            if fontNormal then love.graphics.setFont(fontNormal) end
+            love.graphics.setColor(textColor[1], textColor[2], textColor[3])
+            love.graphics.printf(def.name or def.id, cardX + 8, drawY + 88, STALL_W - 16, "center")
+            if fontSmall then love.graphics.setFont(fontSmall) end
+            love.graphics.setColor(textColor[1], textColor[2], textColor[3], 0.75)
+            if offer.kind == "tarot" then
+                local l1, l2 = splitDesc(def.desc or "", 24)
+                love.graphics.printf(l1, cardX + 8, drawY + 112, STALL_W - 16, "center")
+                love.graphics.printf(l2, cardX + 8, drawY + 124, STALL_W - 16, "center")
+            else
+                love.graphics.printf(def.desc or "", cardX + 8, drawY + 112, STALL_W - 16, "center")
+                love.graphics.printf(def.desc2 or "", cardX + 8, drawY + 124, STALL_W - 16, "center")
+            end
+
+            -- precio o estado
+            if fontNormal then love.graphics.setFont(fontNormal) end
+            if sold then
+                love.graphics.setColor(0.3, 0.8, 0.3)
+                love.graphics.printf("ADQUIRIDO", cardX, drawY + 150, STALL_W, "center")
+            else
+                love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
+                love.graphics.printf("[" .. idx .. "] " .. (offer.price or 0) .. " monedas", cardX, drawY + 150, STALL_W, "center")
+            end
+            if fontSmall then love.graphics.setFont(fontSmall) end
+            love.graphics.setColor(0.6, 0.6, 0.7)
+            love.graphics.printf("tecla " .. idx, cardX, drawY + STALL_H - 20, STALL_W, "center")
         end
     end
 
-    -- pie: controles + paginacion
-    local footerY = h - 60
-    if fontSmall then love.graphics.setFont(fontSmall) end
-    love.graphics.setColor(0.5, 0.5, 0.5)
-    love.graphics.printf("A/D - PAGINA    ESPACIO - CONTINUAR    ESC - SALIR", 0, footerY, w, "center")
-
-    -- indicador de pagina
+    -- boton reroll global escalado
+    local rcost = shop.rerollCost()
+    local rbW, rbH = 240, 34
+    local rbX, rbY = (w - rbW) / 2, gridStartY + STALL_H + 12
+    rerollRect = {x = rbX, y = rbY, w = rbW, h = rbH}
+    local rHover = mx >= rbX and mx <= rbX + rbW and my >= rbY and my <= rbY + rbH
+    local rAfford = monedas >= rcost
+    love.graphics.setColor(0.15, 0.12, 0.05, 0.9)
+    love.graphics.rectangle("fill", rbX, rbY, rbW, rbH, 6)
+    if rAfford then
+        love.graphics.setColor(1, 0.8, 0.2, rHover and 1 or 0.6)
+    else
+        love.graphics.setColor(0.4, 0.4, 0.4)
+    end
+    love.graphics.setLineWidth(rHover and 2 or 1)
+    love.graphics.rectangle("line", rbX, rbY, rbW, rbH, 6)
+    love.graphics.setLineWidth(1)
     if fontNormal then love.graphics.setFont(fontNormal) end
-    for p = 1, totalPages do
-        local px = w / 2 - (totalPages * 12) / 2 + (p - 1) * 12
-        if p == page then
-            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3])
-        else
-            love.graphics.setColor(0.3, 0.3, 0.3)
-        end
-        love.graphics.circle("fill", px, footerY + 16, 3)
-    end
+    love.graphics.printf("REROLL (R): " .. rcost .. "$", rbX, rbY + 8, rbW, "center")
+
+    -- mini slots ocupados
+    if fontSmall then love.graphics.setFont(fontSmall) end
+    love.graphics.setColor(0.5, 0.6, 0.7)
+    local slotNames = {}
+    for i = 1, 3 do slotNames[i] = shop.slots[i] or "-" end
+    love.graphics.printf("SLOTS: [" .. table.concat(slotNames, "] [") .. "]", 0, rbY + rbH + 8, w, "center")
+
+    -- pie: controles
+    local footerY = h - 30
+    love.graphics.setColor(0.5, 0.5, 0.5)
+    love.graphics.printf("1-3 COMPRAR    R REROLL    ESPACIO CONTINUAR    ESC SALIR", 0, footerY, w, "center")
 end
 
-function shop.abrir(monedas)
+-- renew=true en visita fresca (nuevo stock + reroll a 0); sin renew conserva stock.
+function shop.abrir(monedas, renew)
     shop.loadFonts()
     openTimer = 0
     displayCoins = monedas or 0
+    if renew or not shop.stock then
+        shop.newVisit()
+    end
+end
+
+function shop.newVisit()
+    shop.rerolls = 0
+    shop.rollStock()
+    openTimer = 0
 end
 
 function shop.update(dt)
@@ -352,14 +472,8 @@ end
 
 function shop.keypressed(tecla, monedas)
     monedas = monedas or 0
-    if tecla == "a" or tecla == "left" then
-        page = ((page - 2 + totalPages) % totalPages) + 1
-        openTimer = 0
-        return nil
-    elseif tecla == "d" or tecla == "right" then
-        page = (page % totalPages) + 1
-        openTimer = 0
-        return nil
+    if tecla == "r" then
+        return shop.doReroll(monedas)
     end
 
     if tecla == "space" or tecla == "return" or tecla == "kpenter" then
@@ -368,22 +482,14 @@ function shop.keypressed(tecla, monedas)
         return "exit"
     end
 
-    -- teclas 1-3 (incluyendo keypad) para items de la pagina actual
+    -- teclas 1-3 (incluyendo keypad) compran el puesto correspondiente
     local num = tonumber(tecla)
     if not num and type(tecla) == "string" and tecla:match("^kp([1-9])$") then
         num = tonumber(tecla:match("^kp([1-9])$"))
     end
 
     if num and num >= 1 and num <= 3 then
-        local currentItems = pageItems[page]
-        if currentItems and currentItems[num] then
-            local itemDef = currentItems[num]
-            local result = shop.procesarCompra(monedas, itemDef.id, itemDef.cost)
-            if result then
-                table.insert(purchaseFlash, {idx = (page - 1) * 3 + num, timer = 0.3})
-            end
-            return result
-        end
+        return shop.buyStall(num, monedas)
     end
 
     return nil
@@ -439,14 +545,13 @@ end
 
 function shop.mousepressed(x, y, monedas)
     monedas = monedas or 0
+    if rerollRect and x >= rerollRect.x and x <= rerollRect.x + rerollRect.w
+        and y >= rerollRect.y and y <= rerollRect.y + rerollRect.h then
+        return shop.doReroll(monedas)
+    end
     for idx, rect in ipairs(cardRects) do
         if x >= rect.x and x <= rect.x + rect.w and y >= rect.y and y <= rect.y + rect.h then
-            local result = shop.procesarCompra(monedas, rect.item.id, rect.item.cost)
-            if result then
-                local cardIndex = rect.cardIdx or idx
-                table.insert(purchaseFlash, {idx = (page - 1) * 3 + cardIndex, timer = 0.3})
-            end
-            return result
+            return shop.buyStall(idx, monedas)
         end
     end
     return nil
@@ -468,7 +573,8 @@ function shop.reset(keepInventory)
     end
     shop.magnetTimer = 0
     shop.shieldActive = false
-    page = 1
+    shop.stock = nil
+    shop.rerolls = 0
     purchaseFlash = {}
 end
 

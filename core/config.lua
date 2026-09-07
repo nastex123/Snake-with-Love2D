@@ -36,6 +36,17 @@ config.ROOM_SHADOW_INTERVAL = 0.9
 config.ROOM_TUNNEL_RADIUS = 5
 -- Mystery Rooms (GDD §15): probabilidad por sala candidata (boss/elite/sala1 excluidos)
 config.ROOM_MYSTERY_CHANCE = 0.06
+-- Tienda v2 (GDD §13 rework): precios tarot por tier, reroll escalado, stock mixto
+config.TAROT_PRICES = {
+    mercury = 60, reaper = 60,
+    absolute_zero = 45, dragon_blood = 45, eagle_eye = 45,
+    iron_spine = 30, magic_circle = 30, astral_mirror = 30, alchemical_digestion = 30,
+    shadow_thief = 20, midas_pouch = 20, iron_heart = 20,
+}
+config.SHOP_REROLL_BASE = 5
+config.SHOP_REROLL_STEP = 2
+config.SHOP_STALLS = 3
+config.SHOP_TAROT_CHANCE = 0.40
 -- 15.1 Apostador: apuesta, tiempo, doradas, premio oro y chasers de derrota
 config.GAMBLER_BET = 10
 config.GAMBLER_TIME = 15.0

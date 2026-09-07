@@ -142,7 +142,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | dungeonGen.lua | world/ | 530 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
 | populate.lua | world/ | 314 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
 | items.lua | systems/ | 208 | itemsMod | Item definitions (registry 22 + 4 categorías) |
-| shop.lua | systems/ | 475 | shopMod | Shop logic and UI |
+| shop.lua | systems/ | 581 | shopMod | Tienda v2: 3 puestos mixtos + reroll (ver §10.29) |
 | persistence.lua | systems/ | 862 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) |
 | profiles.lua | systems/ | 330 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
 | profilesDraw.lua | systems/ | 511 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
@@ -155,7 +155,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | gamestates/playing.lua | systems/gamestates/ | 999 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
 | gamestates/transition.lua | systems/gamestates/ | 85 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
 | gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
-| tarot.lua | systems/ | 258 | — | Tarot Draft GDD §14: TAROT_DEFS 12 + sample/open/choose/has + helpers hooks + draw modal |
+| tarot.lua | systems/ | 284 | — | Tarot GDD §14: TAROT_DEFS 12 + sample/open/choose/has/buy/shopPool/price + helpers hooks (draft de sala retirado en tienda v2) |
 | tarotArt.lua | systems/ | 54 | — | Loader PNG 20x20 cartas con cache + fallback (TDD §10.13) |
 | roomMutators.lua | systems/ | 264 | — | 10 mutadores GDD §19: DEFS + roll/hooks P1-P4 (TDD §10.27) |
 | mystery.lua | systems/ | 336 | — | 4 salas GDD §15: DEFS + roll/assign/hooks P1-P3 (TDD §10.28) |
@@ -886,7 +886,6 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
 
 ### 10.28 Special Mystery Rooms Engine ✅ Completed (2026-09-07 `feature/phase8-mystery-rooms`)
-
 * **Módulo**: `systems/mystery.lua` (336L, data-driven; suite scope_25 24 tests).
 * **Catálogo**: `MYSTERY_DEFS` 4 salas (GDD §15) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(room, idx)` 6% (`ROOM_MYSTERY_CHANCE`), excluye boss/elite/sala 1; `assign(dungeon)` en `world.init/avanzarEtapa` fija `room.mystery`; runtime por sala en `World.state.mysteryData` (renovado en `iniciarSala`).
@@ -894,6 +893,13 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Mecánicas por punto**: P2 Gambler/GoldRush, P3 Doppelganger/Triads.
 * **P2 Apuesta+Oro ✅**: `gamblerRoulette/gamblerPlaceBet/gamblerTick/gamblerGoldEaten/gamblerNeedsGold` (apuesta 10$, 15s, 3 doradas secuenciales forzando `foodMod.tipo`, premio 40$ + pasivo/activo via `shop.procesarCompra` costo 0 + racha +0.3, derrota 2 chasers; frutos simples por modelo de comida única) + `beginGoldRush/stepCoins/collectCoins/goldRushTick` (20 monedas 6.0 celdas/s con rebote, recoleccion radio 1.4 Manhattan, puerta a los 12s; sala limpiada con `enemiesMod.init` al entrar; ruleta y monedas dibujadas en `renderMain`).
 * **P3 Espejo+Sellos ✅**: `beginDoppel/doppelTick/doppelTouchesHead/doppelFed/doppelHead` (cuerpo espejado, replica con `DOPPEL_DELAY=1.2`, paso al ritmo de `velocidadActual`, disolver por `pointInPolygon` expuesto en `collisions` o 3 normales, premio 30$ + item) + `triadsRunes/beginTriads/triadsStep` (esquinas 1-2-3, solo al entrar, reset ante desorden, 10s, altar 50$ + 2 items, 2 patrulleros extra al entrar); draw amatista y runas numeradas en `renderMain`.
+
+### 10.29 Tienda v2 — Puestos Mixtos + Reroll 🏗️ In Progress (2026-09-07)
+
+* **Módulo**: `systems/shop.lua` (581L rewrite; suite scope_15 reescrita + scope_26 8 tests).
+* **Stock**: 3 puestos, 60% item / 40% tarot (`SHOP_TAROT_CHANCE`), sin duplicados ni poseídos/equipados; `abrir(monedas, renew)` conserva stock salvo visita fresca (`transitionToShop`, muerte).
+* **Reroll**: `doReroll` a `SHOP_REROLL_BASE=5 + SHOP_REROLL_STEP=2` por uso (tecla R + botón, re-anima entrada).
+* **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); draft de salas retirado de `playing`; draw usa PNG `tarotArt`.
 
 ## 11. Love2D Gotchas
 

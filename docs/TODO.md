@@ -59,7 +59,7 @@
 
 ## In Progress (Tienda v2 — rebuild + Tarot comprable + economía)
 - [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
-- [ ] **Código**: config (precios/tiers, reroll, prob. mixta) → `tarot.lua` (`price`, `shopOffer`, `buy`, fuera trigger 1/2/4) → rewrite `shop.lua` (puestos + reroll + anims) → scope_26 → docs (GDD §13/§14, TDD)
+- [x] **Código** ✅: config (`TAROT_PRICES`, `SHOP_REROLL_BASE/STEP/STALLS/TAROT_CHANCE`) + `tarot.lua` (`price`, `shopPool`, `buy` sin tope, fuera trigger draft 1/2/4) + rewrite `shop.lua` 581L (3 puestos mixtos, reroll R/botón, compra tarot con PNG, `abrir` con renew) + scope_15 reescrita + scope_26 (8 tests)
 
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):

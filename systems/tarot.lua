@@ -58,6 +58,32 @@ function tarot.count()
     return #tarot.getActive()
 end
 
+-- Tienda v2 (GDD §13 rework): precio por carta (tier S60/A45/B30/C20)
+function tarot.price(id)
+    local prices = constants.TAROT_PRICES
+    if type(prices) == "table" and type(prices[id]) == "number" then
+        return prices[id]
+    end
+    return 30
+end
+
+-- Pool comprable: definitivas no equipadas (sin tope, manda el stock)
+function tarot.shopPool()
+    local pool = {}
+    for _, d in ipairs(tarot.TAROT_DEFS) do
+        if not tarot.has(d.id) then pool[#pool + 1] = d.id end
+    end
+    return pool
+end
+
+-- Compra desde la tienda; retorna el id o nil si ya equipada/invalida
+function tarot.buy(id)
+    if not findDef(id) or tarot.has(id) then return nil end
+    local active = tarot.getActive()
+    active[#active + 1] = id
+    return id
+end
+
 -- Muestrea N opciones aleatorias no equipadas (Fisher-Yates parcial, sin reemplazo)
 function tarot.sampleOptions(n)
     n = n or tarot.OPTIONS_COUNT

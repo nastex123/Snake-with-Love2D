@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (shop v2 code)
+
+- **feature** (in-progress - 2026-09-07): Tienda v2 código (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — config**: `TAROT_PRICES` (tiers S60/A45/B30/C20), `SHOP_REROLL_BASE=5`, `SHOP_REROLL_STEP=2`, `SHOP_STALLS=3`, `SHOP_TAROT_CHANCE=0.40`.
+  2. **QUE — `tarot.lua`**: `price/shopPool/buy` sin tope; trigger draft salas 1/2/4 eliminado de `playing` (estado TAROT reservado).
+  3. **QUE — rewrite `shop.lua` 581L**: 3 puestos mixtos sin duplicados, reroll R/botón con re-animación, compra tarot (`{kind="tarot"}`) con PNG, `abrir(monedas, renew)` (visita fresca solo en transiciones/muerte), slots visibles, scope_15 reescrita + scope_26 (8 tests).
+  4. **QUE — docs**: GDD controles/§13.3/§14.1/§20.10, TDD tabla + §10.29, TODO, `tests/main.lua` intacto en runner.
+  5. **Verificación**: `love tests` 692/672 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (shop v2 proto)
 
 - **docs** (prototype - 2026-09-07): Tienda v2 Layout A interactivo (America/Bogota, rama `feature/phase8-mystery-rooms`):

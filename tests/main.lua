@@ -37,6 +37,7 @@ if pcall(require, "tests.test_scope_21_items_arsenal") then end
 if pcall(require, "tests.test_scope_23_tarot") then end
 if pcall(require, "tests.test_scope_24_mutators") then end
 if pcall(require, "tests.test_scope_25_mystery") then end
+if pcall(require, "tests.test_scope_26_shopv2") then end
 
 -- Source files for full coverage reporting
 local source_files = {

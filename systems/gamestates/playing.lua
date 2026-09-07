@@ -871,11 +871,6 @@ function playing.update(dt)
                         end
                     end
                 end
-                -- Tarot Draft (GDD §14): salas 1/2/4 abren el tapete antes de la transición
-                if tarotMod.shouldOffer(worldMod.sala or worldMod.getSala()) then
-                    tarotMod.open(worldMod.sala or worldMod.getSala())
-                    return true
-                end
                 st.transitionTarget = "siguienteSala"
                 st.transitionPhase = 1
                 st.fadeDir = 1
