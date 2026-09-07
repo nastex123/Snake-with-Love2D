@@ -84,8 +84,12 @@
 - [x] **Boss Enrage Phase & Laser Attacks** — `feature/phase8-enrage` 2026-09-05 ✅ bloque cerrado:
   - [x] 3-food threshold enrage state (35% faster telegraphs & high tempo music) — `BOSS_ENRAGE_*` config, telegraph `/1.35`, pitch `1.15x`, pulso carmesí + popup `FURIA DEL JEFE!`, 4 tests scope_11
   - [x] Laser Perimeter attack (center dividing continuous beams) — `laser_perimeter` minPhase 2 (telegraph 1.0s, cooldown 7.0s), rectángulo 4 rayos 4.0s en centro de sala, `addLaser` pooled, colisión `point_seg_dist` < 0.45, render glow rojo + núcleo blanco, 6 tests scope_11 (582 tests, 562 PASS)
-- [ ] **Room Modifiers, Curses & Blessings**:
-  - [ ] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
+- [x] **Room Modifiers, Curses & Blessings** — `feature/phase8-room-modifiers` 2026-09-07 ✅ (suite scope_24, 22 tests):
+  - [x] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
+  - [x] **P1 Framework** — `feature/phase8-room-modifiers` ✅: `systems/roomMutators.lua` (10 DEFS + roll/get/has/apply/clear + estado `World.state.roomMutator`), `ROOM_MUTATOR_CHANCE=0.35` (boss/elite excluidos), roll en `iniciarSala` antes de poblar, banner popup + badge HUD, suite scope_24
+  - [x] **P2 Simples** ✅: Midas +2$/fruta y -1pto/s (`playing` eat+tick), Velo sellado slots (`main` 1-3) y x2 monedas al superar (`transition`), Contrarreloj 10s + pasivo gratis (`playing`+`transition`), Dualidad pares espejados enemigos + fruta twin (`populate`, limpieza en eat)
+  - [x] **P3 Medios** ✅: Gravedad Cero deriva sin reposo tactico (`movement`), Pluma solo 3 segmentos letales (`movement`), Titan cruz propia letal +50/fruta (`movement`+`playing` eat)
+  - [x] **P4 Pesados** ✅: Sombra espectro Chebyshev 0.9s toda la etapa + muerte al contacto (`roomMutators`+`playing` tick+`renderMain`), Fenix revive 1/etapa 3 segmentos + 3s fantasma (`playing`+`world` resetStage), Tunel mascara radio 5 (`renderMain`, badge FENIX/SOMBRA extra en HUD)
 - [x] **Stage Tarot Draft System** — `feature/phase8-tarot` 2026-09-06 ✅ (suite scope_23, 24 tests):
   - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
   - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs

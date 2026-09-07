@@ -866,6 +866,17 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 **Estado:** `completed` 2026-09-04 16:00 — P01-P15 ✅ en `dev@8691a29`. Deuda residual: `persistence.lua` 862L (split futuro).
 
+### 10.27 Room Mutators Engine ✅ Completed (2026-09-07 `feature/phase8-room-modifiers`)
+
+* **Módulo**: `systems/roomMutators.lua` (~90L, data-driven; suite scope_24).
+* **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
+* **Asignación**: `roll(sala, room)` — 35% (`ROOM_MUTATOR_CHANCE`) por sala, excluye boss (`template`/sala 5) y élite (`isElite`); `apply()` en `gameflow.iniciarSala` antes de `populateRoom` (Dual duplica spawns); estado en `world.state.roomMutator` + `roomMutatorData`.
+* **Feedback**: banner popup `MUTADOR: <TAG>` al entrar + badge en `ui/hudUI.lua` con color del mutador.
+* **Hooks por punto**: P2 simples (Midas/Silent/TimeTrial/Dual), P3 medios (Feather/Zero-G/Titan), P4 pesados (Shadow/Phoenix/Tunnel).
+* **P2 Simples ✅**: `midasFruitBonus/midasDrain` (eat + tick 1pto/s en `playing`), `itemsSealed` (bloqueo 1-3 en `main.lua`) + `silentMarkCoins/silentClearBonus` (x2 en `transition`), `timeTrialTick/timeTrialWon/randomUnownedPassive` (`ROOM_TIME_TRIAL_DURATION=10.0`, premio en objetivo + aviso al expirar), `dualActive` (par espejado en `populate` con `tileFree` + fruta twin `dualTwin` con limpieza en eat).
+* **P3 Medios ✅**: `zeroGDrift` (inercia sin reposo en `movement.mover`), `featherActive` (corte letal en idx>3 en colision propia), `titanGirth/titanFruitBonus` (cruz propia letal salvo cabeza vieja +50 en eat).
+* **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
+
 ## 11. Love2D Gotchas
 
 | Wrong | Correct |

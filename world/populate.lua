@@ -1,5 +1,15 @@
 local constants = require("constants")
 local populate = {}
+local mutatorsMod = require("systems.roomMutators")
+
+local function tileFree(avoidList, gx, gy, ancho, alto)
+    if not gx or not gy or gx < 0 or gy < 0 or gx >= ancho or gy >= alto then return false end
+    for _, a in ipairs(avoidList or {}) do
+        local req = math.max(a.radius or 0, 2)
+        if math.abs(gx - a.x) + math.abs(gy - a.y) < req then return false end
+    end
+    return true
+end
 
 local function buildAvoidList(snakeBody, obstaclesPos, enemiesList, foodPos, twinPos)
     local list = {}
@@ -191,6 +201,17 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
         if gx then
             foodMod.generar(snakeBody, anchoGrilla, altoGrilla, (obstaclesMod and obstaclesMod.pos) or obstaclesList, foodType, gx, gy)
             reservePosition(avoidList, gx, gy, 1)
+            -- Dualidad (GDD §19.69): fruta espejo simetrica en slot twin (solo comida simple)
+            if mutatorsMod.dualActive() and foodMod.twinPos == nil
+                and (foodMod.tipo == constants.FOOD_NORMAL or foodMod.tipo == constants.FOOD_GOLD
+                    or foodMod.tipo == constants.FOOD_COIN) then
+                local mx, my = anchoGrilla - 1 - gx, altoGrilla - 1 - gy
+                if tileFree(avoidList, mx, my, anchoGrilla, altoGrilla) then
+                    foodMod.twinPos = {x = mx, y = my}
+                    foodMod.dualTwin = true
+                    reservePosition(avoidList, mx, my, 1)
+                end
+            end
         else
             foodMod.generar(snakeBody, anchoGrilla, altoGrilla, (obstaclesMod and obstaclesMod.pos) or obstaclesList, foodType)
         end
@@ -242,6 +263,18 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
                     }
                     if enemiesMod and enemiesMod.spawnAt then
                         enemiesMod.spawnAt(erule.type, gx, gy, params)
+                        -- Dualidad (GDD §19.69): par simetrico espejado (direccion invertida)
+                        if mutatorsMod.dualActive() then
+                            local mx, my = anchoGrilla - 1 - gx, altoGrilla - 1 - gy
+                            if tileFree(avoidList, mx, my, anchoGrilla, altoGrilla) then
+                                enemiesMod.spawnAt(erule.type, mx, my, {
+                                    moveInterval = params.moveInterval,
+                                    dirX = pDirX and -pDirX or nil,
+                                    dirY = pDirY and -pDirY or nil,
+                                })
+                                reservePosition(avoidList, mx, my, 3)
+                            end
+                        end
                     end
                 end
                 placeNEntities(spawnFn, 1, anchoGrilla, altoGrilla, avoidList, {

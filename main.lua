@@ -19,6 +19,7 @@ local renderMain = require('render.renderMain')
 local touch = require('core.touch')
 local achievementsMod = require('systems.achievements')
 local tarotMod = require('systems.tarot')
+local mutatorsMod = require('systems.roomMutators')
 
 local FIXED_DT = 1 / 60
 local accumulator = 0
@@ -458,6 +459,12 @@ function love.keypressed(tecla)
 
         local num = tonumber(tecla)
         if num and num >= 1 and num <= 3 then
+            -- Velo Silencioso (GDD §19.64): items sellados en PLAYING
+            if world.state.gameState == constants.GAME_STATE_PLAYING and mutatorsMod.itemsSealed() then
+                local head = world.state.player and world.state.player.body and world.state.player.body[1]
+                if head then uiMod.addPopup("SELLADO", head.x, head.y) end
+                return
+            end
             local itemId = shop.slotActivate(num)
             if itemId then
                 playerMod.aplicarItem(itemId)

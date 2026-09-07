@@ -8,6 +8,39 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mutators P4)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P4 Pesados (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Sombra (65)**: `shadowStep/spawnShadowPos/shadowTick` (persecucion Chebyshev cada 0.9s, spawn en esquina lejana, persiste toda la etapa, muerte al contacto; draw pulsante en `renderMain` + badge SOMBRA).
+  2. **QUE — Fenix (67)**: `phoenixAvailable/phoenixConsume/resetStage` (revive 1/etapa con 3 segmentos + fantasma 3s + limpieza radio 3, intercepta muerte normal y de sombra; reseteado en `init/avanzarEtapa` + badge FENIX).
+  3. **QUE — Tunel (68)**: mascara de 4 rects con radio 5 alrededor de la cabeza en `renderMain` (`ROOM_TUNNEL_RADIUS`).
+  4. **Verificación**: `love tests` 660/640 PASS (20 pre-existentes), scope_24 +5, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mutators P3)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P3 Medios (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Gravedad Cero (61)**: `zeroGDrift` ignora el reposo tactico en `movement.mover` (deriva con la ultima direccion hasta nuevo input).
+  2. **QUE — Pluma (63)**: `featherActive` corta la colision propia en idx>3 (cuello 2-3 sigue letal).
+  3. **QUE — Titan (70)**: `titanGirth` hace letal la cruz propia salvo cabeza vieja + `titanFruitBonus` +50 en eat.
+  4. **Verificación**: `love tests` 655/635 PASS (20 pre-existentes), scope_24 +3, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mutators P2)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P2 Simples (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — Midas (62)**: `midasFruitBonus` +2$/fruta en eat y `midasDrain` -1pto/s en tick (`playing`).
+  2. **QUE — Velo (64)**: `itemsSealed` bloquea slots 1-3 en PLAYING (`main`) + `silentClearBonus` duplica lo ganado al superar (`transition`, base `silentMarkCoins` en `iniciarSala`).
+  3. **QUE — Contrarreloj (66)**: `timeTrialTick/timeTrialWon` (`ROOM_TIME_TRIAL_DURATION=10.0`), pasivo aleatorio no poseido al cumplir a tiempo + aviso al expirar.
+  4. **QUE — Dualidad (69)**: pares espejados de enemigos (direccion invertida) + fruta espejo en slot twin solo comida simple (`populate`, `tileFree`, limpieza `dualTwin` en eat y `generar`).
+  5. **Verificación**: `love tests` 652/632 PASS (20 pre-existentes), scope_24 +6, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mutators P1)
+
+- **feature** (in-progress - 2026-09-07): Room Mutators P1 Framework (America/Bogota, rama `feature/phase8-room-modifiers`):
+  1. **QUE — `systems/roomMutators.lua` (nuevo, ~90L)**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) + `roll/get/has/apply/clear/getDef/data` + estado `World.state.roomMutator/roomMutatorData`.
+  2. **QUE — cableado**: `ROOM_MUTATOR_CHANCE=0.35` (config), roll en `gameflow.iniciarSala` antes de poblar (boss/elite excluidos), banner popup `MUTADOR: <TAG>` + badge en `ui/hudUI.lua`.
+  3. **QUE — Tests + docs**: suite scope_24 (8 tests) cableada en runner; GDD §19.1, TDD §10.27, TODO.
+  4. **Verificación**: `love tests` 646/626 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-06 00:08
 
 - **feature** (completed - 2026-09-06 00:08): Stage Tarot Draft System (America/Bogota, consola-only, rama `feature/phase8-tarot`):

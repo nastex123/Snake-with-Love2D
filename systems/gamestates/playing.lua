@@ -26,6 +26,7 @@ local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
+local mutatorsMod = require("systems.roomMutators")
 
 -- Batería de Emergencia (GDD item 57): bullet-time 0.1x con dt escalado
 -- (pendingDeathTimer en tiempo escalado ≈ 1.5s reales); retorna true si se activó
@@ -124,6 +125,28 @@ local function headOnMiniBoss(st, mb)
     local head = st.player.body and st.player.body[1]
     if not head or not mb then return false end
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
+end
+
+-- Bendicion del Fenix (GDD §19.67): revive gratis 1 vez por etapa (3 segmentos + 3s fantasma)
+local function phoenixRevive(st)
+    if not mutatorsMod.phoenixAvailable() then return false end
+    local p = st.player
+    if not (p and p.body and #p.body > 0) then return false end
+    mutatorsMod.phoenixConsume()
+    while #p.body > 3 do table.remove(p.body) end
+    p.ghost = true
+    p.ghostTimer = 3.0
+    p.flashTimer = 3.0
+    local head = p.body[1]
+    for i = #enemiesMod.list, 1, -1 do
+        local e = enemiesMod.list[i]
+        if e and e.alive and math.abs(e.x - head.x) <= 3 and math.abs(e.y - head.y) <= 3 then
+            enemiesMod.killEnemy(i)
+        end
+    end
+    uiMod.addPopup("FENIX!", head.x, head.y)
+    sound.play("highScore")
+    return true
 end
 
 function playing.update(dt)
@@ -538,6 +561,8 @@ function playing.update(dt)
         if not vivo then
             -- Batería de Emergencia (GDD item 57): bullet-time 0.1x antes del modal
             if triggerBattery(st) then return end
+            -- Bendicion del Fenix (GDD §19.67): revive gratis antes del modal
+            if phoenixRevive(st) then return true end
             st.roomDamaged = true
             st.deathModalOpen = true
             return true
@@ -604,6 +629,8 @@ function playing.update(dt)
                     monedasExtra = constants.COINS_PER_FRUIT
                     textPopup = "+10"
                 end
+                -- Pacto del Titan (GDD §19.70): +50 puntos base por fruta
+                puntosBase = puntosBase + mutatorsMod.titanFruitBonus()
 
                 if st.time - st.lastEatTime <= tarotMod.comboWindow() then
                     st.comboCount = st.comboCount + 1
@@ -625,6 +652,10 @@ function playing.update(dt)
                 st.puntuacion = st.puntuacion + total
                 st.frutasContador = st.frutasContador + 1
                 st.monedas = st.monedas + math.floor((monedasExtra + st.coinBonus) * streak)
+                -- Midas Avaro (GDD §19.62): +2 monedas por fruta
+                st.monedas = st.monedas + mutatorsMod.midasFruitBonus()
+                -- Dualidad (GDD §19.69): la fruta espejo se consume sin bonus extra
+                if comioTwin then foodMod.twinPos = nil; foodMod.dualTwin = nil end
                 -- Diente de Oro (GDD item 56): +1 moneda por fruta cada 10 segmentos
                 if shop.inventory and shop.inventory.goldenTooth then
                     local tooth = math.floor(#st.player.body / 10)
@@ -750,6 +781,20 @@ function playing.update(dt)
             end
 
             if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not st.transitionTarget then
+                -- Contrarreloj (GDD §19.66): premio si el objetivo se cumple a tiempo
+                if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
+                    mutatorsMod.data().rewarded = true
+                    if mutatorsMod.timeTrialWon() then
+                        local hasItems, itemsMod = pcall(require, "systems.items")
+                        local def = hasItems and mutatorsMod.randomUnownedPassive(itemsMod.registry, shop.inventory) or nil
+                        if def then
+                            shop.inventory[def.id] = true
+                            local head = st.player.body and st.player.body[1]
+                            if head then uiMod.addPopup("CRONO: " .. string.upper(def.id), head.x, head.y) end
+                            sound.play("highScore")
+                        end
+                    end
+                end
                 -- Tarot Draft (GDD §14): salas 1/2/4 abren el tapete antes de la transición
                 if tarotMod.shouldOffer(worldMod.sala or worldMod.getSala()) then
                     tarotMod.open(worldMod.sala or worldMod.getSala())
@@ -767,6 +812,20 @@ function playing.update(dt)
 
     uiMod.updatePopups(dt)
     if uiMod.updateToasts then uiMod.updateToasts(dt) end
+
+    -- Room Mutators tick (GDD §19): drenaje Midas + expiracion Contrarreloj
+    mutatorsMod.midasDrain(dt)
+    if mutatorsMod.timeTrialTick(dt) == "expired" then
+        local head = st.player.body and st.player.body[1]
+        if head then uiMod.addPopup("CRONO AGOTADO", head.x, head.y) end
+    end
+    -- Sombra Acechante (GDD §19.65): muerte al contacto (Fenix puede salvar)
+    if mutatorsMod.shadowTick(dt, st.player.body and st.player.body[1]) == "kill" then
+        if phoenixRevive(st) then return true end
+        st.roomDamaged = true
+        st.deathModalOpen = true
+        return true
+    end
 
     if st.comboFlashTimer > 0 then
         st.comboFlashTimer = st.comboFlashTimer - dt

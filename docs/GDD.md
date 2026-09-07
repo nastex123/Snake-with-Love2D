@@ -1011,6 +1011,11 @@ En cada expedición se activan 2 contratos secundarios con recompensas inmediata
 | **69** | **Sala de la Dualidad** | Entorno | Todos los spawns de enemigos y frutas se generan en pares simétricos duplicados. | Gran densidad de amenazas y abundancia de recursos. |
 | **70** | **Pacto del Titán** | Pacto | Cuerpo ocupa grosor de 1.5x, pero cada fruta ingerida suma +50 puntos base. | Riesgo extremo de colisión a cambio de récords masivos. |
 
+### 19.1 Asignación (implementado 2026-09-07 `feature/phase8-room-modifiers`)
+* **Roll**: 35% por sala al entrar (`ROOM_MUTATOR_CHANCE`), máximo 1 mutador activo por sala.
+* **Exclusiones**: salas boss y élite nunca tienen mutador.
+* **Feedback**: banner `MUTADOR: <TAG>` al entrar + badge permanente en el HUD.
+
 ## 20. Visual Style & Rendering Evolution (100 Propuestas de Arte y Renderizado)
 
 ### 20.1 Iluminación Dinámica & Sombras 2D (1–10)

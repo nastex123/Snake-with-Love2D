@@ -13,6 +13,7 @@ local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
+local mutatorsMod = require("systems.roomMutators")
 
 function gameflow.applyActiveProfile()
     local profile = persistence.getActiveProfile()
@@ -129,6 +130,10 @@ function gameflow.iniciarSala(keepInventory)
     gameflow.resetGame(keepInventory)
     worldMod.puntajeSala = 0
     st.puntuacion = 0
+    -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
+    mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
+    -- Velo Silencioso: registra monedas al entrar para duplicar al superar
+    mutatorsMod.silentMarkCoins(st.monedas or 0)
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
     if worldMod.sala == 1 then
         local bName = worldMod.getBiomeName()
@@ -141,6 +146,12 @@ function gameflow.iniciarSala(keepInventory)
     if mb and mb.alive then
         uiMod.addPopup("MINI-JEFE: " .. (mb.name or "ELITE"), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
     end
+    -- Room Mutators (GDD §19): banner del mutador activo de la sala
+    local mutDef = mutatorsMod.getDef()
+    if mutDef then
+        uiMod.addPopup("MUTADOR: " .. string.upper(mutDef.tag), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 4)
+        sound.play("buttonClick")
+    end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
     local hasTarot, tarotMod = pcall(require, "systems.tarot")
     if hasTarot and tarotMod.has("midas_pouch") then
@@ -148,6 +159,11 @@ function gameflow.iniciarSala(keepInventory)
         local head = st.player.body and st.player.body[1]
         uiMod.addPopup("MIDAS +3$", head and head.x or 5, head and head.y or 5)
         sound.play("buttonClick")
+    end
+    -- Sombra Acechante (GDD §19.65): el espectro reaparece cada sala de la etapa
+    if mutatorsMod.stageShadowActive() then
+        local head = st.player.body and st.player.body[1]
+        mutatorsMod.data().shadow = mutatorsMod.spawnShadowPos(head, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
     end
 end
 

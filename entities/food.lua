@@ -137,6 +137,7 @@ function food.generar(snake, anchoGrilla, altoGrilla, obstaclePos, forcedType, g
     food.pos.x = nuevaX
     food.pos.y = nuevaY
     food.twinPos = nil
+    food.dualTwin = nil
     food.spawnTimer = SPAWN_DURATION
     food.orbitTimer = constants.REPELLING_MOVE_INTERVAL or 1.5
 
