@@ -45,6 +45,13 @@ config.GAMBLER_LOSE_CHASERS = 2
 -- 15.3 Fiebre del Oro: duracion y monedas rebotando
 config.GOLDRUSH_TIME = 12.0
 config.GOLDRUSH_COINS = 20
+-- 15.2 Espejo: retraso de replica, premio y frutas para disolver
+config.DOPPEL_DELAY = 1.2
+config.DOPPEL_REWARD_COINS = 30
+config.DOPPEL_FED = 3
+-- 15.4 Sellos: tiempo limite y premio del altar
+config.TRIADS_TIME = 10.0
+config.TRIADS_REWARD_COINS = 50
 
 config.HIGH_SCORE_CELEBRATION_DURATION = 1.3
 

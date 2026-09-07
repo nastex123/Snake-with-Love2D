@@ -98,6 +98,7 @@
   - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
   - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
   - [x] **P2 Apuesta+Oro** ✅: Apostador ruleta central apuesta 10$ + 3 doradas secuenciales en 15s (premio 40$ + item + racha, derrota 2 chasers) + Fiebre 20 monedas rebotando 12s con puerta al expirar (`mystery`+`playing`+`gameflow`+`renderMain`)
+  - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
 - [ ] **Status Effects Engine**:
   - [ ] Overdrive on combo x6, Medusa Tail petrification, Venom Spore confusion, Cryo-Stasis
 - [ ] **Meta-Progression Shrine**:

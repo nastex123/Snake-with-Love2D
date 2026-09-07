@@ -167,4 +167,6 @@ function collisions.checkConstrictorLoop(s, enemiesList)
     return nil
 end
 
+collisions.pointInPolygon = pointInPolygon
+
 return collisions

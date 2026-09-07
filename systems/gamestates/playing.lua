@@ -128,9 +128,43 @@ local function headOnMiniBoss(st, mb)
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
 end
 
+-- Item aleatorio no poseido via tienda costo 0 (premios Contrarreloj/Espejo/Altar)
+local function grantRandomItem(st, onlyPassive)
+    local hasItems, itemsMod = pcall(require, "systems.items")
+    if not hasItems then return nil end
+    local pool = {}
+    for id, def in pairs(itemsMod.registry or {}) do
+        if type(def) == "table" and not shop.isOwned(def.id or id)
+            and (not onlyPassive or def.itemType == "passive") then
+            pool[#pool + 1] = def.id or id
+        end
+    end
+    for _ = 1, math.min(5, #pool) do
+        local pick = table.remove(pool, love.math.random(#pool))
+        local res = shop.procesarCompra(st.monedas, pick, 0)
+        if res then return pick end
+    end
+    return nil
+end
+
+-- Espejo disuelto (GDD §15.2): 30$ + cofre dorado (item aleatorio)
+local function awardDoppel(st)
+    local d = mysteryMod.data()
+    if d.doppelDone then return end
+    d.doppelDone = true
+    d.doppel = nil
+    st.monedas = (st.monedas or 0) + (constants.DOPPEL_REWARD_COINS or 30)
+    local head = st.player.body and st.player.body[1]
+    local pick = grantRandomItem(st)
+    if head then
+        uiMod.addPopup("ESPEJO +30$", head.x, head.y)
+        if pick then uiMod.addPopup("PREMIO: " .. string.upper(pick), head.x, head.y) end
+    end
+    sound.play("highScore")
+end
+
 -- Bendicion del Fenix (GDD §19.67): revive gratis 1 vez por etapa (3 segmentos + 3s fantasma)
-local function phoenixRevive(st)
-    if not mutatorsMod.phoenixAvailable() then return false end
+local function phoenixRevive(st)    if not mutatorsMod.phoenixAvailable() then return false end
     local p = st.player
     if not (p and p.body and #p.body > 0) then return false end
     mutatorsMod.phoenixConsume()
@@ -322,6 +356,17 @@ function playing.update(dt)
             end
             st.comboCount = st.comboCount + 2
             st.comboFlashTimer = 0.3
+        end
+    end
+
+    -- Espejo (GDD §15.2): encerrar la sombra con el lazo la disuelve
+    if mysteryMod.doppelActive(worldMod) then
+        local dh = mysteryMod.doppelHead()
+        local colOk, collisions = pcall(require, "entities.snake.collisions")
+        if dh and colOk and collisions.pointInPolygon and st.player.body and #st.player.body >= 8 then
+            if collisions.pointInPolygon(dh.x + 0.5, dh.y + 0.5, st.player.body) then
+                awardDoppel(st)
+            end
         end
     end
 
@@ -683,6 +728,10 @@ function playing.update(dt)
                 end
                 -- Dualidad (GDD §19.69): la fruta espejo se consume sin bonus extra
                 if comioTwin then foodMod.twinPos = nil; foodMod.dualTwin = nil end
+                -- Espejo (GDD §15.2): 3 frutas normales lo disuelven
+                if tipo == constants.FOOD_NORMAL and mysteryMod.doppelFed() == "dissolve" then
+                    awardDoppel(st)
+                end
                 -- Diente de Oro (GDD item 56): +1 moneda por fruta cada 10 segmentos
                 if shop.inventory and shop.inventory.goldenTooth then
                     local tooth = math.floor(#st.player.body / 10)
@@ -814,12 +863,10 @@ function playing.update(dt)
                 if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
                     mutatorsMod.data().rewarded = true
                     if mutatorsMod.timeTrialWon() then
-                        local hasItems, itemsMod = pcall(require, "systems.items")
-                        local def = hasItems and mutatorsMod.randomUnownedPassive(itemsMod.registry, shop.inventory) or nil
-                        if def then
-                            shop.inventory[def.id] = true
+                        local pick = grantRandomItem(st, true)
+                        if pick then
                             local head = st.player.body and st.player.body[1]
-                            if head then uiMod.addPopup("CRONO: " .. string.upper(def.id), head.x, head.y) end
+                            if head then uiMod.addPopup("CRONO: " .. string.upper(pick), head.x, head.y) end
                             sound.play("highScore")
                         end
                     end
@@ -899,6 +946,43 @@ function playing.update(dt)
             st.gameState = constants.GAME_STATE_TRANSITION
             sound:playSegment("intro")
             return true
+        end
+    end
+    -- Espejo (GDD §15.2): replica con retraso + contacto letal
+    if mysteryMod.doppelActive(worldMod) then
+        local dd = mysteryMod.data().doppel
+        if dd then
+            local p = st.player
+            mysteryMod.doppelTick(dt, dd, {x = p.dirX or 0, y = p.dirY or 0}, st.time or 0, st.velocidadActual or 0.13)
+            if head0 and mysteryMod.doppelTouchesHead(dd, head0) then
+                if phoenixRevive(st) then return true end
+                st.roomDamaged = true
+                st.deathModalOpen = true
+                return true
+            end
+        end
+    end
+    -- Sellos (GDD §15.4): orden 1-2-3 en menos de 10s
+    if mysteryMod.triadsActive(worldMod) then
+        local tr = mysteryMod.data().triads
+        if tr then
+            tr.timer = tr.timer - dt
+            local step = mysteryMod.triadsStep(tr, head0)
+            if step == "next" then
+                if head0 then uiMod.addPopup("SELLO " .. tr.progress .. "/3", head0.x, head0.y) end
+                sound.play("buy")
+            elseif step == "reset" then
+                if head0 then uiMod.addPopup("SELLOS RESET", head0.x, head0.y) end
+            elseif step == "complete" then
+                st.monedas = (st.monedas or 0) + (constants.TRIADS_REWARD_COINS or 50)
+                grantRandomItem(st)
+                grantRandomItem(st)
+                if head0 then uiMod.addPopup("ALTAR LEGENDARIO", head0.x, head0.y) end
+                sound.play("highScore")
+            elseif tr.timer <= 0 then
+                tr.done = true
+                if head0 then uiMod.addPopup("SELLOS APAGADOS", head0.x, head0.y) end
+            end
         end
     end
 

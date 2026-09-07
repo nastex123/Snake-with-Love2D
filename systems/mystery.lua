@@ -221,4 +221,116 @@ function mystery.goldRushTick(dt, head)
     return got, false
 end
 
+-- === P3: Sombra Espejo + Prueba de los Sellos (GDD §15.2/15.4) ===
+
+function mystery.doppelActive(worldMod)
+    if mystery.current(worldMod) ~= "doppelganger" then return false end
+    return not mystery.data().doppelDone
+end
+
+-- Cuerpo espejado al otro lado (misma longitud)
+function mystery.beginDoppel(body, ancho, alto)
+    local d = mystery.data()
+    local w = (type(ancho) == "number" and ancho > 0) and ancho or 10
+    local h = (type(alto) == "number" and alto > 0) and alto or 10
+    local mirrored = {}
+    if type(body) == "table" then
+        for _, s in ipairs(body) do
+            mirrored[#mirrored + 1] = {x = (w - 1) - (s.x or 0), y = (h - 1) - (s.y or 0)}
+        end
+    end
+    d.doppel = {body = mirrored, dir = {x = 0, y = 0}, queue = {}, acc = 0, fed = 0}
+    return d.doppel
+end
+
+function mystery.doppelHead()
+    local dd = mystery.data().doppel
+    return (dd and dd.body and dd.body[1]) or nil
+end
+
+-- Replica la direccion con 1.2s de retraso y avanza al ritmo dado
+function mystery.doppelTick(dt, dd, pdir, now, interval)
+    if not dd or not dd.body or #dd.body == 0 then return nil end
+    now = now or 0
+    table.insert(dd.queue, {dx = pdir and pdir.x or 0, dy = pdir and pdir.y or 0, t = now})
+    local delay = constants.DOPPEL_DELAY or 1.2
+    while #dd.queue > 0 and dd.queue[1].t <= now - delay do
+        local e = table.remove(dd.queue, 1)
+        dd.dir = {x = e.dx, y = e.dy}
+    end
+    while #dd.queue > 240 do table.remove(dd.queue, 1) end
+    dd.acc = (dd.acc or 0) + (dt or 0)
+    local step = (interval and interval > 0) and interval or 0.13
+    local moved = false
+    while dd.acc >= step do
+        dd.acc = dd.acc - step
+        local dir = dd.dir or {x = 0, y = 0}
+        if dir.x ~= 0 or dir.y ~= 0 then
+            table.insert(dd.body, 1, {x = dd.body[1].x + dir.x, y = dd.body[1].y + dir.y})
+            table.remove(dd.body)
+            moved = true
+        end
+    end
+    return moved
+end
+
+-- True si la cabeza toca cualquier segmento del espectro
+function mystery.doppelTouchesHead(dd, head)
+    if not dd or not dd.body or not head then return false end
+    for _, s in ipairs(dd.body) do
+        if s.x == head.x and s.y == head.y then return true end
+    end
+    return false
+end
+
+-- Cuenta una fruta normal; retorna "dissolve" a la tercera
+function mystery.doppelFed()
+    local d = mystery.data()
+    if d.doppelDone then return nil end
+    local dd = d.doppel
+    if not dd then return nil end
+    dd.fed = (dd.fed or 0) + 1
+    if dd.fed >= (constants.DOPPEL_FED or 3) then return "dissolve" end
+    return nil
+end
+
+function mystery.triadsActive(worldMod)
+    if mystery.current(worldMod) ~= "trial_triads" then return false end
+    local tr = mystery.data().triads
+    return tr ~= nil and not tr.done
+end
+
+-- Runas 1-2-3 en tres esquinas (puro, testeable)
+function mystery.triadsRunes(ancho, alto)
+    local w = (type(ancho) == "number" and ancho > 2) and ancho or 10
+    local h = (type(alto) == "number" and alto > 2) and alto or 10
+    return {{x = 1, y = 1, n = 1}, {x = w - 2, y = 1, n = 2}, {x = 1, y = h - 2, n = 3}}
+end
+
+function mystery.beginTriads(ancho, alto)
+    local d = mystery.data()
+    d.triads = {runes = mystery.triadsRunes(ancho, alto), progress = 0,
+        timer = constants.TRIADS_TIME or 10.0, done = false, last = nil}
+    return d.triads
+end
+
+-- Solo dispara al ENTRAR a la runa: "next"/"complete"/"reset"/nil
+function mystery.triadsStep(tr, head)
+    if not tr or tr.done or not head then return nil end
+    if tr.last and tr.last.x == head.x and tr.last.y == head.y then return nil end
+    tr.last = {x = head.x, y = head.y}
+    for _, r in ipairs(tr.runes) do
+        if head.x == r.x and head.y == r.y then
+            if r.n == tr.progress + 1 then
+                tr.progress = tr.progress + 1
+                if tr.progress >= 3 then tr.done = true; return "complete" end
+                return "next"
+            end
+            if tr.progress > 0 then tr.progress = 0; return "reset" end
+            return nil
+        end
+    end
+    return nil
+end
+
 return mystery

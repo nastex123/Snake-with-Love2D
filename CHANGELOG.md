@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mystery P3)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P3 Espejo+Sellos (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — Espejo (15.2)**: cuerpo espejado que replica giros con 1.2s al ritmo del jugador, contacto letal (Fenix salva), disolver por lazo (`pointInPolygon` expuesto) o 3 normales, premio 30$ + item.
+  2. **QUE — Sellos (15.4)**: runas 1-2-3 en esquinas solo al entrar (desorden resetea), 10s, 2 patrulleros extra, altar 50$ + 2 items; draw amatista y runas numeradas en `renderMain`.
+  3. **Verificación**: `love tests` 684/664 PASS (20 pre-existentes), scope_25 +8, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mystery P2)
 
 - **feature** (in-progress - 2026-09-07): Mystery Rooms P2 Apuesta+Oro (America/Bogota, rama `feature/phase8-mystery-rooms`):

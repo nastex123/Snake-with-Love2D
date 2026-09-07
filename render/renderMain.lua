@@ -250,6 +250,35 @@ function renderMain.drawGame(dt)
                         love.graphics.circle("fill", c.x * tam + tam / 2, c.y * tam + tam / 2, 5)
                     end
                 end
+            elseif mysId == "doppelganger" then
+                local dh = mysteryMod.data().doppel
+                if dh and dh.body then
+                    for i, s in ipairs(dh.body) do
+                        if i == 1 then
+                            love.graphics.setColor(0.7, 0.4, 1.0, 0.9)
+                        else
+                            love.graphics.setColor(0.5, 0.1, 0.8, 0.7)
+                        end
+                        love.graphics.rectangle("fill", s.x * tam + 2, s.y * tam + 2, tam - 4, tam - 4)
+                    end
+                end
+            elseif mysId == "trial_triads" then
+                local tr = mysteryMod.data().triads
+                if tr and not tr.done then
+                    for _, r in ipairs(tr.runes) do
+                        if r.n <= tr.progress then
+                            love.graphics.setColor(1, 0.8, 0.2, 0.9)
+                        elseif r.n == tr.progress + 1 then
+                            local pulse = 0.6 + 0.4 * math.sin((st.time or 0) * 6)
+                            love.graphics.setColor(0.4, 0.9, 1.0, pulse)
+                        else
+                            love.graphics.setColor(0.3, 0.4, 0.7, 0.5)
+                        end
+                        love.graphics.rectangle("fill", r.x * tam + 2, r.y * tam + 2, tam - 4, tam - 4)
+                        love.graphics.setColor(0, 0, 0, 0.9)
+                        love.graphics.print(tostring(r.n), r.x * tam + 7, r.y * tam + 3)
+                    end
+                end
             end
         end
 

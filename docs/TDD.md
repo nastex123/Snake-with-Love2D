@@ -885,6 +885,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Feedback**: banner `SALA ESPECIAL: <nombre>` al entrar + badge en `ui/hudUI.lua`.
 * **Mecánicas por punto**: P2 Gambler/GoldRush, P3 Doppelganger/Triads.
 * **P2 Apuesta+Oro ✅**: `gamblerRoulette/gamblerPlaceBet/gamblerTick/gamblerGoldEaten/gamblerNeedsGold` (apuesta 10$, 15s, 3 doradas secuenciales forzando `foodMod.tipo`, premio 40$ + pasivo/activo via `shop.procesarCompra` costo 0 + racha +0.3, derrota 2 chasers; frutos simples por modelo de comida única) + `beginGoldRush/stepCoins/collectCoins/goldRushTick` (20 monedas 6.0 celdas/s con rebote, recoleccion radio 1.4 Manhattan, puerta a los 12s; sala limpiada con `enemiesMod.init` al entrar; ruleta y monedas dibujadas en `renderMain`).
+* **P3 Espejo+Sellos ✅**: `beginDoppel/doppelTick/doppelTouchesHead/doppelFed/doppelHead` (cuerpo espejado, replica con `DOPPEL_DELAY=1.2`, paso al ritmo de `velocidadActual`, disolver por `pointInPolygon` expuesto en `collisions` o 3 normales, premio 30$ + item) + `triadsRunes/beginTriads/triadsStep` (esquinas 1-2-3, solo al entrar, reset ante desorden, 10s, altar 50$ + 2 items, 2 patrulleros extra al entrar); draw amatista y runas numeradas en `renderMain`.
 
 ## 11. Love2D Gotchas
 

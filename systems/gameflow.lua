@@ -178,6 +178,26 @@ function gameflow.iniciarSala(keepInventory)
         enemiesMod.init()
         mysteryMod.beginGoldRush(st.anchoGrilla, st.altoGrilla)
     end
+    -- Espejo (GDD §15.2): espectro del mismo largo al lado opuesto
+    if mysteryMod.current(worldMod) == "doppelganger" then
+        mysteryMod.beginDoppel(st.player.body, st.anchoGrilla, st.altoGrilla)
+    end
+    -- Sellos (GDD §15.4): runas 1-2-3 + 2 patrulleros en cruz
+    if mysteryMod.current(worldMod) == "trial_triads" then
+        mysteryMod.beginTriads(st.anchoGrilla, st.altoGrilla)
+        local helpersOk, helpers = pcall(require, "entities.enemyHelpers")
+        for _, spot in ipairs({
+            {x = math.floor(st.anchoGrilla / 2), y = 1},
+            {x = 1, y = math.floor(st.altoGrilla / 2)},
+        }) do
+            local sx, sy = spot.x, spot.y
+            if helpersOk then
+                local fx, fy = helpers.sampleFreeTile(st.anchoGrilla, st.altoGrilla, st.player.body, obstaclesMod, enemiesMod.list, 2, 30)
+                if fx then sx, sy = fx, fy end
+            end
+            if enemiesMod.spawnAt then enemiesMod.spawnAt("patroller", sx, sy, {}) end
+        end
+    end
 end
 
 function gameflow.revivePlayer()
