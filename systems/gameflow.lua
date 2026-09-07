@@ -173,6 +173,11 @@ function gameflow.iniciarSala(keepInventory)
         local head = st.player.body and st.player.body[1]
         mutatorsMod.data().shadow = mutatorsMod.spawnShadowPos(head, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
     end
+    -- Fiebre del Oro (GDD §15.3): sala sin enemigos + 20 monedas 12s
+    if mysteryMod.goldRushActive(worldMod) then
+        enemiesMod.init()
+        mysteryMod.beginGoldRush(st.anchoGrilla, st.altoGrilla)
+    end
 end
 
 function gameflow.revivePlayer()

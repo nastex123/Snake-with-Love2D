@@ -16,6 +16,7 @@ local settingsMod = require("systems.settings")
 local profilesMod = require("systems.profiles")
 local touchMod = require("core.touch")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 local function isGameState(g)
     return g == constants.GAME_STATE_PLAYING or g == constants.GAME_STATE_PAUSED or g == constants.GAME_STATE_DEATH_ANIMATION or g == constants.GAME_STATE_HIGH_SCORE or g == constants.GAME_STATE_SHOP or g == constants.GAME_STATE_TRANSITION or g == constants.GAME_STATE_TAROT
@@ -223,6 +224,33 @@ function renderMain.drawGame(dt)
             love.graphics.rectangle("fill", sh.x * tam + 1, sh.y * tam + 1, tam - 2, tam - 2)
             love.graphics.setColor(0.7, 0.4, 1.0, 0.8)
             love.graphics.rectangle("line", sh.x * tam + 1, sh.y * tam + 1, tam - 2, tam - 2)
+        end
+
+        -- Mystery Rooms (GDD §15): ruleta del apostador + monedas de la fiebre
+        if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
+            local tam = constants.TAMANIO_BLOQUE
+            local mysId = mysteryMod.current and mysteryMod.current(worldMod)
+            if mysId == "gambler_den" then
+                local md = mysteryMod.data()
+                if not (md and md.bet) then
+                    local r = mysteryMod.gamblerRoulette(st.anchoGrilla, st.altoGrilla)
+                    local flick = 0.6 + 0.4 * math.sin((st.time or 0) * 5)
+                    love.graphics.setColor(1, 0.8, 0.2, 0.25 * flick)
+                    love.graphics.circle("fill", r.x * tam + tam / 2, r.y * tam + tam / 2, tam / 2)
+                    love.graphics.setColor(1, 0.8, 0.2, 0.9)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.circle("line", r.x * tam + tam / 2, r.y * tam + tam / 2, tam / 2 - 1)
+                    love.graphics.setLineWidth(1)
+                end
+            elseif mysId == "gold_rush" then
+                local md = mysteryMod.data()
+                if md and md.rush and md.rush.coins then
+                    love.graphics.setColor(1, 0.85, 0.2, 0.95)
+                    for _, c in ipairs(md.rush.coins) do
+                        love.graphics.circle("fill", c.x * tam + tam / 2, c.y * tam + tam / 2, 5)
+                    end
+                end
+            end
         end
 
         -- Vision de Tunel (GDD §19.68): oscuridad salvo radio 5 de la cabeza

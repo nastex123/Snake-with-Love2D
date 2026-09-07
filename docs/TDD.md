@@ -884,6 +884,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Asignación**: `roll(room, idx)` 6% (`ROOM_MYSTERY_CHANCE`), excluye boss/elite/sala 1; `assign(dungeon)` en `world.init/avanzarEtapa` fija `room.mystery`; runtime por sala en `World.state.mysteryData` (renovado en `iniciarSala`).
 * **Feedback**: banner `SALA ESPECIAL: <nombre>` al entrar + badge en `ui/hudUI.lua`.
 * **Mecánicas por punto**: P2 Gambler/GoldRush, P3 Doppelganger/Triads.
+* **P2 Apuesta+Oro ✅**: `gamblerRoulette/gamblerPlaceBet/gamblerTick/gamblerGoldEaten/gamblerNeedsGold` (apuesta 10$, 15s, 3 doradas secuenciales forzando `foodMod.tipo`, premio 40$ + pasivo/activo via `shop.procesarCompra` costo 0 + racha +0.3, derrota 2 chasers; frutos simples por modelo de comida única) + `beginGoldRush/stepCoins/collectCoins/goldRushTick` (20 monedas 6.0 celdas/s con rebote, recoleccion radio 1.4 Manhattan, puerta a los 12s; sala limpiada con `enemiesMod.init` al entrar; ruleta y monedas dibujadas en `renderMain`).
 
 ## 11. Love2D Gotchas
 

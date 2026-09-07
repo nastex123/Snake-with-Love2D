@@ -36,6 +36,15 @@ config.ROOM_SHADOW_INTERVAL = 0.9
 config.ROOM_TUNNEL_RADIUS = 5
 -- Mystery Rooms (GDD §15): probabilidad por sala candidata (boss/elite/sala1 excluidos)
 config.ROOM_MYSTERY_CHANCE = 0.06
+-- 15.1 Apostador: apuesta, tiempo, doradas, premio oro y chasers de derrota
+config.GAMBLER_BET = 10
+config.GAMBLER_TIME = 15.0
+config.GAMBLER_GOLDS = 3
+config.GAMBLER_WIN_COINS = 40
+config.GAMBLER_LOSE_CHASERS = 2
+-- 15.3 Fiebre del Oro: duracion y monedas rebotando
+config.GOLDRUSH_TIME = 12.0
+config.GOLDRUSH_COINS = 20
 
 config.HIGH_SCORE_CELEBRATION_DURATION = 1.3
 

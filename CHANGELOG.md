@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-07 (mystery P2)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P2 Apuesta+Oro (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — Apostador (15.1)**: ruleta central, apuesta 10$ (aviso unico sin fondos), 3 doradas secuenciales en 15s (respawns forzados a oro), premio 40$ + item aleatorio + racha +0.3, derrota con 2 chasers.
+  2. **QUE — Fiebre (15.3)**: sala limpiada al entrar + 20 monedas a 6.0 celdas/s con rebote elastico, recoleccion por contacto, puerta a los 12s; ruleta y monedas dibujadas en `renderMain`.
+  3. **Verificación**: `love tests` 676/656 PASS (20 pre-existentes), scope_25 +7, `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mystery P1)
 
 - **feature** (in-progress - 2026-09-07): Mystery Rooms P1 Framework (America/Bogota, rama `feature/phase8-mystery-rooms`):

@@ -27,6 +27,7 @@ if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 -- Batería de Emergencia (GDD item 57): bullet-time 0.1x con dt escalado
 -- (pendingDeathTimer en tiempo escalado ≈ 1.5s reales); retorna true si se activó
@@ -654,6 +655,32 @@ function playing.update(dt)
                 st.monedas = st.monedas + math.floor((monedasExtra + st.coinBonus) * streak)
                 -- Midas Avaro (GDD §19.62): +2 monedas por fruta
                 st.monedas = st.monedas + mutatorsMod.midasFruitBonus()
+                -- Apostador (GDD §15.1): 3 doradas con apuesta = 40$ + item + racha
+                if tipo == constants.FOOD_GOLD and mysteryMod.gamblerGoldEaten() == "win" then
+                    st.monedas = st.monedas + (constants.GAMBLER_WIN_COINS or 40)
+                    st.survivalStreak = (st.survivalStreak or 1.0) + 0.3
+                    local hasItems, itemsMod = pcall(require, "systems.items")
+                    if hasItems then
+                        local pool = {}
+                        for id, def in pairs(itemsMod.registry or {}) do
+                            if type(def) == "table" and not shop.isOwned(def.id or id) then
+                                pool[#pool + 1] = def.id or id
+                            end
+                        end
+                        for _ = 1, math.min(5, #pool) do
+                            local pick = table.remove(pool, love.math.random(#pool))
+                            local res = shop.procesarCompra(st.monedas, pick, 0)
+                            if res then
+                                local head = st.player.body and st.player.body[1]
+                                if head then uiMod.addPopup("PREMIO: " .. string.upper(pick), head.x, head.y) end
+                                break
+                            end
+                        end
+                    end
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("APUESTA +40$", head.x, head.y) end
+                    sound.play("highScore")
+                end
                 -- Dualidad (GDD §19.69): la fruta espejo se consume sin bonus extra
                 if comioTwin then foodMod.twinPos = nil; foodMod.dualTwin = nil end
                 -- Diente de Oro (GDD item 56): +1 moneda por fruta cada 10 segmentos
@@ -772,6 +799,8 @@ function playing.update(dt)
                     end
                 end
             end
+            -- Apostador (GDD §15.1): mientras falten doradas, los respawns nacen oro
+            if mysteryMod.gamblerNeedsGold() then foodMod.tipo = constants.FOOD_GOLD end
 
             if st.puntuacion >= st.lastObstacleScore + constants.OBSTACLE_SPAWN_INTERVAL then
                 st.lastObstacleScore = math.floor(st.puntuacion / constants.OBSTACLE_SPAWN_INTERVAL) * constants.OBSTACLE_SPAWN_INTERVAL
@@ -825,6 +854,52 @@ function playing.update(dt)
         st.roomDamaged = true
         st.deathModalOpen = true
         return true
+    end
+    -- Guarida del Apostador (GDD §15.1): apuesta en la ruleta + temporizador
+    local head0 = st.player.body and st.player.body[1]
+    if mysteryMod.gamblerActive(worldMod) then
+        local gd = mysteryMod.data()
+        if not gd.bet and head0 then
+            local r = mysteryMod.gamblerRoulette(st.anchoGrilla, st.altoGrilla)
+            if head0.x == r.x and head0.y == r.y then
+                if mysteryMod.gamblerPlaceBet(st.monedas or 0) then
+                    st.monedas = st.monedas - mysteryMod.gamblerBet()
+                    uiMod.addPopup("APUESTA -10$", head0.x, head0.y)
+                    sound.play("buy")
+                elseif not gd.refused then
+                    gd.refused = true
+                    uiMod.addPopup("SIN FONDOS", head0.x, head0.y)
+                end
+            end
+        end
+        if mysteryMod.gamblerTick(dt) == "lose" then
+            local helpersOk, helpers = pcall(require, "entities.enemyHelpers")
+            for _ = 1, (constants.GAMBLER_LOSE_CHASERS or 2) do
+                local nx, ny
+                if helpersOk then
+                    nx, ny = helpers.sampleFreeTile(st.anchoGrilla, st.altoGrilla, st.player.body, obstaclesMod, enemiesMod.list, 2, 30)
+                end
+                if nx and enemiesMod.spawnAt then enemiesMod.spawnAt("chaser", nx, ny, {}) end
+            end
+            if head0 then uiMod.addPopup("APUESTA PERDIDA", head0.x, head0.y) end
+            sound.play("death")
+        end
+    end
+    -- Fiebre del Oro (GDD §15.3): monedas rebotando + puerta a los 12s
+    if mysteryMod.goldRushActive(worldMod) then
+        local got, done = mysteryMod.goldRushTick(dt, head0)
+        if got > 0 then
+            st.monedas = (st.monedas or 0) + got
+            sound.play("buttonClick")
+        end
+        if done and not st.transitionTarget then
+            st.transitionTarget = "siguienteSala"
+            st.transitionPhase = 1
+            st.fadeDir = 1
+            st.gameState = constants.GAME_STATE_TRANSITION
+            sound:playSegment("intro")
+            return true
+        end
     end
 
     if st.comboFlashTimer > 0 then
