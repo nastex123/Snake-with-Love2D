@@ -99,17 +99,22 @@ function shopBioScanner.draw(offer, def, x, y, w, h, fontNormal, fontSmall, font
     end
 
     -- 3. Título Cincelado en Mármol & Subtítulo Sacro
-    if fontLarge then
-        love.graphics.setFont(fontLarge)
-    elseif fontNormal then
-        love.graphics.setFont(fontNormal)
-    end
+    if fontNormal then love.graphics.setFont(fontNormal) end
+
+    local priceW = 90
+    local titleMaxW = w - priceW - 28
+
     -- Sombra de bajo relieve
     love.graphics.setColor(0, 0, 0, 0.9)
-    love.graphics.print(def.name or def.id, x + 13, y + 31)
+    love.graphics.printf(def.name or def.id, x + 13, y + 33, titleMaxW, "left")
     -- Texto principal
     love.graphics.setColor(1.0, 0.96, 0.88, 1.0)
-    love.graphics.print(def.name or def.id, x + 12, y + 30)
+    love.graphics.printf(def.name or def.id, x + 12, y + 32, titleMaxW, "left")
+
+    -- Precio / Ofrenda en esquina superior derecha
+    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
+    if fontNormal then love.graphics.setFont(fontNormal) end
+    love.graphics.printf((offer.price or 0) .. " ORO", x + w - priceW - 12, y + 32, priceW, "right")
 
     -- Subtítulo sacro
     if fontSmall then love.graphics.setFont(fontSmall) end
@@ -118,11 +123,6 @@ function shopBioScanner.draw(offer, def, x, y, w, h, fontNormal, fontSmall, font
         and ("ARCANO DEL DESTINO " .. (info.roman or "MAYOR") .. " // SELLO PERPETUO")
         or "TALISMAN SAGRADO // ARTEFACTO DE MAZMORRA"
     love.graphics.print(sub, x + 12, y + 50)
-
-    -- Precio / Ofrenda en esquina superior derecha
-    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-    if fontNormal then love.graphics.setFont(fontNormal) end
-    love.graphics.printf((offer.price or 0) .. " ORO", x + w - 120, y + 32, 110, "right")
 
     -- 4. Texto del Manuscrito / Explicación de la Reliquia
     if fontSmall then love.graphics.setFont(fontSmall) end

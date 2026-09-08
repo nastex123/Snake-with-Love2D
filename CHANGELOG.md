@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop scanner title typography & anti-overlap)
+
+- **fix** (shop - 2026-09-08 11:52): Ajuste de tipografía y delimitación de cajas para evitar solapamiento entre título de ítem y precio en Retablo Sagrado (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopBioScanner.lua` (escala tipográfica)**: Se cambió la fuente del título del ítem seleccionado de `fontLarge` (16px) a `fontNormal` (11px), reduciendo la escala visual para una presentación medieval armónica y legible sin saturar el dintel.
+  2. **QUE — `systems/shopBioScanner.lua` (cajas delimitadas anti-colisión)**: Se implementó un ancho acotado (`titleMaxW = w - priceW - 28`) con `printf` para el nombre del ítem y sombra en relieve, y una caja fija de `90px` para el precio en oro en `x + w - priceW - 12`. Con esto se previene totalmente la superposición de nombres largos (como `X. La Bolsa de Midas` o `XII. El Segador`) sobre la etiqueta de precio.
+  3. **Verificación**: `love .` 100% funcional a 60 FPS sin advertencias ni errores en `error.log`.
+
 ## 2026-09-08 (shop 720p CRT safe margin fix)
 
 - **fix** (shop - 2026-09-08 11:41): Ajuste de márgenes seguros para la escala adaptativa de la tienda en 720p y pantallas con curvatura CRT (America/Bogota, rama `feature/phase8-mystery-rooms`):
