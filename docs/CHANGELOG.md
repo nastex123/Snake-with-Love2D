@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop 720p CRT safe margin fix)
+
+- **fix** (shop - 2026-09-08 11:41): Ajuste de márgenes seguros para la escala adaptativa de la tienda en 720p y pantallas con curvatura CRT (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (márgenes seguros adaptativos)**: Incorporado cálculo de `safeMargin = 16` px al auto-escalado basado en dimensiones reales (`containerW = 600`, `containerH = 344` incluyendo el pie de mandatos). Esto evita que en resoluciones como 720p (`1280x720`) o 1080p el contenedor colisione con el borde curvo del shader CRT o se recorte en la parte inferior o superior.
+  2. **QUE — `systems/shopDraw.lua` (anclaje del pie de mandatos)**: El texto del pie de atajos (`[1-3] OFRENDAR...`) ahora se ancla dinámicamente a `botY + botH + 6` px dentro del contenedor virtual, garantizando un espaciado perfecto sin empujar elementos fuera del viewport.
+  3. **Verificación**: Comprobado cálculo visual y compatibilidad con shader CRT activo a 60 FPS; suite de tests ejecutada.
+
 ## 2026-09-08 (shop adaptive pixel scale)
 
 - **fix** (shop - 2026-09-08 10:56): Implementación de escalado adaptativo y control manual de escala para la interfaz de la tienda (America/Bogota, rama `feature/phase8-mystery-rooms`):

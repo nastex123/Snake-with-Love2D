@@ -104,17 +104,21 @@ function shopDraw.draw(shopData)
     love.graphics.circle("fill", w - 20, 20, 100)
 
     -- ESCALADO ADAPTATIVO CON CONTROL MANUAL (core/config.lua -> SHOP_MANUAL_SCALE)
-    local baseW, baseH = 640, 360
-    local autoScale = math.min(w / baseW, h / baseH)
-    if autoScale < 1.0 then autoScale = 1.0 end
+    -- Contenedor virtual base: 600 de ancho x 342 de alto (incluye top bar, cards, containers y pie de mandatos)
+    local containerW = 600
+    local containerH = 344
+    local safeMargin = 16 -- Margen de seguridad para respetar la curvatura CRT de bordes de pantalla
 
-    -- Factor manual (1.0 = automático, o valores mayores para forzar mayor tamaño)
+    local availW = math.max(200, w - safeMargin * 2)
+    local availH = math.max(200, h - safeMargin * 2)
+    local autoScale = math.min(availW / containerW, availH / containerH)
+    if autoScale < 0.75 then autoScale = 0.75 end
+
+    -- Factor manual (1.0 = automático adaptado a pantalla con márgenes seguros)
     local manualFactor = tonumber(constants.SHOP_MANUAL_SCALE) or 1.0
     local scale = autoScale * manualFactor
     currentScale = scale
 
-    local containerW = 600
-    local containerH = 328
     local scaledW = containerW * scale
     local scaledH = containerH * scale
 
@@ -362,7 +366,7 @@ function shopDraw.draw(shopData)
     -- 6. Pie Sacro de Mandatos
     if fontSmall then love.graphics.setFont(fontSmall) end
     love.graphics.setColor(0.65, 0.62, 0.72)
-    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, containerH + 10, containerW, "center")
+    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, botY + botH + 6, containerW, "center")
 
     love.graphics.pop()
 end
