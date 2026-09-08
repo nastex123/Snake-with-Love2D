@@ -57,6 +57,17 @@
   - [x] Anti-overflow: dropdowns clamp 240px + scroll wheel, `panelXY` responsivo, hitboxes `settings.g.*` recalculadas y validadas, sin tablas por frame excesivas (`g={}` único por draw).
   - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
 
+## In Progress (Tienda v2 — rebuild + Tarot comprable + economía)
+- [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
+- [x] **Código** ✅: config (`TAROT_PRICES`, `SHOP_REROLL_BASE/STEP/STALLS/TAROT_CHANCE`) + `tarot.lua` (`price`, `shopPool`, `buy` sin tope, fuera trigger draft 1/2/4) + rewrite `shop.lua` 581L (3 puestos mixtos, reroll R/botón, compra tarot con PNG, `abrir` con renew) + scope_15 reescrita + scope_26 (8 tests)
+
+## Próxima sesión (handoff 2026-09-07, rama `feature/phase8-mystery-rooms` en `434e6dd`)
+- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa)
+- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos)
+- [ ] PR de `feature/phase8-mystery-rooms` a `dev` (incluye Mystery + Tienda v2 + docs sync)
+- [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`
+- [ ] Higiene pendiente: `prueba.py` sin seguimiento, `pixi.min.js` vendored, splits fase 8 (TODO Medium), 20 fallos pre-existentes
+
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):
   - [x] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
@@ -94,8 +105,11 @@
   - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
   - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs
   - [x] 12 texturas PNG 20x20 en `assets/tarot/` (variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C) + `systems/tarotArt.lua` loader con fallback (suite scope_23, 28 tests)
-- [ ] **Special Mystery Rooms**:
-  - [ ] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
+- [x] **Special Mystery Rooms** — `feature/phase8-mystery-rooms` 2026-09-07 ✅ (suite scope_25, 24 tests):
+  - [x] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
+  - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
+  - [x] **P2 Apuesta+Oro** ✅: Apostador ruleta central apuesta 10$ + 3 doradas secuenciales en 15s (premio 40$ + item + racha, derrota 2 chasers) + Fiebre 20 monedas rebotando 12s con puerta al expirar (`mystery`+`playing`+`gameflow`+`renderMain`)
+  - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
 - [ ] **Status Effects Engine**:
   - [ ] Overdrive on combo x6, Medusa Tail petrification, Venom Spore confusion, Cryo-Stasis
 - [ ] **Meta-Progression Shrine**:
@@ -210,6 +224,7 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [ ] Performance profiling for large rooms
 - [ ] Add controller support documentation
 - [ ] **Follow-up Mini-Bosses (deuda GDD §5, ver TDD §10.10)**: Wyrm como 6 segmentos destruibles individualmente (hoy 1 entidad hp 6); Red Pegajosa que bloquee giros rápidos (hoy 3x3 slime); daño directo de contacto en Crusher/Wyrm; variante élite-chaser con `ELITE_*MULT` + cofre dorado (hoy la sala 3 la ocupa el mini-jefe)
+- [ ] **Deuda splits fase 8 (detectada 2026-09-07, archivos sobre el límite 500L)**: `playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `timers.lua` 536L, `dungeonGen.lua` 530L, `enemiesDraw.lua` 508L, `profilesDraw.lua` 511L, `main.lua` 556L (residual conocido: `persistence.lua` 862L, `shaders.lua` 652L)
 
 ## Low Priority
 - [ ] Consider adding new enemy types
@@ -229,4 +244,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-06 00:08 (Stage Tarot Draft en feature/phase8-tarot - draft salas 1/2/4 + 12 hooks, scope_23 24 tests, 634 tests 614 PASS)*
+*Last updated: 2026-09-07 (Tienda v2 en feature/phase8-mystery-rooms - puestos mixtos + reroll + tarot comprable, scope_26 8 tests, 692 tests 672 PASS, 20 pre-existentes)*

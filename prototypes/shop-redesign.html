@@ -1,0 +1,1775 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Snake Dungeon Crawler — Bio Rack v3</title>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    user-select:none;
+}
+
+html,body{
+    width:100%;
+    min-height:100%;
+    background:#030207;
+}
+
+body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#dce7f5;
+    font-family:"Courier New",monospace;
+    padding:12px;
+}
+
+#topbar{
+    width:960px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 12px;
+    margin-bottom:6px;
+
+    border:1px solid #29243f;
+    background:
+        linear-gradient(90deg,
+            rgba(0,240,255,.06),
+            transparent 35%,
+            rgba(155,92,255,.06)
+        );
+
+    box-shadow:
+        inset 0 1px rgba(255,255,255,.03),
+        0 0 20px rgba(0,240,255,.04);
+}
+
+.brand{
+    color:#00f0ff;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:1.5px;
+}
+
+.controls{
+    color:#6f7891;
+    font-size:9px;
+}
+
+#canvas-container{
+    position:relative;
+    width:960px;
+    height:540px;
+
+    overflow:hidden;
+
+    border:1px solid #00f0ff;
+    background:#080711;
+
+    box-shadow:
+        0 0 8px rgba(0,240,255,.25),
+        0 0 45px rgba(0,240,255,.08),
+        inset 0 0 80px rgba(0,0,0,.8);
+}
+
+#canvas-container canvas{
+    display:block;
+}
+
+.crt{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:50;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,.025) 0px,
+            rgba(255,255,255,.025) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+
+    mix-blend-mode:screen;
+}
+
+.vignette{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:51;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 48%,
+            rgba(0,0,0,.2) 75%,
+            rgba(0,0,0,.75) 100%
+        );
+}
+
+#statusbar{
+    width:960px;
+    height:30px;
+
+    margin-top:6px;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:0 10px;
+
+    border:1px solid #29243f;
+    background:#06050c;
+
+    font-size:9px;
+}
+
+#status{
+    color:#00f0ff;
+}
+
+#fps{
+    color:#4d566e;
+}
+
+@media(max-width:980px){
+    body{
+        justify-content:flex-start;
+        overflow:auto;
+    }
+
+    #topbar,
+    #canvas-container,
+    #statusbar{
+        transform-origin:top left;
+    }
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
+</head>
+
+<body>
+
+<div id="topbar">
+    <div class="brand">SNAKE // DUNGEON CRAWLER</div>
+    <div class="controls">[1][2][3] COMPRAR · [R] REROLL · [SPACE] CONTINUAR</div>
+</div>
+
+<div id="canvas-container">
+    <div class="crt"></div>
+    <div class="vignette"></div>
+</div>
+
+<div id="statusbar">
+    <span id="status">RACK ONLINE // ESPERANDO SELECCIÓN</span>
+    <span id="fps">BIO-CORE // 60 FPS</span>
+</div>
+
+<script>
+
+/* ============================================================
+   CONSTANTES
+============================================================ */
+
+const W = 960;
+const H = 540;
+
+const COLORS = {
+    bg:0x080711,
+    panel:0x0b0915,
+    panel2:0x0f0c1d,
+
+    cyan:0x00F0FF,
+    cyanDark:0x075f6b,
+
+    purple:0x9B5CFF,
+    gold:0xFFC93C,
+    crimson:0xFF4D5E,
+
+    white:0xF1F5F9,
+    text:0xCBD5E1,
+    muted:0x64748B,
+    dim:0x29253E,
+
+    green:0x59FFA8
+};
+
+const TIERS = {
+    S:{
+        name:"S",
+        price:60,
+        color:COLORS.gold
+    },
+
+    A:{
+        name:"A",
+        price:45,
+        color:COLORS.purple
+    },
+
+    B:{
+        name:"B",
+        price:30,
+        color:COLORS.cyan
+    },
+
+    C:{
+        name:"C",
+        price:20,
+        color:0x77809A
+    }
+};
+
+
+/* ============================================================
+   CATÁLOGO
+============================================================ */
+
+const CATALOG = [
+
+    {
+        type:"tarot",
+        name:"LA MUERTE",
+        roman:"XIII",
+        tier:"S",
+        target:"ALL",
+        stat:"+30% VENENO",
+        desc:"Las eliminaciones generan una reacción tóxica en cadena.",
+        symbol:"☠"
+    },
+
+    {
+        type:"tarot",
+        name:"EL LOCO",
+        roman:"0",
+        tier:"A",
+        target:"ALL",
+        stat:"INMUNIDAD 3s",
+        desc:"La serpiente ignora obstáculos durante una breve ventana.",
+        symbol:"✦"
+    },
+
+    {
+        type:"tarot",
+        name:"LA RUEDA",
+        roman:"X",
+        tier:"B",
+        target:"ALL",
+        stat:"+50% ORO",
+        desc:"Las rachas de velocidad multiplican las almas recolectadas.",
+        symbol:"◉"
+    },
+
+    {
+        type:"tarot",
+        name:"EL MAGO",
+        roman:"I",
+        tier:"C",
+        target:"ALL",
+        stat:"+MANÁ",
+        desc:"Cada segmento destruido produce energía arcana.",
+        symbol:"✧"
+    },
+
+    {
+        type:"item",
+        name:"CYBER-COLMILLO",
+        tier:"S",
+        target:0,
+        stat:"MICRO-TELEPORT",
+        desc:"Impulsa la cabeza tres casillas hacia delante.",
+        symbol:"◆"
+    },
+
+    {
+        type:"item",
+        name:"BOBINA TESLA",
+        tier:"A",
+        target:2,
+        stat:"DESCARGA ELÉCTRICA",
+        desc:"Descarga energía entre segmentos cercanos.",
+        symbol:"ϟ"
+    },
+
+    {
+        type:"item",
+        name:"MATRAZ DE BREA",
+        tier:"B",
+        target:5,
+        stat:"RASTRO TÓXICO",
+        desc:"La cola deja un campo que ralentiza enemigos.",
+        symbol:"♢"
+    },
+
+    {
+        type:"item",
+        name:"OVERCLOCK v2",
+        tier:"C",
+        target:1,
+        stat:"+25% VELOCIDAD",
+        desc:"Aumenta temporalmente la frecuencia de movimiento.",
+        symbol:"↯"
+    }
+
+];
+
+
+/* ============================================================
+   ESTADO
+============================================================ */
+
+const player = {
+
+    gold:1555,
+
+    rerollCost:5,
+
+    inventory:[
+        "BOBINA TESLA",
+        null,
+        null
+    ],
+
+    passives:[
+        "ESCAMA TITANIO",
+        "OJO GLITCH"
+    ]
+
+};
+
+let stalls = [];
+let focused = 0;
+
+let scene;
+let animationTime = 0;
+let shakePower = 0;
+
+
+/* ============================================================
+   PIXI
+============================================================ */
+
+const app = new PIXI.Application({
+
+    width:W,
+    height:H,
+
+    backgroundColor:COLORS.bg,
+
+    antialias:true,
+
+    resolution:1,
+    autoDensity:false
+
+});
+
+document
+    .getElementById("canvas-container")
+    .appendChild(app.view);
+
+scene = new PIXI.Container();
+
+app.stage.addChild(scene);
+
+
+/* ============================================================
+   UTILIDADES
+============================================================ */
+
+function text(str,size,color,weight="normal"){
+
+    return new PIXI.Text(str,{
+
+        fontFamily:"Courier New",
+
+        fontSize:size,
+
+        fill:color,
+
+        fontWeight:weight,
+
+        letterSpacing:0
+
+    });
+
+}
+
+
+function panel(g,x,y,w,h,border,alpha=.95){
+
+    g.beginFill(COLORS.panel,alpha);
+
+    g.lineStyle(1,border,.75);
+
+    g.drawRoundedRect(x,y,w,h,3);
+
+    g.endFill();
+
+}
+
+
+function line(g,x1,y1,x2,y2,color,width=1,alpha=1){
+
+    g.lineStyle(width,color,alpha);
+
+    g.moveTo(x1,y1);
+
+    g.lineTo(x2,y2);
+
+}
+
+
+function status(message,color=COLORS.cyan){
+
+    const el=document.getElementById("status");
+
+    el.textContent=message;
+
+    el.style.color =
+        color===COLORS.crimson ? "#ff4d5e" :
+        color===COLORS.gold ? "#ffc93c" :
+        color===COLORS.green ? "#59ffa8" :
+        "#00f0ff";
+
+}
+
+
+/* ============================================================
+   STOCK
+============================================================ */
+
+function rollStock(){
+
+    stalls=[];
+
+    for(let i=0;i<3;i++){
+
+        const type =
+            Math.random()<.5
+            ? "tarot"
+            : "item";
+
+        const pool =
+            CATALOG.filter(x=>x.type===type);
+
+        stalls.push({
+
+            item:pool[
+                Math.floor(Math.random()*pool.length)
+            ],
+
+            sold:false
+
+        });
+
+    }
+
+}
+
+
+/* ============================================================
+   COMPRA
+============================================================ */
+
+function buy(index){
+
+    const stall=stalls[index];
+
+    if(!stall || stall.sold)
+        return;
+
+    focused=index;
+
+    const item=stall.item;
+
+    const price=TIERS[item.tier].price;
+
+    if(player.gold<price){
+
+        status(
+            `FONDOS INSUFICIENTES // $${price} REQUERIDOS`,
+            COLORS.crimson
+        );
+
+        shake();
+
+        return;
+
+    }
+
+    player.gold-=price;
+
+    stall.sold=true;
+
+    if(item.type==="item"){
+
+        const slot=
+            player.inventory.findIndex(x=>x===null);
+
+        if(slot!==-1){
+
+            player.inventory[slot]=item.name;
+
+        }
+
+    }
+
+    status(
+        `INSTALACIÓN COMPLETADA // ${item.name}`,
+        COLORS.green
+    );
+
+    rebuild();
+
+}
+
+
+/* ============================================================
+   REROLL
+============================================================ */
+
+function reroll(){
+
+    if(player.gold<player.rerollCost){
+
+        status(
+            `REROLL BLOQUEADO // COSTE $${player.rerollCost}`,
+            COLORS.crimson
+        );
+
+        shake();
+
+        return;
+
+    }
+
+    player.gold-=player.rerollCost;
+
+    player.rerollCost+=2;
+
+    rollStock();
+
+    focused=0;
+
+    status(
+        "RACK PURGADO // NUEVOS CARTUCHOS DISPONIBLES"
+    );
+
+    rebuild();
+
+}
+
+
+/* ============================================================
+   SCREEN SHAKE
+============================================================ */
+
+function shake(){
+
+    shakePower=7;
+
+}
+
+
+/* ============================================================
+   BACKGROUND
+============================================================ */
+
+function drawBackground(){
+
+    const g=new PIXI.Graphics();
+
+    /* GRID */
+
+    for(let x=0;x<=W;x+=32){
+
+        line(
+            g,
+            x,0,
+            x,H,
+            0x161329,
+            1,
+            .45
+        );
+
+    }
+
+    for(let y=0;y<=H;y+=32){
+
+        line(
+            g,
+            0,y,
+            W,y,
+            0x161329,
+            1,
+            .45
+        );
+
+    }
+
+    /* CROSSHAIRS */
+
+    for(let x=32;x<W;x+=128){
+
+        for(let y=32;y<H;y+=128){
+
+            line(g,x-3,y,x+3,y,0x30284A,1,.5);
+            line(g,x,y-3,x,y+3,0x30284A,1,.5);
+
+        }
+
+    }
+
+    scene.addChild(g);
+
+
+    /* AMBIENT LIGHT */
+
+    const glow=new PIXI.Graphics();
+
+    glow.beginFill(COLORS.cyan,.025);
+
+    glow.drawCircle(770,280,250);
+
+    glow.endFill();
+
+    scene.addChild(glow);
+
+}
+
+
+/* ============================================================
+   TOP HUD
+============================================================ */
+
+function drawHUD(){
+
+    const c=new PIXI.Container();
+
+    const bg=new PIXI.Graphics();
+
+    bg.beginFill(0x05040A,.96);
+
+    bg.lineStyle(1,COLORS.cyan,.6);
+
+    bg.drawRect(18,12,924,38);
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    const title=text(
+        "BIO-RACK // TERMINAL DE MUTACIONES",
+        11,
+        COLORS.cyan,
+        "bold"
+    );
+
+    title.position.set(30,25);
+
+    c.addChild(title);
+
+
+    /* GOLD */
+
+    const coin=text(
+        "◈",
+        13,
+        COLORS.gold,
+        "bold"
+    );
+
+    coin.position.set(530,24);
+
+    c.addChild(coin);
+
+
+    const gold=text(
+        `${player.gold}`,
+        13,
+        COLORS.gold,
+        "bold"
+    );
+
+    gold.position.set(548,24);
+
+    c.addChild(gold);
+
+
+    /* REROLL */
+
+    const btn=new PIXI.Container();
+
+    btn.position.set(650,18);
+
+    btn.eventMode="static";
+
+    btn.cursor="pointer";
+
+    btn.on("pointerdown",reroll);
+
+
+    const b=new PIXI.Graphics();
+
+    b.beginFill(0x160F27);
+
+    b.lineStyle(1,COLORS.purple,.8);
+
+    b.drawRoundedRect(0,0,135,26,3);
+
+    b.endFill();
+
+    btn.addChild(b);
+
+
+    const bt=text(
+        `↻ PURGAR  $${player.rerollCost}`,
+        9,
+        COLORS.white,
+        "bold"
+    );
+
+    bt.position.set(15,8);
+
+    btn.addChild(bt);
+
+    c.addChild(btn);
+
+
+    /* FLOOR */
+
+    const floor=text(
+        "FLOOR 03 // ROOM 4",
+        8,
+        COLORS.muted,
+        "bold"
+    );
+
+    floor.position.set(800,27);
+
+    c.addChild(floor);
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   LEFT RACK
+============================================================ */
+
+function drawRack(){
+
+    const c=new PIXI.Container();
+
+    const rackX=20;
+    const rackY=62;
+
+    /* HEADER */
+
+    const head=text(
+        "03 CARTUCHOS // SELECCIÓN DE MUTACIÓN",
+        9,
+        COLORS.purple,
+        "bold"
+    );
+
+    head.position.set(rackX+5,rackY);
+
+    c.addChild(head);
+
+
+    stalls.forEach((stall,i)=>{
+
+        drawCard(
+            c,
+            stall,
+            i,
+            rackX,
+            rackY+20+i*116
+        );
+
+    });
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   CARD
+============================================================ */
+
+function drawCard(parent,stall,index,x,y){
+
+    const item=stall.item;
+
+    const tier=TIERS[item.tier];
+
+    const selected=
+        index===focused;
+
+    const c=new PIXI.Container();
+
+    c.position.set(
+        selected ? x+7 : x,
+        y
+    );
+
+    c.eventMode="static";
+
+    c.cursor="pointer";
+
+    c.on("pointerdown",()=>buy(index));
+
+    c.on("pointerover",()=>{
+
+        if(focused!==index){
+
+            focused=index;
+
+            rebuild();
+
+        }
+
+    });
+
+
+    const bg=new PIXI.Graphics();
+
+    if(stall.sold){
+
+        bg.beginFill(0x080810,.8);
+
+        bg.lineStyle(1,0x252137,.7);
+
+    }
+    else{
+
+        bg.beginFill(
+            selected ? 0x151125 : 0x0b0915,
+            .98
+        );
+
+        bg.lineStyle(
+            selected ? 2 : 1,
+            selected ? COLORS.cyan : tier.color,
+            selected ? 1 : .65
+        );
+
+    }
+
+    bg.drawRoundedRect(
+        0,
+        0,
+        335,
+        100,
+        3
+    );
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    /* TIER STRIPE */
+
+    if(!stall.sold){
+
+        const stripe=new PIXI.Graphics();
+
+        stripe.beginFill(tier.color,.85);
+
+        stripe.drawRect(0,0,4,100);
+
+        stripe.endFill();
+
+        c.addChild(stripe);
+
+    }
+
+
+    /* NUMBER */
+
+    const key=new PIXI.Graphics();
+
+    key.beginFill(
+        selected
+        ? COLORS.cyan
+        : 0x211B36
+    );
+
+    key.drawRect(8,8,27,20);
+
+    key.endFill();
+
+    c.addChild(key);
+
+
+    const keyTxt=text(
+        `${index+1}`,
+        10,
+        selected ? COLORS.bg : COLORS.white,
+        "bold"
+    );
+
+    keyTxt.anchor.set(.5);
+
+    keyTxt.position.set(21,18);
+
+    c.addChild(keyTxt);
+
+
+    /* TYPE */
+
+    const type=text(
+        item.type==="tarot"
+        ? "ARCANA"
+        : "MODULE",
+        8,
+        item.type==="tarot"
+        ? COLORS.purple
+        : COLORS.cyan,
+        "bold"
+    );
+
+    type.position.set(46,13);
+
+    c.addChild(type);
+
+
+    /* TIER */
+
+    const tierTxt=text(
+        `TIER ${tier.name}`,
+        8,
+        tier.color,
+        "bold"
+    );
+
+    tierTxt.position.set(280,13);
+
+    c.addChild(tierTxt);
+
+
+    /* SYMBOL */
+
+    const icon=new PIXI.Graphics();
+
+    icon.beginFill(tier.color,.08);
+
+    icon.lineStyle(1,tier.color,.45);
+
+    icon.drawCircle(40,60,20);
+
+    icon.endFill();
+
+    c.addChild(icon);
+
+
+    const symbol=text(
+        item.symbol,
+        17,
+        tier.color,
+        "bold"
+    );
+
+    symbol.anchor.set(.5);
+
+    symbol.position.set(40,60);
+
+    c.addChild(symbol);
+
+
+    /* NAME */
+
+    const name=text(
+        item.name,
+        11,
+        COLORS.white,
+        "bold"
+    );
+
+    name.position.set(70,40);
+
+    c.addChild(name);
+
+
+    /* STAT */
+
+    const stat=text(
+        item.stat,
+        8,
+        tier.color,
+        "bold"
+    );
+
+    stat.position.set(70,57);
+
+    c.addChild(stat);
+
+
+    /* PRICE */
+
+    const price=text(
+        `$${tier.price}`,
+        12,
+        COLORS.gold,
+        "bold"
+    );
+
+    price.position.set(70,76);
+
+    c.addChild(price);
+
+
+    /* ACTION */
+
+    const action=text(
+        selected
+        ? "ENTER → INSTALAR"
+        : "CLICK → INSPECCIONAR",
+        7,
+        selected ? COLORS.cyan : COLORS.muted,
+        "bold"
+    );
+
+    action.position.set(190,78);
+
+    c.addChild(action);
+
+
+    if(stall.sold){
+
+        const sold=text(
+            "/// INSTALADO ///",
+            10,
+            COLORS.muted,
+            "bold"
+        );
+
+        sold.anchor.set(.5);
+
+        sold.position.set(165,52);
+
+        c.addChild(sold);
+
+    }
+
+
+    parent.addChild(c);
+
+}
+
+
+/* ============================================================
+   RIGHT SCANNER
+============================================================ */
+
+function drawScanner(){
+
+    const c=new PIXI.Container();
+
+    c.position.set(370,62);
+
+
+    const item=stalls[focused].item;
+
+    const tier=TIERS[item.tier];
+
+
+    /* MAIN PANEL */
+
+    const box=new PIXI.Graphics();
+
+    panel(
+        box,
+        0,
+        0,
+        570,
+        345,
+        tier.color
+    );
+
+    c.addChild(box);
+
+
+    /* TOP LINE */
+
+    line(
+        box,
+        0,
+        30,
+        570,
+        30,
+        tier.color,
+        1,
+        .35
+    );
+
+
+    const header=text(
+        `HOLOGRAPHIC SCAN // SLOT 0${focused+1}`,
+        9,
+        COLORS.cyan,
+        "bold"
+    );
+
+    header.position.set(15,11);
+
+    c.addChild(header);
+
+
+    /* ITEM TITLE */
+
+    const name=text(
+        item.name,
+        18,
+        COLORS.white,
+        "bold"
+    );
+
+    name.position.set(18,48);
+
+    c.addChild(name);
+
+
+    const subtitle=text(
+        item.type==="tarot"
+        ? `ARCANA MAYOR // ${item.roman || ""}`
+        : "CYBERNETIC ACTIVE MODULE",
+        8,
+        tier.color,
+        "bold"
+    );
+
+    subtitle.position.set(19,72);
+
+    c.addChild(subtitle);
+
+
+    /* PRICE */
+
+    const price=text(
+        `$${tier.price}`,
+        18,
+        COLORS.gold,
+        "bold"
+    );
+
+    price.position.set(475,50);
+
+    c.addChild(price);
+
+
+    /* DESCRIPTION */
+
+    const desc=text(
+        item.desc,
+        9,
+        COLORS.text,
+        "normal"
+    );
+
+    desc.position.set(19,100);
+
+    desc.style.wordWrap=true;
+    desc.style.wordWrapWidth=510;
+    desc.style.lineHeight=15;
+
+    c.addChild(desc);
+
+
+    /* SEPARATOR */
+
+    const sep=new PIXI.Graphics();
+
+    line(
+        sep,
+        18,
+        138,
+        552,
+        138,
+        COLORS.dim,
+        1,
+        1
+    );
+
+    c.addChild(sep);
+
+
+    /* ANATOMY */
+
+    drawAnatomy(
+        c,
+        item,
+        285,
+        205
+    );
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   ANATOMÍA
+============================================================ */
+
+function drawAnatomy(parent,item,cx,cy){
+
+    const label=text(
+        "BIO-TOPOLOGÍA // IMPACT ZONES",
+        8,
+        COLORS.purple,
+        "bold"
+    );
+
+    label.position.set(18,153);
+
+    parent.addChild(label);
+
+
+    const g=new PIXI.Graphics();
+
+    /* backbone */
+
+    const nodes=[];
+
+    for(let i=0;i<7;i++){
+
+        const x=cx-205+i*68;
+
+        const y=
+            cy+
+            Math.sin(i*.9)*14;
+
+        nodes.push({x,y});
+
+    }
+
+
+    for(let i=0;i<nodes.length-1;i++){
+
+        line(
+            g,
+            nodes[i].x,
+            nodes[i].y,
+            nodes[i+1].x,
+            nodes[i+1].y,
+            0x302946,
+            3,
+            1
+        );
+
+    }
+
+
+    parent.addChild(g);
+
+
+    nodes.forEach((node,i)=>{
+
+        const affected=
+            item.target==="ALL" ||
+            item.target===i;
+
+
+        const color=
+            affected
+            ? (
+                item.type==="tarot"
+                ? COLORS.purple
+                : COLORS.cyan
+            )
+            : COLORS.dim;
+
+
+        const nodeG=new PIXI.Graphics();
+
+
+        /* pulse ring */
+
+        if(affected){
+
+            nodeG.lineStyle(
+                1,
+                COLORS.gold,
+                .45
+            );
+
+            nodeG.drawCircle(
+                node.x,
+                node.y,
+                18
+            );
+
+        }
+
+
+        nodeG.beginFill(
+            color,
+            affected ? .25 : .08
+        );
+
+        nodeG.lineStyle(
+            2,
+            color,
+            affected ? 1 : .4
+        );
+
+
+        if(i===0){
+
+            nodeG.drawPolygon([
+                node.x-17,node.y-10,
+                node.x+17,node.y,
+                node.x-17,node.y+10
+            ]);
+
+        }
+        else{
+
+            nodeG.drawCircle(
+                node.x,
+                node.y,
+                12
+            );
+
+        }
+
+
+        nodeG.endFill();
+
+        parent.addChild(nodeG);
+
+
+        const label=text(
+            i===0
+            ? "HEAD"
+            : `V0${i}`,
+            7,
+            affected
+            ? COLORS.white
+            : COLORS.muted,
+            "bold"
+        );
+
+        label.anchor.set(.5);
+
+        label.position.set(
+            node.x,
+            node.y+25
+        );
+
+        parent.addChild(label);
+
+
+        /* active marker */
+
+        if(affected){
+
+            const marker=text(
+                "◆",
+                7,
+                COLORS.gold,
+                "bold"
+            );
+
+            marker.anchor.set(.5);
+
+            marker.position.set(
+                node.x,
+                node.y-22
+            );
+
+            parent.addChild(marker);
+
+        }
+
+    });
+
+
+    const effect=text(
+        item.target==="ALL"
+        ? "GLOBAL LINK // ALL SEGMENTS"
+        : `DIRECT LINK // VERTEBRA V0${item.target}`,
+        8,
+        item.target==="ALL"
+        ? COLORS.purple
+        : COLORS.cyan,
+        "bold"
+    );
+
+    effect.position.set(18,320);
+
+    parent.addChild(effect);
+
+}
+
+
+/* ============================================================
+   INVENTARIO
+============================================================ */
+
+function drawInventory(){
+
+    const c=new PIXI.Container();
+
+    c.position.set(20,417);
+
+
+    const bg=new PIXI.Graphics();
+
+    bg.beginFill(0x05040A,.97);
+
+    bg.lineStyle(
+        1,
+        0x332D4B,
+        .9
+    );
+
+    bg.drawRect(
+        0,
+        0,
+        920,
+        104
+    );
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    /* HEADER */
+
+    const title=text(
+        "LOADOUT // CHASSIS",
+        8,
+        COLORS.cyan,
+        "bold"
+    );
+
+    title.position.set(12,10);
+
+    c.addChild(title);
+
+
+    /* ACTIVE SLOTS */
+
+    for(let i=0;i<3;i++){
+
+        const x=12+i*142;
+
+        const slot=new PIXI.Graphics();
+
+        slot.beginFill(0x0D0B17);
+
+        slot.lineStyle(
+            1,
+            player.inventory[i]
+            ? COLORS.cyan
+            : COLORS.dim,
+            .9
+        );
+
+        slot.drawRoundedRect(
+            x,
+            30,
+            132,
+            55,
+            3
+        );
+
+        slot.endFill();
+
+        c.addChild(slot);
+
+
+        const key=text(
+            `[${i+1}]`,
+            8,
+            COLORS.gold,
+            "bold"
+        );
+
+        key.position.set(
+            x+8,
+            37
+        );
+
+        c.addChild(key);
+
+
+        const value=text(
+            player.inventory[i]
+            || "EMPTY SOCKET",
+            8,
+            player.inventory[i]
+            ? COLORS.white
+            : COLORS.muted,
+            "bold"
+        );
+
+        value.position.set(
+            x+8,
+            55
+        );
+
+        value.style.wordWrap=true;
+        value.style.wordWrapWidth=115;
+
+        c.addChild(value);
+
+    }
+
+
+    /* PASSIVES */
+
+    const pTitle=text(
+        "PASSIVE MATRIX",
+        8,
+        COLORS.purple,
+        "bold"
+    );
+
+    pTitle.position.set(465,10);
+
+    c.addChild(pTitle);
+
+
+    player.passives.forEach((passive,i)=>{
+
+        const x=465+i*175;
+
+        const p=new PIXI.Graphics();
+
+        p.beginFill(0x110C20);
+
+        p.lineStyle(
+            1,
+            COLORS.purple,
+            .55
+        );
+
+        p.drawRoundedRect(
+            x,
+            30,
+            165,
+            30,
+            3
+        );
+
+        p.endFill();
+
+        c.addChild(p);
+
+
+        const t=text(
+            passive,
+            8,
+            0xD8B4FE,
+            "bold"
+        );
+
+        t.position.set(
+            x+10,
+            41
+        );
+
+        c.addChild(t);
+
+    });
+
+
+    const help=text(
+        "[SPACE] DESCENDER AL SIGUIENTE ROOM",
+        8,
+        COLORS.muted,
+        "bold"
+    );
+
+    help.position.set(
+        465,
+        72
+    );
+
+    c.addChild(help);
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   DECORACIÓN
+============================================================ */
+
+function drawDecorations(){
+
+    const g=new PIXI.Graphics();
+
+    /* vertical divider */
+
+    line(
+        g,
+        358,
+        62,
+        358,
+        410,
+        COLORS.dim,
+        1,
+        .8
+    );
+
+
+    /* scanner brackets */
+
+    const x=370;
+    const y=62;
+    const w=570;
+    const h=345;
+
+    const c=COLORS.cyan;
+
+    line(g,x,y,x+18,y,c,1,.8);
+    line(g,x,y,x,y+18,c,1,.8);
+
+    line(g,x+w,y,x+w-18,y,c,1,.8);
+    line(g,x+w,y,x+w,y+18,c,1,.8);
+
+    line(g,x,y+h,x+18,y+h,c,1,.8);
+    line(g,x,y+h,x,y+h-18,c,1,.8);
+
+    line(g,x+w,y+h,x+w-18,y+h,c,1,.8);
+    line(g,x+w,y+h,x+w,y+h-18,c,1,.8);
+
+
+    scene.addChild(g);
+
+}
+
+
+/* ============================================================
+   REBUILD
+============================================================ */
+
+function rebuild(){
+
+    scene.removeChildren();
+
+    drawBackground();
+
+    drawHUD();
+
+    drawRack();
+
+    drawScanner();
+
+    drawInventory();
+
+    drawDecorations();
+
+}
+
+
+/* ============================================================
+   KEYBOARD
+============================================================ */
+
+window.addEventListener(
+    "keydown",
+    e=>{
+
+        if(e.key==="1")
+            buy(0);
+
+        if(e.key==="2")
+            buy(1);
+
+        if(e.key==="3")
+            buy(2);
+
+        if(e.key.toLowerCase()==="r")
+            reroll();
+
+        if(e.code==="Space"){
+
+            status(
+                "TRANSICIÓN // DESCENDIENDO AL SIGUIENTE ROOM",
+                COLORS.gold
+            );
+
+            shake();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   ANIMATION
+============================================================ */
+
+app.ticker.add(delta=>{
+
+    animationTime+=delta;
+
+    /* screen shake */
+
+    if(shakePower>0){
+
+        scene.x=
+            Math.random()*shakePower-
+            shakePower/2;
+
+        scene.y=
+            Math.random()*shakePower-
+            shakePower/2;
+
+        shakePower*=.84;
+
+        if(shakePower<.1){
+
+            shakePower=0;
+
+            scene.x=0;
+            scene.y=0;
+
+        }
+
+    }
+
+});
+
+
+/* ============================================================
+   START
+============================================================ */
+
+rollStock();
+
+rebuild();
+
+</script>
+
+</body>
+</html>
+

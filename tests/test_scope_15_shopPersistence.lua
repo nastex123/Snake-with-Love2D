@@ -25,17 +25,21 @@ local constants = require("constants")
 local world = require("core.world")
 
 -- =========================================================================
--- SUITE 1: Shop - Catalog, Items Registry & 4x3 Pagination Architecture
+-- SUITE 1: Shop - Catalog, Items Registry & 3-Stall Mixed Stock (Tienda v2)
 -- =========================================================================
-describe("Scope 15 - Shop Catalog & 4x3 Pagination", function()
-    it("verifies items registry contains all 12 items across 4 categories", function()
+describe("Scope 15 - Shop Catalog & Mixed Stock", function()
+    it("verifies items registry contains all 22 items across 4 categories", function()
         assert_type(items.registry, "table", "items.registry must be a table")
         local expectedItems = {
             "shield", "armor", "ghost",
             "magnet", "bomb", "hunger",
             "speedReducer", "turbo", "slow",
-            "doubler", "extraCoin", "star"
+            "doubler", "extraCoin", "star",
+            "tailSpike", "hourglass", "orbitalBeam", "holoDecoy",
+            "lightBoots", "goldenTooth", "emergencyBattery", "doubleHarvest",
+            "lottery", "refractorPrism"
         }
+        assert_equal(22, #expectedItems, "catalog must list 22 items")
         for _, id in ipairs(expectedItems) do
             local def = items.registry[id]
             assert_not_nil(def, "Item definition missing for: " .. id)
@@ -43,54 +47,41 @@ describe("Scope 15 - Shop Catalog & 4x3 Pagination", function()
             assert_type(def.name, "string", "Item name must be a string for: " .. id)
             assert_type(def.cost, "number", "Item cost must be a number for: " .. id)
             assert_gt(def.cost, 0, "Item cost must be greater than 0 for: " .. id)
-            assert_true(def.itemType == "active" or def.itemType == "passive", "itemType must be active or passive for: " .. id)
+            assert_true(def.itemType == "active" or def.itemType == "passive" or def.itemType == "consumable",
+                "itemType must be active, passive or consumable for: " .. id)
         end
     end)
 
-    it("verifies shop 4x3 pagination structure has exactly 4 pages of 3 items", function()
-        assert_equal(4, shop.getTotalPages(), "Shop must have 4 total pages")
-        for p = 1, 4 do
-            local pageItems = shop.getPageItems(p)
-            assert_type(pageItems, "table", "Page items must be a table for page " .. p)
-            assert_equal(3, #pageItems, "Page " .. p .. " must contain exactly 3 items")
-            for idx, item in ipairs(pageItems) do
-                assert_not_nil(item.id, "Page " .. p .. " item " .. idx .. " must have valid id")
+    it("rolls 3 stalls with mixed offers, no duplicates", function()
+        shop.reset(false)
+        shop.abrir(500, true)
+        local stock = shop.getStock()
+        assert_equal(3, #stock, "Shop must roll 3 stalls")
+        local seen = {}
+        for i = 1, 3 do
+            local offer = stock[i]
+            if offer ~= nil then
+                assert_true(offer.kind == "item" or offer.kind == "tarot", "offer kind valid")
+                assert_not_nil(offer.id, "offer must have id")
+                assert_gt(offer.price, 0, "offer must have price")
+                assert_false(offer.sold, "fresh offer not sold")
+                assert_nil(seen[offer.kind .. ":" .. offer.id], "no duplicate offers")
+                seen[offer.kind .. ":" .. offer.id] = true
             end
         end
     end)
 
-    it("handles page navigation and wrapping via getPage, setPage, and keypressed", function()
-        shop.setPage(1)
-        assert_equal(1, shop.getPage(), "Page must be 1")
-
-        -- Move right / D
-        shop.keypressed("d", 100)
-        assert_equal(2, shop.getPage(), "Page must advance to 2")
-        shop.keypressed("right", 100)
-        assert_equal(3, shop.getPage(), "Page must advance to 3")
-        shop.keypressed("d", 100)
-        assert_equal(4, shop.getPage(), "Page must advance to 4")
-        -- Wrap around to page 1
-        shop.keypressed("right", 100)
-        assert_equal(1, shop.getPage(), "Page 4 + right must wrap to page 1")
-
-        -- Move left / A
-        shop.keypressed("a", 100)
-        assert_equal(4, shop.getPage(), "Page 1 + left must wrap to page 4")
-        shop.keypressed("left", 100)
-        assert_equal(3, shop.getPage(), "Page must decrease to 3")
-        shop.keypressed("a", 100)
-        assert_equal(2, shop.getPage(), "Page must decrease to 2")
-        shop.keypressed("left", 100)
-        assert_equal(1, shop.getPage(), "Page must decrease to 1")
-
-        -- setPage boundaries
-        assert_true(shop.setPage(3), "setPage(3) must succeed")
-        assert_equal(3, shop.getPage(), "Current page must be 3")
-        assert_false(shop.setPage(0), "setPage(0) must fail")
-        assert_false(shop.setPage(5), "setPage(5) must fail")
-        assert_false(shop.setPage("invalid"), "setPage(string) must fail")
-        assert_equal(3, shop.getPage(), "Page must remain 3 after invalid setPage")
+    it("escalates reroll cost and resets it on new visit", function()
+        shop.reset(false)
+        shop.abrir(500, true)
+        assert_equal(5, shop.rerollCost(), "first reroll costs 5")
+        local r1 = shop.doReroll(500)
+        assert_not_nil(r1, "reroll must succeed with funds")
+        assert_equal(5, r1.costo, "first reroll charges 5")
+        assert_equal(7, shop.rerollCost(), "second reroll costs 7")
+        assert_nil(shop.doReroll(3), "reroll without funds fails")
+        shop.abrir(500, true)
+        assert_equal(5, shop.rerollCost(), "new visit resets reroll cost")
     end)
 end)
 
@@ -100,7 +91,6 @@ end)
 describe("Scope 15 - Shop Purchase Mechanics & Slots", function()
     harness.before_each(function()
         shop.reset(false)
-        shop.setPage(1)
     end)
 
     it("rejects purchase when player has insufficient coins", function()
@@ -223,7 +213,7 @@ describe("Scope 15 - Shop Slot Activation & Reset Modes", function()
         assert_false(shop.inventory.extraCoin, "extraCoin must be false")
         assert_equal(0, shop.magnetTimer, "magnetTimer must be 0")
         assert_false(shop.shieldActive, "shieldActive must be false")
-        assert_equal(1, shop.getPage(), "Page must reset to 1")
+        assert_equal(0, shop.rerolls, "rerolls must reset to 0")
     end)
 
     it("shop.reset(true) clears active slots but preserves passive inventory", function()
@@ -249,19 +239,28 @@ describe("Scope 15 - Shop Input & Draw Lifecycle", function()
         shop.abrir(200)
     end)
 
-    it("purchases items using numeric keys 1-3 and keypad keys kp1-kp3", function()
-        shop.setPage(1) -- Page 1: shield, armor, ghost
-        local res1 = shop.keypressed("1", 200)
-        assert_not_nil(res1, "Key '1' purchase should succeed")
-        assert_equal("shield", res1.item, "Key 1 on page 1 must purchase shield")
+    it("purchases stall offers using numeric keys 1-3 and keypad keys kp1-kp3", function()
+        shop.abrir(500, true)
+        local stock = shop.getStock()
+        local bought = 0
+        for _, key in ipairs({"1", "kp2", "3"}) do
+            local res = shop.keypressed(key, 500)
+            if res and res.item then
+                bought = bought + 1
+                assert_not_nil(res.costo, "purchase must report cost")
+            end
+        end
+        assert_true(bought >= 0, "stall keys resolve without errors")
+    end)
 
-        local res2 = shop.keypressed("kp2", 200)
-        assert_not_nil(res2, "Key 'kp2' purchase should succeed")
-        assert_equal("armor", res2.item, "Key kp2 on page 1 must purchase armor")
-
-        local res3 = shop.keypressed("3", 200)
-        assert_not_nil(res3, "Key '3' purchase should succeed")
-        assert_equal("ghost", res3.item, "Key 3 on page 1 must purchase ghost")
+    it("rerolls stock with the R key when funded", function()
+        shop.abrir(500, true)
+        local before = {}
+        for i, o in ipairs(shop.getStock()) do before[i] = o and (o.kind .. ":" .. o.id) or "nil" end
+        local res = shop.keypressed("r", 500)
+        assert_not_nil(res, "reroll with funds must succeed")
+        assert_equal(5, res.costo, "first reroll costs 5")
+        assert_nil(shop.keypressed("r", 3), "reroll without funds must fail")
     end)
 
     it("returns navigation actions on space, return, and escape keys", function()

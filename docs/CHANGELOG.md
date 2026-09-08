@@ -8,6 +8,115 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop scanner title typography & anti-overlap)
+
+- **fix** (shop - 2026-09-08 11:52): Ajuste de tipografía y delimitación de cajas para evitar solapamiento entre título de ítem y precio en Retablo Sagrado (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopBioScanner.lua` (escala tipográfica)**: Se cambió la fuente del título del ítem seleccionado de `fontLarge` (16px) a `fontNormal` (11px), reduciendo la escala visual para una presentación medieval armónica y legible sin saturar el dintel.
+  2. **QUE — `systems/shopBioScanner.lua` (cajas delimitadas anti-colisión)**: Se implementó un ancho acotado (`titleMaxW = w - priceW - 28`) con `printf` para el nombre del ítem y sombra en relieve, y una caja fija de `90px` para el precio en oro en `x + w - priceW - 12`. Con esto se previene totalmente la superposición de nombres largos (como `X. La Bolsa de Midas` o `XII. El Segador`) sobre la etiqueta de precio.
+  3. **Verificación**: `love .` 100% funcional a 60 FPS sin advertencias ni errores en `error.log`.
+
+## 2026-09-08 (shop 720p CRT safe margin fix)
+
+- **fix** (shop - 2026-09-08 11:41): Ajuste de márgenes seguros para la escala adaptativa de la tienda en 720p y pantallas con curvatura CRT (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (márgenes seguros adaptativos)**: Incorporado cálculo de `safeMargin = 16` px al auto-escalado basado en dimensiones reales (`containerW = 600`, `containerH = 344` incluyendo el pie de mandatos). Esto evita que en resoluciones como 720p (`1280x720`) o 1080p el contenedor colisione con el borde curvo del shader CRT o se recorte en la parte inferior o superior.
+  2. **QUE — `systems/shopDraw.lua` (anclaje del pie de mandatos)**: El texto del pie de atajos (`[1-3] OFRENDAR...`) ahora se ancla dinámicamente a `botY + botH + 6` px dentro del contenedor virtual, garantizando un espaciado perfecto sin empujar elementos fuera del viewport.
+  3. **Verificación**: Comprobado cálculo visual y compatibilidad con shader CRT activo a 60 FPS; suite de tests ejecutada.
+
+## 2026-09-08 (shop adaptive pixel scale)
+
+- **fix** (shop - 2026-09-08 10:56): Implementación de escalado adaptativo y control manual de escala para la interfaz de la tienda (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `core/config.lua` & `constants.lua`**: Añadida la constante de configuración `config.SHOP_MANUAL_SCALE = 1.0` para permitir editar manualmente el tamaño de la tienda desde el archivo central de configuración sin tocar código de renderizado (admite valores como `1.0`, `1.15`, `1.25`, `1.5`, etc.).
+  2. **QUE — `systems/shopDraw.lua` (pixel scale adaptativo)**: Calcula dinámicamente `scale = autoScale * manualFactor` y se aplica mediante matriz gráfica (`translate` + `scale`), permitiendo que la tienda se agrande proporcionalmente ocupando la pantalla completa de forma equilibrada sin perder nitidez pixel-art.
+  3. **QUE — `systems/shop.lua` (inversa de coordenadas de ratón)**: Sincronizadas las coordenadas `x, y` en `shop.mousepressed` aplicando la transformación inversa `(raw - offset) / scale` para garantizar una respuesta precisa al 100% de clics en hornacinas y botón de ofrenda.
+  4. **Verificación**: `love .` 100% funcional y verificado a 60 FPS sin advertencias ni errores en `error.log`.
+
+## 2026-09-08 (shop card layout & bottom containers)
+
+- **feature** (shop - 2026-09-08 10:45): Refinamiento del layout de cartas y división en contenedores independientes para el panel inferior (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (cards de puestos)**: La etiqueta del tipo (`ITEM` / `TAROT`) se reubica directamente debajo de la textura/icono. El nombre del ítem o tarot (ej. `VII. Cero Absoluto`) ahora utiliza un ajuste tipográfico adaptable con `printf` multilínea para garantizar que encaje 100% dentro de la tarjeta sin desbordarse.
+  2. **QUE — `systems/shopDraw.lua` (contenedores inferiores independientes)**: El panel inferior se divide en dos contenedores ("divs") claramente separados con borde gótico y fondo propio:
+     - **Contenedor 1 (Izquierda)**: *Cálices de Poder Activo*, albergando las 3 tarjetas de ranuras `[I]`, `[II]`, `[III]` con marco propio, icono vertical centrado y estado/nombre centrado.
+     - **Contenedor 2 (Derecha)**: *Sellos y Arcanos Activos*, albergando las pasivas y tarots bendecidos en sus respectivas sub-tarjetas.
+  3. **Verificación**: `love .` 100% funcional a 60 FPS sin errores en `error.log`; ejecución de tests unitarios verificada.
+
+## 2026-09-08 (shop Gothic Altar Shrine - Propuesta C)
+
+- **feature** (shop - 2026-09-08 10:28): Reubicación de elementos y centrado geométrico en la Tienda del Santuario Arcano (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (centrado y márgenes)**: La tienda se centra matemáticamente tanto en el eje X como en el eje Y respecto a la resolución virtual ($640\times 360$), manteniendo un margen lateral simétrico de separación respecto a los bordes de la pantalla.
+  2. **QUE — `systems/shopDraw.lua` (reubicación de controles)**: Eliminado el texto `"SANTUARIO DE LAS ANIMAS"` de la barra superior y colocado en su lugar el saldo `"✝ TRIBUTO: $XXX"` a la izquierda; el botón de reroll `"OFRENDA (R): $X"` se reubica a la derecha (donde antes figuraba `"SANTIFICADO"`), logrando una distribución balanceada.
+  3. **QUE — `systems/shopBioScanner.lua`**: Rediseñado como Retablo Mayor Gótico de la Cripta Ancestral con espina ósea de dragón y llamas de alma (*Soul Flames*) animadas a 60 FPS.
+  4. **Verificación**: `love .` 100% funcional a 60 FPS sin excepciones en `error.log`; tests unitarios ejecutados.
+
+## 2026-09-08 (shop Bio-Rack v3 implementation)
+
+- **feature** (shop - 2026-09-08 08:58): Implementación del sistema de Tienda Cyberpunk Bio-Rack v3 en Love2D (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopBioScanner.lua` (nuevo módulo)**: Renderizador de inspección táctica y bio-topología animada de la serpiente (7 vértebras $HEAD + V_{01}\dots V_{06}$) con cálculo procedural de curvas senoidales, anillos de pulso luminoso e identificación de zonas de impacto según ítem o tarot.
+  2. **QUE — `systems/shopDraw.lua` (nuevo módulo)**: Layout de tienda asimétrico a $640\times 360$ px compuesto por Top Bar HUD (saldo reactivo, floor info y botón purga `[R]`), columna izquierda de cartuchos modulares (slots `[1-3]`, badges de Tier S/A/B/C) y panel inferior de Loadout/Chassis con sockets y matriz de pasivas.
+  3. **QUE — `systems/shop.lua` (refactor modular)**: Delegación limpia de renderizado desacoplada de la lógica, control de foco (`focusedStall`), soporte para navegación por ratón o teclado (`1-3`, `R`, `Up/Down`, `Tab`, `Space`, `Enter`, `Esc`).
+  4. **Verificación**: `love .` 100% funcional sin excepciones en `error.log`; ejecución de tests unitarios verificada.
+
+## 2026-09-08 (shop redesign Bio-Rack v3)
+
+- **docs** (prototype - 2026-09-08 08:55): Prototipo interactivo Pixi.js de Tienda Cyberpunk Bio-Rack v3 (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `prototypes/shop-redesign.html`**: Rediseño integral basado en estética bio-cyberpunk y topología de serpiente:
+     - **Modular Bio-Rack (Izquierda)**: 3 pedestales/cartuchos interactivos con slots `[1]`, `[2]`, `[3]`, badges de rareza (`S`, `A`, `B`, `C`), glifos y precios en oro.
+     - **Holographic Bio-Scanner (Derecha)**: Panel de escaneo holográfico del cartucho enfocado con desglose de arcana/módulo y **Bio-Topología** de espina dorsal (7 vértebras animadas con pulsos y zonas de impacto `HEAD` / `V01-V06`).
+     - **Chassis & Loadout (Inferior)**: 3 ranuras de items activos instalados, matriz de pasivas y barra de controles (`[1-3] Comprar`, `[R] Reroll`, `[Space] Continuar`).
+  2. **Verificación**: Inspección de layout, animación a 60 FPS y reactividad de eventos de compra/reroll.
+
+## 2026-09-07 (session handoff)
+
+- **docs** (handoff - 2026-09-07): Documentación lista para continuar en otra sesión (America/Bogota, rama `feature/phase8-mystery-rooms` en `434e6dd`):
+  1. **Sync**: 65 juego / 104 con 37 tests, suite 692/672 PASS (20 pre-existentes), `playing` 994L, TAROT reservado, ROADMAP Tienda v2, TODO con bloque Próxima sesión.
+  2. **Pendiente**: playtest economía, destino `GAME_STATE_TAROT`, PR a `dev`, Status Effects (GDD §16).
+  3. **Verificación**: `love tests` 692/672 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (shop v2 code)
+
+- **feature** (in-progress - 2026-09-07): Tienda v2 código (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — config**: `TAROT_PRICES` (tiers S60/A45/B30/C20), `SHOP_REROLL_BASE=5`, `SHOP_REROLL_STEP=2`, `SHOP_STALLS=3`, `SHOP_TAROT_CHANCE=0.40`.
+  2. **QUE — `tarot.lua`**: `price/shopPool/buy` sin tope; trigger draft salas 1/2/4 eliminado de `playing` (estado TAROT reservado).
+  3. **QUE — rewrite `shop.lua` 581L**: 3 puestos mixtos sin duplicados, reroll R/botón con re-animación, compra tarot (`{kind="tarot"}`) con PNG, `abrir(monedas, renew)` (visita fresca solo en transiciones/muerte), slots visibles, scope_15 reescrita + scope_26 (8 tests).
+  4. **QUE — docs**: GDD controles/§13.3/§14.1/§20.10, TDD tabla + §10.29, TODO, `tests/main.lua` intacto en runner.
+  5. **Verificación**: `love tests` 692/672 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (shop v2 proto)
+
+- **docs** (prototype - 2026-09-07): Tienda v2 Layout A interactivo (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `prototypes/shop-redesign.html` (nuevo)**: 3 puestos con stock mixto 60/40 (items 22 + tarots 12 con tiers S60/A45/B30/C20), compra con slots/pasivos, reroll escalado 5$+2$ con dados, sin-fondos, log de rolls, TODO re-priorizado a tienda v2.
+  2. **Verificación**: `node --check` OK (sin runtime afectado).
+
+## 2026-09-07 (docs sync)
+
+- **docs** (sync - 2026-09-07): Auditoría integral de documentación (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **Conteos reales**: 65 módulos juego (67 con `conf.lua`+`scratch_test_debug.lua`, 103 con 36 tests), suite 684/664 PASS (20 pre-existentes), `main.lua` 556L, 8 estados (`TAROT=7`).
+  2. **TDD**: tabla de responsabilidades con líneas medidas + filas `tarotArt`/`roomMutators`/`mystery`, estados +TAROT, `playing` 999L y crecidos fase 8 documentados.
+  3. **AGENTS/README**: conteos, 22 items, 5 ataques del boss + furia + mini-jefes, `mover` 6 valores, features Tarot/Mutadores/Misterio en README.
+  4. **ROADMAP**: Items Arsenal y Enrage marcados [x] (estaban hechos); TODO pie + deuda splits fase 8; `tests/main.lua` cobertura con 19 módulos faltantes.
+  5. **Verificación**: `love tests` 684/664 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mystery P3)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P3 Espejo+Sellos (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — Espejo (15.2)**: cuerpo espejado que replica giros con 1.2s al ritmo del jugador, contacto letal (Fenix salva), disolver por lazo (`pointInPolygon` expuesto) o 3 normales, premio 30$ + item.
+  2. **QUE — Sellos (15.4)**: runas 1-2-3 en esquinas solo al entrar (desorden resetea), 10s, 2 patrulleros extra, altar 50$ + 2 items; draw amatista y runas numeradas en `renderMain`.
+  3. **Verificación**: `love tests` 684/664 PASS (20 pre-existentes), scope_25 +8, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mystery P2)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P2 Apuesta+Oro (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — Apostador (15.1)**: ruleta central, apuesta 10$ (aviso unico sin fondos), 3 doradas secuenciales en 15s (respawns forzados a oro), premio 40$ + item aleatorio + racha +0.3, derrota con 2 chasers.
+  2. **QUE — Fiebre (15.3)**: sala limpiada al entrar + 20 monedas a 6.0 celdas/s con rebote elastico, recoleccion por contacto, puerta a los 12s; ruleta y monedas dibujadas en `renderMain`.
+  3. **Verificación**: `love tests` 676/656 PASS (20 pre-existentes), scope_25 +7, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (mystery P1)
+
+- **feature** (in-progress - 2026-09-07): Mystery Rooms P1 Framework (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/mystery.lua` (nuevo, ~100L)**: `MYSTERY_DEFS` 4 salas (GDD §15) + `roll/canBeMystery/assign/current/begin` + flag `room.mystery` asignado en `world.init/avanzarEtapa`.
+  2. **QUE — cableado**: `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), banner `SALA ESPECIAL` + badge en `ui/hudUI.lua`, runtime `World.state.mysteryData`.
+  3. **QUE — Tests + docs**: suite scope_25 (9 tests) cableada en runner; GDD §15.0, TDD §10.28, TODO.
+  4. **Verificación**: `love tests` 669/649 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
 ## 2026-09-07 (mutators P4)
 
 - **feature** (in-progress - 2026-09-07): Room Mutators P4 Pesados (America/Bogota, rama `feature/phase8-room-modifiers`):

@@ -36,6 +36,8 @@ if pcall(require, "tests.test_scope_22_miniboss") then end
 if pcall(require, "tests.test_scope_21_items_arsenal") then end
 if pcall(require, "tests.test_scope_23_tarot") then end
 if pcall(require, "tests.test_scope_24_mutators") then end
+if pcall(require, "tests.test_scope_25_mystery") then end
+if pcall(require, "tests.test_scope_26_shopv2") then end
 
 -- Source files for full coverage reporting
 local source_files = {
@@ -47,23 +49,42 @@ local source_files = {
     "core/timers.lua",
     "core/touch.lua",
     "core/world.lua",
+    "core/events.lua",
+    "core/input.lua",
+    "core/assets.lua",
     "entities/bossAttacks.lua",
     "entities/chaserAI.lua",
     "entities/patrollerAI.lua",
     "entities/enemies.lua",
+    "entities/enemyAttackRegistry.lua",
+    "entities/enemyBossLogic.lua",
+    "entities/enemySpawnLogic.lua",
+    "entities/enemyMiniBoss.lua",
     "entities/enemyHelpers.lua",
     "entities/food.lua",
     "entities/obstacles.lua",
     "entities/snake.lua",
+    "entities/snake/core.lua",
+    "entities/snake/abilities.lua",
+    "entities/snake/collisions.lua",
+    "entities/snake/movement.lua",
     "world/world.lua",
     "world/dungeonGen.lua",
     "world/populate.lua",
+    "world/biomeHazards.lua",
     "systems/achievements.lua",
     "systems/debugLogo.lua",
     "systems/debugTools.lua",
     "systems/gameflow.lua",
     "systems/gamestates.lua",
+    "systems/gamestates/playing.lua",
+    "systems/gamestates/transition.lua",
+    "systems/gamestates/death.lua",
     "systems/items.lua",
+    "systems/tarot.lua",
+    "systems/tarotArt.lua",
+    "systems/roomMutators.lua",
+    "systems/mystery.lua",
     "systems/persistence.lua",
     "systems/player.lua",
     "systems/profiles.lua",

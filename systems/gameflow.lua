@@ -14,6 +14,7 @@ local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 function gameflow.applyActiveProfile()
     local profile = persistence.getActiveProfile()
@@ -152,6 +153,13 @@ function gameflow.iniciarSala(keepInventory)
         uiMod.addPopup("MUTADOR: " .. string.upper(mutDef.tag), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 4)
         sound.play("buttonClick")
     end
+    -- Mystery Rooms (GDD §15): banner + runtime fresco al entrar
+    local mysDef = mysteryMod.currentDef(worldMod)
+    if mysDef then
+        mysteryMod.begin()
+        uiMod.addPopup("SALA ESPECIAL: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
+        sound.play("highScore")
+    end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
     local hasTarot, tarotMod = pcall(require, "systems.tarot")
     if hasTarot and tarotMod.has("midas_pouch") then
@@ -164,6 +172,31 @@ function gameflow.iniciarSala(keepInventory)
     if mutatorsMod.stageShadowActive() then
         local head = st.player.body and st.player.body[1]
         mutatorsMod.data().shadow = mutatorsMod.spawnShadowPos(head, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos)
+    end
+    -- Fiebre del Oro (GDD §15.3): sala sin enemigos + 20 monedas 12s
+    if mysteryMod.goldRushActive(worldMod) then
+        enemiesMod.init()
+        mysteryMod.beginGoldRush(st.anchoGrilla, st.altoGrilla)
+    end
+    -- Espejo (GDD §15.2): espectro del mismo largo al lado opuesto
+    if mysteryMod.current(worldMod) == "doppelganger" then
+        mysteryMod.beginDoppel(st.player.body, st.anchoGrilla, st.altoGrilla)
+    end
+    -- Sellos (GDD §15.4): runas 1-2-3 + 2 patrulleros en cruz
+    if mysteryMod.current(worldMod) == "trial_triads" then
+        mysteryMod.beginTriads(st.anchoGrilla, st.altoGrilla)
+        local helpersOk, helpers = pcall(require, "entities.enemyHelpers")
+        for _, spot in ipairs({
+            {x = math.floor(st.anchoGrilla / 2), y = 1},
+            {x = 1, y = math.floor(st.altoGrilla / 2)},
+        }) do
+            local sx, sy = spot.x, spot.y
+            if helpersOk then
+                local fx, fy = helpers.sampleFreeTile(st.anchoGrilla, st.altoGrilla, st.player.body, obstaclesMod, enemiesMod.list, 2, 30)
+                if fx then sx, sy = fx, fy end
+            end
+            if enemiesMod.spawnAt then enemiesMod.spawnAt("patroller", sx, sy, {}) end
+        end
     end
 end
 
@@ -244,7 +277,7 @@ function gameflow.transitionToShop()
     persistence.syncActiveProfile()
     st.gameState = constants.GAME_STATE_SHOP
     sound.playSegment("intro")
-    shop.abrir(st.monedas)
+    shop.abrir(st.monedas, true)
 end
 
 function gameflow.returnToMenu()

@@ -9,21 +9,21 @@
 ## Ejecucion
 `love .` (directorio raiz, NUNCA apuntar a `main.lua` suelto).
 
-## Arquitectura (62 módulos juego + helpers, 97 con 34 tests)
+## Arquitectura (65 módulos juego + helpers, 104 con 37 tests)
 Estructura de carpetas por sistema:
-- `main.lua` (541L loop fixed timestep `FIXED_DT=1/60`, 7 estados), `constants.lua` — raíz (shim de `core/config.lua`)
+- `main.lua` (556L loop fixed timestep `FIXED_DT=1/60`, 8 estados), `constants.lua` — raíz (shim de `core/config.lua`)
 - `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (369L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 134L bus P06, `input.lua` 89L centralizado P07, `assets.lua` 144L cache P08, `touch.lua` (lazy), `helpers.lua`
-- `entities/` → `snake.lua` 257L fachada + `snake/` 4, `enemies.lua` 341L fachada + `enemyAttackRegistry.lua` 224L pools + `enemyBossLogic.lua` + `enemySpawnLogic.lua` + `bossAttacks.lua` + `enemyHelpers.lua` + `chaserAI.lua` + `patrollerAI.lua`, `food.lua`, `obstacles.lua` 495L fachada (delega a `world/biomeHazards.lua`)
-- `world/` → `world.lua` (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` (BSP, templates, stage modifiers) + `populate.lua` (población de sala)
-- `systems/` → `items.lua` (12 items, slots 1-3), `shop.lua` (paginacion 4x3), `persistence.lua`, `settings.lua` (facade panel ajustes) + `settingsDraw.lua` (render pestañas/controles), `profiles.lua` (facade gestor max 3) + `profilesDraw.lua` (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` (calc speed/items), `gameflow.lua` (runs/rooms), `gamestates.lua` (update por estado), `debugTools.lua` (menu debug Tab) + `debugLogo.lua` (calibrador logo F2)
-- `ui/` → `ui.lua` (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` (intro Balatro + diamante), `menuUI.lua` (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` (render 2.5D cian isométrico), `menuCard.lua` (tarjeta Chunky perfil #11), `hudUI.lua` (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` (pausa/minimapa/dungeon debug).
-- `render/` → `shaders.lua` (bloom+CRT+sombra+heat), `particles.lua` (textura 4x4 procedural) + `renderMain.lua` (drawScene) + `enemiesDraw.lua`
-- `audio/` → `sound.lua` (SFX procedural + single .ogg)
+- `entities/` → `snake.lua` 257L fachada + `snake/` 4, `enemies.lua` 431L fachada + `enemyAttackRegistry.lua` 247L pools + `enemyBossLogic.lua` + `enemySpawnLogic.lua` + `bossAttacks.lua` 255L (5 ataques) + `enemyHelpers.lua` + `chaserAI.lua` 389L + `patrollerAI.lua` + `enemyMiniBoss.lua` 406L (5 mini-jefes sala 3), `food.lua` 484L, `obstacles.lua` 495L fachada (delega a `world/biomeHazards.lua`)
+- `world/` → `world.lua` 263L (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` 530L (BSP, templates, stage modifiers) + `populate.lua` 314L (población de sala)
+- `systems/` → `items.lua` (22 items, slots 1-3), `shop.lua` 475L (paginacion 4x3), `persistence.lua` 862L, `settings.lua` 565L (facade panel ajustes) + `settingsDraw.lua` 647L (render pestañas/controles), `profiles.lua` 330L (facade gestor max 3) + `profilesDraw.lua` 511L (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` 622L (calc speed/items), `gameflow.lua` 307L (runs/rooms), `gamestates.lua` 226L (update por estado), `debugTools.lua` 244L (menu debug Tab) + `debugLogo.lua` 206L (calibrador logo F2), `tarot.lua` 258L (draft 12 cartas) + `tarotArt.lua` (loader PNG), `roomMutators.lua` 264L (10 mutadores) + `mystery.lua` 336L (4 salas)
+- `ui/` → `ui.lua` 176L (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` 285L (intro Balatro + diamante), `menuUI.lua` 252L (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` 110L (render 2.5D cian isométrico), `menuCard.lua` 202L (tarjeta Chunky perfil #11), `hudUI.lua` 368L (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` 216L (pausa/minimapa/dungeon debug).
+- `render/` → `shaders.lua` (bloom+CRT+sombra+heat), `particles.lua` 342L (textura 4x4 procedural) + `renderMain.lua` 470L (drawScene) + `enemiesDraw.lua` 508L
+- `audio/` → `sound.lua` 436L (SFX procedural + single .ogg)
 
 Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`, `settingsMod`, `profilesMod`, `playerMod`, `achievementsMod`.
 
 ## Estados (`constants.lua`)
-`MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`
+`MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`, `TAROT=7`
 
 ## Flujo
 `MENU`(4.5s intro) → `PLAYING` → `TRANSITION`(fade-out→hold2s→fade-in) → `SHOP` → `PLAYING`
@@ -39,13 +39,15 @@ Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 - `iniciarSala()` muestra popup: "Derrota al jefe recogiendo 15 comidas" si es sala boss.
 - `world.populateRoom()` reserva las 9 celdas (centro + 8 adyacentes) en boss room para evitar comida sobre el boss.
 - Los ataques tienen `telegraphTime` antes de ejecutarse (telegraph markers visibles).
-- 4 ataques: `projectile_spread` (radial), `spawn_adds` (patrollers, respeta caps), `radial_pulse` (onda), `teleport` (pos aleatoria lejos de head).
+- 5 ataques: `projectile_spread` (radial), `spawn_adds` (patrollers, respeta caps), `radial_pulse` (onda), `teleport` (pos aleatoria lejos de head), `laser_perimeter` (jaula central 4 rayos, minPhase 2).
+- Enrage a 3 comidas del objetivo: telegraphs /1.35, tempo música 1.15x, pulso carmesí + popup.
+- Mini-jefes sala 3 (`entities/enemyMiniBoss.lua`, 5 con telegraphs y cofre-buff dorado).
 - `canSpawn(type)` respeta `BOSS_MAX_RED=3` / `BOSS_MAX_BLUE=4` durante boss. `sampleFreeTile()` busca tile seguro >=6 de head, con attempts.
 - **Timeout**: enemigos que llevan `BOSS_ENEMY_LIFETIME=15s` vivos durante boss: chasers se encolan en `pendingRespawns` (reaparecen 5s despues), patrollers se eliminan.
 - Spawners: intervalo * 1.5 durante boss.
 
 ## Snake colisiones (`snake.mover()`)
-Retorna 5 valores: `vivo, comio, enemyKilled, bossResult, attackHit`
+Retorna 6 valores: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 Con `attackHit`: proyecto true si un ataque del boss conecta (sin shield/armor/ghost).
 Orden colision: cuerpo → obstaculos → boss → proyectiles → enemigos
 - `debugImmune` global: atraviesa todo sin morir

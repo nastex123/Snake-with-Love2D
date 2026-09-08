@@ -34,6 +34,37 @@ config.ROOM_TIME_TRIAL_DURATION = 10.0
 config.ROOM_SHADOW_INTERVAL = 0.9
 -- 68. Tunel: radio visible en celdas alrededor de la cabeza
 config.ROOM_TUNNEL_RADIUS = 5
+-- Mystery Rooms (GDD §15): probabilidad por sala candidata (boss/elite/sala1 excluidos)
+config.ROOM_MYSTERY_CHANCE = 0.06
+-- Tienda v2 (GDD §13 rework): precios tarot por tier, reroll escalado, stock mixto
+config.TAROT_PRICES = {
+    mercury = 60, reaper = 60,
+    absolute_zero = 45, dragon_blood = 45, eagle_eye = 45,
+    iron_spine = 30, magic_circle = 30, astral_mirror = 30, alchemical_digestion = 30,
+    shadow_thief = 20, midas_pouch = 20, iron_heart = 20,
+}
+config.SHOP_REROLL_BASE = 5
+config.SHOP_REROLL_STEP = 2
+config.SHOP_STALLS = 3
+config.SHOP_TAROT_CHANCE = 0.40
+-- Escala manual de la tienda (1.0 = automatico/1x, 1.25, 1.5, 2.0, etc.)
+config.SHOP_MANUAL_SCALE = 1.0
+-- 15.1 Apostador: apuesta, tiempo, doradas, premio oro y chasers de derrota
+config.GAMBLER_BET = 10
+config.GAMBLER_TIME = 15.0
+config.GAMBLER_GOLDS = 3
+config.GAMBLER_WIN_COINS = 40
+config.GAMBLER_LOSE_CHASERS = 2
+-- 15.3 Fiebre del Oro: duracion y monedas rebotando
+config.GOLDRUSH_TIME = 12.0
+config.GOLDRUSH_COINS = 20
+-- 15.2 Espejo: retraso de replica, premio y frutas para disolver
+config.DOPPEL_DELAY = 1.2
+config.DOPPEL_REWARD_COINS = 30
+config.DOPPEL_FED = 3
+-- 15.4 Sellos: tiempo limite y premio del altar
+config.TRIADS_TIME = 10.0
+config.TRIADS_REWARD_COINS = 50
 
 config.HIGH_SCORE_CELEBRATION_DURATION = 1.3
 

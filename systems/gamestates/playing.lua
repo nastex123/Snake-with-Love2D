@@ -27,6 +27,7 @@ if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
+local mysteryMod = require("systems.mystery")
 
 -- Batería de Emergencia (GDD item 57): bullet-time 0.1x con dt escalado
 -- (pendingDeathTimer en tiempo escalado ≈ 1.5s reales); retorna true si se activó
@@ -127,9 +128,43 @@ local function headOnMiniBoss(st, mb)
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
 end
 
+-- Item aleatorio no poseido via tienda costo 0 (premios Contrarreloj/Espejo/Altar)
+local function grantRandomItem(st, onlyPassive)
+    local hasItems, itemsMod = pcall(require, "systems.items")
+    if not hasItems then return nil end
+    local pool = {}
+    for id, def in pairs(itemsMod.registry or {}) do
+        if type(def) == "table" and not shop.isOwned(def.id or id)
+            and (not onlyPassive or def.itemType == "passive") then
+            pool[#pool + 1] = def.id or id
+        end
+    end
+    for _ = 1, math.min(5, #pool) do
+        local pick = table.remove(pool, love.math.random(#pool))
+        local res = shop.procesarCompra(st.monedas, pick, 0)
+        if res then return pick end
+    end
+    return nil
+end
+
+-- Espejo disuelto (GDD §15.2): 30$ + cofre dorado (item aleatorio)
+local function awardDoppel(st)
+    local d = mysteryMod.data()
+    if d.doppelDone then return end
+    d.doppelDone = true
+    d.doppel = nil
+    st.monedas = (st.monedas or 0) + (constants.DOPPEL_REWARD_COINS or 30)
+    local head = st.player.body and st.player.body[1]
+    local pick = grantRandomItem(st)
+    if head then
+        uiMod.addPopup("ESPEJO +30$", head.x, head.y)
+        if pick then uiMod.addPopup("PREMIO: " .. string.upper(pick), head.x, head.y) end
+    end
+    sound.play("highScore")
+end
+
 -- Bendicion del Fenix (GDD §19.67): revive gratis 1 vez por etapa (3 segmentos + 3s fantasma)
-local function phoenixRevive(st)
-    if not mutatorsMod.phoenixAvailable() then return false end
+local function phoenixRevive(st)    if not mutatorsMod.phoenixAvailable() then return false end
     local p = st.player
     if not (p and p.body and #p.body > 0) then return false end
     mutatorsMod.phoenixConsume()
@@ -321,6 +356,17 @@ function playing.update(dt)
             end
             st.comboCount = st.comboCount + 2
             st.comboFlashTimer = 0.3
+        end
+    end
+
+    -- Espejo (GDD §15.2): encerrar la sombra con el lazo la disuelve
+    if mysteryMod.doppelActive(worldMod) then
+        local dh = mysteryMod.doppelHead()
+        local colOk, collisions = pcall(require, "entities.snake.collisions")
+        if dh and colOk and collisions.pointInPolygon and st.player.body and #st.player.body >= 8 then
+            if collisions.pointInPolygon(dh.x + 0.5, dh.y + 0.5, st.player.body) then
+                awardDoppel(st)
+            end
         end
     end
 
@@ -654,8 +700,38 @@ function playing.update(dt)
                 st.monedas = st.monedas + math.floor((monedasExtra + st.coinBonus) * streak)
                 -- Midas Avaro (GDD §19.62): +2 monedas por fruta
                 st.monedas = st.monedas + mutatorsMod.midasFruitBonus()
+                -- Apostador (GDD §15.1): 3 doradas con apuesta = 40$ + item + racha
+                if tipo == constants.FOOD_GOLD and mysteryMod.gamblerGoldEaten() == "win" then
+                    st.monedas = st.monedas + (constants.GAMBLER_WIN_COINS or 40)
+                    st.survivalStreak = (st.survivalStreak or 1.0) + 0.3
+                    local hasItems, itemsMod = pcall(require, "systems.items")
+                    if hasItems then
+                        local pool = {}
+                        for id, def in pairs(itemsMod.registry or {}) do
+                            if type(def) == "table" and not shop.isOwned(def.id or id) then
+                                pool[#pool + 1] = def.id or id
+                            end
+                        end
+                        for _ = 1, math.min(5, #pool) do
+                            local pick = table.remove(pool, love.math.random(#pool))
+                            local res = shop.procesarCompra(st.monedas, pick, 0)
+                            if res then
+                                local head = st.player.body and st.player.body[1]
+                                if head then uiMod.addPopup("PREMIO: " .. string.upper(pick), head.x, head.y) end
+                                break
+                            end
+                        end
+                    end
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("APUESTA +40$", head.x, head.y) end
+                    sound.play("highScore")
+                end
                 -- Dualidad (GDD §19.69): la fruta espejo se consume sin bonus extra
                 if comioTwin then foodMod.twinPos = nil; foodMod.dualTwin = nil end
+                -- Espejo (GDD §15.2): 3 frutas normales lo disuelven
+                if tipo == constants.FOOD_NORMAL and mysteryMod.doppelFed() == "dissolve" then
+                    awardDoppel(st)
+                end
                 -- Diente de Oro (GDD item 56): +1 moneda por fruta cada 10 segmentos
                 if shop.inventory and shop.inventory.goldenTooth then
                     local tooth = math.floor(#st.player.body / 10)
@@ -772,6 +848,8 @@ function playing.update(dt)
                     end
                 end
             end
+            -- Apostador (GDD §15.1): mientras falten doradas, los respawns nacen oro
+            if mysteryMod.gamblerNeedsGold() then foodMod.tipo = constants.FOOD_GOLD end
 
             if st.puntuacion >= st.lastObstacleScore + constants.OBSTACLE_SPAWN_INTERVAL then
                 st.lastObstacleScore = math.floor(st.puntuacion / constants.OBSTACLE_SPAWN_INTERVAL) * constants.OBSTACLE_SPAWN_INTERVAL
@@ -785,20 +863,13 @@ function playing.update(dt)
                 if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
                     mutatorsMod.data().rewarded = true
                     if mutatorsMod.timeTrialWon() then
-                        local hasItems, itemsMod = pcall(require, "systems.items")
-                        local def = hasItems and mutatorsMod.randomUnownedPassive(itemsMod.registry, shop.inventory) or nil
-                        if def then
-                            shop.inventory[def.id] = true
+                        local pick = grantRandomItem(st, true)
+                        if pick then
                             local head = st.player.body and st.player.body[1]
-                            if head then uiMod.addPopup("CRONO: " .. string.upper(def.id), head.x, head.y) end
+                            if head then uiMod.addPopup("CRONO: " .. string.upper(pick), head.x, head.y) end
                             sound.play("highScore")
                         end
                     end
-                end
-                -- Tarot Draft (GDD §14): salas 1/2/4 abren el tapete antes de la transición
-                if tarotMod.shouldOffer(worldMod.sala or worldMod.getSala()) then
-                    tarotMod.open(worldMod.sala or worldMod.getSala())
-                    return true
                 end
                 st.transitionTarget = "siguienteSala"
                 st.transitionPhase = 1
@@ -825,6 +896,89 @@ function playing.update(dt)
         st.roomDamaged = true
         st.deathModalOpen = true
         return true
+    end
+    -- Guarida del Apostador (GDD §15.1): apuesta en la ruleta + temporizador
+    local head0 = st.player.body and st.player.body[1]
+    if mysteryMod.gamblerActive(worldMod) then
+        local gd = mysteryMod.data()
+        if not gd.bet and head0 then
+            local r = mysteryMod.gamblerRoulette(st.anchoGrilla, st.altoGrilla)
+            if head0.x == r.x and head0.y == r.y then
+                if mysteryMod.gamblerPlaceBet(st.monedas or 0) then
+                    st.monedas = st.monedas - mysteryMod.gamblerBet()
+                    uiMod.addPopup("APUESTA -10$", head0.x, head0.y)
+                    sound.play("buy")
+                elseif not gd.refused then
+                    gd.refused = true
+                    uiMod.addPopup("SIN FONDOS", head0.x, head0.y)
+                end
+            end
+        end
+        if mysteryMod.gamblerTick(dt) == "lose" then
+            local helpersOk, helpers = pcall(require, "entities.enemyHelpers")
+            for _ = 1, (constants.GAMBLER_LOSE_CHASERS or 2) do
+                local nx, ny
+                if helpersOk then
+                    nx, ny = helpers.sampleFreeTile(st.anchoGrilla, st.altoGrilla, st.player.body, obstaclesMod, enemiesMod.list, 2, 30)
+                end
+                if nx and enemiesMod.spawnAt then enemiesMod.spawnAt("chaser", nx, ny, {}) end
+            end
+            if head0 then uiMod.addPopup("APUESTA PERDIDA", head0.x, head0.y) end
+            sound.play("death")
+        end
+    end
+    -- Fiebre del Oro (GDD §15.3): monedas rebotando + puerta a los 12s
+    if mysteryMod.goldRushActive(worldMod) then
+        local got, done = mysteryMod.goldRushTick(dt, head0)
+        if got > 0 then
+            st.monedas = (st.monedas or 0) + got
+            sound.play("buttonClick")
+        end
+        if done and not st.transitionTarget then
+            st.transitionTarget = "siguienteSala"
+            st.transitionPhase = 1
+            st.fadeDir = 1
+            st.gameState = constants.GAME_STATE_TRANSITION
+            sound:playSegment("intro")
+            return true
+        end
+    end
+    -- Espejo (GDD §15.2): replica con retraso + contacto letal
+    if mysteryMod.doppelActive(worldMod) then
+        local dd = mysteryMod.data().doppel
+        if dd then
+            local p = st.player
+            mysteryMod.doppelTick(dt, dd, {x = p.dirX or 0, y = p.dirY or 0}, st.time or 0, st.velocidadActual or 0.13)
+            if head0 and mysteryMod.doppelTouchesHead(dd, head0) then
+                if phoenixRevive(st) then return true end
+                st.roomDamaged = true
+                st.deathModalOpen = true
+                return true
+            end
+        end
+    end
+    -- Sellos (GDD §15.4): orden 1-2-3 en menos de 10s
+    if mysteryMod.triadsActive(worldMod) then
+        local tr = mysteryMod.data().triads
+        if tr then
+            tr.timer = tr.timer - dt
+            local step = mysteryMod.triadsStep(tr, head0)
+            if step == "next" then
+                if head0 then uiMod.addPopup("SELLO " .. tr.progress .. "/3", head0.x, head0.y) end
+                sound.play("buy")
+            elseif step == "reset" then
+                if head0 then uiMod.addPopup("SELLOS RESET", head0.x, head0.y) end
+            elseif step == "complete" then
+                st.monedas = (st.monedas or 0) + (constants.TRIADS_REWARD_COINS or 50)
+                grantRandomItem(st)
+                grantRandomItem(st)
+                if head0 then uiMod.addPopup("ALTAR LEGENDARIO", head0.x, head0.y) end
+                sound.play("highScore")
+            elseif tr.timer <= 0 then
+                tr.done = true
+                if head0 then uiMod.addPopup("SELLOS APAGADOS", head0.x, head0.y) end
+            end
+        end
     end
 
     if st.comboFlashTimer > 0 then

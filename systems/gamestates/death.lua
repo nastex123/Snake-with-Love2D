@@ -50,7 +50,7 @@ function death.updateDeath(dt)
                 gameflow.applyActiveProfile()
                 st.gameState = constants.GAME_STATE_SHOP
                 sound:playSegment("intro")
-                shop.abrir(st.monedas)
+                shop.abrir(st.monedas, true)
             end
         end
     end
@@ -65,7 +65,7 @@ function death.updateHighScore(dt)
         gameflow.applyActiveProfile()
         st.gameState = constants.GAME_STATE_SHOP
         sound:playSegment("intro")
-        shop.abrir(st.monedas)
+        shop.abrir(st.monedas, true)
     end
 end
 
