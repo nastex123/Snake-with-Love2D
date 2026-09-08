@@ -10,11 +10,11 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 2026-09-08 (shop Gothic Altar Shrine - Propuesta C)
 
-- **feature** (shop - 2026-09-08 10:07): Transformación estética y temática de la Tienda a **El Santuario Arcano de las Ánimas (Propuesta C)** en estilo auténtico Dungeon Crawler / Fantasía Gótica (America/Bogota, rama `feature/phase8-mystery-rooms`):
-  1. **QUE — `systems/shopBioScanner.lua`**: Rediseñado como Retablo Mayor Gótico de la Cripta Ancestral. Dibuja la espina dorsal ósea de un dragón mitológico con cráneo facetado de marfil, cadenas de hierro forjado y **llamas de alma (*Soul Flames*)** violeta y oro que ascienden con ondulación senoidal a 60 FPS sobre las vértebras consagradas.
-  2. **QUE — `systems/shopDraw.lua`**: Implementado layout sacro con mampostería de cripta subterránea, viñetas de antorchas cálidas parpadeantes, 3 hornacinas con arcos ojivales góticos biselados a $45^\circ$, vitrales de plomo para las Cartas del Destino, cáliz sagrado para la ofrenda de reroll (`OFRENDA (R)`), y reclinatorio inferior con 3 cálices de poder activo (`[I]`, `[II]`, `[III]`) con iconografía de reliquias medievales (escudo de cruz, coraza, orbe espectral, herradura y fuego alquímico).
-  3. **QUE — `README.md`**: Actualizada la sección de la tienda para reflejar la ambientación del Santuario Arcano y sus componentes de calabozo.
-  4. **Verificación**: `love .` 100% funcional a 60 FPS sin errores en `error.log`; suite `love tests` verificada.
+- **feature** (shop - 2026-09-08 10:28): Reubicación de elementos y centrado geométrico en la Tienda del Santuario Arcano (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (centrado y márgenes)**: La tienda se centra matemáticamente tanto en el eje X como en el eje Y respecto a la resolución virtual ($640\times 360$), manteniendo un margen lateral simétrico de separación respecto a los bordes de la pantalla.
+  2. **QUE — `systems/shopDraw.lua` (reubicación de controles)**: Eliminado el texto `"SANTUARIO DE LAS ANIMAS"` de la barra superior y colocado en su lugar el saldo `"✝ TRIBUTO: $XXX"` a la izquierda; el botón de reroll `"OFRENDA (R): $X"` se reubica a la derecha (donde antes figuraba `"SANTIFICADO"`), logrando una distribución balanceada.
+  3. **QUE — `systems/shopBioScanner.lua`**: Rediseñado como Retablo Mayor Gótico de la Cripta Ancestral con espina ósea de dragón y llamas de alma (*Soul Flames*) animadas a 60 FPS.
+  4. **Verificación**: `love .` 100% funcional a 60 FPS sin excepciones en `error.log`; tests unitarios ejecutados.
 
 ## 2026-09-08 (shop Bio-Rack v3 implementation)
 

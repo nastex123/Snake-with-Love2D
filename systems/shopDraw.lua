@@ -1,5 +1,5 @@
 -- systems/shopDraw.lua — Gothic Altar Shrine UI & Layout Renderer (GDD §13 / Propuesta C)
--- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y el Altar de los Tres Cálices en 640x360.
+-- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y el Altar de los Tres Cálices centrado en X e Y con márgenes.
 local shopDraw = {}
 local constants = require("constants")
 local tarotArtMod = require("systems.tarotArt")
@@ -18,7 +18,6 @@ local TIER_COLORS = {
 local function drawRelicIcon(id, x, y, size)
     local half = size / 2
     if id == "shield" then
-        -- Escudo de caballero con cruz grabada
         love.graphics.setColor(0.25, 0.75, 1.0)
         local pts = {x + 3, y + 2, x + size - 3, y + 2, x + size - 5, y + size - 8, x + half, y + size - 2, x + 5, y + size - 8}
         love.graphics.polygon("fill", pts)
@@ -28,21 +27,18 @@ local function drawRelicIcon(id, x, y, size)
         love.graphics.line(x + half, y + 4, x + half, y + size - 5)
         love.graphics.line(x + 6, y + half - 2, x + size - 6, y + half - 2)
     elseif id == "armor" then
-        -- Coraza de placas de acero
         love.graphics.setColor(0.68, 0.38, 1.0)
         love.graphics.rectangle("fill", x + 3, y + 3, size - 6, size - 6, 2)
         love.graphics.setColor(1.0, 0.82, 0.25)
         love.graphics.rectangle("line", x + 3, y + 3, size - 6, size - 6, 2)
         love.graphics.circle("fill", x + half, y + half, 3)
     elseif id == "ghost" then
-        -- Rostro espectral flotante
         love.graphics.setColor(0.7, 0.45, 1.0, 0.75)
         love.graphics.circle("fill", x + half, y + half - 2, half - 3)
         love.graphics.setColor(0.1, 0.05, 0.2)
         love.graphics.circle("fill", x + half - 4, y + half - 3, 2)
         love.graphics.circle("fill", x + half + 4, y + half - 3, 2)
     elseif id == "magnet" then
-        -- Herradura dorada encantada
         love.graphics.setColor(1.0, 0.82, 0.25)
         love.graphics.setLineWidth(2)
         love.graphics.arc("line", "open", x + half, y + half + 2, half - 4, math.pi, 2 * math.pi)
@@ -50,13 +46,11 @@ local function drawRelicIcon(id, x, y, size)
         love.graphics.line(x + size - 4, y + half + 2, x + size - 4, y + size - 4)
         love.graphics.setLineWidth(1)
     elseif id == "bomb" then
-        -- Frasco de fuego alquímico
         love.graphics.setColor(0.9, 0.3, 0.15)
         love.graphics.circle("fill", x + half, y + half + 2, half - 4)
         love.graphics.setColor(1.0, 0.85, 0.2)
         love.graphics.rectangle("fill", x + half - 2, y + 2, 4, 6)
     else
-        -- Relicario / Talismán sagrado en rombo
         love.graphics.setColor(1.0, 0.82, 0.25)
         local pts = {x + half, y + 2, x + size - 2, y + half, x + half, y + size - 2, x + 2, y + half}
         love.graphics.polygon("fill", pts)
@@ -90,11 +84,10 @@ function shopDraw.draw(shopData)
     local mx, my = love.mouse.getPosition()
     cardRects = {}
 
-    -- 1. Fondo de Lajas de Cripta Subterránea con antorchas
+    -- 1. Fondo de Lajas de Cripta Subterránea
     love.graphics.setColor(0.04, 0.03, 0.07, 0.96)
     love.graphics.rectangle("fill", 0, 0, w, h)
 
-    -- Mampostería de piedra sillar con juntas tenues
     love.graphics.setColor(0.12, 0.10, 0.18, 0.5)
     for yg = 0, h, 28 do
         love.graphics.line(0, yg, w, yg)
@@ -110,26 +103,32 @@ function shopDraw.draw(shopData)
     love.graphics.circle("fill", 20, 20, 100)
     love.graphics.circle("fill", w - 20, 20, 100)
 
-    -- 2. Dintel Superior — Bóveda de Cripta (y = 6..30)
+    -- Geometría centrada en X e Y con márgenes laterales
+    local containerW = 600
+    local containerH = 328
+    local startX = math.floor((w - containerW) / 2) -- Margen lateral de 20 px a cada lado
+    local startY = math.floor((h - containerH) / 2) - 4 -- Centrado vertical
+
+    -- 2. Dintel Superior — Bóveda de Cripta
+    local topBarX = startX
+    local topBarY = startY
+    local topBarW = containerW
+    local topBarH = 24
+
     love.graphics.setColor(0.08, 0.06, 0.12, 0.95)
-    love.graphics.rectangle("fill", 10, 6, w - 20, 24, 2)
+    love.graphics.rectangle("fill", topBarX, topBarY, topBarW, topBarH, 2)
     love.graphics.setColor(0.35, 0.28, 0.48, 0.8)
     love.graphics.setLineWidth(1)
-    love.graphics.rectangle("line", 10, 6, w - 20, 24, 2)
+    love.graphics.rectangle("line", topBarX, topBarY, topBarW, topBarH, 2)
 
-    -- Título del Santuario con cruz sagrada
-    if fontSmall then love.graphics.setFont(fontSmall) end
-    love.graphics.setColor(1.0, 0.82, 0.25)
-    love.graphics.print("✝ SANTUARIO DE LAS ANIMAS // CRIPTA ANCESTRAL", 18, 12)
-
-    -- Tributo en Oro en el centro
+    -- Tributo en Oro a la izquierda (reemplaza 'santuario de las animas')
     if fontNormal then love.graphics.setFont(fontNormal) end
     love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-    love.graphics.printf("TRIBUTO: $" .. math.floor(displayCoins + 0.5), 230, 10, 150, "center")
+    love.graphics.print("✝ TRIBUTO: $" .. math.floor(displayCoins + 0.5), topBarX + 12, topBarY + 5)
 
-    -- Botón Ofrenda / Plegaria (Reroll) en forma de Cáliz Sagrado
-    local rbW, rbH = 140, 18
-    local rbX, rbY = 390, 9
+    -- Botón de Reroll a la derecha (donde antes decía 'santificado')
+    local rbW, rbH = 144, 18
+    local rbX, rbY = topBarX + topBarW - rbW - 4, topBarY + 3
     rerollRect = {x = rbX, y = rbY, w = rbW, h = rbH}
     local rHover = mx >= rbX and mx <= rbX + rbW and my >= rbY and my <= rbY + rbH
     local rAfford = monedas >= rcost
@@ -143,14 +142,10 @@ function shopDraw.draw(shopData)
     love.graphics.setColor(rAfford and {1.0, 0.95, 0.85} or {0.5, 0.45, 0.5})
     love.graphics.printf("OFRENDA (R): $" .. rcost, rbX, rbY + 3, rbW, "center")
 
-    -- Estado Sacro
-    love.graphics.setColor(0.65, 0.60, 0.75)
-    love.graphics.print("SANTIFICADO", w - 120, 12)
-
-    -- 3. Columna Izquierda: Tres Hornacinas con Arcos Ojivales (x = 10, w = 220, y = 34..246)
-    local rackX = 10
-    local rackY = 34
-    local cardW = 220
+    -- 3. Columna Izquierda: Tres Hornacinas con Arcos Ojivales
+    local rackX = startX
+    local rackY = topBarY + topBarH + 4
+    local cardW = 210
     local cardH = 68
     local cardGap = 4
 
@@ -168,21 +163,17 @@ function shopDraw.draw(shopData)
         local info = def and shopBioScanner.getInfo(def.id) or {tier = "C"}
         local tierColor = TIER_COLORS[info.tier or "C"] or {1.0, 0.82, 0.25}
 
-        -- Fondo del nicho gótico
         love.graphics.setColor(0.07, 0.05, 0.10, isFocused and 0.98 or 0.85)
         love.graphics.rectangle("fill", rackX, cardY, cardW, cardH, 2)
 
-        -- Arco Ojival en el borde superior de la tarjeta
         love.graphics.setColor(sold and {0.3, 0.75, 0.3, 0.7} or (isFocused and tierColor or {0.28, 0.22, 0.36, 0.8}))
         love.graphics.setLineWidth(isFocused and 2 or 1)
         love.graphics.rectangle("line", rackX, cardY, cardW, cardH, 2)
 
-        -- Remates angulados góticos en la cabecera
         love.graphics.line(rackX + 4, cardY + 10, rackX + 10, cardY + 4)
         love.graphics.line(rackX + cardW - 4, cardY + 10, rackX + cardW - 10, cardY + 4)
         love.graphics.setLineWidth(1)
 
-        -- Flash de consagración / compra
         for i = #purchaseFlash, 1, -1 do
             if purchaseFlash[i].idx == idx then
                 love.graphics.setColor(0.9, 0.8, 0.3, purchaseFlash[i].timer / 0.3 * 0.5)
@@ -195,20 +186,17 @@ function shopDraw.draw(shopData)
             love.graphics.setColor(0.4, 0.38, 0.48)
             love.graphics.printf("ALTAR VACIO", rackX, cardY + 24, cardW, "center")
         else
-            -- Encabezado: Hornacina [1] + Tipo + Tier Badge
             if fontSmall then love.graphics.setFont(fontSmall) end
             love.graphics.setColor(1.0, 0.82, 0.25, 0.9)
             love.graphics.print("[" .. idx .. "]", rackX + 6, cardY + 5)
 
             love.graphics.setColor(offer.kind == "tarot" and {0.75, 0.45, 1.0} or {0.6, 0.65, 0.75})
-            love.graphics.print(offer.kind == "tarot" and "VITRAL DE TAROT" or "RELIQUIA SACRA", rackX + 28, cardY + 5)
+            love.graphics.print(offer.kind == "tarot" and "VITRAL TAROT" or "RELIQUIA", rackX + 26, cardY + 5)
 
             love.graphics.setColor(tierColor[1], tierColor[2], tierColor[3], 0.95)
-            love.graphics.print("TIER " .. (info.tier or "C"), rackX + cardW - 52, cardY + 5)
+            love.graphics.print("TIER " .. (info.tier or "C"), rackX + cardW - 50, cardY + 5)
 
-            -- Icono de Reliquia o Vitral de Tarot
             if offer.kind == "tarot" then
-                -- Marco de plomo y vitral para la carta de tarot
                 love.graphics.setColor(0.3, 0.25, 0.4, 0.8)
                 love.graphics.rectangle("fill", rackX + 6, cardY + 19, 36, 36, 1)
                 love.graphics.setColor(tierColor[1], tierColor[2], tierColor[3], 0.7)
@@ -218,39 +206,38 @@ function shopDraw.draw(shopData)
                 drawRelicIcon(def.icon or def.id, rackX + 8, cardY + 21, 32)
             end
 
-            -- Nombre y Precio en Oro
             if fontNormal then love.graphics.setFont(fontNormal) end
             love.graphics.setColor(sold and {0.5, 0.48, 0.55} or {1, 0.98, 0.92})
-            love.graphics.print(def.name or def.id, rackX + 48, cardY + 20)
+            love.graphics.print(def.name or def.id, rackX + 46, cardY + 20)
 
             if fontSmall then love.graphics.setFont(fontSmall) end
             if sold then
                 love.graphics.setColor(0.35, 0.8, 0.35)
-                love.graphics.print("/// CONSAGRADO ///", rackX + 48, cardY + 38)
+                love.graphics.print("/// CONSAGRADO ///", rackX + 46, cardY + 38)
             else
                 love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-                love.graphics.print("$" .. (offer.price or 0) .. " ORO", rackX + 48, cardY + 38)
+                love.graphics.print("$" .. (offer.price or 0) .. " ORO", rackX + 46, cardY + 38)
 
                 love.graphics.setColor(isFocused and {1.0, 0.82, 0.25} or {0.5, 0.48, 0.6})
-                local actText = isFocused and "ENTER -> OFRENDAR" or "INSPECCIONAR"
-                love.graphics.printf(actText, rackX + 105, cardY + 40, cardW - 110, "right")
+                local actText = isFocused and "ENTER -> COMPRA" or "ELEGIR"
+                love.graphics.printf(actText, rackX + 96, cardY + 40, cardW - 100, "right")
             end
         end
     end
 
-    -- 4. Columna Derecha: Retablo Mayor & Espina del Dragón (x = 236, y = 34, w = 394, h = 212)
-    local scanX = 236
-    local scanY = 34
-    local scanW = w - scanX - 10
+    -- 4. Columna Derecha: Retablo Mayor & Espina del Dragón
+    local scanX = rackX + cardW + 6
+    local scanY = rackY
+    local scanW = containerW - cardW - 6
     local scanH = 212
     local curOffer = stock[focusedStall]
     local curDef = offerDefFn and offerDefFn(curOffer)
     shopBioScanner.draw(curOffer, curDef, scanX, scanY, scanW, scanH, fontNormal, fontSmall, fontLarge)
 
-    -- 5. Panel Inferior: El Altar de los Tres Cálices (x = 10, y = 252, w = 620, h = 80)
-    local botX = 10
-    local botY = 252
-    local botW = w - 20
+    -- 5. Panel Inferior: El Altar de los Tres Cálices
+    local botX = startX
+    local botY = rackY + scanH + 4
+    local botW = containerW
     local botH = 80
 
     love.graphics.setColor(0.06, 0.05, 0.09, 0.96)
@@ -290,7 +277,7 @@ function shopDraw.draw(shopData)
     end
 
     -- Matriz de Sellos Pasivos
-    local pX = botX + 280
+    local pX = botX + 276
     love.graphics.setColor(0.75, 0.45, 1.0)
     love.graphics.print("SELLOS Y ARCANOS ACTIVOS", pX, botY + 6)
 
@@ -315,10 +302,10 @@ function shopDraw.draw(shopData)
         love.graphics.print("NINGÚN SELLO GRABADO", pX, botY + 30)
     end
 
-    -- 6. Pie Sacro de Mandatos (y = 338..354)
+    -- 6. Pie Sacro de Mandatos
     if fontSmall then love.graphics.setFont(fontSmall) end
     love.graphics.setColor(0.65, 0.62, 0.72)
-    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, h - 18, w, "center")
+    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, h - 14, w, "center")
 end
 
 return shopDraw
