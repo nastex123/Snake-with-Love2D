@@ -103,10 +103,14 @@ function shopDraw.draw(shopData)
     love.graphics.circle("fill", 20, 20, 100)
     love.graphics.circle("fill", w - 20, 20, 100)
 
-    -- ESCALADO ADAPTATIVO (Opción A): resolución base virtual 640x360
+    -- ESCALADO ADAPTATIVO CON CONTROL MANUAL (core/config.lua -> SHOP_MANUAL_SCALE)
     local baseW, baseH = 640, 360
-    local scale = math.min(w / baseW, h / baseH)
-    if scale < 1.0 then scale = 1.0 end
+    local autoScale = math.min(w / baseW, h / baseH)
+    if autoScale < 1.0 then autoScale = 1.0 end
+
+    -- Factor manual (1.0 = automático, o valores mayores para forzar mayor tamaño)
+    local manualFactor = tonumber(constants.SHOP_MANUAL_SCALE) or 1.0
+    local scale = autoScale * manualFactor
     currentScale = scale
 
     local containerW = 600

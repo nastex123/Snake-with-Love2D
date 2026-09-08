@@ -47,6 +47,8 @@ config.SHOP_REROLL_BASE = 5
 config.SHOP_REROLL_STEP = 2
 config.SHOP_STALLS = 3
 config.SHOP_TAROT_CHANCE = 0.40
+-- Escala manual de la tienda (1.0 = automatico/1x, 1.25, 1.5, 2.0, etc.)
+config.SHOP_MANUAL_SCALE = 1.0
 -- 15.1 Apostador: apuesta, tiempo, doradas, premio oro y chasers de derrota
 config.GAMBLER_BET = 10
 config.GAMBLER_TIME = 15.0
