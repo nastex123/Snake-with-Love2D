@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop redesign Bio-Rack v3)
+
+- **docs** (prototype - 2026-09-08 08:55): Prototipo interactivo Pixi.js de Tienda Cyberpunk Bio-Rack v3 (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `prototypes/shop-redesign.html`**: Rediseño integral basado en estética bio-cyberpunk y topología de serpiente:
+     - **Modular Bio-Rack (Izquierda)**: 3 pedestales/cartuchos interactivos con slots `[1]`, `[2]`, `[3]`, badges de rareza (`S`, `A`, `B`, `C`), glifos y precios en oro.
+     - **Holographic Bio-Scanner (Derecha)**: Panel de escaneo holográfico del cartucho enfocado con desglose de arcana/módulo y **Bio-Topología** de espina dorsal (7 vértebras animadas con pulsos y zonas de impacto `HEAD` / `V01-V06`).
+     - **Chassis & Loadout (Inferior)**: 3 ranuras de items activos instalados, matriz de pasivas y barra de controles (`[1-3] Comprar`, `[R] Reroll`, `[Space] Continuar`).
+  2. **Verificación**: Inspección de layout, animación a 60 FPS y reactividad de eventos de compra/reroll.
+
 ## 2026-09-07 (session handoff)
 
 - **docs** (handoff - 2026-09-07): Documentación lista para continuar en otra sesión (America/Bogota, rama `feature/phase8-mystery-rooms` en `434e6dd`):

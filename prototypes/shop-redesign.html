@@ -1,258 +1,1775 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tienda v2 — Layout A Puestos (prototipo interactivo)</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Snake Dungeon Crawler — Bio Rack v3</title>
+
 <style>
-  :root { color-scheme: dark; }
-  body { background: #0a0a14; color: #e8e8f0; font-family: Consolas, monospace; margin: 0; padding: 24px; }
-  h1 { color: #ffc93c; font-size: 20px; margin: 0 0 4px; }
-  .sub { color: #8a8aa0; font-size: 12px; margin-bottom: 16px; }
-  .sub b { color: #3ce0ff; }
-  #hud { display: flex; gap: 18px; align-items: center; background: #12121f; border: 1px solid #3a2a6e;
-    border-radius: 10px; padding: 10px 16px; margin-bottom: 16px; font-size: 14px; }
-  #coins { color: #ffc93c; font-size: 18px; }
-  #hud button { background: #3a2a6e; color: #fff; border: 1px solid #9b5cff; border-radius: 6px;
-    font-family: inherit; font-size: 12px; padding: 6px 12px; cursor: pointer; }
-  #hud button:hover { background: #9b5cff; }
-  #puestos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; max-width: 1100px; }
-  .puesto { background: #12121f; border: 1px solid #3a2a6e; border-radius: 10px; padding: 12px; }
-  .puesto > h2 { font-size: 13px; color: #8a8aa0; margin: 0 0 10px; text-align: center; }
-  .card { border-radius: 8px; padding: 12px; min-height: 150px; position: relative;
-    animation: rise 0.35s ease-out; background: #1a1a2b; border: 2px solid #3a2a6e; }
-  @keyframes rise { from { transform: translateY(40px); opacity: 0; } to { transform: none; opacity: 1; } }
-  .card.tarot { border-color: var(--tier, #9b5cff); }
-  .card .kind { font-size: 10px; letter-spacing: 2px; color: #8a8aa0; }
-  .card.tarot .kind { color: var(--tier, #9b5cff); }
-  .card h3 { font-size: 14px; margin: 4px 0; }
-  .card p { font-size: 11px; color: #b8b8d0; margin: 4px 0 8px; min-height: 28px; }
-  .card .price { font-size: 15px; color: #ffc93c; }
-  .card button { width: 100%; margin-top: 8px; background: #3a2a6e; color: #fff; border: 1px solid #9b5cff;
-    border-radius: 6px; font-family: inherit; font-size: 12px; padding: 7px 0; cursor: pointer; }
-  .card button:hover:not(:disabled) { background: #9b5cff; }
-  .card button:disabled { opacity: 0.45; cursor: default; }
-  .card.sold { border-color: #2a8a4a; }
-  .card.sold button { border-color: #2a8a4a; }
-  .card.flash { animation: flash 0.3s; }
-  @keyframes flash { 0% { box-shadow: 0 0 0 3px #2a8a4a; } 100% { box-shadow: none; } }
-  .dice { display: inline-block; transition: transform 0.3s; }
-  .dice.shake { animation: shake 0.3s; }
-  @keyframes shake { 0%,100% { transform: rotate(0); } 25% { transform: rotate(-20deg); } 75% { transform: rotate(20deg); } }
-  #rerollbar { margin: 16px 0; display: flex; gap: 12px; align-items: center; }
-  #rerollbar button { background: #3a2a6e; color: #fff; border: 1px solid #ffc93c; border-radius: 6px;
-    font-family: inherit; font-size: 13px; padding: 8px 16px; cursor: pointer; }
-  #rerollbar button:hover:not(:disabled) { background: #8a5a00; }
-  #rerollbar button:disabled { opacity: 0.45; cursor: default; }
-  #slots { display: flex; gap: 8px; margin: 12px 0; font-size: 11px; color: #8a8aa0; }
-  .slot { border: 1px dashed #3a2a6e; border-radius: 6px; padding: 6px 10px; min-width: 90px; text-align: center; }
-  .slot.full { border-style: solid; border-color: #3ce0ff; color: #e8e8f0; }
-  #log { background: #000; border: 1px solid #3a2a6e; border-radius: 8px; padding: 10px 14px;
-    font-size: 11px; max-width: 1100px; height: 120px; overflow-y: auto; }
-  #log div { margin: 2px 0; }
-  table.tiers { border-collapse: collapse; font-size: 11px; margin-top: 14px; }
-  table.tiers td, table.tiers th { border: 1px solid #3a2a6e; padding: 4px 10px; text-align: left; }
-  .foot { margin-top: 16px; font-size: 11px; color: #8a8aa0; max-width: 900px; line-height: 1.6; }
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+    user-select:none;
+}
+
+html,body{
+    width:100%;
+    min-height:100%;
+    background:#030207;
+}
+
+body{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    color:#dce7f5;
+    font-family:"Courier New",monospace;
+    padding:12px;
+}
+
+#topbar{
+    width:960px;
+    height:34px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 12px;
+    margin-bottom:6px;
+
+    border:1px solid #29243f;
+    background:
+        linear-gradient(90deg,
+            rgba(0,240,255,.06),
+            transparent 35%,
+            rgba(155,92,255,.06)
+        );
+
+    box-shadow:
+        inset 0 1px rgba(255,255,255,.03),
+        0 0 20px rgba(0,240,255,.04);
+}
+
+.brand{
+    color:#00f0ff;
+    font-size:10px;
+    font-weight:bold;
+    letter-spacing:1.5px;
+}
+
+.controls{
+    color:#6f7891;
+    font-size:9px;
+}
+
+#canvas-container{
+    position:relative;
+    width:960px;
+    height:540px;
+
+    overflow:hidden;
+
+    border:1px solid #00f0ff;
+    background:#080711;
+
+    box-shadow:
+        0 0 8px rgba(0,240,255,.25),
+        0 0 45px rgba(0,240,255,.08),
+        inset 0 0 80px rgba(0,0,0,.8);
+}
+
+#canvas-container canvas{
+    display:block;
+}
+
+.crt{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:50;
+
+    background:
+        repeating-linear-gradient(
+            0deg,
+            rgba(255,255,255,.025) 0px,
+            rgba(255,255,255,.025) 1px,
+            transparent 1px,
+            transparent 3px
+        );
+
+    mix-blend-mode:screen;
+}
+
+.vignette{
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:51;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 48%,
+            rgba(0,0,0,.2) 75%,
+            rgba(0,0,0,.75) 100%
+        );
+}
+
+#statusbar{
+    width:960px;
+    height:30px;
+
+    margin-top:6px;
+
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+
+    padding:0 10px;
+
+    border:1px solid #29243f;
+    background:#06050c;
+
+    font-size:9px;
+}
+
+#status{
+    color:#00f0ff;
+}
+
+#fps{
+    color:#4d566e;
+}
+
+@media(max-width:980px){
+    body{
+        justify-content:flex-start;
+        overflow:auto;
+    }
+
+    #topbar,
+    #canvas-container,
+    #statusbar{
+        transform-origin:top left;
+    }
+}
 </style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
 </head>
+
 <body>
-<h1>Tienda v2 — Layout A: 3 Puestos (stock mixto 60/40 + reroll escalado)</h1>
-<div class="sub">Mock interactivo: cada puesto tira <b>60% item / 40% tarot</b> sin duplicados ni poseídos.
-Reroll global <b>5$ +2$/uso</b> (resetea por visita). Precios tarot por tier <b>S60/A45/B30/C20</b>.</div>
 
-<div id="hud">
-  <span>MONEDAS: <b id="coins">120</b>$</span>
-  <span>ETAPA <b id="stage">2</b></span>
-  <button id="btn-funds" type="button">+50$ test</button>
-  <button id="btn-visit" type="button">Nueva visita (resetea reroll)</button>
+<div id="topbar">
+    <div class="brand">SNAKE // DUNGEON CRAWLER</div>
+    <div class="controls">[1][2][3] COMPRAR · [R] REROLL · [SPACE] CONTINUAR</div>
 </div>
 
-<div id="puestos"></div>
-
-<div id="rerollbar">
-  <button id="btn-reroll" type="button"><span class="dice" id="dice">⚄</span> REROLL (<span id="rcost">5</span>$)</button>
-  <button id="btn-leave" type="button">CONTINUAR →</button>
+<div id="canvas-container">
+    <div class="crt"></div>
+    <div class="vignette"></div>
 </div>
 
-<div id="slots"></div>
-<div id="log"></div>
-
-<table class="tiers">
-  <tr><th>Tier</th><th>Precio</th><th>Cartas</th></tr>
-  <tr><td>S</td><td>60$</td><td>mercury, reaper</td></tr>
-  <tr><td>A</td><td>45$</td><td>absolute_zero, dragon_blood, eagle_eye</td></tr>
-  <tr><td>B</td><td>30$</td><td>iron_spine, magic_circle, astral_mirror, alchemical_digestion</td></tr>
-  <tr><td>C</td><td>20$</td><td>shadow_thief, midas_pouch, iron_heart</td></tr>
-</table>
-
-<div class="foot">Reglas acordadas: stock mixto probabilístico (sin columnas fijas por tipo), sin tope 3/etapa (manda el stock),
-raros no repetidos por visita. Abre la consola (F12) para ver el log de rolls.</div>
+<div id="statusbar">
+    <span id="status">RACK ONLINE // ESPERANDO SELECCIÓN</span>
+    <span id="fps">BIO-CORE // 60 FPS</span>
+</div>
 
 <script>
-// Catálogo fiel a systems/items.lua (22) + systems/tarot.lua (12)
-const ITEMS = [
-  {id:"shield",name:"ESCUDO",desc:"Sobrevive a un impacto",cost:30,type:"active"},
-  {id:"armor",name:"ARMADURA",desc:"Sobrevive a 2 impactos",cost:40,type:"active"},
-  {id:"ghost",name:"FANTASMAL",desc:"Atraviesa tu cuerpo x5s",cost:25,type:"active"},
-  {id:"magnet",name:"IMAN",desc:"Atrae comida radio 2 x10s",cost:20,type:"active"},
-  {id:"bomb",name:"BOMBA",desc:"Destruye obstaculos radio 3",cost:25,type:"active"},
-  {id:"hunger",name:"HAMBRE",desc:"Aparecen 2 comidas extra",cost:15,type:"active"},
-  {id:"speedReducer",name:"REDUCTOR",desc:"Reduce velocidad permanente",cost:15,type:"passive"},
-  {id:"turbo",name:"TURBO",desc:"Aumenta velocidad x8s",cost:20,type:"active"},
-  {id:"slow",name:"RALENTIZAR",desc:"Ralentiza el tiempo x5s",cost:25,type:"active"},
-  {id:"doubler",name:"DUPLICADOR",desc:"Puntos x2 x8s",cost:35,type:"active"},
-  {id:"extraCoin",name:"MONEDA EXTRA",desc:"+1 moneda/fruta permanente",cost:20,type:"passive"},
-  {id:"star",name:"ESTRELLA",desc:"Puntos x3 x5s",cost:40,type:"active"},
-  {id:"tailSpike",name:"PUA DE COLA",desc:"Trampa en cola mata x3 max",cost:20,type:"active"},
-  {id:"hourglass",name:"RELOJ ARENA",desc:"Rebobina 2.0s conserva puntos",cost:35,type:"active"},
-  {id:"orbitalBeam",name:"RAYO ORBITAL",desc:"Haz columna x2.5s vaporiza",cost:30,type:"active"},
-  {id:"holoDecoy",name:"SENUELO",desc:"Atrae chasers x4.0s",cost:25,type:"active"},
-  {id:"lightBoots",name:"BOTAS LIGERAS",desc:"-50% lentitud baba",cost:20,type:"passive"},
-  {id:"goldenTooth",name:"DIENTE ORO",desc:"+1 moneda/fruta x10 segm.",cost:25,type:"passive"},
-  {id:"emergencyBattery",name:"BATERIA",desc:"Bullet time al morir x1.5s",cost:30,type:"passive"},
-  {id:"doubleHarvest",name:"COSECHA DOBLE",desc:"15% sin crecer",cost:30,type:"passive"},
-  {id:"lottery",name:"LOTERIA",desc:"Rasca 0-35$",cost:5,type:"consumable"},
-  {id:"refractorPrism",name:"PRISMA",desc:"Proyectil->3$ con escudo",cost:25,type:"passive"}
-];
-const TAROTS = [
-  {id:"mercury",name:"I. El Mercurio",desc:"+15% velocidad, combo x2",price:60,tier:"S"},
-  {id:"reaper",name:"XII. El Segador",desc:"Kills extienden buffs +0.5s",price:60,tier:"S"},
-  {id:"absolute_zero",name:"VII. Cero Absoluto",desc:"Hielo 4.0s + fragiles",price:45,tier:"A"},
-  {id:"dragon_blood",name:"VI. Sangre de Dragon",desc:"Fuego 6.0s",price:45,tier:"A"},
-  {id:"eagle_eye",name:"III. Ojo de Aguila",desc:"Combo 12.0s",price:45,tier:"A"},
-  {id:"iron_spine",name:"II. Espina Dorsal",desc:"Cola mata chasers",price:30,tier:"B"},
-  {id:"magic_circle",name:"VIII. Circulo Magico",desc:"Constriccion +1",price:30,tier:"B"},
-  {id:"astral_mirror",name:"IX. Espejo Astral",desc:"1 wrap/sala",price:30,tier:"B"},
-  {id:"alchemical_digestion",name:"V. Digestion Alquimica",desc:"25% comida oro",price:30,tier:"B"},
-  {id:"shadow_thief",name:"IV. Ladron de Sombras",desc:"Near-miss +1$",price:20,tier:"C"},
-  {id:"midas_pouch",name:"X. Bolsa de Midas",desc:"+3$/sala",price:20,tier:"C"},
-  {id:"iron_heart",name:"XI. Corazon de Hierro",desc:"Escudo si <5 segm.",price:20,tier:"C"}
-];
-const TIER_COLOR = {S:"#ff4d5e", A:"#ffc93c", B:"#e06cff", C:"#3ce0ff"};
-const P_TAROT = 0.40, REROLL_BASE = 5, REROLL_STEP = 2;
 
-const S = {coins: 120, stock: [], owned: {}, tarots: {}, slots: [null, null, null], rerolls: 0};
+/* ============================================================
+   CONSTANTES
+============================================================ */
 
-const $ = (id) => document.getElementById(id);
-function log(msg) {
-  const d = document.createElement("div");
-  d.textContent = msg;
-  $("log").prepend(d);
-  console.log("[shop-v2]", msg);
-}
-function rerollCost() { return REROLL_BASE + S.rerolls * REROLL_STEP; }
+const W = 960;
+const H = 540;
 
-function rollStock() {
-  const stock = [];
-  const usedItems = new Set(), usedTarots = new Set();
-  for (let i = 0; i < 3; i++) {
-    let offer = null;
-    for (let attempt = 0; attempt < 30 && !offer; attempt++) {
-      if (Math.random() < P_TAROT) {
-        const pool = TAROTS.filter(t => !usedTarots.has(t.id) && !S.tarots[t.id]);
-        if (pool.length) {
-          const t = pool[Math.floor(Math.random() * pool.length)];
-          usedTarots.add(t.id);
-          offer = {kind: "tarot", ref: t, price: t.price};
-        }
-      } else {
-        const pool = ITEMS.filter(o => !usedItems.has(o.id) && !isOwned(o));
-        if (pool.length) {
-          const o = pool[Math.floor(Math.random() * pool.length)];
-          usedItems.add(o.id);
-          offer = {kind: "item", ref: o, price: o.cost};
-        }
-      }
+const COLORS = {
+    bg:0x080711,
+    panel:0x0b0915,
+    panel2:0x0f0c1d,
+
+    cyan:0x00F0FF,
+    cyanDark:0x075f6b,
+
+    purple:0x9B5CFF,
+    gold:0xFFC93C,
+    crimson:0xFF4D5E,
+
+    white:0xF1F5F9,
+    text:0xCBD5E1,
+    muted:0x64748B,
+    dim:0x29253E,
+
+    green:0x59FFA8
+};
+
+const TIERS = {
+    S:{
+        name:"S",
+        price:60,
+        color:COLORS.gold
+    },
+
+    A:{
+        name:"A",
+        price:45,
+        color:COLORS.purple
+    },
+
+    B:{
+        name:"B",
+        price:30,
+        color:COLORS.cyan
+    },
+
+    C:{
+        name:"C",
+        price:20,
+        color:0x77809A
     }
-    stock.push(offer);
-  }
-  return stock;
-}
-function isOwned(o) {
-  if (o.type === "passive") return !!S.owned[o.id];
-  return S.slots.includes(o.id);
-}
-function render() {
-  $("coins").textContent = S.coins;
-  $("rcost").textContent = rerollCost();
-  $("btn-reroll").disabled = S.coins < rerollCost();
-  const wrap = $("puestos");
-  wrap.innerHTML = "";
-  S.stock.forEach((offer, i) => {
-    const box = document.createElement("div");
-    box.className = "puesto";
-    box.innerHTML = "<h2>PUESTO " + (i + 1) + "</h2>";
-    const card = document.createElement("div");
-    if (!offer) {
-      card.className = "card";
-      card.innerHTML = "<div class='kind'>VACIO</div><h3>Sin stock</h3><p>Rerollea para más ofertas.</p>";
-    } else if (offer.sold) {
-      card.className = "card sold";
-      card.innerHTML = "<div class='kind'>" + offer.kind.toUpperCase() + "</div><h3>" + offer.ref.name +
-        "</h3><p>ADQUIRIDO</p><button disabled>ADQUIRIDO</button>";
-    } else {
-      const afford = S.coins >= offer.price;
-      card.className = "card" + (offer.kind === "tarot" ? " tarot" : "");
-      if (offer.kind === "tarot") card.style.setProperty("--tier", TIER_COLOR[offer.ref.tier]);
-      card.innerHTML = "<div class='kind'>" + (offer.kind === "tarot" ? "TAROT · TIER " + offer.ref.tier : "ITEM · " + offer.ref.type.toUpperCase()) + "</div>" +
-        "<h3>" + offer.ref.name + "</h3><p>" + offer.ref.desc + "</p>" +
-        "<div class='price'>" + offer.price + "$</div>";
-      const btn = document.createElement("button");
-      btn.textContent = afford ? "COMPRAR" : "SIN FONDOS (" + offer.price + "$)";
-      btn.disabled = !afford;
-      btn.onclick = () => buy(i);
-      card.appendChild(btn);
+};
+
+
+/* ============================================================
+   CATÁLOGO
+============================================================ */
+
+const CATALOG = [
+
+    {
+        type:"tarot",
+        name:"LA MUERTE",
+        roman:"XIII",
+        tier:"S",
+        target:"ALL",
+        stat:"+30% VENENO",
+        desc:"Las eliminaciones generan una reacción tóxica en cadena.",
+        symbol:"☠"
+    },
+
+    {
+        type:"tarot",
+        name:"EL LOCO",
+        roman:"0",
+        tier:"A",
+        target:"ALL",
+        stat:"INMUNIDAD 3s",
+        desc:"La serpiente ignora obstáculos durante una breve ventana.",
+        symbol:"✦"
+    },
+
+    {
+        type:"tarot",
+        name:"LA RUEDA",
+        roman:"X",
+        tier:"B",
+        target:"ALL",
+        stat:"+50% ORO",
+        desc:"Las rachas de velocidad multiplican las almas recolectadas.",
+        symbol:"◉"
+    },
+
+    {
+        type:"tarot",
+        name:"EL MAGO",
+        roman:"I",
+        tier:"C",
+        target:"ALL",
+        stat:"+MANÁ",
+        desc:"Cada segmento destruido produce energía arcana.",
+        symbol:"✧"
+    },
+
+    {
+        type:"item",
+        name:"CYBER-COLMILLO",
+        tier:"S",
+        target:0,
+        stat:"MICRO-TELEPORT",
+        desc:"Impulsa la cabeza tres casillas hacia delante.",
+        symbol:"◆"
+    },
+
+    {
+        type:"item",
+        name:"BOBINA TESLA",
+        tier:"A",
+        target:2,
+        stat:"DESCARGA ELÉCTRICA",
+        desc:"Descarga energía entre segmentos cercanos.",
+        symbol:"ϟ"
+    },
+
+    {
+        type:"item",
+        name:"MATRAZ DE BREA",
+        tier:"B",
+        target:5,
+        stat:"RASTRO TÓXICO",
+        desc:"La cola deja un campo que ralentiza enemigos.",
+        symbol:"♢"
+    },
+
+    {
+        type:"item",
+        name:"OVERCLOCK v2",
+        tier:"C",
+        target:1,
+        stat:"+25% VELOCIDAD",
+        desc:"Aumenta temporalmente la frecuencia de movimiento.",
+        symbol:"↯"
     }
-    box.appendChild(card);
-    wrap.appendChild(box);
-  });
-  const sl = $("slots");
-  sl.innerHTML = "<span>SLOTS:</span>" + S.slots.map(s =>
-    "<span class='slot" + (s ? " full" : "") + "'>" + (s || "—") + "</span>").join("") +
-    "<span>PASIVOS: " + (Object.keys(S.owned).filter(k => S.owned[k]).join(", ") || "—") + "</span>" +
-    "<span>TAROTS: " + (Object.keys(S.tarots).join(", ") || "—") + "</span>";
+
+];
+
+
+/* ============================================================
+   ESTADO
+============================================================ */
+
+const player = {
+
+    gold:1555,
+
+    rerollCost:5,
+
+    inventory:[
+        "BOBINA TESLA",
+        null,
+        null
+    ],
+
+    passives:[
+        "ESCAMA TITANIO",
+        "OJO GLITCH"
+    ]
+
+};
+
+let stalls = [];
+let focused = 0;
+
+let scene;
+let animationTime = 0;
+let shakePower = 0;
+
+
+/* ============================================================
+   PIXI
+============================================================ */
+
+const app = new PIXI.Application({
+
+    width:W,
+    height:H,
+
+    backgroundColor:COLORS.bg,
+
+    antialias:true,
+
+    resolution:1,
+    autoDensity:false
+
+});
+
+document
+    .getElementById("canvas-container")
+    .appendChild(app.view);
+
+scene = new PIXI.Container();
+
+app.stage.addChild(scene);
+
+
+/* ============================================================
+   UTILIDADES
+============================================================ */
+
+function text(str,size,color,weight="normal"){
+
+    return new PIXI.Text(str,{
+
+        fontFamily:"Courier New",
+
+        fontSize:size,
+
+        fill:color,
+
+        fontWeight:weight,
+
+        letterSpacing:0
+
+    });
+
 }
-function buy(i) {
-  const offer = S.stock[i];
-  if (!offer || offer.sold || S.coins < offer.price) return;
-  S.coins -= offer.price;
-  offer.sold = true;
-  if (offer.kind === "tarot") {
-    S.tarots[offer.ref.id] = true;
-    log("Comprado tarot " + offer.ref.id + " por " + offer.price + "$ (tier " + offer.ref.tier + ")");
-  } else if (offer.ref.type === "passive" || offer.ref.type === "consumable") {
-    S.owned[offer.ref.id] = true;
-    log("Comprado pasivo " + offer.ref.id + " por " + offer.price + "$");
-  } else {
-    const slot = S.slots.indexOf(null);
-    if (slot < 0) { S.coins += offer.price; offer.sold = false; log("Sin slots libres, compra cancelada"); render(); return; }
-    S.slots[slot] = offer.ref.id;
-    log("Comprado activo " + offer.ref.id + " por " + offer.price + "$ → slot " + (slot + 1));
-  }
-  render();
-  const cards = document.querySelectorAll(".puesto .card");
-  if (cards[i]) { cards[i].classList.add("flash"); setTimeout(() => cards[i] && cards[i].classList.remove("flash"), 350); }
+
+
+function panel(g,x,y,w,h,border,alpha=.95){
+
+    g.beginFill(COLORS.panel,alpha);
+
+    g.lineStyle(1,border,.75);
+
+    g.drawRoundedRect(x,y,w,h,3);
+
+    g.endFill();
+
 }
-function reroll() {
-  const cost = rerollCost();
-  if (S.coins < cost) return;
-  S.coins -= cost;
-  S.rerolls++;
-  S.stock = rollStock();
-  log("Reroll #" + S.rerolls + " por " + cost + "$ → [" + S.stock.map(o => o ? (o.kind === "tarot" ? "T:" + o.ref.id : "I:" + o.ref.id) : "vacio").join(", ") + "]");
-  const dice = $("dice");
-  dice.classList.remove("shake");
-  void dice.offsetWidth;
-  dice.classList.add("shake");
-  render();
+
+
+function line(g,x1,y1,x2,y2,color,width=1,alpha=1){
+
+    g.lineStyle(width,color,alpha);
+
+    g.moveTo(x1,y1);
+
+    g.lineTo(x2,y2);
+
 }
-$("btn-reroll").onclick = reroll;
-$("btn-funds").onclick = () => { S.coins += 50; log("+50$ test (total " + S.coins + "$)"); render(); };
-$("btn-visit").onclick = () => { S.rerolls = 0; S.stock = rollStock(); log("Nueva visita: reroll reseteado a 5$, stock renovado"); render(); };
-$("btn-leave").onclick = () => log("CONTINUAR con " + S.coins + "$, " + Object.keys(S.tarots).length + " tarots");
-S.stock = rollStock();
-log("Visita inicial: [" + S.stock.map(o => o ? (o.kind === "tarot" ? "T:" + o.ref.id : "I:" + o.ref.id) : "vacio").join(", ") + "]");
-render();
+
+
+function status(message,color=COLORS.cyan){
+
+    const el=document.getElementById("status");
+
+    el.textContent=message;
+
+    el.style.color =
+        color===COLORS.crimson ? "#ff4d5e" :
+        color===COLORS.gold ? "#ffc93c" :
+        color===COLORS.green ? "#59ffa8" :
+        "#00f0ff";
+
+}
+
+
+/* ============================================================
+   STOCK
+============================================================ */
+
+function rollStock(){
+
+    stalls=[];
+
+    for(let i=0;i<3;i++){
+
+        const type =
+            Math.random()<.5
+            ? "tarot"
+            : "item";
+
+        const pool =
+            CATALOG.filter(x=>x.type===type);
+
+        stalls.push({
+
+            item:pool[
+                Math.floor(Math.random()*pool.length)
+            ],
+
+            sold:false
+
+        });
+
+    }
+
+}
+
+
+/* ============================================================
+   COMPRA
+============================================================ */
+
+function buy(index){
+
+    const stall=stalls[index];
+
+    if(!stall || stall.sold)
+        return;
+
+    focused=index;
+
+    const item=stall.item;
+
+    const price=TIERS[item.tier].price;
+
+    if(player.gold<price){
+
+        status(
+            `FONDOS INSUFICIENTES // $${price} REQUERIDOS`,
+            COLORS.crimson
+        );
+
+        shake();
+
+        return;
+
+    }
+
+    player.gold-=price;
+
+    stall.sold=true;
+
+    if(item.type==="item"){
+
+        const slot=
+            player.inventory.findIndex(x=>x===null);
+
+        if(slot!==-1){
+
+            player.inventory[slot]=item.name;
+
+        }
+
+    }
+
+    status(
+        `INSTALACIÓN COMPLETADA // ${item.name}`,
+        COLORS.green
+    );
+
+    rebuild();
+
+}
+
+
+/* ============================================================
+   REROLL
+============================================================ */
+
+function reroll(){
+
+    if(player.gold<player.rerollCost){
+
+        status(
+            `REROLL BLOQUEADO // COSTE $${player.rerollCost}`,
+            COLORS.crimson
+        );
+
+        shake();
+
+        return;
+
+    }
+
+    player.gold-=player.rerollCost;
+
+    player.rerollCost+=2;
+
+    rollStock();
+
+    focused=0;
+
+    status(
+        "RACK PURGADO // NUEVOS CARTUCHOS DISPONIBLES"
+    );
+
+    rebuild();
+
+}
+
+
+/* ============================================================
+   SCREEN SHAKE
+============================================================ */
+
+function shake(){
+
+    shakePower=7;
+
+}
+
+
+/* ============================================================
+   BACKGROUND
+============================================================ */
+
+function drawBackground(){
+
+    const g=new PIXI.Graphics();
+
+    /* GRID */
+
+    for(let x=0;x<=W;x+=32){
+
+        line(
+            g,
+            x,0,
+            x,H,
+            0x161329,
+            1,
+            .45
+        );
+
+    }
+
+    for(let y=0;y<=H;y+=32){
+
+        line(
+            g,
+            0,y,
+            W,y,
+            0x161329,
+            1,
+            .45
+        );
+
+    }
+
+    /* CROSSHAIRS */
+
+    for(let x=32;x<W;x+=128){
+
+        for(let y=32;y<H;y+=128){
+
+            line(g,x-3,y,x+3,y,0x30284A,1,.5);
+            line(g,x,y-3,x,y+3,0x30284A,1,.5);
+
+        }
+
+    }
+
+    scene.addChild(g);
+
+
+    /* AMBIENT LIGHT */
+
+    const glow=new PIXI.Graphics();
+
+    glow.beginFill(COLORS.cyan,.025);
+
+    glow.drawCircle(770,280,250);
+
+    glow.endFill();
+
+    scene.addChild(glow);
+
+}
+
+
+/* ============================================================
+   TOP HUD
+============================================================ */
+
+function drawHUD(){
+
+    const c=new PIXI.Container();
+
+    const bg=new PIXI.Graphics();
+
+    bg.beginFill(0x05040A,.96);
+
+    bg.lineStyle(1,COLORS.cyan,.6);
+
+    bg.drawRect(18,12,924,38);
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    const title=text(
+        "BIO-RACK // TERMINAL DE MUTACIONES",
+        11,
+        COLORS.cyan,
+        "bold"
+    );
+
+    title.position.set(30,25);
+
+    c.addChild(title);
+
+
+    /* GOLD */
+
+    const coin=text(
+        "◈",
+        13,
+        COLORS.gold,
+        "bold"
+    );
+
+    coin.position.set(530,24);
+
+    c.addChild(coin);
+
+
+    const gold=text(
+        `${player.gold}`,
+        13,
+        COLORS.gold,
+        "bold"
+    );
+
+    gold.position.set(548,24);
+
+    c.addChild(gold);
+
+
+    /* REROLL */
+
+    const btn=new PIXI.Container();
+
+    btn.position.set(650,18);
+
+    btn.eventMode="static";
+
+    btn.cursor="pointer";
+
+    btn.on("pointerdown",reroll);
+
+
+    const b=new PIXI.Graphics();
+
+    b.beginFill(0x160F27);
+
+    b.lineStyle(1,COLORS.purple,.8);
+
+    b.drawRoundedRect(0,0,135,26,3);
+
+    b.endFill();
+
+    btn.addChild(b);
+
+
+    const bt=text(
+        `↻ PURGAR  $${player.rerollCost}`,
+        9,
+        COLORS.white,
+        "bold"
+    );
+
+    bt.position.set(15,8);
+
+    btn.addChild(bt);
+
+    c.addChild(btn);
+
+
+    /* FLOOR */
+
+    const floor=text(
+        "FLOOR 03 // ROOM 4",
+        8,
+        COLORS.muted,
+        "bold"
+    );
+
+    floor.position.set(800,27);
+
+    c.addChild(floor);
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   LEFT RACK
+============================================================ */
+
+function drawRack(){
+
+    const c=new PIXI.Container();
+
+    const rackX=20;
+    const rackY=62;
+
+    /* HEADER */
+
+    const head=text(
+        "03 CARTUCHOS // SELECCIÓN DE MUTACIÓN",
+        9,
+        COLORS.purple,
+        "bold"
+    );
+
+    head.position.set(rackX+5,rackY);
+
+    c.addChild(head);
+
+
+    stalls.forEach((stall,i)=>{
+
+        drawCard(
+            c,
+            stall,
+            i,
+            rackX,
+            rackY+20+i*116
+        );
+
+    });
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   CARD
+============================================================ */
+
+function drawCard(parent,stall,index,x,y){
+
+    const item=stall.item;
+
+    const tier=TIERS[item.tier];
+
+    const selected=
+        index===focused;
+
+    const c=new PIXI.Container();
+
+    c.position.set(
+        selected ? x+7 : x,
+        y
+    );
+
+    c.eventMode="static";
+
+    c.cursor="pointer";
+
+    c.on("pointerdown",()=>buy(index));
+
+    c.on("pointerover",()=>{
+
+        if(focused!==index){
+
+            focused=index;
+
+            rebuild();
+
+        }
+
+    });
+
+
+    const bg=new PIXI.Graphics();
+
+    if(stall.sold){
+
+        bg.beginFill(0x080810,.8);
+
+        bg.lineStyle(1,0x252137,.7);
+
+    }
+    else{
+
+        bg.beginFill(
+            selected ? 0x151125 : 0x0b0915,
+            .98
+        );
+
+        bg.lineStyle(
+            selected ? 2 : 1,
+            selected ? COLORS.cyan : tier.color,
+            selected ? 1 : .65
+        );
+
+    }
+
+    bg.drawRoundedRect(
+        0,
+        0,
+        335,
+        100,
+        3
+    );
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    /* TIER STRIPE */
+
+    if(!stall.sold){
+
+        const stripe=new PIXI.Graphics();
+
+        stripe.beginFill(tier.color,.85);
+
+        stripe.drawRect(0,0,4,100);
+
+        stripe.endFill();
+
+        c.addChild(stripe);
+
+    }
+
+
+    /* NUMBER */
+
+    const key=new PIXI.Graphics();
+
+    key.beginFill(
+        selected
+        ? COLORS.cyan
+        : 0x211B36
+    );
+
+    key.drawRect(8,8,27,20);
+
+    key.endFill();
+
+    c.addChild(key);
+
+
+    const keyTxt=text(
+        `${index+1}`,
+        10,
+        selected ? COLORS.bg : COLORS.white,
+        "bold"
+    );
+
+    keyTxt.anchor.set(.5);
+
+    keyTxt.position.set(21,18);
+
+    c.addChild(keyTxt);
+
+
+    /* TYPE */
+
+    const type=text(
+        item.type==="tarot"
+        ? "ARCANA"
+        : "MODULE",
+        8,
+        item.type==="tarot"
+        ? COLORS.purple
+        : COLORS.cyan,
+        "bold"
+    );
+
+    type.position.set(46,13);
+
+    c.addChild(type);
+
+
+    /* TIER */
+
+    const tierTxt=text(
+        `TIER ${tier.name}`,
+        8,
+        tier.color,
+        "bold"
+    );
+
+    tierTxt.position.set(280,13);
+
+    c.addChild(tierTxt);
+
+
+    /* SYMBOL */
+
+    const icon=new PIXI.Graphics();
+
+    icon.beginFill(tier.color,.08);
+
+    icon.lineStyle(1,tier.color,.45);
+
+    icon.drawCircle(40,60,20);
+
+    icon.endFill();
+
+    c.addChild(icon);
+
+
+    const symbol=text(
+        item.symbol,
+        17,
+        tier.color,
+        "bold"
+    );
+
+    symbol.anchor.set(.5);
+
+    symbol.position.set(40,60);
+
+    c.addChild(symbol);
+
+
+    /* NAME */
+
+    const name=text(
+        item.name,
+        11,
+        COLORS.white,
+        "bold"
+    );
+
+    name.position.set(70,40);
+
+    c.addChild(name);
+
+
+    /* STAT */
+
+    const stat=text(
+        item.stat,
+        8,
+        tier.color,
+        "bold"
+    );
+
+    stat.position.set(70,57);
+
+    c.addChild(stat);
+
+
+    /* PRICE */
+
+    const price=text(
+        `$${tier.price}`,
+        12,
+        COLORS.gold,
+        "bold"
+    );
+
+    price.position.set(70,76);
+
+    c.addChild(price);
+
+
+    /* ACTION */
+
+    const action=text(
+        selected
+        ? "ENTER → INSTALAR"
+        : "CLICK → INSPECCIONAR",
+        7,
+        selected ? COLORS.cyan : COLORS.muted,
+        "bold"
+    );
+
+    action.position.set(190,78);
+
+    c.addChild(action);
+
+
+    if(stall.sold){
+
+        const sold=text(
+            "/// INSTALADO ///",
+            10,
+            COLORS.muted,
+            "bold"
+        );
+
+        sold.anchor.set(.5);
+
+        sold.position.set(165,52);
+
+        c.addChild(sold);
+
+    }
+
+
+    parent.addChild(c);
+
+}
+
+
+/* ============================================================
+   RIGHT SCANNER
+============================================================ */
+
+function drawScanner(){
+
+    const c=new PIXI.Container();
+
+    c.position.set(370,62);
+
+
+    const item=stalls[focused].item;
+
+    const tier=TIERS[item.tier];
+
+
+    /* MAIN PANEL */
+
+    const box=new PIXI.Graphics();
+
+    panel(
+        box,
+        0,
+        0,
+        570,
+        345,
+        tier.color
+    );
+
+    c.addChild(box);
+
+
+    /* TOP LINE */
+
+    line(
+        box,
+        0,
+        30,
+        570,
+        30,
+        tier.color,
+        1,
+        .35
+    );
+
+
+    const header=text(
+        `HOLOGRAPHIC SCAN // SLOT 0${focused+1}`,
+        9,
+        COLORS.cyan,
+        "bold"
+    );
+
+    header.position.set(15,11);
+
+    c.addChild(header);
+
+
+    /* ITEM TITLE */
+
+    const name=text(
+        item.name,
+        18,
+        COLORS.white,
+        "bold"
+    );
+
+    name.position.set(18,48);
+
+    c.addChild(name);
+
+
+    const subtitle=text(
+        item.type==="tarot"
+        ? `ARCANA MAYOR // ${item.roman || ""}`
+        : "CYBERNETIC ACTIVE MODULE",
+        8,
+        tier.color,
+        "bold"
+    );
+
+    subtitle.position.set(19,72);
+
+    c.addChild(subtitle);
+
+
+    /* PRICE */
+
+    const price=text(
+        `$${tier.price}`,
+        18,
+        COLORS.gold,
+        "bold"
+    );
+
+    price.position.set(475,50);
+
+    c.addChild(price);
+
+
+    /* DESCRIPTION */
+
+    const desc=text(
+        item.desc,
+        9,
+        COLORS.text,
+        "normal"
+    );
+
+    desc.position.set(19,100);
+
+    desc.style.wordWrap=true;
+    desc.style.wordWrapWidth=510;
+    desc.style.lineHeight=15;
+
+    c.addChild(desc);
+
+
+    /* SEPARATOR */
+
+    const sep=new PIXI.Graphics();
+
+    line(
+        sep,
+        18,
+        138,
+        552,
+        138,
+        COLORS.dim,
+        1,
+        1
+    );
+
+    c.addChild(sep);
+
+
+    /* ANATOMY */
+
+    drawAnatomy(
+        c,
+        item,
+        285,
+        205
+    );
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   ANATOMÍA
+============================================================ */
+
+function drawAnatomy(parent,item,cx,cy){
+
+    const label=text(
+        "BIO-TOPOLOGÍA // IMPACT ZONES",
+        8,
+        COLORS.purple,
+        "bold"
+    );
+
+    label.position.set(18,153);
+
+    parent.addChild(label);
+
+
+    const g=new PIXI.Graphics();
+
+    /* backbone */
+
+    const nodes=[];
+
+    for(let i=0;i<7;i++){
+
+        const x=cx-205+i*68;
+
+        const y=
+            cy+
+            Math.sin(i*.9)*14;
+
+        nodes.push({x,y});
+
+    }
+
+
+    for(let i=0;i<nodes.length-1;i++){
+
+        line(
+            g,
+            nodes[i].x,
+            nodes[i].y,
+            nodes[i+1].x,
+            nodes[i+1].y,
+            0x302946,
+            3,
+            1
+        );
+
+    }
+
+
+    parent.addChild(g);
+
+
+    nodes.forEach((node,i)=>{
+
+        const affected=
+            item.target==="ALL" ||
+            item.target===i;
+
+
+        const color=
+            affected
+            ? (
+                item.type==="tarot"
+                ? COLORS.purple
+                : COLORS.cyan
+            )
+            : COLORS.dim;
+
+
+        const nodeG=new PIXI.Graphics();
+
+
+        /* pulse ring */
+
+        if(affected){
+
+            nodeG.lineStyle(
+                1,
+                COLORS.gold,
+                .45
+            );
+
+            nodeG.drawCircle(
+                node.x,
+                node.y,
+                18
+            );
+
+        }
+
+
+        nodeG.beginFill(
+            color,
+            affected ? .25 : .08
+        );
+
+        nodeG.lineStyle(
+            2,
+            color,
+            affected ? 1 : .4
+        );
+
+
+        if(i===0){
+
+            nodeG.drawPolygon([
+                node.x-17,node.y-10,
+                node.x+17,node.y,
+                node.x-17,node.y+10
+            ]);
+
+        }
+        else{
+
+            nodeG.drawCircle(
+                node.x,
+                node.y,
+                12
+            );
+
+        }
+
+
+        nodeG.endFill();
+
+        parent.addChild(nodeG);
+
+
+        const label=text(
+            i===0
+            ? "HEAD"
+            : `V0${i}`,
+            7,
+            affected
+            ? COLORS.white
+            : COLORS.muted,
+            "bold"
+        );
+
+        label.anchor.set(.5);
+
+        label.position.set(
+            node.x,
+            node.y+25
+        );
+
+        parent.addChild(label);
+
+
+        /* active marker */
+
+        if(affected){
+
+            const marker=text(
+                "◆",
+                7,
+                COLORS.gold,
+                "bold"
+            );
+
+            marker.anchor.set(.5);
+
+            marker.position.set(
+                node.x,
+                node.y-22
+            );
+
+            parent.addChild(marker);
+
+        }
+
+    });
+
+
+    const effect=text(
+        item.target==="ALL"
+        ? "GLOBAL LINK // ALL SEGMENTS"
+        : `DIRECT LINK // VERTEBRA V0${item.target}`,
+        8,
+        item.target==="ALL"
+        ? COLORS.purple
+        : COLORS.cyan,
+        "bold"
+    );
+
+    effect.position.set(18,320);
+
+    parent.addChild(effect);
+
+}
+
+
+/* ============================================================
+   INVENTARIO
+============================================================ */
+
+function drawInventory(){
+
+    const c=new PIXI.Container();
+
+    c.position.set(20,417);
+
+
+    const bg=new PIXI.Graphics();
+
+    bg.beginFill(0x05040A,.97);
+
+    bg.lineStyle(
+        1,
+        0x332D4B,
+        .9
+    );
+
+    bg.drawRect(
+        0,
+        0,
+        920,
+        104
+    );
+
+    bg.endFill();
+
+    c.addChild(bg);
+
+
+    /* HEADER */
+
+    const title=text(
+        "LOADOUT // CHASSIS",
+        8,
+        COLORS.cyan,
+        "bold"
+    );
+
+    title.position.set(12,10);
+
+    c.addChild(title);
+
+
+    /* ACTIVE SLOTS */
+
+    for(let i=0;i<3;i++){
+
+        const x=12+i*142;
+
+        const slot=new PIXI.Graphics();
+
+        slot.beginFill(0x0D0B17);
+
+        slot.lineStyle(
+            1,
+            player.inventory[i]
+            ? COLORS.cyan
+            : COLORS.dim,
+            .9
+        );
+
+        slot.drawRoundedRect(
+            x,
+            30,
+            132,
+            55,
+            3
+        );
+
+        slot.endFill();
+
+        c.addChild(slot);
+
+
+        const key=text(
+            `[${i+1}]`,
+            8,
+            COLORS.gold,
+            "bold"
+        );
+
+        key.position.set(
+            x+8,
+            37
+        );
+
+        c.addChild(key);
+
+
+        const value=text(
+            player.inventory[i]
+            || "EMPTY SOCKET",
+            8,
+            player.inventory[i]
+            ? COLORS.white
+            : COLORS.muted,
+            "bold"
+        );
+
+        value.position.set(
+            x+8,
+            55
+        );
+
+        value.style.wordWrap=true;
+        value.style.wordWrapWidth=115;
+
+        c.addChild(value);
+
+    }
+
+
+    /* PASSIVES */
+
+    const pTitle=text(
+        "PASSIVE MATRIX",
+        8,
+        COLORS.purple,
+        "bold"
+    );
+
+    pTitle.position.set(465,10);
+
+    c.addChild(pTitle);
+
+
+    player.passives.forEach((passive,i)=>{
+
+        const x=465+i*175;
+
+        const p=new PIXI.Graphics();
+
+        p.beginFill(0x110C20);
+
+        p.lineStyle(
+            1,
+            COLORS.purple,
+            .55
+        );
+
+        p.drawRoundedRect(
+            x,
+            30,
+            165,
+            30,
+            3
+        );
+
+        p.endFill();
+
+        c.addChild(p);
+
+
+        const t=text(
+            passive,
+            8,
+            0xD8B4FE,
+            "bold"
+        );
+
+        t.position.set(
+            x+10,
+            41
+        );
+
+        c.addChild(t);
+
+    });
+
+
+    const help=text(
+        "[SPACE] DESCENDER AL SIGUIENTE ROOM",
+        8,
+        COLORS.muted,
+        "bold"
+    );
+
+    help.position.set(
+        465,
+        72
+    );
+
+    c.addChild(help);
+
+
+    scene.addChild(c);
+
+}
+
+
+/* ============================================================
+   DECORACIÓN
+============================================================ */
+
+function drawDecorations(){
+
+    const g=new PIXI.Graphics();
+
+    /* vertical divider */
+
+    line(
+        g,
+        358,
+        62,
+        358,
+        410,
+        COLORS.dim,
+        1,
+        .8
+    );
+
+
+    /* scanner brackets */
+
+    const x=370;
+    const y=62;
+    const w=570;
+    const h=345;
+
+    const c=COLORS.cyan;
+
+    line(g,x,y,x+18,y,c,1,.8);
+    line(g,x,y,x,y+18,c,1,.8);
+
+    line(g,x+w,y,x+w-18,y,c,1,.8);
+    line(g,x+w,y,x+w,y+18,c,1,.8);
+
+    line(g,x,y+h,x+18,y+h,c,1,.8);
+    line(g,x,y+h,x,y+h-18,c,1,.8);
+
+    line(g,x+w,y+h,x+w-18,y+h,c,1,.8);
+    line(g,x+w,y+h,x+w,y+h-18,c,1,.8);
+
+
+    scene.addChild(g);
+
+}
+
+
+/* ============================================================
+   REBUILD
+============================================================ */
+
+function rebuild(){
+
+    scene.removeChildren();
+
+    drawBackground();
+
+    drawHUD();
+
+    drawRack();
+
+    drawScanner();
+
+    drawInventory();
+
+    drawDecorations();
+
+}
+
+
+/* ============================================================
+   KEYBOARD
+============================================================ */
+
+window.addEventListener(
+    "keydown",
+    e=>{
+
+        if(e.key==="1")
+            buy(0);
+
+        if(e.key==="2")
+            buy(1);
+
+        if(e.key==="3")
+            buy(2);
+
+        if(e.key.toLowerCase()==="r")
+            reroll();
+
+        if(e.code==="Space"){
+
+            status(
+                "TRANSICIÓN // DESCENDIENDO AL SIGUIENTE ROOM",
+                COLORS.gold
+            );
+
+            shake();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   ANIMATION
+============================================================ */
+
+app.ticker.add(delta=>{
+
+    animationTime+=delta;
+
+    /* screen shake */
+
+    if(shakePower>0){
+
+        scene.x=
+            Math.random()*shakePower-
+            shakePower/2;
+
+        scene.y=
+            Math.random()*shakePower-
+            shakePower/2;
+
+        shakePower*=.84;
+
+        if(shakePower<.1){
+
+            shakePower=0;
+
+            scene.x=0;
+            scene.y=0;
+
+        }
+
+    }
+
+});
+
+
+/* ============================================================
+   START
+============================================================ */
+
+rollStock();
+
+rebuild();
+
 </script>
+
 </body>
 </html>
+
