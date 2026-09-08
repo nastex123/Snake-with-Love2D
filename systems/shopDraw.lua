@@ -1,5 +1,5 @@
 -- systems/shopDraw.lua — Gothic Altar Shrine UI & Layout Renderer (GDD §13 / Propuesta C)
--- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y el Altar de los Tres Cálices centrado en X e Y con márgenes.
+-- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y los dos contenedores inferiores (Cálices y Sellos).
 local shopDraw = {}
 local constants = require("constants")
 local tarotArtMod = require("systems.tarotArt")
@@ -106,8 +106,8 @@ function shopDraw.draw(shopData)
     -- Geometría centrada en X e Y con márgenes laterales
     local containerW = 600
     local containerH = 328
-    local startX = math.floor((w - containerW) / 2) -- Margen lateral de 20 px a cada lado
-    local startY = math.floor((h - containerH) / 2) - 4 -- Centrado vertical
+    local startX = math.floor((w - containerW) / 2)
+    local startY = math.floor((h - containerH) / 2) - 4
 
     -- 2. Dintel Superior — Bóveda de Cripta
     local topBarX = startX
@@ -121,12 +121,12 @@ function shopDraw.draw(shopData)
     love.graphics.setLineWidth(1)
     love.graphics.rectangle("line", topBarX, topBarY, topBarW, topBarH, 2)
 
-    -- Tributo en Oro a la izquierda (reemplaza 'santuario de las animas')
+    -- Tributo en Oro a la izquierda
     if fontNormal then love.graphics.setFont(fontNormal) end
     love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
     love.graphics.print("✝ TRIBUTO: $" .. math.floor(displayCoins + 0.5), topBarX + 12, topBarY + 5)
 
-    -- Botón de Reroll a la derecha (donde antes decía 'santificado')
+    -- Botón de Reroll a la derecha
     local rbW, rbH = 144, 18
     local rbX, rbY = topBarX + topBarW - rbW - 4, topBarY + 3
     rerollRect = {x = rbX, y = rbY, w = rbW, h = rbH}
@@ -186,41 +186,59 @@ function shopDraw.draw(shopData)
             love.graphics.setColor(0.4, 0.38, 0.48)
             love.graphics.printf("ALTAR VACIO", rackX, cardY + 24, cardW, "center")
         else
+            -- Slot indicator [1] y Tier Badge en cabecera
             if fontSmall then love.graphics.setFont(fontSmall) end
             love.graphics.setColor(1.0, 0.82, 0.25, 0.9)
             love.graphics.print("[" .. idx .. "]", rackX + 6, cardY + 5)
 
-            love.graphics.setColor(offer.kind == "tarot" and {0.75, 0.45, 1.0} or {0.6, 0.65, 0.75})
-            love.graphics.print(offer.kind == "tarot" and "VITRAL TAROT" or "RELIQUIA", rackX + 26, cardY + 5)
-
             love.graphics.setColor(tierColor[1], tierColor[2], tierColor[3], 0.95)
             love.graphics.print("TIER " .. (info.tier or "C"), rackX + cardW - 50, cardY + 5)
 
+            -- Textura / Icono de la reliquia (arriba a la izquierda)
+            local iconBoxX = rackX + 6
+            local iconBoxY = cardY + 18
             if offer.kind == "tarot" then
                 love.graphics.setColor(0.3, 0.25, 0.4, 0.8)
-                love.graphics.rectangle("fill", rackX + 6, cardY + 19, 36, 36, 1)
+                love.graphics.rectangle("fill", iconBoxX, iconBoxY, 34, 32, 1)
                 love.graphics.setColor(tierColor[1], tierColor[2], tierColor[3], 0.7)
-                love.graphics.rectangle("line", rackX + 6, cardY + 19, 36, 36, 1)
-                tarotArtMod.draw(offer.id, rackX + 8, cardY + 21, 32)
+                love.graphics.rectangle("line", iconBoxX, iconBoxY, 34, 32, 1)
+                tarotArtMod.draw(offer.id, iconBoxX + 3, iconBoxY + 2, 28)
             else
-                drawRelicIcon(def.icon or def.id, rackX + 8, cardY + 21, 32)
+                drawRelicIcon(def.icon or def.id, iconBoxX + 3, iconBoxY + 2, 28)
             end
 
-            if fontNormal then love.graphics.setFont(fontNormal) end
-            love.graphics.setColor(sold and {0.5, 0.48, 0.55} or {1, 0.98, 0.92})
-            love.graphics.print(def.name or def.id, rackX + 46, cardY + 20)
+            -- Tipo de Item DEBAJO de la textura
+            if fontSmall then love.graphics.setFont(fontSmall) end
+            love.graphics.setColor(offer.kind == "tarot" and {0.75, 0.45, 1.0} or {0.6, 0.65, 0.75})
+            local typeLabel = offer.kind == "tarot" and "TAROT" or "ITEM"
+            love.graphics.printf(typeLabel, iconBoxX - 2, cardY + 53, 38, "center")
 
+            -- Nombre del ítem / Tarot a la derecha de la textura
+            -- Ajuste automático de tamaño de fuente para que quepa perfectamente
+            local nameStr = def.name or def.id
+            local textW = cardW - 48
+            if #nameStr > 11 then
+                if fontSmall then love.graphics.setFont(fontSmall) end
+                love.graphics.setColor(sold and {0.5, 0.48, 0.55} or {1, 0.98, 0.92})
+                love.graphics.printf(nameStr, rackX + 44, cardY + 18, textW, "left")
+            else
+                if fontNormal then love.graphics.setFont(fontNormal) end
+                love.graphics.setColor(sold and {0.5, 0.48, 0.55} or {1, 0.98, 0.92})
+                love.graphics.printf(nameStr, rackX + 44, cardY + 16, textW, "left")
+            end
+
+            -- Precio y botón de acción
             if fontSmall then love.graphics.setFont(fontSmall) end
             if sold then
                 love.graphics.setColor(0.35, 0.8, 0.35)
-                love.graphics.print("/// CONSAGRADO ///", rackX + 46, cardY + 38)
+                love.graphics.print("/// CONSAGRADO ///", rackX + 44, cardY + 48)
             else
                 love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-                love.graphics.print("$" .. (offer.price or 0) .. " ORO", rackX + 46, cardY + 38)
+                love.graphics.print("$" .. (offer.price or 0) .. " ORO", rackX + 44, cardY + 48)
 
                 love.graphics.setColor(isFocused and {1.0, 0.82, 0.25} or {0.5, 0.48, 0.6})
                 local actText = isFocused and "ENTER -> COMPRA" or "ELEGIR"
-                love.graphics.printf(actText, rackX + 96, cardY + 40, cardW - 100, "right")
+                love.graphics.printf(actText, rackX + 96, cardY + 48, cardW - 100, "right")
             end
         end
     end
@@ -234,27 +252,30 @@ function shopDraw.draw(shopData)
     local curDef = offerDefFn and offerDefFn(curOffer)
     shopBioScanner.draw(curOffer, curDef, scanX, scanY, scanW, scanH, fontNormal, fontSmall, fontLarge)
 
-    -- 5. Panel Inferior: El Altar de los Tres Cálices
-    local botX = startX
+    -- 5. Panel Inferior: Dos Contenedores Claramente Separados (Cálices y Sellos)
     local botY = rackY + scanH + 4
-    local botW = containerW
     local botH = 80
+    local gapContainers = 8
+    local calicesW = 296
+    local sellosW = containerW - calicesW - gapContainers
 
+    -- Contenedor 1 (Izquierda): Cálices de Poder Activo
+    local calicesX = startX
     love.graphics.setColor(0.06, 0.05, 0.09, 0.96)
-    love.graphics.rectangle("fill", botX, botY, botW, botH, 2)
+    love.graphics.rectangle("fill", calicesX, botY, calicesW, botH, 2)
     love.graphics.setColor(0.3, 0.24, 0.42, 0.8)
-    love.graphics.rectangle("line", botX, botY, botW, botH, 2)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", calicesX, botY, calicesW, botH, 2)
 
     if fontSmall then love.graphics.setFont(fontSmall) end
     love.graphics.setColor(1.0, 0.82, 0.25)
-    love.graphics.print("CÁLICES DE PODER ACTIVO (SLOTS)", botX + 8, botY + 6)
+    love.graphics.print("CÁLICES DE PODER ACTIVO", calicesX + 8, botY + 6)
 
-    -- 3 Cálices de Poder
     for si = 1, 3 do
-        local sx = botX + 8 + (si - 1) * 88
+        local sx = calicesX + 8 + (si - 1) * 94
         local sy = botY + 22
-        local sw = 82
-        local sh = 34
+        local sw = 88
+        local sh = 48
         local itemId = slots[si]
 
         love.graphics.setColor(0.10, 0.08, 0.15)
@@ -267,39 +288,50 @@ function shopDraw.draw(shopData)
         love.graphics.print(romanSlots[si], sx + 4, sy + 3)
 
         if itemId then
-            drawRelicIcon(itemId, sx + 22, sy + 6, 22)
+            drawRelicIcon(itemId, sx + 32, sy + 4, 22)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.printf(itemId, sx + 46, sy + 10, sw - 48, "left")
+            love.graphics.printf(itemId, sx + 2, sy + 30, sw - 4, "center")
         else
             love.graphics.setColor(0.45, 0.42, 0.5)
-            love.graphics.printf("VACÍO", sx + 28, sy + 10, sw - 32, "left")
+            love.graphics.printf("VACÍO", sx + 2, sy + 22, sw - 4, "center")
         end
     end
 
-    -- Matriz de Sellos Pasivos
-    local pX = botX + 276
+    -- Contenedor 2 (Derecha): Sellos y Arcanos Activos
+    local sellosX = calicesX + calicesW + gapContainers
+    love.graphics.setColor(0.06, 0.05, 0.09, 0.96)
+    love.graphics.rectangle("fill", sellosX, botY, sellosW, botH, 2)
+    love.graphics.setColor(0.3, 0.24, 0.42, 0.8)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", sellosX, botY, sellosW, botH, 2)
+
+    if fontSmall then love.graphics.setFont(fontSmall) end
     love.graphics.setColor(0.75, 0.45, 1.0)
-    love.graphics.print("SELLOS Y ARCANOS ACTIVOS", pX, botY + 6)
+    love.graphics.print("SELLOS Y ARCANOS ACTIVOS", sellosX + 8, botY + 6)
 
     local pCount = 0
     for key, val in pairs(passives) do
         if val == true then
             pCount = pCount + 1
             if pCount <= 3 then
-                local px = pX + (pCount - 1) * 105
+                local px = sellosX + 8 + (pCount - 1) * 92
                 local py = botY + 22
+                local pw = 86
+                local ph = 48
+
                 love.graphics.setColor(0.14, 0.10, 0.20)
-                love.graphics.rectangle("fill", px, py, 100, 34, 2)
+                love.graphics.rectangle("fill", px, py, pw, ph, 2)
                 love.graphics.setColor(0.75, 0.45, 1.0, 0.7)
-                love.graphics.rectangle("line", px, py, 100, 34, 2)
+                love.graphics.rectangle("line", px, py, pw, ph, 2)
+
                 love.graphics.setColor(0.92, 0.85, 1.0)
-                love.graphics.printf(key, px + 4, py + 10, 92, "center")
+                love.graphics.printf(key, px + 2, py + 16, pw - 4, "center")
             end
         end
     end
     if pCount == 0 then
         love.graphics.setColor(0.45, 0.42, 0.5)
-        love.graphics.print("NINGÚN SELLO GRABADO", pX, botY + 30)
+        love.graphics.print("NINGÚN SELLO GRABADO", sellosX + 12, botY + 34)
     end
 
     -- 6. Pie Sacro de Mandatos

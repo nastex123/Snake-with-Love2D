@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop card layout & bottom containers)
+
+- **feature** (shop - 2026-09-08 10:45): Refinamiento del layout de cartas y división en contenedores independientes para el panel inferior (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (cards de puestos)**: La etiqueta del tipo (`ITEM` / `TAROT`) se reubica directamente debajo de la textura/icono. El nombre del ítem o tarot (ej. `VII. Cero Absoluto`) ahora utiliza un ajuste tipográfico adaptable con `printf` multilínea para garantizar que encaje 100% dentro de la tarjeta sin desbordarse.
+  2. **QUE — `systems/shopDraw.lua` (contenedores inferiores independientes)**: El panel inferior se divide en dos contenedores ("divs") claramente separados con borde gótico y fondo propio:
+     - **Contenedor 1 (Izquierda)**: *Cálices de Poder Activo*, albergando las 3 tarjetas de ranuras `[I]`, `[II]`, `[III]` con marco propio, icono vertical centrado y estado/nombre centrado.
+     - **Contenedor 2 (Derecha)**: *Sellos y Arcanos Activos*, albergando las pasivas y tarots bendecidos en sus respectivas sub-tarjetas.
+  3. **Verificación**: `love .` 100% funcional a 60 FPS sin errores en `error.log`; ejecución de tests unitarios verificada.
+
 ## 2026-09-08 (shop Gothic Altar Shrine - Propuesta C)
 
 - **feature** (shop - 2026-09-08 10:28): Reubicación de elementos y centrado geométrico en la Tienda del Santuario Arcano (America/Bogota, rama `feature/phase8-mystery-rooms`):
