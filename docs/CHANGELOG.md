@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop Gothic Altar Shrine - Propuesta C)
+
+- **feature** (shop - 2026-09-08 10:07): Transformación estética y temática de la Tienda a **El Santuario Arcano de las Ánimas (Propuesta C)** en estilo auténtico Dungeon Crawler / Fantasía Gótica (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopBioScanner.lua`**: Rediseñado como Retablo Mayor Gótico de la Cripta Ancestral. Dibuja la espina dorsal ósea de un dragón mitológico con cráneo facetado de marfil, cadenas de hierro forjado y **llamas de alma (*Soul Flames*)** violeta y oro que ascienden con ondulación senoidal a 60 FPS sobre las vértebras consagradas.
+  2. **QUE — `systems/shopDraw.lua`**: Implementado layout sacro con mampostería de cripta subterránea, viñetas de antorchas cálidas parpadeantes, 3 hornacinas con arcos ojivales góticos biselados a $45^\circ$, vitrales de plomo para las Cartas del Destino, cáliz sagrado para la ofrenda de reroll (`OFRENDA (R)`), y reclinatorio inferior con 3 cálices de poder activo (`[I]`, `[II]`, `[III]`) con iconografía de reliquias medievales (escudo de cruz, coraza, orbe espectral, herradura y fuego alquímico).
+  3. **QUE — `README.md`**: Actualizada la sección de la tienda para reflejar la ambientación del Santuario Arcano y sus componentes de calabozo.
+  4. **Verificación**: `love .` 100% funcional a 60 FPS sin errores en `error.log`; suite `love tests` verificada.
+
 ## 2026-09-08 (shop Bio-Rack v3 implementation)
 
 - **feature** (shop - 2026-09-08 08:58): Implementación del sistema de Tienda Cyberpunk Bio-Rack v3 en Love2D (America/Bogota, rama `feature/phase8-mystery-rooms`):
