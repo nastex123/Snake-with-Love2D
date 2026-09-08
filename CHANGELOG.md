@@ -8,6 +8,13 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop adaptive pixel scale)
+
+- **fix** (shop - 2026-09-08 10:56): Implementación de escalado adaptativo de píxel para la interfaz de la tienda (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopDraw.lua` (pixel scale adaptativo)**: Resuelto el problema de visualización pequeña en ventanas de alta resolución ($800\times 600$, $1280\times 720$, etc.). Se calcula dinámicamente `scale = math.min(w / 640, h / 360)` y se aplica mediante matriz gráfica (`translate` + `scale`), permitiendo que la tienda se agrande proporcionalmente ocupando la pantalla completa de forma equilibrada sin perder nitidez pixel-art.
+  2. **QUE — `systems/shop.lua` (inversa de coordenadas de ratón)**: Sincronizadas las coordenadas `x, y` en `shop.mousepressed` aplicando la transformación inversa `(raw - offset) / scale` para garantizar una respuesta precisa al 100% de clics en hornacinas y botón de ofrenda.
+  3. **Verificación**: `love .` 100% funcional y verificado a 60 FPS sin advertencias ni errores en `error.log`.
+
 ## 2026-09-08 (shop card layout & bottom containers)
 
 - **feature** (shop - 2026-09-08 10:45): Refinamiento del layout de cartas y división en contenedores independientes para el panel inferior (America/Bogota, rama `feature/phase8-mystery-rooms`):

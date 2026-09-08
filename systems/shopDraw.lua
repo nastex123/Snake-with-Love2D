@@ -1,5 +1,5 @@
 -- systems/shopDraw.lua — Gothic Altar Shrine UI & Layout Renderer (GDD §13 / Propuesta C)
--- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y los dos contenedores inferiores (Cálices y Sellos).
+-- Renderiza la Bóveda de la Cripta, las 3 Hornacinas con Arcos Ojivales y los dos contenedores inferiores con escalado adaptativo (Opción A).
 local shopDraw = {}
 local constants = require("constants")
 local tarotArtMod = require("systems.tarotArt")
@@ -7,6 +7,9 @@ local shopBioScanner = require("systems.shopBioScanner")
 
 local cardRects = {}
 local rerollRect = nil
+local currentScale = 1.0
+local currentOffsetX = 0
+local currentOffsetY = 0
 
 local TIER_COLORS = {
     S = {1.0, 0.82, 0.25}, -- Oro sacro
@@ -60,7 +63,7 @@ local function drawRelicIcon(id, x, y, size)
 end
 
 function shopDraw.getRects()
-    return cardRects, rerollRect
+    return cardRects, rerollRect, currentScale, currentOffsetX, currentOffsetY
 end
 
 function shopDraw.draw(shopData)
@@ -81,10 +84,7 @@ function shopDraw.draw(shopData)
     local passives = shopData.passives or {}
     local offerDefFn = shopData.offerDefFn
 
-    local mx, my = love.mouse.getPosition()
-    cardRects = {}
-
-    -- 1. Fondo de Lajas de Cripta Subterránea
+    -- 1. Fondo completo de Lajas de Cripta Subterránea
     love.graphics.setColor(0.04, 0.03, 0.07, 0.96)
     love.graphics.rectangle("fill", 0, 0, w, h)
 
@@ -97,17 +97,40 @@ function shopDraw.draw(shopData)
         end
     end
 
-    -- Viñeta de cripta / resplandor de antorchas en las esquinas
+    -- Viñeta de antorchas cálidas en esquinas
     local torchA = (math.sin(time * 3.5) + 1) * 0.03 + 0.06
     love.graphics.setColor(0.9, 0.45, 0.1, torchA)
     love.graphics.circle("fill", 20, 20, 100)
     love.graphics.circle("fill", w - 20, 20, 100)
 
-    -- Geometría centrada en X e Y con márgenes laterales
+    -- ESCALADO ADAPTATIVO (Opción A): resolución base virtual 640x360
+    local baseW, baseH = 640, 360
+    local scale = math.min(w / baseW, h / baseH)
+    if scale < 1.0 then scale = 1.0 end
+    currentScale = scale
+
     local containerW = 600
     local containerH = 328
-    local startX = math.floor((w - containerW) / 2)
-    local startY = math.floor((h - containerH) / 2) - 4
+    local scaledW = containerW * scale
+    local scaledH = containerH * scale
+
+    local offsetX = math.floor((w - scaledW) / 2)
+    local offsetY = math.floor((h - scaledH) / 2)
+    currentOffsetX = offsetX
+    currentOffsetY = offsetY
+
+    -- Coordenadas de ratón en espacio virtual escalado
+    local rawMx, rawMy = love.mouse.getPosition()
+    local mx = (rawMx - offsetX) / scale
+    local my = (rawMy - offsetY) / scale
+
+    love.graphics.push()
+    love.graphics.translate(offsetX, offsetY)
+    love.graphics.scale(scale, scale)
+
+    cardRects = {}
+    local startX = 0
+    local startY = 0
 
     -- 2. Dintel Superior — Bóveda de Cripta
     local topBarX = startX
@@ -186,7 +209,6 @@ function shopDraw.draw(shopData)
             love.graphics.setColor(0.4, 0.38, 0.48)
             love.graphics.printf("ALTAR VACIO", rackX, cardY + 24, cardW, "center")
         else
-            -- Slot indicator [1] y Tier Badge en cabecera
             if fontSmall then love.graphics.setFont(fontSmall) end
             love.graphics.setColor(1.0, 0.82, 0.25, 0.9)
             love.graphics.print("[" .. idx .. "]", rackX + 6, cardY + 5)
@@ -194,7 +216,7 @@ function shopDraw.draw(shopData)
             love.graphics.setColor(tierColor[1], tierColor[2], tierColor[3], 0.95)
             love.graphics.print("TIER " .. (info.tier or "C"), rackX + cardW - 50, cardY + 5)
 
-            -- Textura / Icono de la reliquia (arriba a la izquierda)
+            -- Textura / Icono arriba a la izquierda
             local iconBoxX = rackX + 6
             local iconBoxY = cardY + 18
             if offer.kind == "tarot" then
@@ -214,7 +236,6 @@ function shopDraw.draw(shopData)
             love.graphics.printf(typeLabel, iconBoxX - 2, cardY + 53, 38, "center")
 
             -- Nombre del ítem / Tarot a la derecha de la textura
-            -- Ajuste automático de tamaño de fuente para que quepa perfectamente
             local nameStr = def.name or def.id
             local textW = cardW - 48
             if #nameStr > 11 then
@@ -337,7 +358,9 @@ function shopDraw.draw(shopData)
     -- 6. Pie Sacro de Mandatos
     if fontSmall then love.graphics.setFont(fontSmall) end
     love.graphics.setColor(0.65, 0.62, 0.72)
-    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, h - 14, w, "center")
+    love.graphics.printf("[1-3] OFRENDAR / SELECCIONAR    [R] PLEGARIA/REROLL    [ESPACIO/ENTER] DESCENDER AL CALABOZO    [ESC] RETROCEDER", 0, containerH + 10, containerW, "center")
+
+    love.graphics.pop()
 end
 
 return shopDraw

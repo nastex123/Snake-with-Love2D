@@ -324,15 +324,21 @@ end
 
 function shop.mousepressed(x, y, monedas)
     monedas = monedas or 0
-    local cardRects, rerollRect = shopDrawMod.getRects()
+    local cardRects, rerollRect, scale, offsetX, offsetY = shopDrawMod.getRects()
+    scale = scale or 1.0
+    offsetX = offsetX or 0
+    offsetY = offsetY or 0
 
-    if rerollRect and x >= rerollRect.x and x <= rerollRect.x + rerollRect.w
-        and y >= rerollRect.y and y <= rerollRect.y + rerollRect.h then
+    local mx = (x - offsetX) / scale
+    local my = (y - offsetY) / scale
+
+    if rerollRect and mx >= rerollRect.x and mx <= rerollRect.x + rerollRect.w
+        and my >= rerollRect.y and my <= rerollRect.y + rerollRect.h then
         return shop.doReroll(monedas)
     end
 
-    for idx, rect in ipairs(cardRects) do
-        if x >= rect.x and x <= rect.x + rect.w and y >= rect.y and y <= rect.y + rect.h then
+    for idx, rect in ipairs(cardRects or {}) do
+        if mx >= rect.x and mx <= rect.x + rect.w and my >= rect.y and my <= rect.y + rect.h then
             shop.focusedStall = idx
             return shop.buyStall(idx, monedas)
         end
