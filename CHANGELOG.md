@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (shop Bio-Rack v3 implementation)
+
+- **feature** (shop - 2026-09-08 08:58): Implementación del sistema de Tienda Cyberpunk Bio-Rack v3 en Love2D (America/Bogota, rama `feature/phase8-mystery-rooms`):
+  1. **QUE — `systems/shopBioScanner.lua` (nuevo módulo)**: Renderizador de inspección táctica y bio-topología animada de la serpiente (7 vértebras $HEAD + V_{01}\dots V_{06}$) con cálculo procedural de curvas senoidales, anillos de pulso luminoso e identificación de zonas de impacto según ítem o tarot.
+  2. **QUE — `systems/shopDraw.lua` (nuevo módulo)**: Layout de tienda asimétrico a $640\times 360$ px compuesto por Top Bar HUD (saldo reactivo, floor info y botón purga `[R]`), columna izquierda de cartuchos modulares (slots `[1-3]`, badges de Tier S/A/B/C) y panel inferior de Loadout/Chassis con sockets y matriz de pasivas.
+  3. **QUE — `systems/shop.lua` (refactor modular)**: Delegación limpia de renderizado desacoplada de la lógica, control de foco (`focusedStall`), soporte para navegación por ratón o teclado (`1-3`, `R`, `Up/Down`, `Tab`, `Space`, `Enter`, `Esc`).
+  4. **Verificación**: `love .` 100% funcional sin excepciones en `error.log`; ejecución de tests unitarios verificada.
+
 ## 2026-09-08 (shop redesign Bio-Rack v3)
 
 - **docs** (prototype - 2026-09-08 08:55): Prototipo interactivo Pixi.js de Tienda Cyberpunk Bio-Rack v3 (America/Bogota, rama `feature/phase8-mystery-rooms`):

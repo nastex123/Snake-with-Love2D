@@ -24,7 +24,7 @@ Un juego de acción táctica y sigilo estilo *Dungeon Crawler* desarrollado en e
   - **Logotipo SNAKE 2.5D Isométrico Cian Neón**: Renderizado procedural en tiempo real con 5 capas de profundidad isométrica a 45°, bisel platino y barrido especular continuo.
   - **Tarjeta Chunky de Perfil & High Score #11**: Marco reforzado con condensadores 6x6, medalla bicolor y moneda circular 3D con rotación elipsoidal.
 - **🛠️ Herramienta de Calibración en Vivo (`F2`)**: Calibrador visual interactivo para posicionar, escalar y ajustar la profundidad del logotipo con guardado persistente en `config/settings.dat`.
-- **🎒 Sistema de Objetos & Tienda**: 22 ítems (activos y pasivos) equipables en slots 1–3 y tienda con paginación 4x3.
+- **🎒 Tienda Cyberpunk "Bio-Rack v3" & Sistema de Objetos**: 3 cartuchos modulares en rack con stock mixto (22 ítems activos/pasivos + 12 cartas de Tarot arcanas), escáner holográfico con bio-topología animada de 7 vértebras (`HEAD` + $V_{01}\dots V_{06}$), reroll escalonado de purga (`R`), y ranuras de chasis activas.
 - **🃏 Tarot por Etapa**: Draft de 3 cartas al completar las salas 1, 2 y 4 (máx 3 activas por etapa) con 12 cartas de destino y texturas pixel-art 20x20.
 - **🎲 Mutadores de Sala**: 10 modificadores (gravedad cero, Midas, pluma, velo, sombra, contrarreloj, fénix, túnel, dualidad, titán) con banner y badge en HUD.
 - **🚪 Salas de Misterio**: 4 salas especiales (apostador, espejo, fiebre del oro, sellos) con reglas y premios propios.
