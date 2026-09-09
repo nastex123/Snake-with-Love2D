@@ -86,4 +86,40 @@ function Input.getBoundKeys(dir)
     return {dir}
 end
 
+function Input.getMousePosition()
+    local mx, my = 0, 0
+    if love and love.mouse and love.mouse.getPosition then
+        mx, my = love.mouse.getPosition()
+    end
+    local okS, shaders = pcall(require, "render.shaders")
+    local ps = 1
+    if okS and shaders and shaders.getPixelScale then
+        ps = shaders.getPixelScale() or 1
+    elseif okS and shaders and shaders.pixelScale then
+        ps = shaders.pixelScale or 1
+    end
+    if ps > 1 then
+        return mx / ps, my / ps
+    end
+    return mx, my
+end
+
+function Input.getVirtualDimensions()
+    local realW, realH = 800, 600
+    if love and love.graphics and love.graphics.getDimensions then
+        realW, realH = love.graphics.getDimensions()
+    end
+    local okS, shaders = pcall(require, "render.shaders")
+    local ps = 1
+    if okS and shaders and shaders.getPixelScale then
+        ps = shaders.getPixelScale() or 1
+    elseif okS and shaders and shaders.pixelScale then
+        ps = shaders.pixelScale or 1
+    end
+    if ps > 1 then
+        return math.max(1, math.floor(realW / ps)), math.max(1, math.floor(realH / ps))
+    end
+    return realW, realH
+end
+
 return Input
