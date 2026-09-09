@@ -408,15 +408,23 @@ function shaders.load()
     canvasReflection  = newCRef()
 end
 
+shaders.currentFilter = 'linear'
+
+function shaders.getFilter()
+    return shaders.currentFilter or 'linear'
+end
+
 function shaders.setFilter(filter)
     local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
+    shaders.currentFilter = f
     if canvasScene and canvasScene.setFilter then pcall(function() canvasScene:setFilter(f, f) end) end
     if canvasGlow and canvasGlow.setFilter then pcall(function() canvasGlow:setFilter(f, f) end) end
-    if canvasGlowLow and canvasGlowLow.setFilter then pcall(function() canvasGlowLow:setFilter(f, f) end) end
-    if canvasBlurH and canvasBlurH.setFilter then pcall(function() canvasBlurH:setFilter(f, f) end) end
-    if canvasBlurV and canvasBlurV.setFilter then pcall(function() canvasBlurV:setFilter(f, f) end) end
+    -- Bloom / blur canvases must strictly remain linear for smooth lighting diffusion
+    if canvasGlowLow and canvasGlowLow.setFilter then pcall(function() canvasGlowLow:setFilter("linear", "linear") end) end
+    if canvasBlurH and canvasBlurH.setFilter then pcall(function() canvasBlurH:setFilter("linear", "linear") end) end
+    if canvasBlurV and canvasBlurV.setFilter then pcall(function() canvasBlurV:setFilter("linear", "linear") end) end
     if canvasShadow and canvasShadow.setFilter then pcall(function() canvasShadow:setFilter(f, f) end) end
-    if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter(f, f) end) end
+    if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter("linear", "linear") end) end
     if canvasFinal and canvasFinal.setFilter then pcall(function() canvasFinal:setFilter(f, f) end) end
     if canvasPost and canvasPost.setFilter then pcall(function() canvasPost:setFilter(f, f) end) end
     if canvasReflection and canvasReflection.setFilter then pcall(function() canvasReflection:setFilter("linear", "linear") end) end
