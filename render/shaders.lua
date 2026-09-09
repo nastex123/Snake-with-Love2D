@@ -633,6 +633,9 @@ function shaders.composite(time, crtIntensity, isMenu)
     local cbMatrix = (colorblindMode and colorblindMode ~= "off") and COLORBLIND_MATRICES[colorblindMode] or nil
     local applyCB = cbMatrix and shColorblind and canvasPost
 
+    local ps = tonumber(shaders.pixelScale) or 1
+    if ps < 1 then ps = 1 end
+
     if applyCB then
         -- 6a. CRT sobre canvasFinal → canvasPost
         love.graphics.setCanvas(canvasPost)
@@ -654,10 +657,10 @@ function shaders.composite(time, crtIntensity, isMenu)
         shColorblind:send("colorMatrix", cbMatrix)
         love.graphics.setShader(shColorblind)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(canvasPost, 0, 0)
+        love.graphics.draw(canvasPost, 0, 0, 0, ps, ps)
         love.graphics.setShader()
     else
-        -- 6. CRT sobre canvasFinal → backbuffer directo
+        -- 6. CRT sobre canvasFinal → backbuffer directo (escalado por pixelScale)
         love.graphics.setCanvas()
         if shCRT then
             shCRT:send("resolution", {W, H})
@@ -668,7 +671,7 @@ function shaders.composite(time, crtIntensity, isMenu)
             love.graphics.setShader(shCRT)
         end
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(canvasFinal, 0, 0)
+        love.graphics.draw(canvasFinal, 0, 0, 0, ps, ps)
         love.graphics.setShader()
     end
 end
