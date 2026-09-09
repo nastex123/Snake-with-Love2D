@@ -359,8 +359,12 @@ end
 function shaders.load()
     shaders.releaseCanvases()
 
-    W = love.graphics.getWidth()
-    H = love.graphics.getHeight()
+    local ps = tonumber(shaders.pixelScale) or 1
+    if ps < 1 then ps = 1 end
+    local realW = love.graphics.getWidth()
+    local realH = love.graphics.getHeight()
+    W = math.max(1, math.floor(realW / ps))
+    H = math.max(1, math.floor(realH / ps))
     BW = math.max(1, math.floor(W / 2))
     BH = math.max(1, math.floor(H / 2))
     local refScale = constants.REFLECTION_SCALE or 0.5
