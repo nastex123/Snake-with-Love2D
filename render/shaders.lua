@@ -636,12 +636,14 @@ function shaders.composite(time, crtIntensity, isMenu)
     local ps = tonumber(shaders.pixelScale) or 1
     if ps < 1 then ps = 1 end
 
+    local realW, realH = love.graphics.getWidth(), love.graphics.getHeight()
+
     if applyCB then
         -- 6a. CRT sobre canvasFinal → canvasPost
         love.graphics.setCanvas(canvasPost)
         love.graphics.clear(0, 0, 0, 1)
         if shCRT then
-            shCRT:send("resolution", {W, H})
+            shCRT:send("resolution", {realW, realH})
             shCRT:send("time", time)
             shCRT:send("intensity", finalCrt)
             shCRT:send("damageFlash", fx.damage or 0)
@@ -663,7 +665,7 @@ function shaders.composite(time, crtIntensity, isMenu)
         -- 6. CRT sobre canvasFinal → backbuffer directo (escalado por pixelScale)
         love.graphics.setCanvas()
         if shCRT then
-            shCRT:send("resolution", {W, H})
+            shCRT:send("resolution", {realW, realH})
             shCRT:send("time", time)
             shCRT:send("intensity", finalCrt)
             shCRT:send("damageFlash", fx.damage or 0)
