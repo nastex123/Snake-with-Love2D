@@ -483,8 +483,17 @@ function settings.mousepressed(x, y, button)
             settingsDraw.showToast(settings, 'Sin cambios', false)
             return true
         end
+        if settings.editing and settings.editing.graphics and settings.editing.graphics.resolution then
+            local r = settings.editing.graphics.resolution
+            if type(r) == 'table' and r.width and r.height then
+                settings.editing.graphics.resolution = {width = math.floor(r.width), height = math.floor(r.height)}
+            end
+        end
         local ok, err = persistence.saveAndApplySelective(settings.lastSaved, settings.editing)
         if ok then
+            if persistence.confirmResolutionPreview then
+                persistence.confirmResolutionPreview()
+            end
             settings.lastSaved = helpers.deep_copy(settings.editing)
             settingsDraw.showToast(settings, 'Configuración guardada', false)
             settings.close()
