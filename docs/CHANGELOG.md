@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-09 (pixelScale default to 1 viewport proportionality fix)
+
+- **fix** (render - 2026-09-09 00:41): Corrección de desproporción visual en el arranque restableciendo `pixelScale = 1` por defecto (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — Escala por Defecto en Configuración**: En `systems/persistence.lua:14`, se corrigió el valor por defecto de `graphics.pixelScale` cambiándolo de `2` a `1` en `settingsDefaults`, así como los fallbacks de `previewResolution` y `revertResolutionPreview`.
+  2. **QUE — Preservación de Escala en Recreación de Canvases**: En `render/shaders.lua:recreateCanvases`, se añadió fallback a `shaders.pixelScale` para no forzar o resetear la escala arbitrariamente cuando se invoca sin argumentos en eventos de redimensionado (`love.resize`).
+  3. **POR QUE**: Cuando `pixelScale` iniciaba en 2, los lienzos internos se reducían a 400x300 pero la interfaz se dibujaba con coordenadas absolutas de 800x600 y luego se escalaba al 200%, provocando un viewport gigante, cortado y desproporcionado.
+  4. **Verificación**: Pruebas unitarias de Scope 27 ejecutadas con 100% de éxito, arranque de juego limpio sin advertencias ni errores.
+
 ## 2026-09-08 (display pipeline and settings implementation)
 
 - **fix** (display - 2026-09-08 22:25): Saneamiento integral del pipeline de pantalla, resolución, filtros y escala de píxeles (America/Bogota, rama `docs/audit-settings-display-pipeline`):

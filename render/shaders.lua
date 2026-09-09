@@ -458,10 +458,10 @@ end
 
 -- Recreate canvases (respeta filter param; evita recreate si solo cambia filter via setFilter)
 function shaders.recreateCanvases(pixelScale, filter)
-    local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
+    local f = (filter == 'nearest' or filter == 'linear') and filter or (shaders.currentFilter or 'linear')
     shaders.releaseCanvases()
 
-    local ps = tonumber(pixelScale) or 1
+    local ps = tonumber(pixelScale) or tonumber(shaders.pixelScale) or 1
     if ps < 1 then ps = 1 end
     shaders.pixelScale = ps
 

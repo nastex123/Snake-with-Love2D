@@ -11,7 +11,7 @@ end
 local settingsDefaults = {
     audio = { master = 1.0, music = true, sfx = true },
     controls = { inputType = 'autodetect', sensitivity = 1.0, controlMode = 'tactical' },
-    graphics = { pixelScale = 2, filter = 'linear', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
+    graphics = { pixelScale = 1, filter = 'linear', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
     gameplay = { difficulty = 'normal', tutorials = true, tradeKill = true, controlMode = 'tactical' },
     accessibility = { uiScale = 1.0, highContrast = false, colorblind = 'off' },
     logo = { offsetX = 0, offsetY = 0, scale = 6, spacing = 10, depth = 5 }
@@ -700,7 +700,7 @@ function persistence.previewResolution(newRes)
     if not newRes or type(newRes) ~= 'table' or not newRes.width or not newRes.height then
         return false
     end
-    local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+    local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 1, filter = 'linear'}
     local curW, curH = love.graphics.getWidth(), love.graphics.getHeight()
     if not persistence._previewPrev then
         persistence._previewPrev = {width = curW, height = curH}
@@ -750,7 +750,7 @@ function persistence.revertResolutionPreview()
     end
     if persistence._previewPrev then
         local prev = persistence._previewPrev
-        local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+        local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 1, filter = 'linear'}
         local fullscreen = g.fullscreen
         local vsync = g.vsync
         if vsync == nil then vsync = true end
