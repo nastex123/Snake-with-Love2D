@@ -128,7 +128,13 @@ function shopDraw.draw(shopData)
     currentOffsetY = offsetY
 
     -- Coordenadas de ratón en espacio virtual escalado
-    local rawMx, rawMy = love.mouse.getPosition()
+    local okInp, Input = pcall(require, "core.input")
+    local rawMx, rawMy
+    if okInp and Input and Input.getMousePosition then
+        rawMx, rawMy = Input.getMousePosition()
+    else
+        rawMx, rawMy = love.mouse.getPosition()
+    end
     local mx = (rawMx - offsetX) / scale
     local my = (rawMy - offsetY) / scale
 
