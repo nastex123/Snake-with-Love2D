@@ -8,6 +8,17 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (display pipeline and settings audit)
+
+- **docs** (audit - 2026-09-08 12:35): Auditoría técnica integral y especificación de solución para el pipeline de pantalla, resolución, filtros y pixel scale (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — `docs/AUDIT-SETTINGS-DISPLAY.md` (nuevo documento técnico)**:
+     - Diagnóstico detallado del fallo de resolución: sobrescritura en `conf.lua` (800x600 rígido) y omisión de `_applyHeavy` forzado en el arranque dentro de `main.lua` (`love.load`).
+     - Diagnóstico del fallo de filtros: falta de invocación a `love.graphics.setDefaultFilter` en tiempo de carga de assets y canvases de post-proceso fijados en `linear`.
+     - Diagnóstico de `pixelScale`: desconexión entre settings y `render/shaders.lua:recreateCanvases`, donde el parámetro es ignorado y los canvases se crean siempre al 100% de la ventana sin reducir la resolución virtual.
+     - Especificación paso a paso de tareas de corrección y diseño de la suite de pruebas automatizadas `tests/test_scope_27_display_settings.lua`.
+  2. **QUE — `docs/TODO.md`**: Actualizado el bloque de "Próxima sesión" con el plan de acción exhaustivo para resolver la persistencia de resolución, conmutación de filtros y pixel scale en la siguiente sesión de desarrollo.
+  3. **Verificación**: Documentación verificada y contrastada contra el código fuente (`main.lua`, `conf.lua`, `systems/persistence.lua`, `systems/settings.lua`, `render/shaders.lua`).
+
 ## 2026-09-08 (shop scanner title typography & anti-overlap)
 
 - **fix** (shop - 2026-09-08 11:52): Ajuste de tipografía y delimitación de cajas para evitar solapamiento entre título de ítem y precio en Retablo Sagrado (America/Bogota, rama `feature/phase8-mystery-rooms`):
