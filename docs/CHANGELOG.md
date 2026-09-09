@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-08 (display pipeline and settings implementation)
+
+- **fix** (display - 2026-09-08 22:25): Saneamiento integral del pipeline de pantalla, resolución, filtros y escala de píxeles (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — Persistencia de Resolución**: En `main.lua` (`love.load`), forzada la invocación a `persistenceMod.applySettings(..., {heavy = true})` garantizando que la ventana adopte la resolución guardada al arrancar; en `systems/persistence.lua:555` (`_applyHeavy`), validación de discrepancias entre dimensiones físicas y configuración guardada con llamada a `love.window.setMode`; en `systems/settings.lua`, confirmación y guardado explícito con el esquema `{width = W, height = H}`.
+  2. **QUE — Filtros de Textura (`nearest` vs `linear`)**: Invocación global de `love.graphics.setDefaultFilter(filter, filter)` en `persistence.applyFilter`; actualización selectiva en `render/shaders.lua:setFilter` de `canvasScene`, `canvasFinal` y `canvasPost` protegiendo los buffers de desenfoque/bloom en `linear`; propagación dinámica en `core/assets.lua` para sprites rasterizados.
+  3. **QUE — Escala Virtual de Píxeles (`pixelScale`)**: En `render/shaders.lua:recreateCanvases`, instanciación de `canvasScene` a resolución virtual reducida `(realW / pixelScale, realH / pixelScale)`; en `shaders.composite()`, proyección escalada por `pixelScale` hacia el backbuffer con resolución física real para los scanlines del CRT; en `core/input.lua`, implementación de `Input.getMousePosition()` y `Input.getVirtualDimensions()` con proyección inversa; en `systems/shop.lua` y `systems/shopDraw.lua`, sincronización de clics e interacciones de ratón.
+  4. **QUE — Pruebas Automatizadas**: Implementada la suite `tests/test_scope_27_display_settings.lua` con 5 tests unitarios integrados en `tests/main.lua`.
+  5. **Verificación**: Validado en suites de testing y comprobado árbol de trabajo limpio con `error.log` en 0 bytes.
+
 ## 2026-09-08 (display pipeline and settings audit)
 
 - **docs** (audit - 2026-09-08 12:35): Auditoría técnica integral y especificación de solución para el pipeline de pantalla, resolución, filtros y pixel scale (America/Bogota, rama `docs/audit-settings-display-pipeline`):
