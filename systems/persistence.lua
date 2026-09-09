@@ -510,6 +510,9 @@ end
 local function _applyFilter(filter)
     if not filter then return end
     pcall(function()
+        if love and love.graphics and love.graphics.setDefaultFilter then
+            love.graphics.setDefaultFilter(filter, filter)
+        end
         if shaders and shaders.setFilter then
             shaders.setFilter(filter)
         else
