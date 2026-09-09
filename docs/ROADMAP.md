@@ -86,6 +86,7 @@
 - [x] Stage Tarot System (12 fate cards comprables en tienda — `systems/tarot.lua` + `tarotArt.lua`, 12 hooks, scope_23 28 tests)
 - [x] Tienda v2 (3 puestos mixtos 60/40 + reroll escalado + tarots comprables S60/A45/B30/C20 — `systems/shop.lua` 581L, scope_15 reescrita + scope_26 8 tests)
 - [x] Special Mystery Rooms (Gambler's Den, Doppelgänger Mirror, Gold Rush, Trial of Triads — `systems/mystery.lua`, scope_25 24 tests)
+- [x] Display Pipeline & Settings Overhaul (Boot heavy resolution apply, canonical resolution schema `{w,h}`, global texture filtering via setDefaultFilter, virtual canvas downsampling with `pixelScale > 1`, backbuffer upscale in composite, physical screen resolution to CRT shader, and mouse input projection — scope_27 5 tests)
 - [ ] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis)
 - [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
 - [ ] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts)
