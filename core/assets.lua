@@ -56,15 +56,32 @@ end
 
 function Assets.getImage(path)
     if not path or type(path) ~= "string" then return nil end
-    if images[path] then return images[path] end
+    local f = "nearest"
+    local okP, persistence = pcall(require, "systems.persistence")
+    if okP and persistence and persistence.settings and persistence.settings.graphics and persistence.settings.graphics.filter then
+        f = persistence.settings.graphics.filter
+    end
+    if images[path] then
+        pcall(function() if images[path].setFilter then images[path]:setFilter(f, f) end end)
+        return images[path]
+    end
     local ok, img = pcall(love.graphics.newImage, path)
     if ok and img then
-        pcall(function() if img.setFilter then img:setFilter("nearest", "nearest") end end)
+        pcall(function() if img.setFilter then img:setFilter(f, f) end end)
         images[path] = img
         return img
     end
     if Log and Log.warn then Log.warn("Assets.getImage failed", path) end
     return nil
+end
+
+function Assets.applyFilter(filter)
+    local f = (filter == "nearest" or filter == "linear") and filter or "nearest"
+    for _, img in pairs(images) do
+        if img and img.setFilter then
+            pcall(function() img:setFilter(f, f) end)
+        end
+    end
 end
 
 function Assets.getCanvas(w, h, filter)
