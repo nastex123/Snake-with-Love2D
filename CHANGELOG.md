@@ -8,6 +8,34 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-09 (pixelScale default to 1 viewport proportionality fix)
+
+- **fix** (render - 2026-09-09 00:41): Corrección de desproporción visual en el arranque restableciendo `pixelScale = 1` por defecto (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — Escala por Defecto en Configuración**: En `systems/persistence.lua:14`, se corrigió el valor por defecto de `graphics.pixelScale` cambiándolo de `2` a `1` en `settingsDefaults`, así como los fallbacks de `previewResolution` y `revertResolutionPreview`.
+  2. **QUE — Preservación de Escala en Recreación de Canvases**: En `render/shaders.lua:recreateCanvases`, se añadió fallback a `shaders.pixelScale` para no forzar o resetear la escala arbitrariamente cuando se invoca sin argumentos en eventos de redimensionado (`love.resize`).
+  3. **POR QUE**: Cuando `pixelScale` iniciaba en 2, los lienzos internos se reducían a 400x300 pero la interfaz se dibujaba con coordenadas absolutas de 800x600 y luego se escalaba al 200%, provocando un viewport gigante, cortado y desproporcionado.
+  4. **Verificación**: Pruebas unitarias de Scope 27 ejecutadas con 100% de éxito, arranque de juego limpio sin advertencias ni errores.
+
+## 2026-09-08 (display pipeline and settings implementation)
+
+- **fix** (display - 2026-09-08 22:25): Saneamiento integral del pipeline de pantalla, resolución, filtros y escala de píxeles (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — Persistencia de Resolución**: En `main.lua` (`love.load`), forzada la invocación a `persistenceMod.applySettings(..., {heavy = true})` garantizando que la ventana adopte la resolución guardada al arrancar; en `systems/persistence.lua:555` (`_applyHeavy`), validación de discrepancias entre dimensiones físicas y configuración guardada con llamada a `love.window.setMode`; en `systems/settings.lua`, confirmación y guardado explícito con el esquema `{width = W, height = H}`.
+  2. **QUE — Filtros de Textura (`nearest` vs `linear`)**: Invocación global de `love.graphics.setDefaultFilter(filter, filter)` en `persistence.applyFilter`; actualización selectiva en `render/shaders.lua:setFilter` de `canvasScene`, `canvasFinal` y `canvasPost` protegiendo los buffers de desenfoque/bloom en `linear`; propagación dinámica en `core/assets.lua` para sprites rasterizados.
+  3. **QUE — Escala Virtual de Píxeles (`pixelScale`)**: En `render/shaders.lua:recreateCanvases`, instanciación de `canvasScene` a resolución virtual reducida `(realW / pixelScale, realH / pixelScale)`; en `shaders.composite()`, proyección escalada por `pixelScale` hacia el backbuffer con resolución física real para los scanlines del CRT; en `core/input.lua`, implementación de `Input.getMousePosition()` y `Input.getVirtualDimensions()` con proyección inversa; en `systems/shop.lua` y `systems/shopDraw.lua`, sincronización de clics e interacciones de ratón.
+  4. **QUE — Pruebas Automatizadas**: Implementada la suite `tests/test_scope_27_display_settings.lua` con 5 tests unitarios integrados en `tests/main.lua`.
+  5. **Verificación**: Validado en suites de testing y comprobado árbol de trabajo limpio con `error.log` en 0 bytes.
+
+## 2026-09-08 (display pipeline and settings audit)
+
+- **docs** (audit - 2026-09-08 12:35): Auditoría técnica integral y especificación de solución para el pipeline de pantalla, resolución, filtros y pixel scale (America/Bogota, rama `docs/audit-settings-display-pipeline`):
+  1. **QUE — `docs/AUDIT-SETTINGS-DISPLAY.md` (nuevo documento técnico)**:
+     - Diagnóstico detallado del fallo de resolución: sobrescritura en `conf.lua` (800x600 rígido) y omisión de `_applyHeavy` forzado en el arranque dentro de `main.lua` (`love.load`).
+     - Diagnóstico del fallo de filtros: falta de invocación a `love.graphics.setDefaultFilter` en tiempo de carga de assets y canvases de post-proceso fijados en `linear`.
+     - Diagnóstico de `pixelScale`: desconexión entre settings y `render/shaders.lua:recreateCanvases`, donde el parámetro es ignorado y los canvases se crean siempre al 100% de la ventana sin reducir la resolución virtual.
+     - Especificación paso a paso de tareas de corrección y diseño de la suite de pruebas automatizadas `tests/test_scope_27_display_settings.lua`.
+  2. **QUE — `docs/TODO.md`**: Actualizado el bloque de "Próxima sesión" con el plan de acción exhaustivo para resolver la persistencia de resolución, conmutación de filtros y pixel scale en la siguiente sesión de desarrollo.
+  3. **Verificación**: Documentación verificada y contrastada contra el código fuente (`main.lua`, `conf.lua`, `systems/persistence.lua`, `systems/settings.lua`, `render/shaders.lua`).
+
 ## 2026-09-08 (shop scanner title typography & anti-overlap)
 
 - **fix** (shop - 2026-09-08 11:52): Ajuste de tipografía y delimitación de cajas para evitar solapamiento entre título de ítem y precio en Retablo Sagrado (America/Bogota, rama `feature/phase8-mystery-rooms`):

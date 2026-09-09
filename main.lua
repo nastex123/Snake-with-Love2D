@@ -96,7 +96,7 @@ function love.load()
 
     -- Cargar y aplicar configuración DESPUÉS de inicializar subsistemas (sound/shaders/ui)
     persistenceMod.loadSettings()
-    persistenceMod.applySettings(persistenceMod.settings)
+    persistenceMod.applySettings(persistenceMod.settings, {heavy = true})
     recalcularGrilla()
 
     world.state.menuPS = particles.menuFondo()

@@ -61,12 +61,18 @@
 - [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
 - [x] **Código** ✅: config (`TAROT_PRICES`, `SHOP_REROLL_BASE/STEP/STALLS/TAROT_CHANCE`) + `tarot.lua` (`price`, `shopPool`, `buy` sin tope, fuera trigger draft 1/2/4) + rewrite `shop.lua` 581L (3 puestos mixtos, reroll R/botón, compra tarot con PNG, `abrir` con renew) + scope_15 reescrita + scope_26 (8 tests)
 
-## Próxima sesión (handoff 2026-09-07, rama `feature/phase8-mystery-rooms` en `434e6dd`)
-- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa)
-- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos)
-- [ ] PR de `feature/phase8-mystery-rooms` a `dev` (incluye Mystery + Tienda v2 + docs sync)
-- [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`
-- [ ] Higiene pendiente: `prueba.py` sin seguimiento, `pixi.min.js` vendored, splits fase 8 (TODO Medium), 20 fallos pre-existentes
+## Próxima sesión (handoff 2026-09-08, rama `docs/audit-settings-display-pipeline` desde `dev` PR #20 mergeado)
+- [x] **Saneamiento Pipeline Pantalla y Ajustes Gráficos (`docs/AUDIT-SETTINGS-DISPLAY.md`)**:
+  - [x] Corregir persistencia de resolución en arranque: invocar `applySettings(settings, {heavy = true})` en `love.load` y asegurar que `_applyHeavy` llame a `love.window.setMode` con la resolución guardada.
+  - [x] Sincronizar guardado de resolución en `systems/settings.lua` con esquema `{width = W, height = H}` permanente.
+  - [x] Corregir filtrado de texturas (`nearest` vs `linear`): invocar `love.graphics.setDefaultFilter` y propagar a `canvasScene` y `canvasFinal`.
+  - [x] Implementar `pixelScale` real en `render/shaders.lua`: calcular `virtualW = W / pixelScale`, renderizar en canvas reducido y proyectar a pantalla completa.
+  - [x] Ajustar coordenadas de ratón en `core/input.lua` y `systems/shop.lua` para considerar `pixelScale`.
+  - [x] Suite de pruebas unitarias automatizadas `tests/test_scope_27_display_settings.lua`.
+- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa).
+- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos).
+- [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`.
+- [ ] Higiene pendiente: splits fase 8 (TODO Medium), saneamiento de 20 fallos pre-existentes en mocks.
 
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
 - [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):

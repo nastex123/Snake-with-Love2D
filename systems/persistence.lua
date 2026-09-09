@@ -11,7 +11,7 @@ end
 local settingsDefaults = {
     audio = { master = 1.0, music = true, sfx = true },
     controls = { inputType = 'autodetect', sensitivity = 1.0, controlMode = 'tactical' },
-    graphics = { pixelScale = 2, filter = 'linear', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
+    graphics = { pixelScale = 1, filter = 'linear', fullscreen = false, vsync = true, resolution = { width = 800, height = 600 } },
     gameplay = { difficulty = 'normal', tutorials = true, tradeKill = true, controlMode = 'tactical' },
     accessibility = { uiScale = 1.0, highContrast = false, colorblind = 'off' },
     logo = { offsetX = 0, offsetY = 0, scale = 6, spacing = 10, depth = 5 }
@@ -510,6 +510,9 @@ end
 local function _applyFilter(filter)
     if not filter then return end
     pcall(function()
+        if love and love.graphics and love.graphics.setDefaultFilter then
+            love.graphics.setDefaultFilter(filter, filter)
+        end
         if shaders and shaders.setFilter then
             shaders.setFilter(filter)
         else
@@ -556,21 +559,30 @@ local function _applyHeavy(tbl, oldTbl)
     if not tbl or type(tbl.graphics) ~= 'table' then return end
     local g = tbl.graphics
     pcall(function()
-        local w, h = love.graphics.getWidth(), love.graphics.getHeight()
+        local curW, curH = love.graphics.getWidth(), love.graphics.getHeight()
+        local w, h = curW, curH
         if g.resolution and type(g.resolution.width) == 'number' and type(g.resolution.height) == 'number' then
             w, h = g.resolution.width, g.resolution.height
-        elseif g.resolution == nil then
-            w, h = love.graphics.getWidth(), love.graphics.getHeight()
         end
         local dw, dh = love.window.getDesktopDimensions(1)
         if dw and dh and (w > dw or h > dh) and not g.fullscreen then
             w, h = math.min(w, dw), math.min(h, dh)
         end
-        local ok2 = pcall(function()
-            love.window.setMode(w, h, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'})
-        end)
-        if not ok2 and dw and dh then
-            pcall(function() love.window.setMode(dw or 800, dh or 600, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'}) end)
+        local needsModeChange = (curW ~= w or curH ~= h)
+        if oldTbl and oldTbl.graphics then
+            if oldTbl.graphics.fullscreen ~= g.fullscreen or oldTbl.graphics.vsync ~= g.vsync then
+                needsModeChange = true
+            end
+        else
+            needsModeChange = true
+        end
+        if needsModeChange then
+            local ok2 = pcall(function()
+                love.window.setMode(w, h, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'})
+            end)
+            if not ok2 and dw and dh then
+                pcall(function() love.window.setMode(dw or 800, dh or 600, {fullscreen = g.fullscreen, vsync = g.vsync, fullscreentype = 'desktop'}) end)
+            end
         end
     end)
     pcall(function()
@@ -688,7 +700,7 @@ function persistence.previewResolution(newRes)
     if not newRes or type(newRes) ~= 'table' or not newRes.width or not newRes.height then
         return false
     end
-    local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+    local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 1, filter = 'linear'}
     local curW, curH = love.graphics.getWidth(), love.graphics.getHeight()
     if not persistence._previewPrev then
         persistence._previewPrev = {width = curW, height = curH}
@@ -738,7 +750,7 @@ function persistence.revertResolutionPreview()
     end
     if persistence._previewPrev then
         local prev = persistence._previewPrev
-        local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 2, filter = 'linear'}
+        local g = persistence.settings and persistence.settings.graphics or {fullscreen = false, vsync = true, pixelScale = 1, filter = 'linear'}
         local fullscreen = g.fullscreen
         local vsync = g.vsync
         if vsync == nil then vsync = true end

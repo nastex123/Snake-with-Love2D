@@ -3,9 +3,9 @@
 ## 1. Architecture Overview
 
 **Pattern**: Procedural module-based with global state management
-**Entry Point**: `main.lua` (556L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 65 juego (67 con `conf.lua`+`scratch_test_debug.lua`, 104 con 37 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→37 (scope_24/25/26)
-**Total Lines**: ~20,800 src juego (medido 2026-09-07; crecidos fase 8 sobre el límite 500L: `playing` 994L, `settingsDraw` 647L, `player` 622L, `shop` 581L, `timers` 536L, `dungeonGen` 530L, `enemiesDraw` 508L — splits futuros)
+**Entry Point**: `main.lua` (504L fixed timestep `FIXED_DT=1/60`)
+**Total Modules**: 65 juego (68 con `conf.lua`+`constants.lua`+`scratch_test_debug.lua`, 105 con 38 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→38 (scope_24/25/26/27)
+**Total Lines**: ~20,800 src juego (medido 2026-09-08; módulos grandes bajo monitoreo: `playing` 936L, `persistence` 820L, `settingsDraw` 610L, `shaders` 600L, `player` 573L, `settings` 535L, `dungeonGen` 514L)
 
 ### Folder Structure
 
@@ -112,69 +112,71 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 556 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) |
-| constants.lua | raíz | 2 | — | Shim → core/config.lua (legacy compatibility) |
-| config.lua | core/ | 377 | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) + gameplay fase 8 |
-| logger.lua | core/ | 273 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 536 | — | Timer manager único pooled (P05) |
-| events.lua | core/ | 134 | — | P06 Event Bus `on/off/emit` |
-| input.lua | core/ | 89 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad |
-| assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache |
-| world.lua | core/ | 369 | world | World.state dot-notation + SCHEMA + validate() (P04/P13) |
-| touch.lua | core/ | 268 | — | Touch input (swipes, lazy require) |
-| helpers.lua | core/ | 320 | — | Utility functions |
-| snake.lua | entities/ | 257 | snakeMod | Fachada P02 257L (delega a 4 submódulos, draw + hsv2rgb, API idéntica) |
-| snake/core.lua | entities/snake/ | 102 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
-| snake/abilities.lua | entities/snake/ | 105 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
-| snake/collisions.lua | entities/snake/ | 172 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
-| snake/movement.lua | entities/snake/ | 445 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
-| enemies.lua | entities/ | 431 | enemiesMod | Fachada P01 (delega a 3 submódulos, API idéntica) |
-| enemyAttackRegistry.lua | entities/ | 247 | — | P01+P11: pools 32/64/32 `active` sin GC |
-| enemyBossLogic.lua | entities/ | 191 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
-| enemySpawnLogic.lua | entities/ | 121 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
-| enemyMiniBoss.lua | entities/ | 406 | — | MiniBosses sala 3: MINIBOSS_DEFS 5 + spawn/hit/defeat/food + charge/breath+nova/trail/swarm+web/singu+teleport |
-| chaserAI.lua | entities/ | 389 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
-| bossAttacks.lua | entities/ | 255 | — | 5 ataques del boss (4 base + jaula láser) |
-| enemyHelpers.lua | entities/ | 89 | — | validarPos, sampleFreeTile, tiles seguros |
-| food.lua | entities/ | 484 | foodMod | Food spawning and types (NORMAL/GOLD/COIN + 9 dinámicas/combate) |
-| obstacles.lua | entities/ | 495 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
-| world.lua | world/ | 263 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
-| dungeonGen.lua | world/ | 530 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
-| populate.lua | world/ | 314 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
-| items.lua | systems/ | 208 | itemsMod | Item definitions (registry 22 + 4 categorías) |
-| shop.lua | systems/ | 581 | shopMod | Tienda v2: 3 puestos mixtos + reroll (ver §10.29) |
-| persistence.lua | systems/ | 862 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) |
-| profiles.lua | systems/ | 330 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
-| profilesDraw.lua | systems/ | 511 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
-| achievements.lua | systems/ | 276 | achievementsMod | Achievement tracking (11 logros) |
-| settings.lua | systems/ | 565 | settingsMod | Facade: audio/graphics/accessibility dat + state, delega draw a settingsDraw (split 17:08:2026) |
-| settingsDraw.lua | systems/ | 647 | — | Settings tabs/controls/toasts rendering (split 17:08:2026) |
-| player.lua | systems/ | 622 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
-| gameflow.lua | systems/ | 307 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
-| gamestates.lua | systems/ | 226 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
-| gamestates/playing.lua | systems/gamestates/ | 994 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
-| gamestates/transition.lua | systems/gamestates/ | 85 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
-| gamestates/death.lua | systems/gamestates/ | 72 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
-| tarot.lua | systems/ | 284 | — | Tarot GDD §14: TAROT_DEFS 12 + sample/open/choose/has/buy/shopPool/price + helpers hooks (draft de sala retirado en tienda v2) |
-| tarotArt.lua | systems/ | 54 | — | Loader PNG 20x20 cartas con cache + fallback (TDD §10.13) |
-| roomMutators.lua | systems/ | 264 | — | 10 mutadores GDD §19: DEFS + roll/hooks P1-P4 (TDD §10.27) |
-| mystery.lua | systems/ | 336 | — | 4 salas GDD §15: DEFS + roll/assign/hooks P1-P3 (TDD §10.28) |
-| debugTools.lua | systems/ | 244 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
-| debugLogo.lua | systems/ | 206 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) (split 23:08:2026) |
-| ui.lua | ui/ | 176 | uiMod | UI facade + estado/fuentes/accesibilidad (split 08:08:2026: sub-módulos) |
-| introUI.lua | ui/ | 285 | — | Intro Balatro + high score |
-| menuUI.lua | ui/ | 252 | — | Facade menú (panel 40% + 4 botones 260×40 gap14, delega a menuLogo/menuCard) (split 23:08:2026) |
-| menuLogo.lua | ui/ | 110 | — | Logo procedural cian 2.5D (getBounds, draw, drawGlow) (split 23:08:2026) |
-| menuCard.lua | ui/ | 202 | — | Tarjeta #11 Chunky 344×76 + moneda circular 3D + medalla (split 23:08:2026) |
-| hudUI.lua | ui/ | 368 | — | Grid/HUD/slots/combo + badges mutador/misterio |
-| toastsUI.lua | ui/ | 88 | — | Toasts |
-| popupsUI.lua | ui/ | 49 | — | Popups |
-| overlaysUI.lua | ui/ | 216 | — | Pausa/minimapa/dungeon debug |
-| shaders.lua | render/ | 652 | shadersMod | Bloom/CRT/shadow/heat + half-res reflection + Voronoi off (P15) |
-| particles.lua | render/ | 342 | particlesMod | Particle effects (textura 4x4 procedural) |
-| renderMain.lua | render/ | 470 | — | drawScene (juego, mutadores, misterio), dibujo menú/glow/shadow (split 08:08:2026) |
-| enemiesDraw.lua | render/ | 508 | — | Draw enemigos + Chaser estrella de espinas + minibosses |
-| sound.lua | audio/ | 436 | — | Audio management (1 .ogg 4 segmentos + 10 SFX) |
+| main.lua | raíz | 504 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) + boot display heavy apply |
+| constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
+| config.lua | core/ | 349 | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) + gameplay fase 8 |
+| logger.lua | core/ | 240 | Log | Logging (info/warn/error/debug) |
+| timers.lua | core/ | 467 | — | Timer manager único pooled (P05) |
+| events.lua | core/ | 118 | — | P06 Event Bus `on/off/emit` |
+| input.lua | core/ | 110 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad + `getMousePosition` con proyección virtual |
+| assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache con filtro dinámico |
+| world.lua | core/ | 339 | world | World.state dot-notation + SCHEMA + validate() (P04/P13) |
+| touch.lua | core/ | 235 | — | Touch input (swipes, lazy require) |
+| helpers.lua | core/ | 295 | — | Utility functions |
+| snake.lua | entities/ | 238 | snakeMod | Fachada P02 238L (delega a 4 submódulos, draw + hsv2rgb, API idéntica) |
+| snake/core.lua | entities/snake/ | 99 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
+| snake/abilities.lua | entities/snake/ | 94 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
+| snake/collisions.lua | entities/snake/ | 162 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
+| snake/movement.lua | entities/snake/ | 411 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
+| enemies.lua | entities/ | 391 | enemiesMod | Fachada P01 (delega a 3 submódulos, API idéntica) |
+| enemyAttackRegistry.lua | entities/ | 219 | — | P01+P11: pools 32/64/32 `active` sin GC |
+| enemyBossLogic.lua | entities/ | 176 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
+| enemySpawnLogic.lua | entities/ | 111 | — | P01: canSpawn/spawnAt/generar con pesos por etapa |
+| enemyMiniBoss.lua | entities/ | 383 | — | MiniBosses sala 3: MINIBOSS_DEFS 5 + spawn/hit/defeat/food + charge/breath+nova/trail/swarm+web/singu+teleport |
+| chaserAI.lua | entities/ | 354 | — | IA social Chaser: SOLO/DUPLA/MANADA, flancos, anillo, cierre |
+| bossAttacks.lua | entities/ | 239 | — | 5 ataques del boss (4 base + jaula láser) |
+| enemyHelpers.lua | entities/ | 84 | — | validarPos, sampleFreeTile, tiles seguros |
+| food.lua | entities/ | 447 | foodMod | Food spawning and types (NORMAL/GOLD/COIN + 9 dinámicas/combate) |
+| obstacles.lua | entities/ | 437 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
+| world.lua | world/ | 230 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
+| dungeonGen.lua | world/ | 514 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
+| populate.lua | world/ | 296 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
+| items.lua | systems/ | 197 | itemsMod | Item definitions (registry 22 + 4 categorías) |
+| shop.lua | systems/ | 340 | shopMod | Tienda v2: fachada de tienda, 3 puestos mixtos + reroll |
+| shopDraw.lua | systems/ | 326 | — | Render de la tienda, hornacinas, cálices, y coordenadas virtuales |
+| shopBioScanner.lua | systems/ | 207 | — | Submódulo bioscanner de la tienda |
+| persistence.lua | systems/ | 820 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) + canonical resolution & filter persistence |
+| profiles.lua | systems/ | 301 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
+| profilesDraw.lua | systems/ | 449 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
+| achievements.lua | systems/ | 257 | achievementsMod | Achievement tracking (11 logros) |
+| settings.lua | systems/ | 535 | settingsMod | Facade: audio/graphics/accessibility dat + state, canonical resolution schema `{w,h}`, delega draw a settingsDraw |
+| settingsDraw.lua | systems/ | 610 | — | Settings tabs/controls/toasts rendering |
+| player.lua | systems/ | 573 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
+| gameflow.lua | systems/ | 292 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
+| gamestates.lua | systems/ | 203 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
+| gamestates/playing.lua | systems/gamestates/ | 936 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
+| gamestates/transition.lua | systems/gamestates/ | 79 | — | P03: updateTransition (fade 1 → hold 2s → fade 2 → SHOP, survivalStreak) |
+| gamestates/death.lua | systems/gamestates/ | 68 | — | P03: updateDeath (despiece + SHOP/HIGH_SCORE) + updateHighScore |
+| tarot.lua | systems/ | 253 | — | Tarot GDD §14: TAROT_DEFS 12 + sample/open/choose/has/buy/shopPool/price + helpers hooks |
+| tarotArt.lua | systems/ | 48 | — | Loader PNG 20x20 cartas con cache + fallback (TDD §10.13) |
+| roomMutators.lua | systems/ | 227 | — | 10 mutadores GDD §19: DEFS + roll/hooks P1-P4 (TDD §10.27) |
+| mystery.lua | systems/ | 296 | — | 4 salas GDD §15: DEFS + roll/assign/hooks P1-P3 (TDD §10.28) |
+| debugTools.lua | systems/ | 233 | — | Menú debug Tab + modal logros (facade, delega F2 a debugLogo) |
+| debugLogo.lua | systems/ | 194 | — | Herramienta F2 logo (drag bbox, HUD 286×180, atajos, persistencia) |
+| ui.lua | ui/ | 141 | uiMod | UI facade + estado/fuentes/accesibilidad |
+| introUI.lua | ui/ | 250 | — | Intro Balatro + high score |
+| menuUI.lua | ui/ | 238 | — | Facade menú (panel 40% + 4 botones 260×40 gap14, delega a menuLogo/menuCard) |
+| menuLogo.lua | ui/ | 105 | — | Logo procedural cian 2.5D (getBounds, draw, drawGlow) |
+| menuCard.lua | ui/ | 199 | — | Tarjeta #11 Chunky 344×76 + moneda circular 3D + medalla |
+| hudUI.lua | ui/ | 326 | — | Grid/HUD/slots/combo + badges mutador/misterio |
+| toastsUI.lua | ui/ | 79 | — | Toasts |
+| popupsUI.lua | ui/ | 45 | — | Popups |
+| overlaysUI.lua | ui/ | 186 | — | Pausa/minimapa/dungeon debug |
+| shaders.lua | render/ | 600 | shadersMod | Bloom/CRT/shadow/heat + dynamic filtering + virtual pixelScale pipeline + backbuffer scaling |
+| particles.lua | render/ | 316 | particlesMod | Particle effects (textura 4x4 procedural) |
+| renderMain.lua | render/ | 423 | — | drawScene (juego, mutadores, misterio), dibujo menú/glow/shadow |
+| enemiesDraw.lua | render/ | 461 | — | Draw enemigos + Chaser estrella de espinas + minibosses |
+| sound.lua | audio/ | 379 | — | Audio management (1 .ogg 4 segmentos + 10 SFX) |
 
 ## 3. State Machine
 
@@ -896,10 +898,23 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 ### 10.29 Tienda v2 — Puestos Mixtos + Reroll ✅ Completed (2026-09-07)
 
-* **Módulo**: `systems/shop.lua` (581L rewrite; suite scope_15 reescrita + scope_26 8 tests).
+* **Módulo**: `systems/shop.lua` (split en `shop.lua`, `shopDraw.lua`, `shopBioScanner.lua`; suite scope_15 + scope_26 8 tests).
 * **Stock**: 3 puestos, 60% item / 40% tarot (`SHOP_TAROT_CHANCE`), sin duplicados ni poseídos/equipados; `abrir(monedas, renew)` conserva stock salvo visita fresca (`transitionToShop`, muerte).
 * **Reroll**: `doReroll` a `SHOP_REROLL_BASE=5 + SHOP_REROLL_STEP=2` por uso (tecla R + botón, re-anima entrada).
 * **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); draft de salas retirado de `playing`; draw usa PNG `tarotArt`.
+
+### 10.30 Display Pipeline & Settings Overhaul ✅ Completed (2026-09-08)
+
+* **Módulos**: `main.lua`, `systems/persistence.lua`, `systems/settings.lua`, `render/shaders.lua`, `core/assets.lua`, `core/input.lua`, `systems/shop.lua`, `systems/shopDraw.lua`. Suite: `tests/test_scope_27_display_settings.lua` (5 tests).
+* **Boot Heavy Resolution Apply**: En `main.lua:love.load()`, `persistence.applySettings(settings, true)` se invoca explícitamente con `forceHeavy=true` tras inicializar el display mode, garantizando que resoluciones guardadas en `settings.dat` que difieren de `conf.lua` (800x600) se apliquen de inmediato sin saltarse `setMode`.
+* **Esquema Canónico de Resolución**: `settings.lua` y `persistence.lua` normalizan el formato `{w, h}` sobre las variantes planas `{width, height}` y validan dimensiones antes de `setMode`, evitando fallos silenciosos y persistencia divergente.
+* **Filtrado Global y Dinámico de Texturas**: `persistence.applyFilter()` aplica `love.graphics.setDefaultFilter(min, mag)` en el engine global. `render/shaders.lua:shaders.setFilter()` no degrada los canvases internos (que requieren `linear` para blur/bloom/CRT) y actualiza los sprites en caché via `assets.applyFilter()`.
+* **Pipeline de Renderizado con `pixelScale` Virtual**:
+  - `render/shaders.lua:shaders.recreateCanvases()` calcula dimensiones virtuales `math.floor(ancho / pixelScale)` y `math.floor(alto / pixelScale)` cuando `pixelScale > 1`.
+  - El canvas principal `sceneCanvas` se asigna a esta resolución virtual reducida (retro downsampling nativo). Canvases de post-procesado (`glowCanvas`, `blurCanvasH`, `blurCanvasV`, `shadowCanvas`) y el canvas final de salida preservan la resolución del backbuffer para mantener la fidelidad de los shaders.
+  - `shaders.composite()` escala `canvasFinal` hacia la ventana aplicando factor `pixelScale` (`love.graphics.draw(canvasFinal, 0, 0, 0, pixelScale, pixelScale)`).
+  - El shader CRT recibe la resolución física de pantalla `love.graphics.getDimensions()` en su uniforme `resolution`, evitando artefactos de scanlines estiradas.
+* **Proyección de Coordenadas de Entrada**: `core/input.lua:Input.getMousePosition()` transforma las coordenadas físicas del ratón a coordenadas lógicas virtuales (`mx / pixelScale, my / pixelScale`), permitiendo que menús y UI interactiva (ej. `systems/shopDraw.lua`) respondan con precisión milimétrica bajo cualquier factor de escala retro.
 
 ## 11. Love2D Gotchas
 

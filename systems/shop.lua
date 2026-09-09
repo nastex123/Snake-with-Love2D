@@ -327,10 +327,20 @@ function shop.mousepressed(x, y, monedas)
     local cardRects, rerollRect, scale, offsetX, offsetY = shopDrawMod.getRects()
     scale = scale or 1.0
     offsetX = offsetX or 0
-    offsetY = offsetY or 0
+    local okInp, Input = pcall(require, "core.input")
+    local rawX, rawY = x, y
+    if okInp and Input and Input.getMousePosition then
+        -- Convert incoming x, y into virtual canvas space if pixelScale > 1
+        local okS, shaders = pcall(require, "render.shaders")
+        local ps = (okS and shaders and shaders.getPixelScale and shaders.getPixelScale()) or 1
+        if ps > 1 then
+            rawX = x / ps
+            rawY = y / ps
+        end
+    end
 
-    local mx = (x - offsetX) / scale
-    local my = (y - offsetY) / scale
+    local mx = (rawX - offsetX) / scale
+    local my = (rawY - offsetY) / scale
 
     if rerollRect and mx >= rerollRect.x and mx <= rerollRect.x + rerollRect.w
         and my >= rerollRect.y and my <= rerollRect.y + rerollRect.h then

@@ -359,8 +359,12 @@ end
 function shaders.load()
     shaders.releaseCanvases()
 
-    W = love.graphics.getWidth()
-    H = love.graphics.getHeight()
+    local ps = tonumber(shaders.pixelScale) or 1
+    if ps < 1 then ps = 1 end
+    local realW = love.graphics.getWidth()
+    local realH = love.graphics.getHeight()
+    W = math.max(1, math.floor(realW / ps))
+    H = math.max(1, math.floor(realH / ps))
     BW = math.max(1, math.floor(W / 2))
     BH = math.max(1, math.floor(H / 2))
     local refScale = constants.REFLECTION_SCALE or 0.5
@@ -408,15 +412,23 @@ function shaders.load()
     canvasReflection  = newCRef()
 end
 
+shaders.currentFilter = 'linear'
+
+function shaders.getFilter()
+    return shaders.currentFilter or 'linear'
+end
+
 function shaders.setFilter(filter)
     local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
+    shaders.currentFilter = f
     if canvasScene and canvasScene.setFilter then pcall(function() canvasScene:setFilter(f, f) end) end
     if canvasGlow and canvasGlow.setFilter then pcall(function() canvasGlow:setFilter(f, f) end) end
-    if canvasGlowLow and canvasGlowLow.setFilter then pcall(function() canvasGlowLow:setFilter(f, f) end) end
-    if canvasBlurH and canvasBlurH.setFilter then pcall(function() canvasBlurH:setFilter(f, f) end) end
-    if canvasBlurV and canvasBlurV.setFilter then pcall(function() canvasBlurV:setFilter(f, f) end) end
+    -- Bloom / blur canvases must strictly remain linear for smooth lighting diffusion
+    if canvasGlowLow and canvasGlowLow.setFilter then pcall(function() canvasGlowLow:setFilter("linear", "linear") end) end
+    if canvasBlurH and canvasBlurH.setFilter then pcall(function() canvasBlurH:setFilter("linear", "linear") end) end
+    if canvasBlurV and canvasBlurV.setFilter then pcall(function() canvasBlurV:setFilter("linear", "linear") end) end
     if canvasShadow and canvasShadow.setFilter then pcall(function() canvasShadow:setFilter(f, f) end) end
-    if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter(f, f) end) end
+    if canvasShadowBlur and canvasShadowBlur.setFilter then pcall(function() canvasShadowBlur:setFilter("linear", "linear") end) end
     if canvasFinal and canvasFinal.setFilter then pcall(function() canvasFinal:setFilter(f, f) end) end
     if canvasPost and canvasPost.setFilter then pcall(function() canvasPost:setFilter(f, f) end) end
     if canvasReflection and canvasReflection.setFilter then pcall(function() canvasReflection:setFilter("linear", "linear") end) end
@@ -438,13 +450,25 @@ function shaders.needsRecreate(oldG, newG)
     return false
 end
 
+shaders.pixelScale = 1
+
+function shaders.getPixelScale()
+    return shaders.pixelScale or 1
+end
+
 -- Recreate canvases (respeta filter param; evita recreate si solo cambia filter via setFilter)
 function shaders.recreateCanvases(pixelScale, filter)
-    local f = (filter == 'nearest' or filter == 'linear') and filter or 'linear'
+    local f = (filter == 'nearest' or filter == 'linear') and filter or (shaders.currentFilter or 'linear')
     shaders.releaseCanvases()
 
-    W = love.graphics.getWidth()
-    H = love.graphics.getHeight()
+    local ps = tonumber(pixelScale) or tonumber(shaders.pixelScale) or 1
+    if ps < 1 then ps = 1 end
+    shaders.pixelScale = ps
+
+    local realW = love.graphics.getWidth()
+    local realH = love.graphics.getHeight()
+    W = math.max(1, math.floor(realW / ps))
+    H = math.max(1, math.floor(realH / ps))
     BW = math.max(1, math.floor(W / 2))
     BH = math.max(1, math.floor(H / 2))
     local refScale = constants.REFLECTION_SCALE or 0.5
@@ -609,12 +633,17 @@ function shaders.composite(time, crtIntensity, isMenu)
     local cbMatrix = (colorblindMode and colorblindMode ~= "off") and COLORBLIND_MATRICES[colorblindMode] or nil
     local applyCB = cbMatrix and shColorblind and canvasPost
 
+    local ps = tonumber(shaders.pixelScale) or 1
+    if ps < 1 then ps = 1 end
+
+    local realW, realH = love.graphics.getWidth(), love.graphics.getHeight()
+
     if applyCB then
         -- 6a. CRT sobre canvasFinal → canvasPost
         love.graphics.setCanvas(canvasPost)
         love.graphics.clear(0, 0, 0, 1)
         if shCRT then
-            shCRT:send("resolution", {W, H})
+            shCRT:send("resolution", {realW, realH})
             shCRT:send("time", time)
             shCRT:send("intensity", finalCrt)
             shCRT:send("damageFlash", fx.damage or 0)
@@ -630,13 +659,13 @@ function shaders.composite(time, crtIntensity, isMenu)
         shColorblind:send("colorMatrix", cbMatrix)
         love.graphics.setShader(shColorblind)
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(canvasPost, 0, 0)
+        love.graphics.draw(canvasPost, 0, 0, 0, ps, ps)
         love.graphics.setShader()
     else
-        -- 6. CRT sobre canvasFinal → backbuffer directo
+        -- 6. CRT sobre canvasFinal → backbuffer directo (escalado por pixelScale)
         love.graphics.setCanvas()
         if shCRT then
-            shCRT:send("resolution", {W, H})
+            shCRT:send("resolution", {realW, realH})
             shCRT:send("time", time)
             shCRT:send("intensity", finalCrt)
             shCRT:send("damageFlash", fx.damage or 0)
@@ -644,7 +673,7 @@ function shaders.composite(time, crtIntensity, isMenu)
             love.graphics.setShader(shCRT)
         end
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.draw(canvasFinal, 0, 0)
+        love.graphics.draw(canvasFinal, 0, 0, 0, ps, ps)
         love.graphics.setShader()
     end
 end
