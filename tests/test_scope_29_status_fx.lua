@@ -229,3 +229,69 @@ harness.describe("Scope 29 - Medusa Tail (GDD 16.2)", function()
         enemiesMod.init()
     end)
 end)
+
+harness.describe("Scope 29 - Venom Spore (GDD 16.3)", function()
+    harness.it("slime step rolls spore chance", function()
+        local snakeMod = require("entities.snake")
+        local shop = require("systems.shop")
+        local realRandom = love.math.random
+        world.reset()
+        shop.reset(false)
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        world.set("controlMode", "classic")
+        love.math.random = function() return 0.01 end
+        local s = snakeMod.reset()
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s.dirX, s.dirY = 1, 0
+        s.inputQueue = {}
+        snakeMod.mover(s, {x = 20, y = 20}, 32, 18, {{x = 6, y = 5, type = "slime"}}, 0, nil)
+        harness.assert_true(statusFx.has("venom"), "espora con suerte")
+        statusFx.clearAll()
+        love.math.random = function() return 0.99 end
+        local s2 = snakeMod.reset()
+        s2.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s2.dirX, s2.dirY = 1, 0
+        s2.inputQueue = {}
+        snakeMod.mover(s2, {x = 20, y = 20}, 32, 18, {{x = 6, y = 5, type = "slime"}}, 0, nil)
+        harness.assert_false(statusFx.has("venom"), "sin suerte no hay espora")
+        love.math.random = realRandom
+        statusFx.clearAll()
+        timers.clear()
+        world.set("controlMode", "tactical")
+    end)
+
+    harness.it("controls invert while venom is active", function()
+        local snakeMod = require("entities.snake")
+        local shop = require("systems.shop")
+        local Input = require("core.input")
+        local realIsHeld = Input.isHeld
+        Input.isHeld = function(d) return d == "up" end
+        world.reset()
+        shop.reset(false)
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        world.set("controlMode", "classic")
+        local s = snakeMod.reset()
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s.dirX, s.dirY = 1, 0
+        s.lastMovedDirX, s.lastMovedDirY = 1, 0
+        s.inputQueue = {}
+        snakeMod.mover(s, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_equal(-1, s.dirY, "arriba sube sin veneno")
+        statusFx.apply("venom", 30)
+        local s2 = snakeMod.reset()
+        s2.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s2.dirX, s2.dirY = 1, 0
+        s2.lastMovedDirX, s2.lastMovedDirY = 1, 0
+        s2.inputQueue = {}
+        snakeMod.mover(s2, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_equal(1, s2.dirY, "arriba baja con veneno")
+        Input.isHeld = realIsHeld
+        statusFx.clearAll()
+        timers.clear()
+        world.set("controlMode", "tactical")
+    end)
+end)
