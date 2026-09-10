@@ -570,9 +570,30 @@ function playing.update(dt)
 
         if bossResult then
             if bossResult.hit then
-                st.bossHealthDisplay = bossResult
-                sound.play("enemyKill")
-            elseif bossResult.type == "boss" then
+                -- Cabezazo al boss (GDD §5 rework): daño por combo + rebote
+                local comboDisplay = (st.comboCount or 0) + 1
+                local dmg = combatRam.damageFor(comboDisplay)
+                combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla)
+                local head = st.player.body and st.player.body[1]
+                if dmg > 0 then
+                    sound.play("enemyKill")
+                    if head then uiMod.addPopup("-" .. dmg .. " CABEZAZO!", head.x, head.y) end
+                    local ramLoot = enemiesMod.hitBossRam(dmg)
+                    if ramLoot and ramLoot.type == "boss" then
+                        bossResult = ramLoot
+                    else
+                        st.bossHealthDisplay = bossResult
+                    end
+                else
+                    st.bossHealthDisplay = bossResult
+                    st.lastRamHint = st.lastRamHint or -10
+                    if head and (st.time or 0) - st.lastRamHint > 3 then
+                        st.lastRamHint = st.time or 0
+                        uiMod.addPopup("SUBE EL COMBO (x2+)!", head.x, head.y)
+                    end
+                end
+            end
+            if bossResult and bossResult.type == "boss" then
                 local earnedCoins = math.floor((bossResult.coins or 5) * (st.survivalStreak or 1.0))
                 st.monedas = st.monedas + earnedCoins
                 uiMod.addPopup("+" .. earnedCoins .. "$", bossResult.gx, bossResult.gy)
