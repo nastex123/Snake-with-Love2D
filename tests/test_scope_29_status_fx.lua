@@ -295,3 +295,79 @@ harness.describe("Scope 29 - Venom Spore (GDD 16.3)", function()
         world.set("controlMode", "tactical")
     end)
 end)
+
+harness.describe("Scope 29 - Cryo-Stasis (GDD 16.4)", function()
+    harness.it("ice step rolls freeze chance", function()
+        local snakeMod = require("entities.snake")
+        local shop = require("systems.shop")
+        local realRandom = love.math.random
+        world.reset()
+        shop.reset(false)
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        world.set("controlMode", "classic")
+        love.math.random = function() return 0.01 end
+        local s = snakeMod.reset()
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s.dirX, s.dirY = 1, 0
+        s.inputQueue = {}
+        snakeMod.mover(s, {x = 20, y = 20}, 32, 18, {{x = 6, y = 5, type = "ice"}}, 0, nil)
+        harness.assert_true(statusFx.has("cryo"), "hielo criogeniza con suerte")
+        love.math.random = realRandom
+        statusFx.clearAll()
+        timers.clear()
+        world.set("controlMode", "tactical")
+    end)
+
+    harness.it("golem aura applies cryo within radius only", function()
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        local head = {x = 10, y = 10}
+        harness.assert_false(statusFx.checkGolemAura(head, nil), "sin mini no aplica")
+        harness.assert_false(statusFx.checkGolemAura(head,
+            {alive = true, defId = "magma_wyrm", x = 10, y = 10}), "otra id no aplica")
+        harness.assert_false(statusFx.checkGolemAura(head,
+            {alive = false, defId = "frost_golem", x = 10, y = 10}), "muerto no aplica")
+        harness.assert_false(statusFx.checkGolemAura(head,
+            {alive = true, defId = "frost_golem", x = 0, y = 0}), "lejos no aplica")
+        harness.assert_true(statusFx.checkGolemAura(head,
+            {alive = true, defId = "frost_golem", x = 12, y = 8}), "cerca aplica")
+        harness.assert_true(statusFx.has("cryo"), "cryo activa")
+        statusFx.clearAll()
+        timers.clear()
+    end)
+
+    harness.it("frozen snake ignores ranged projectiles", function()
+        local snakeMod = require("entities.snake")
+        local enemiesMod = require("entities.enemies")
+        local registry = require("entities.enemyAttackRegistry")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        registry.clearAttackObjects()
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        world.set("controlMode", "classic")
+        local function headInto()
+            local s = snakeMod.reset()
+            s.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+            s.dirX, s.dirY = 1, 0
+            s.inputQueue = {}
+            registry.clearAttackObjects()
+            registry.addProjectile(6, 5, 0, 0, 5.0, 1)
+            return snakeMod.mover(s, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        end
+        harness.assert_false(headInto(), "proyectil mata sin cryo")
+        statusFx.apply("cryo", 30)
+        harness.assert_true(headInto(), "cryo ignora proyectil")
+        statusFx.clearAll()
+        timers.clear()
+        registry.clearAttackObjects()
+        enemiesMod.init()
+        world.set("controlMode", "tactical")
+    end)
+end)

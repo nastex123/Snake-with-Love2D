@@ -209,14 +209,7 @@ function playing.update(dt)
 
     -- Cryo (GDD §16.4): aura del Golem de Escarcha criogeniza en radio
     if enemiesMod.getMiniBoss and st.player and st.player.body and st.player.body[1] then
-        local mb = enemiesMod.getMiniBoss()
-        if mb and mb.alive and mb.defId == "frost_golem" then
-            local head = st.player.body[1]
-            local d = math.max(math.abs((mb.x or 0) - head.x), math.abs((mb.y or 0) - head.y))
-            if d <= (constants.STATUS_CRYO_GOLEM_RADIUS or 4) then
-                statusFx.apply("cryo")
-            end
-        end
+        statusFx.checkGolemAura(st.player.body[1], enemiesMod.getMiniBoss())
     end
 
     -- Reloj de Arena (GDD item 52): anillo de 120 estados (2.0s a 60Hz)

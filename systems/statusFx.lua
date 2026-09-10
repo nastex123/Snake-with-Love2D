@@ -81,6 +81,17 @@ function statusFx.checkOverdrive(comboDisplay)
     return false, false
 end
 
+-- Evalua aura del Golem de Escarcha (Chebyshev); retorna true si aplico cryo
+function statusFx.checkGolemAura(head, mb)
+    if not head or not mb or not mb.alive or mb.defId ~= "frost_golem" then return false end
+    local d = math.max(math.abs((mb.x or 0) - head.x), math.abs((mb.y or 0) - head.y))
+    if d <= (constants.STATUS_CRYO_GOLEM_RADIUS or 4) then
+        statusFx.apply("cryo")
+        return true
+    end
+    return false
+end
+
 -- Producto de multiplicadores de intervalo de paso (hook de player.calcSpeed)
 function statusFx.speedMult()
     local m = 1.0
