@@ -31,16 +31,15 @@ Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `
 `PLAYING` → `DEATH_ANIMATION` → `HIGH_SCORE`(1.3s si record) o `SHOP` → `MENU`
 Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 
-## Boss (food-based defeat)
-- Boss es `invulnerable = true` por defecto. `hitBoss()` retorna `{hit=true}` sin reducir vida.
-- Unica forma de derrotarlo: recolectar `BOSS_FOOD_TARGET` (15) comidas NO-moneda durante el encuentro.
-- `enemies.onBossDefeatedByFood()` limpia telegraphs/attackObjects/pendingRespawns y retorna resultado compatible (`{px, py, gx, gy, coins, type="boss"}`).
-- Barra de vida sobre el boss (mundo): fill suave via `_uiBarFill` → `_uiBarTarget` lerp (6.0/s).
-- `iniciarSala()` muestra popup: "Derrota al jefe recogiendo 15 comidas" si es sala boss.
+## Boss (derrota por cabezazos, rework 2026-09-10)
+- Boss con HP 12 (`BOSS_HEADBUTT_HP`), `invulnerable = false`. Daño solo por cabezazos: `display - 1` con combo x2+ (cap `HEADBUTT_MAX_DMG=5`); rebote + fantasma 0.8s.
+- `enemies.hitBossRam(dmg)` aplica daño y retorna loot `type="boss"` al morir; `hitBoss()`/`onBossDefeatedByFood()` legacy sin uso en juego.
+- Barra de vida sobre el boss (mundo): fill suave via `_uiBarFill` → `_uiBarTarget` lerp (6.0/s), fracción de HP.
+- `iniciarSala()` muestra popup: "JEFE: CABECEALO CON COMBO x2+ PARA HERIRLO" si es sala boss.
 - `world.populateRoom()` reserva las 9 celdas (centro + 8 adyacentes) en boss room para evitar comida sobre el boss.
 - Los ataques tienen `telegraphTime` antes de ejecutarse (telegraph markers visibles).
 - 5 ataques: `projectile_spread` (radial), `spawn_adds` (patrollers, respeta caps), `radial_pulse` (onda), `teleport` (pos aleatoria lejos de head), `laser_perimeter` (jaula central 4 rayos, minPhase 2).
-- Enrage a 3 comidas del objetivo: telegraphs /1.35, tempo música 1.15x, pulso carmesí + popup.
+- Enrage a HP <= 3: telegraphs /1.35, tempo música 1.15x, pulso carmesí + popup.
 - Mini-jefes sala 3 (`entities/enemyMiniBoss.lua`, 5 con telegraphs y cofre-buff dorado).
 - `canSpawn(type)` respeta `BOSS_MAX_RED=3` / `BOSS_MAX_BLUE=4` durante boss. `sampleFreeTile()` busca tile seguro >=6 de head, con attempts.
 - **Timeout**: enemigos que llevan `BOSS_ENEMY_LIFETIME=15s` vivos durante boss: chasers se encolan en `pendingRespawns` (reaparecen 5s despues), patrollers se eliminan.
@@ -50,6 +49,7 @@ Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 Retorna 6 valores: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 Con `attackHit`: proyecto true si un ataque del boss conecta (sin shield/armor/ghost).
 Orden colision: cuerpo → obstaculos → boss → proyectiles → enemigos
+- Contacto con boss = `{hit=true}` sin muerte (el daño lo resuelve el ram en playing)
 - `debugImmune` global: atraviesa todo sin morir
 - `love.mousepressed()` maneja SHOP, debug menu, settings y profiles
 

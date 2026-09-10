@@ -353,11 +353,11 @@ profile = {
 
 ## 7. Key Algorithms
 
-### Boss Food Defeat
-- Boss `invulnerable = true`
-- `hitBoss()` returns `{hit=true}` without damage
-- Collecting food increments counter
-- At `BOSS_FOOD_TARGET = 15`: `onBossDefeatedByFood()`
+### Boss Headbutt Defeat (rework 2026-09-10)
+- Boss con `hp/maxHp = 12` (`BOSS_HEADBUTT_HP`), `invulnerable = false`
+- `hitBossRam(dmg)` aplica daño; al morir retorna loot `type="boss"`
+- Cabezazo: `combatRam.damageFor(comboDisplay)` + rebote + fantasma 0.8s
+- Enrage a HP <= 3 (`BOSS_ENRAGE_THRESHOLD`); barra por fracción HP
 
 ### Boss Health Bar Lerp
 ```
@@ -448,7 +448,7 @@ The project uses `PressStart2P-Regular.ttf` loaded dynamically with `pcall` and 
   1. Si `head` es adyacente Manhattan a un segmento no-cabeza (cierre de anillo), construir polígono desde los segmentos del cuerpo.
   2. Para cada celda encerrada: **Ray Casting** (even-odd) sobre el polígono en coordenadas de grilla `(gx, gy)`.
   3. Toda celda de enemigo (chasers/patrollers/spawners) dentro del polígono → destrucción instantánea vía `enemies.killEnemy(idx)` + `particles.shockwave` + `sound.play("enemyKill")` + bonus combo.
-  4. No aplica sobre `invulnerable = true` (boss).
+  4. No aplica sobre jefes en medio de cabezazo (fantasma de rebote).
 - Config propuesto: `CONSTRICTOR_DURATION = 5.0`.
 
 ### 10.4 Special Foods (4)
@@ -556,6 +556,7 @@ miniboss = {
 ```
 * **Integración con Render**: `render/enemiesDraw.lua` incluye `drawMiniBoss(mb, dt)` con interpolación suave de posición, sombra proyectada y barra de salud superior.
 * **Implementación (2026-09-05, `feature/phase8-minibosses`)**: `entities/enemyMiniBoss.lua` (~400L, `MINIBOSS_DEFS` 5 + máquina idle/telegraph/execute/cooldown) + API en fachada `enemies` (`spawnMiniBoss/getMiniBoss/hitMiniBoss/addMiniBossFood`) + estado en `World.state.enemies.miniboss`; sala 3 marcada `isElite` en `dungeonGen.generar` y poblada en `populate` (paso 6); `playing.lua` premia (`awardMiniBoss`: monedas + streak + cofre-buff temático) y resuelve contacto 2x2, comidas, fuego, bomba y singularidad; `drawMiniBoss` 2x2 con borde dorado al telegrafiar. Desviaciones honestas: wyrm = 1 entidad hp 6 (no 6 segmentos), red = 3x3 slime, crusher/wyrm sin daño directo a serpiente, sin variante élite-chaser (la sala 3 la ocupa el mini-jefe).
+* **Rework cabezazos (2026-09-10)**: contacto mini = ram por combo (`combatRam`); comida/fuego/escudo ya no dañan; gating élite exige mini muerto; `gameflow` anuncia regla al entrar.
 
 ### 10.11 Object Pooling & Zero-GC Memory Architecture
 
