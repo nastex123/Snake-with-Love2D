@@ -207,12 +207,16 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
     if activeTimers then
         local labels = {
             ghost = "G", turbo = "T", slow = "S",
-            doubler = "D", extraCoin = "C", star = "*"
+            doubler = "D", extraCoin = "C", star = "*",
+            status_overdrive = "OV", status_medusa = "ME",
+            status_venom = "VN", status_cryo = "CR"
         }
         local colors = {
             ghost = {0.6, 0.4, 1}, turbo = {0, 1, 0.5},
             slow = {0.5, 0.5, 1}, doubler = {1, 0.84, 0},
-            extraCoin = {1, 0.84, 0}, star = {1, 0.5, 0}
+            extraCoin = {1, 0.84, 0}, star = {1, 0.5, 0},
+            status_overdrive = {1, 0.84, 0.2}, status_medusa = {0.6, 0.6, 0.65},
+            status_venom = {0.3, 1, 0.3}, status_cryo = {0.5, 0.9, 1}
         }
         for i, t in ipairs(activeTimers) do
             local label = labels[t.id]
