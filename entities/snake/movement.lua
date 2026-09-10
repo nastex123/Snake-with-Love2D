@@ -190,6 +190,13 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     table.remove(obstaclePos, oi)
                     isPassable = true
                 end
+                -- Medusa (GDD §16.2): pisar trampa petrifica 2s y absorbe el golpe
+                local isTrapHit = obs.type == "trap"
+                    or (obs.type == "pressure_spike" and obs.state == "extended")
+                if not isPassable and isTrapHit then
+                    statusFx.apply("medusa")
+                    return true, false
+                end
                 if not isPassable then
                     if immune() then
                     elseif world.get("shop.shieldActive", false) then
