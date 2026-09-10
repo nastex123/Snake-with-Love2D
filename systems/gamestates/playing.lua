@@ -256,18 +256,7 @@ function playing.update(dt)
         st.player.flashTimer = st.player.flashTimer - dt
     end
 
-    -- Rastro de fuego vs mini-jefe (GDD: vulnerable al fuego)
-    do
-        local mb = enemiesMod.getMiniBoss()
-        if mb and mb.alive and st.player.fireTrail then
-            for _, ft in ipairs(st.player.fireTrail) do
-                if ft.x >= mb.x and ft.x <= mb.x + 1 and ft.y >= mb.y and ft.y <= mb.y + 1 then
-                    damageMiniBoss(st, 1)
-                    break
-                end
-            end
-        end
-    end
+    -- Rastro de fuego vs mini-jefe: ya no daña (GDD §5 rework, solo cabezazos).
 
     if st.player.fireTrail and #st.player.fireTrail > 0 then
         local fireKills = enemiesMod.checkFireTrail(st.player.fireTrail)
