@@ -69,7 +69,7 @@
   - [x] Implementar `pixelScale` real en `render/shaders.lua`: calcular `virtualW = W / pixelScale`, renderizar en canvas reducido y proyectar a pantalla completa.
   - [x] Ajustar coordenadas de ratón en `core/input.lua` y `systems/shop.lua` para considerar `pixelScale`.
   - [x] Suite de pruebas unitarias automatizadas `tests/test_scope_27_display_settings.lua`.
-- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa).
+- [x] Playtest visita real de tienda + precios dinámicos por etapa (2026-09-10, `balance/shop-dynamic-pricing`): suite `scope_28` con modelo de ingresos (EV 1.3$/comida, killRate 0.25 calibrado por playtest: bolsillo real E1 <40$, kills < mitad, tienda = premio); implementado `SHOP_STAGE_PRICE_MULT={0.8,0.9,1.0,1.1,1.2}` vía `shop.applyStagePrice()` en puestos+reroll; canasta media cubierta por etapa (E1 40$, E5 60$).
 - [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos).
 - [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`.
 - [ ] Higiene pendiente: splits fase 8 (TODO Medium), saneamiento de 20 fallos pre-existentes en mocks.
@@ -250,4 +250,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-07 (Tienda v2 en feature/phase8-mystery-rooms - puestos mixtos + reroll + tarot comprable, scope_26 8 tests, 692 tests 672 PASS, 20 pre-existentes)*
+*Last updated: 2026-09-10 (Rama B balance/shop-dynamic-pricing - SHOP_STAGE_PRICE_MULT + scope_28, suite 704/684 PASS, 20 pre-existentes, boot headless 14/14)*

@@ -21,8 +21,14 @@ local assert_type = harness.assert_type
 local shop = require("systems.shop")
 local persistence = require("systems.persistence")
 local items = require("systems.items")
+local tarotMod = require("systems.tarot")
 local constants = require("constants")
 local world = require("core.world")
+
+local function basePrice(o)
+    if o.kind == "tarot" then return tarotMod.price(o.id) end
+    return items.getCost(o.id)
+end
 
 -- =========================================================================
 -- SUITE 1: Shop - Catalog, Items Registry & 3-Stall Mixed Stock (Tienda v2)
@@ -72,6 +78,8 @@ describe("Scope 15 - Shop Catalog & Mixed Stock", function()
     end)
 
     it("escalates reroll cost and resets it on new visit", function()
+        local worldMod = require("world.world")
+        worldMod.etapa = 3 -- mult neutro 1.0: preserva 5/7 base
         shop.reset(false)
         shop.abrir(500, true)
         assert_equal(5, shop.rerollCost(), "first reroll costs 5")
@@ -82,6 +90,28 @@ describe("Scope 15 - Shop Catalog & Mixed Stock", function()
         assert_nil(shop.doReroll(3), "reroll without funds fails")
         shop.abrir(500, true)
         assert_equal(5, shop.rerollCost(), "new visit resets reroll cost")
+        worldMod.etapa = 1
+    end)
+
+    it("scales reroll and stall prices by stage mult", function()
+        local worldMod = require("world.world")
+        shop.reset(false)
+        worldMod.etapa = 1 -- mult 0.8
+        shop.rerolls = 0
+        assert_equal(4, shop.rerollCost(), "E1 floor(5*0.8)")
+        shop.rerolls = 1
+        assert_equal(6, shop.rerollCost(), "E1 floor(7*0.8)")
+        worldMod.etapa = 5 -- mult 1.2
+        shop.rerolls = 0
+        assert_equal(6, shop.rerollCost(), "E5 floor(5*1.2)")
+        shop.abrir(500, true)
+        for _, o in ipairs(shop.getStock()) do
+            if o then
+                assert_equal(shop.applyStagePrice(basePrice(o)), o.price, "stall scaled E5")
+            end
+        end
+        worldMod.etapa = 1
+        shop.rerolls = 0
     end)
 end)
 
@@ -254,6 +284,9 @@ describe("Scope 15 - Shop Input & Draw Lifecycle", function()
     end)
 
     it("rerolls stock with the R key when funded", function()
+        local worldMod = require("world.world")
+        worldMod.etapa = 3 -- mult neutro 1.0
+        shop.reset(false)
         shop.abrir(500, true)
         local before = {}
         for i, o in ipairs(shop.getStock()) do before[i] = o and (o.kind .. ":" .. o.id) or "nil" end
@@ -261,6 +294,7 @@ describe("Scope 15 - Shop Input & Draw Lifecycle", function()
         assert_not_nil(res, "reroll with funds must succeed")
         assert_equal(5, res.costo, "first reroll costs 5")
         assert_nil(shop.keypressed("r", 3), "reroll without funds must fail")
+        worldMod.etapa = 1
     end)
 
     it("returns navigation actions on space, return, and escape keys", function()

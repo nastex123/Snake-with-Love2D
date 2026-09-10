@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-10 (shop dynamic stage pricing)
+
+- **balance** (completed - 2026-09-10 10:48): Precios dinámicos de tienda por etapa calibrados con playtest (America/Bogota, rama `balance/shop-dynamic-pricing`):
+  1. **QUE — `core/config.lua`**: nuevo `SHOP_STAGE_PRICE_MULT = {0.8, 0.9, 1.0, 1.1, 1.2}` (etapas 1–5).
+  2. **QUE — `systems/shop.lua`**: `shop.applyStagePrice()` (redondeo entero, etapa por require perezoso de `world.world` con fallback 1.0) aplicado en `rollOffer` (puestos item/tarot) y `rerollCost`; `procesarCompra` intacta (respeta precio de oferta).
+  3. **QUE — Tests**: nueva suite `tests/test_scope_28_shop_economy.lua` (7 tests: tiers, reroll, EV, crecimiento, cobertura E1, tabla mult, diagnóstico impreso); `scope_15` preserva 5/7 con etapa 3 neutra + test de escalado E1/E5.
+  4. **POR QUE**: modelo de ingresos (EV 1.3$/comida) + playtest real (bolsillo E1 <40$, kills < mitad, tienda = premio): E1 no alcanzaba la canasta media (50$); E5 sobraba (123$). El mult abarata E1–E2 y encarece E4–E5 sin tocar drops ni game feel.
+  5. **Verificación**: `love tests` consola-only `SDL_VIDEODRIVER=dummy` 704/684 PASS (20 pre-existentes, cero regresión); boot headless 14/14 PASS (compra E1/E5, stock escalado); docs (GDD §13.3, TDD tienda, TODO, ambos CHANGELOG).
+
 ## 2026-09-09 (pixelScale default to 1 viewport proportionality fix)
 
 - **fix** (render - 2026-09-09 00:41): Corrección de desproporción visual en el arranque restableciendo `pixelScale = 1` por defecto (America/Bogota, rama `docs/audit-settings-display-pipeline`):

@@ -54,6 +54,20 @@ shop.stock = nil
 shop.rerolls = 0
 shop.focusedStall = 1
 
+-- Precios dinamicos por etapa (GDD §13.3): mult de SHOP_STAGE_PRICE_MULT
+-- sobre el precio base, con redondeo entero. Require perezoso sin ciclo.
+local function stagePriceMult()
+    local ok, worldMod = pcall(require, "world.world")
+    local e = (ok and worldMod and worldMod.etapa) or 1
+    local mults = constants.SHOP_STAGE_PRICE_MULT
+    if type(mults) == "table" and type(mults[e]) == "number" then return mults[e] end
+    return 1.0
+end
+
+function shop.applyStagePrice(base)
+    return math.floor((tonumber(base) or 0) * stagePriceMult() + 0.5)
+end
+
 function shop.offerDef(offer)
     if not offer then return nil end
     if offer.kind == "tarot" then
@@ -79,7 +93,7 @@ function shop.rollOffer(usedItems, usedTarots, chance)
             if #avail > 0 then
                 local id = avail[love.math.random(#avail)]
                 usedTarots[id] = true
-                return {kind = "tarot", id = id, price = tarotMod.price(id), sold = false}
+                return {kind = "tarot", id = id, price = shop.applyStagePrice(tarotMod.price(id)), sold = false}
             end
         else
             local avail = {}
@@ -92,7 +106,7 @@ function shop.rollOffer(usedItems, usedTarots, chance)
             if #avail > 0 then
                 local def = avail[love.math.random(#avail)]
                 usedItems[def.id] = true
-                return {kind = "item", id = def.id, price = def.cost or 0, sold = false}
+                return {kind = "item", id = def.id, price = shop.applyStagePrice(def.cost or 0), sold = false}
             end
         end
     end
@@ -116,8 +130,8 @@ function shop.getStock()
 end
 
 function shop.rerollCost()
-    return (tonumber(constants.SHOP_REROLL_BASE) or 5)
-        + (shop.rerolls or 0) * (tonumber(constants.SHOP_REROLL_STEP) or 2)
+    return shop.applyStagePrice((tonumber(constants.SHOP_REROLL_BASE) or 5)
+        + (shop.rerolls or 0) * (tonumber(constants.SHOP_REROLL_STEP) or 2))
 end
 
 function shop.doReroll(monedas)
