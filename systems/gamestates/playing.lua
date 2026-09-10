@@ -835,14 +835,8 @@ function playing.update(dt)
                 end
             end
 
-            -- Mini-jefe sala 3: las comidas no-moneda también lo debilitan (GDD §5)
-            do
-                local mb = enemiesMod.getMiniBoss()
-                if mb and mb.alive and foodMod.tipo ~= constants.FOOD_COIN then
-                    local fed = enemiesMod.addMiniBossFood()
-                    if fed then awardMiniBoss(st, fed) end
-                end
-            end
+            -- Mini-jefe sala 3 (GDD §5 rework): la comida ya no lo debilita,
+            -- solo da puntos/monedas; el daño es solo por cabezazos.
 
             if tipo ~= "twin" or not foodMod.twinPos then
                 local avoid = {}
