@@ -240,3 +240,85 @@ harness.describe("MiniBoss - Elite Room 3 Integration", function()
         harness.assert_true(true, "Draw must not throw")
     end)
 end)
+
+harness.describe("MiniBoss - Headbutt Combat (GDD §5 rework)", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    local function setupPlayingWithMini(etapa, mx, my)
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local st = world.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = constants.VELOCIDAD_INICIAL
+        st.velocidadActual = constants.VELOCIDAD_INICIAL
+        st.puntuacion = 500
+        st.frutasContador = 0
+        st.monedas = 100
+        st.highScore = 500
+        st.coinBonus = 0
+        st.scoreMultiplier = 1
+        st.survivalStreak = 1.0
+        st.highestStreak = 1.0
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 0
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        st.player = snakeMod.reset()
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        enemies.boss = nil
+        worldMod.etapa = etapa or 1
+        worldMod.sala = 3
+        worldMod.objetivoSala = 100
+        world.set("controlMode", "tactical")
+        return st
+    end
+
+    harness.it("elite room does not complete with mini alive", function()
+        local states = require("systems.gamestates")
+        local st = setupPlayingWithMini(1)
+        st.player.body = {{x = 2, y = 2}, {x = 1, y = 2}, {x = 0, y = 2}}
+        st.player.dirX, st.player.dirY = 1, 0
+        st.player.inputQueue = {}
+        enemies.spawnMiniBoss(1, 20, 10)
+        states.updatePlaying(0.02)
+        harness.assert_equal(constants.GAME_STATE_PLAYING, st.gameState, "sigue en sala elite")
+        harness.assert_nil(st.transitionTarget, "sin transicion con mini vivo")
+        world.set("controlMode", "tactical")
+    end)
+
+    harness.it("headbutt with combo x6 kills crusher and loots", function()
+        local states = require("systems.gamestates")
+        local st = setupPlayingWithMini(1)
+        st.player.body = {{x = 10, y = 8}, {x = 9, y = 8}, {x = 8, y = 8}}
+        st.player.dirX, st.player.dirY = 0, 0
+        st.player.inputQueue = {}
+        st.comboCount = 5
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        local coinsBefore = st.monedas
+        states.updatePlaying(0.02)
+        harness.assert_false(mb.alive, "cabezazo x6 (5 dmg) mata crusher 3HP")
+        harness.assert_nil(enemies.getMiniBoss(), "tienda limpia al morir")
+        harness.assert_true(st.monedas > coinsBefore, "loot pagado")
+        harness.assert_false(st.deathModalOpen, "sin muerte del jugador")
+        world.set("controlMode", "tactical")
+    end)
+end)
