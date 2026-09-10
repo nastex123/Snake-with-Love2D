@@ -26,6 +26,7 @@ local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
+local statusFx = require("systems.statusFx")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -204,6 +205,11 @@ function playing.update(dt)
 
     if st.enemyFreezeTimer and st.enemyFreezeTimer > 0 then
         st.enemyFreezeTimer = math.max(0, st.enemyFreezeTimer - dt)
+    end
+
+    -- Cryo (GDD §16.4): aura del Golem de Escarcha criogeniza en radio
+    if enemiesMod.getMiniBoss and st.player and st.player.body and st.player.body[1] then
+        statusFx.checkGolemAura(st.player.body[1], enemiesMod.getMiniBoss())
     end
 
     -- Reloj de Arena (GDD item 52): anillo de 120 estados (2.0s a 60Hz)
@@ -687,6 +693,13 @@ function playing.update(dt)
                         else
                             achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
                         end
+                    end
+                    -- Overdrive (GDD §16.1): combo x6 activa frenesi; refresh silencioso
+                    local odApplied, odFresh = statusFx.checkOverdrive(st.comboCount + 1)
+                    if odApplied and odFresh then
+                        local head = st.player.body and st.player.body[1]
+                        if head then uiMod.addPopup("OVERDRIVE!", head.x, head.y) end
+                        sound.play("highScore")
                     end
                 else
                     st.comboCount = 0

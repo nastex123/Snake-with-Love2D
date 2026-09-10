@@ -14,6 +14,8 @@ local core = require("entities.snake.core")
 local abilities = require("entities.snake.abilities")
 local collisions = require("entities.snake.collisions")
 local movement = require("entities.snake.movement")
+local hasStatus, statusFx = pcall(require, "systems.statusFx")
+if not hasStatus or type(statusFx) ~= "table" then statusFx = nil end
 
 -- ---------------------------------------------------------------------------
 -- Helpers de render (solo usado en draw)
@@ -111,6 +113,14 @@ function snake.draw(s, alpha)
         local r, g, b = hsv2rgb(hue, sat, val)
         if s.firePepperTimer and s.firePepperTimer > 0 then
             r, g, b = 1.0, 0.3 + t * 0.4, 0.1
+        elseif statusFx and statusFx.has("overdrive") then
+            r, g, b = 1.0, 0.84, 0.2
+        elseif statusFx and statusFx.has("medusa") then
+            r, g, b = 0.6, 0.6, 0.65
+        elseif statusFx and statusFx.has("cryo") then
+            r, g, b = 0.5, 0.9, 1.0
+        elseif statusFx and statusFx.has("venom") then
+            r, g, b = 0.3, 1.0, 0.3
         elseif s.constrictorBuffTimer and s.constrictorBuffTimer > 0 then
             r, g, b = 0.6 + t * 0.3, 0.1, 0.9
         elseif s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then

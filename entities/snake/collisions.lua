@@ -10,6 +10,7 @@ local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
 local tarotMod = require("systems.tarot")
+local statusFx = require("systems.statusFx")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -44,6 +45,16 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                     local res = enemies.killEnemy(idx)
                     return {type = "frozen_shatter", result = res}
                 end
+                -- Overdrive (GDD §16.1): la cabeza aplasta Chasers sin daño
+                if e.type == "chaser" and statusFx.has("overdrive") then
+                    local res = enemies.killEnemy(idx)
+                    return {type = "overdrive_smash", result = res}
+                end
+                -- Medusa (GDD §16.2): granito invulnerable aplasta al contacto
+                if statusFx.has("medusa") then
+                    local res = enemies.killEnemy(idx)
+                    return {type = "medusa_shatter", result = res}
+                end
                 if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     local res = enemies.killEnemy(idx)
@@ -64,6 +75,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                     if e.type == "chaser" and tarotMod.ironSpineProtects(segIdx, #s.body) then
                         local res = enemies.killEnemy(idx)
                         return {type = "iron_spine_block", result = res}
+                    end
+                    -- Medusa (GDD §16.2): el cuerpo de granito aplasta al contacto
+                    if statusFx.has("medusa") then
+                        local res = enemies.killEnemy(idx)
+                        return {type = "medusa_shatter", result = res}
                     end
                     local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
                     if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then

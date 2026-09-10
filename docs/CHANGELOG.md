@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-10 (status effects engine)
+
+- **feature** (completed - 2026-09-10 11:29): Status Effects Engine (GDD §16) (America/Bogota, rama `feature/phase8-status-fx`):
+  1. **QUE — `systems/statusFx.lua` (nuevo, 103L)**: `STATUS_DEFS` 4 efectos + `getActive/has/apply/clear/clearAll/durationFor/checkOverdrive/checkGolemAura/speedMult`; estado `World.state.statusFx`; timers pooled con entrada HUD `status_<id>` vía `player.addOrRefreshTimer` (exportado); 10 keys `STATUS_*` en `core/config.lua`.
+  2. **QUE — 4 efectos**: Overdrive (combo x6, 4s, ×0.8 velocidad, smash chasers, demuele muros, glow dorado); Medusa (trampa→2s, bloqueo giro, shatter, ignora proyectiles, granito); Venom (slime 30%→1.8s, controles invertidos, viñeta verde); Cryo (hielo 15% + aura golem ≤4→2.5s, ×1.43, inmune proyectiles, tinte hielo).
+  3. **QUE — Tests**: `tests/test_scope_29_status_fx.lua` (18 tests: núcleo, overdrive, medusa, venom, cryo); `scope_15` intacto.
+  4. **POR QUE**: siguiente bloque de contenido Phase 8 (TODO). Decisiones: reutilizar tiles (cero entidades), sin shaders nuevos, proyectiles no se destruyen (pools).
+  5. **Verificación**: `love tests` consola-only `SDL_VIDEODRIVER=dummy` 715/695 PASS (20 pre-existentes, cero regresión); boot headless 14/14 PASS con estados activos; docs (TDD §10.31, TODO, ambos CHANGELOG).
+
 ## 2026-09-10 (shop dynamic stage pricing)
 
 - **balance** (completed - 2026-09-10 10:48): Precios dinámicos de tienda por etapa calibrados con playtest (America/Bogota, rama `balance/shop-dynamic-pricing`):

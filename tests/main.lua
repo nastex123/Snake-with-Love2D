@@ -40,6 +40,7 @@ if pcall(require, "tests.test_scope_25_mystery") then end
 if pcall(require, "tests.test_scope_26_shopv2") then end
 if pcall(require, "tests.test_scope_27_display_settings") then end
 if pcall(require, "tests.test_scope_28_shop_economy") then end
+if pcall(require, "tests.test_scope_29_status_fx") then end
 
 -- Source files for full coverage reporting
 local source_files = {

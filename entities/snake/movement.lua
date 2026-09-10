@@ -13,6 +13,7 @@ local world = require("core.world")
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
+local statusFx = require("systems.statusFx")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -46,6 +47,8 @@ end
 function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange, twinPos)
     if not s or not s.body or #s.body == 0 then return false, false end
     s.inputQueue = s.inputQueue or {}
+    -- Medusa (GDD §16.2): direccion bloqueada, la serpiente sigue recto
+    if statusFx.has("medusa") then s.inputQueue = {} end
 
     local controlMode = world.get("controlMode") or "tactical"
     if controlMode == "tactical" then
@@ -68,13 +71,19 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     if #s.inputQueue == 0 and (Input.isHeld("up") or Input.isHeld("down") or Input.isHeld("left") or Input.isHeld("right")) then
         local refY = s.lastMovedDirY or s.dirY
         local refX = s.lastMovedDirX or s.dirX
-        if Input.isHeld("up") and refY == 0 then
+        -- Venom (GDD §16.3): controles invertidos arriba<->abajo, izq<->der
+        local heldUp, heldDown = Input.isHeld("up"), Input.isHeld("down")
+        local heldLeft, heldRight = Input.isHeld("left"), Input.isHeld("right")
+        if statusFx.has("venom") then
+            heldUp, heldDown, heldLeft, heldRight = heldDown, heldUp, heldRight, heldLeft
+        end
+        if heldUp and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = -1})
-        elseif Input.isHeld("down") and refY == 0 then
+        elseif heldDown and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = 1})
-        elseif Input.isHeld("left") and refX == 0 then
+        elseif heldLeft and refX == 0 then
             table.insert(s.inputQueue, {x = -1, y = 0})
-        elseif Input.isHeld("right") and refX == 0 then
+        elseif heldRight and refX == 0 then
             table.insert(s.inputQueue, {x = 1, y = 0})
         end
     end
@@ -180,9 +189,34 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     end
 
     if obstaclePos then
-        for _, obs in ipairs(obstaclePos) do
+        for oi = #obstaclePos, 1, -1 do
+            local obs = obstaclePos[oi]
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
                 local isPassable = (obs.type == "ice" or obs.type == "slime" or (obs.type == "lava" and obs.state ~= "active") or (obs.type == "pressure_spike" and obs.state ~= "extended"))
+                -- Overdrive (GDD §16.1): la cabeza demuele muros de piedra
+                if not isPassable and obs.type == "wall" and statusFx.has("overdrive") then
+                    table.remove(obstaclePos, oi)
+                    isPassable = true
+                end
+                -- Medusa (GDD §16.2): pisar trampa petrifica 2s y absorbe el golpe
+                local isTrapHit = obs.type == "trap"
+                    or (obs.type == "pressure_spike" and obs.state == "extended")
+                if not isPassable and isTrapHit then
+                    statusFx.apply("medusa")
+                    return true, false
+                end
+                -- Venom (GDD §16.3): la baba puede esporular al pisarla
+                if isPassable and obs.type == "slime" then
+                    local ch = constants.STATUS_VENOM_SPORE_CHANCE
+                    if type(ch) ~= "number" then ch = 0.30 end
+                    if love.math.random() < ch then statusFx.apply("venom") end
+                end
+                -- Cryo (GDD §16.4): el hielo puro puede criogenizar al pisarlo
+                if isPassable and obs.type == "ice" then
+                    local ch = constants.STATUS_CRYO_ICE_CHANCE
+                    if type(ch) ~= "number" then ch = 0.15 end
+                    if love.math.random() < ch then statusFx.apply("cryo") end
+                end
                 if not isPassable then
                     if immune() then
                     elseif world.get("shop.shieldActive", false) then
@@ -240,7 +274,8 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 end
             end
             if hit then
-                if s.ghost or immune() then
+                -- Medusa (GDD §16.2) / Cryo (GDD §16.4): inmunes a proyectiles
+                if s.ghost or immune() or statusFx.has("medusa") or statusFx.has("cryo") then
                 elseif world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     -- Prisma Refractor (GDD item 60): el proyectil se vuelve 3 monedas
@@ -359,6 +394,7 @@ end
 
 function movement.encolarDireccion(s, tx, ty)
     if not s or not tx or not ty then return end
+    if statusFx.has("medusa") then return end
     s.inputQueue = s.inputQueue or {}
 
     local curX = s.lastMovedDirX or s.dirX

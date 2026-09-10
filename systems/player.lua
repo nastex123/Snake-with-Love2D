@@ -58,6 +58,12 @@ function player.calcSpeed(base, fruits, opts)
         current = current * tarotMod.speedFactor()
     end
 
+    -- Status Effects (GDD §16): overdrive acelera, cryo ralentiza
+    local okStatus, statusFx = pcall(require, "systems.statusFx")
+    if okStatus and statusFx and statusFx.speedMult then
+        current = current * statusFx.speedMult()
+    end
+
     -- Evaluar ralentizaciones de terreno o debuffs (e.g. Baba Slime 1.25x)
     if opts.isSlime or opts.slowdown then
         local factor = type(opts.slowdown) == "number" and opts.slowdown or 1.25
@@ -151,6 +157,9 @@ local function addOrRefreshTimer(st, timerId, duration, onEndFn)
     table.insert(st.activeTimers, entry)
     return entry
 end
+
+-- Export publico para sistemas/statusFx.lua (mismo patron pooled + HUD)
+player.addOrRefreshTimer = addOrRefreshTimer
 
 --- Busca un temporizador activo por ID (usa handle pooled si existe)
 function player.getActiveTimer(timerId)

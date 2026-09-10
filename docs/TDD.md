@@ -917,6 +917,15 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
   - El shader CRT recibe la resolución física de pantalla `love.graphics.getDimensions()` en su uniforme `resolution`, evitando artefactos de scanlines estiradas.
 * **Proyección de Coordenadas de Entrada**: `core/input.lua:Input.getMousePosition()` transforma las coordenadas físicas del ratón a coordenadas lógicas virtuales (`mx / pixelScale, my / pixelScale`), permitiendo que menús y UI interactiva (ej. `systems/shopDraw.lua`) respondan con precisión milimétrica bajo cualquier factor de escala retro.
 
+### 10.31 Status Effects Engine ✅ Completed (2026-09-10 `feature/phase8-status-fx`)
+
+* **Módulo**: `systems/statusFx.lua` 139L (`STATUS_DEFS` 4 efectos + `getActive/has/apply/clear/clearAll/durationFor/checkOverdrive/checkGolemAura/speedMult`); estado en `World.state.statusFx`; timers pooled con entrada HUD `status_<id>` vía `player.addOrRefreshTimer` (exportado); badges OV/ME/VN/CR en `ui/hudUI.lua`. Suite: `tests/test_scope_29_status_fx.lua` (18 tests).
+* **Overdrive (GDD §16.1)**: trigger `checkOverdrive(comboDisplay)` en `playing` eat a x6 (`STATUS_OVERDRIVE_COMBO`, 4.0s, fanfarria solo en activación fresca); ×0.8 intervalo en `player.calcSpeed`; cabeza aplasta chasers (`overdrive_smash`) y demuele `wall` en `movement/collisions`; cuerpo dorado en `snake.draw`.
+* **Medusa (GDD §16.2)**: trigger al pisar `trap`/`pressure_spike` extendido (absorbe el golpe, 2.0s); `movement` vacía `inputQueue` + `encolarDireccion` ignora giros; contacto destruye cualquier enemigo (`medusa_shatter`); proyectiles la atraviesan sin daño (pools intactos); tinte granito.
+* **Venom (GDD §16.3)**: trigger al pisar `slime` (`VENOM_SPORE_CHANCE=0.30`, 1.8s); `movement` invierte mapeo held (up<->down, left<->right) antes del filtro anti-180°; viñeta verde pulsante en `renderMain` (primitivas, sin shader nuevo); tinte verde.
+* **Cryo (GDD §16.4)**: trigger al pisar `ice` (`CRYO_ICE_CHANCE=0.15`) + aura `checkGolemAura` (Chebyshev ≤4 del Golem de Escarcha vivo) en tick `playing`; ×1.43 intervalo; inmune a proyectiles; tinte hielo.
+* **Notas de implementación**: loseta rúnica≈`trap`, esporas≈`slime`, esquirlas≈`ice`+golem (decisión 2026-09-10: reutilizar tiles, cero entidades nuevas); Medusa conserva velocidad (solo bloqueo); proyectiles no se destruyen (seguridad de pools).
+
 ## 11. Love2D Gotchas
 
 | Wrong | Correct |
