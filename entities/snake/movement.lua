@@ -256,7 +256,8 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 end
             end
             if hit then
-                if s.ghost or immune() then
+                -- Medusa (GDD §16.2): invulnerable a proyectiles (pasa sin daño)
+                if s.ghost or immune() or statusFx.has("medusa") then
                 elseif world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     -- Prisma Refractor (GDD item 60): el proyectil se vuelve 3 monedas
@@ -375,6 +376,7 @@ end
 
 function movement.encolarDireccion(s, tx, ty)
     if not s or not tx or not ty then return end
+    if statusFx.has("medusa") then return end
     s.inputQueue = s.inputQueue or {}
 
     local curX = s.lastMovedDirX or s.dirX

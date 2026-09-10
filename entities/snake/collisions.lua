@@ -50,6 +50,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                     local res = enemies.killEnemy(idx)
                     return {type = "overdrive_smash", result = res}
                 end
+                -- Medusa (GDD §16.2): granito invulnerable aplasta al contacto
+                if statusFx.has("medusa") then
+                    local res = enemies.killEnemy(idx)
+                    return {type = "medusa_shatter", result = res}
+                end
                 if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     local res = enemies.killEnemy(idx)
