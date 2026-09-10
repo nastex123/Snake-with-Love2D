@@ -77,6 +77,7 @@ function bossLogic.hitRam(enemiesMod, dmg, attackRegistry)
     boss.hp = (boss.hp or boss.maxHp or 12) - (dmg or 1)
     boss.maxHp = boss.maxHp or (boss.hp + (dmg or 1))
     boss.flash = 0.3
+    boss._uiBarTarget = math.max(0, boss.hp / (boss.maxHp or 1))
     if boss.hp <= 0 then
         boss.alive = false
         if attackRegistry then attackRegistry.clearAll() end
@@ -114,13 +115,8 @@ end
 function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
     if not boss or not boss.alive then return end
 
-    -- Actualiza fase por vida / food progress
-    local vidaFrac
-    if boss.foodTarget and boss.foodTarget > 0 then
-        vidaFrac = math.max(0, 1 - (boss.foodCollected or 0) / boss.foodTarget)
-    else
-        vidaFrac = (boss.vidaMax and boss.vidaMax > 0) and (boss.vida / boss.vidaMax) or 1.0
-    end
+    -- Actualiza fase por HP (GDD §5 rework: sin food-counter)
+    local vidaFrac = (boss.maxHp and boss.maxHp > 0) and (boss.hp / boss.maxHp) or 1.0
 
     if vidaFrac <= 0.30 then
         boss.phase = 3
@@ -130,9 +126,8 @@ function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
         boss.phase = 1
     end
 
-    local enrageAt = (boss.foodTarget or constants.BOSS_FOOD_TARGET) - (constants.BOSS_ENRAGE_THRESHOLD or 3)
-    local wasEnraged = boss.enraged
-    if boss.foodTarget and (boss.foodCollected or 0) >= enrageAt then
+    -- Enrage por HP bajo (GDD §5 rework); playing muestra popup/flash al entrar
+    if (boss.hp or 99) <= (constants.BOSS_ENRAGE_THRESHOLD or 3) then
         boss.enraged = true
     else
         boss.enraged = false

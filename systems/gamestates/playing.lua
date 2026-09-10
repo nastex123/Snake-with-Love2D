@@ -583,6 +583,17 @@ function playing.update(dt)
                         bossResult = ramLoot
                     else
                         st.bossHealthDisplay = bossResult
+                        -- Enrage al cruzar el umbral de HP (GDD §5 rework)
+                        local boss = enemiesMod.boss
+                        if boss and boss.alive and not boss.enraged
+                            and (boss.hp or 99) <= (constants.BOSS_ENRAGE_THRESHOLD or 3) then
+                            boss.enraged = true
+                            boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
+                            uiMod.addPopup("FURIA DEL JEFE!", boss.x, boss.y)
+                            sound.play("enemyKill")
+                            st.shakeTimer = 0.3
+                            shadersMod.triggerDamage(0.8, 0.6)
+                        end
                     end
                 else
                     st.bossHealthDisplay = bossResult
@@ -792,57 +803,11 @@ function playing.update(dt)
                 end
             end
 
-            if enemiesMod.boss and enemiesMod.boss.alive and foodMod.tipo ~= constants.FOOD_COIN then
-                local wasEnraged = enemiesMod.boss.enraged
-                enemiesMod.boss.foodCollected = enemiesMod.boss.foodCollected + 1
-                local ratio = enemiesMod.boss.foodCollected / enemiesMod.boss.foodTarget
-                enemiesMod.boss._uiBarTarget = math.max(0, 1 - ratio)
-                sound.play("boss_food_tick")
-                -- Fase de Furia (GDD): al quedar BOSS_ENRAGE_THRESHOLD comidas, pulso carmesi + aviso
-                local enrageAt = enemiesMod.boss.foodTarget - (constants.BOSS_ENRAGE_THRESHOLD or 3)
-                if not wasEnraged and enemiesMod.boss.foodCollected >= enrageAt then
-                    enemiesMod.boss.enraged = true
-                    enemiesMod.boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
-                    uiMod.addPopup("FURIA DEL JEFE!", enemiesMod.boss.x, enemiesMod.boss.y)
-                    sound.play("enemyKill")
-                    st.shakeTimer = 0.3
-                    shadersMod.triggerDamage(0.8, 0.6)
-                    local tamE = constants.TAMANIO_BLOQUE
-                    table.insert(st.activePS, {
-                        ps = particles.bossFoodTick(enemiesMod.boss.x * tamE + tamE / 2, enemiesMod.boss.y * tamE + tamE / 2)
-                    })
-                end
+            if enemiesMod.boss and enemiesMod.boss.alive then
                 local tam2 = constants.TAMANIO_BLOQUE
                 table.insert(st.activePS, {
                     ps = particles.bossFoodTick(foodMod.pos.x * tam2 + tam2 / 2, foodMod.pos.y * tam2 + tam2 / 2)
                 })
-                if enemiesMod.boss.foodCollected >= enemiesMod.boss.foodTarget then
-                    local bossResult2 = enemiesMod.onBossDefeatedByFood()
-                    if bossResult2 then
-                        st.monedas = st.monedas + math.floor(bossResult2.coins * (st.survivalStreak or 1.0))
-                        uiMod.addPopup("+" .. bossResult2.coins .. "$", bossResult2.gx, bossResult2.gy)
-                        table.insert(st.activePS, {
-                            ps = particles.bossDeath(bossResult2.px, bossResult2.py)
-                        })
-                        sound.play("boss_defeated")
-                        sound.play("enemyKill")
-                        if Events then
-                            Events.emit("bossDefeated")
-                            Events.emit("coinsChanged", {totalCoins = st.monedas})
-                        else
-                            achievementsMod.check("bossDefeated")
-                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
-                        end
-                        if worldMod.isLastRoom() then
-                            st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
-                            st.transitionPhase = 1
-                            st.fadeDir = 1
-                            st.gameState = constants.GAME_STATE_TRANSITION
-                            sound:playSegment("intro")
-                            return true
-                        end
-                    end
-                end
             end
 
             -- Mini-jefe sala 3 (GDD §5 rework): la comida ya no lo debilita,
