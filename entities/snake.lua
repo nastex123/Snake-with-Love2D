@@ -115,6 +115,12 @@ function snake.draw(s, alpha)
             r, g, b = 1.0, 0.3 + t * 0.4, 0.1
         elseif statusFx and statusFx.has("overdrive") then
             r, g, b = 1.0, 0.84, 0.2
+        elseif statusFx and statusFx.has("medusa") then
+            r, g, b = 0.6, 0.6, 0.65
+        elseif statusFx and statusFx.has("cryo") then
+            r, g, b = 0.5, 0.9, 1.0
+        elseif statusFx and statusFx.has("venom") then
+            r, g, b = 0.3, 1.0, 0.3
         elseif s.constrictorBuffTimer and s.constrictorBuffTimer > 0 then
             r, g, b = 0.6 + t * 0.3, 0.1, 0.9
         elseif s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
