@@ -227,6 +227,11 @@ config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para c
 config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
+-- Combate por cabezazos (GDD §5 rework): daño = comboDisplay - 1 si >= minimo
+config.HEADBUTT_MIN_COMBO = 2
+config.HEADBUTT_GHOST_TIME = 0.8
+config.HEADBUTT_MAX_DMG = 4
+config.BOSS_HEADBUTT_HP = 12
 config.BOSS_ENRAGE_THRESHOLD = 3      -- Comidas restantes para activar la furia (12/15)
 config.BOSS_ENRAGE_MULT = 1.35        -- Acelerador de telegrafiados y ataques en furia (-35% tiempos)
 config.BOSS_ENRAGE_PITCH = 1.15       -- Tempo musical en furia (pitch del segmento boss)
