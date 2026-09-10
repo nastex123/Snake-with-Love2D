@@ -366,11 +366,21 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 | **Altar del Vacío** | Perder **3 segundos de tiempo de sala / Racha a x1.0** | Entrega un ítem activo legendario aleatorio de la tienda sin costo. |
 | **Altar de la Calma** | Sacrificar **20 monedas** | Reduce la velocidad base del juego (`baseSpeed += 0.03`) permanentemente en la run. |
 
-## 5. Boss & Mini-Boss Mechanics
+## 5. Boss & Mini-Boss Mechanics (rework cabezazos 2026-09-10)
 
 ### Core Concept
-- Boss is **invulnerable** to direct attacks
-- Only defeated by collecting **15 non-coin foods** during encounter
+- Mini-jefes y Boss se derrotan **a cabezazos**: solo la cabeza hiere al chocar.
+- Daño por cabezazo = `comboDisplay - 1` (cap `HEADBUTT_MAX_DMG=5`), mínimo combo **x2**; bajo el mínimo hay rebote sin daño.
+- Cada cabezazo rebota 1 celda + fantasma 0.8s (`HEADBUTT_GHOST_TIME`); el contacto de cuerpo sigue letal.
+- Comer es libre (puntos/monedas) pero **no daña jefes**; la Bomba conserva 2 de daño a minis.
+- Sala élite: sin mini muerto no hay salida por puntos; sala boss: sin boss muerto no hay avance.
+
+### Boss
+- **HP 12** (`BOSS_HEADBUTT_HP`); vulnerable siempre (`invulnerable=false`).
+- Barra de vida = fracción de HP; fases por HP (≤60% fase 2, ≤30% fase 3).
+
+### Mini-Jefes (HP 3/4/6/5/6 por etapa)
+- Mismo cabezazo; la Bomba pega 2 como válvula táctica.
 
 ### Attacks
 Los 5 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers visibles antes de ejecutarse):
@@ -384,54 +394,53 @@ Los 5 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers v
 | Jaula Láser (`laser_perimeter`) | 1.0s | 4 rayos continuos que encierran el centro de la sala durante 4s |
 
 ### Fase de Furia del Boss (Enrage Phase)
-- Se activa automáticamente al restar **3 comidas** para la victoria (a las 12/15 comidas).
+- Se activa automáticamente al bajar a **HP ≤ 3** (`BOSS_ENRAGE_THRESHOLD`).
 - El Boss emite un pulso carmesí, la música acelera su tempo y el intervalo de telegrafiado y ataque se reduce un **35%**.
 
 ### Boss Health Bar
 - World-space display sobre el boss
 - Smooth fill via lerp: `_uiBarFill = lerp(_uiBarTarget, _uiBarFill, 6.0 * dt)` (`BOSS_HEALTH_BAR.lerpSpeed`)
-- Depletes as food is collected (`foodCollected / foodTarget`, quita a COIN)
+- Depletes as HP drops (`hp / maxHp`)
 - Metadatos: `BOSS_HEALTH_BAR` en `core/config.lua` (width 96, height 8, yOffset -24)
 
 ### Fase 8: Boss & el survival streak
 - El multiplicador `survivalStreak` aplica al drop final del boss (`bossResult.coins`).
-- Las 4 comidas especiales cuentan para el food-target (todas no-moneda), coherente con la regla vigente.
 
 ---
 
 ### Mini-Bosses por Etapa (Encuentros Élite en Sala 3)
 
-En la Sala 3 de cada etapa, el encuentro es custodiado por un **Mini-Jefe Temático** con barra de vida propia, tamaño aumentado (2x2 casillas en grid) y ataques únicos. A diferencia del Boss final, los Mini-Jefes son **vulnerables al daño directo** (mueren por ítems como Bomba, colisiones con Escudo/Armadura, rastro de fuego de Guindilla, o al cumplir el objetivo de puntos de la sala recolectando comida que los debilita).
+En la Sala 3 de cada etapa, el encuentro es custodiado por un **Mini-Jefe Temático** con barra de vida propia, tamaño aumentado (2x2 casillas en grid) y ataques únicos. Se lo derrota **a cabezazos con combo x2+** (daño = combo − 1); la Bomba pega 2 como válvula táctica. Sin mini muerto no hay salida de la sala.
 
 #### 1. Mini-Jefe Etapa 1: El Triturador de Muros (Wall-Crusher)
 * **Apariencia**: Un enorme bloque de piedra acorazado con púas de hierro (`COLOR = {0.6, 0.6, 0.7}`).
-* **Vida / Resistencia**: 3 golpes de impacto / 6 comidas en la sala.
+* **Vida / Resistencia**: 3 HP a cabezazos (x2→1, x3→2) o 2 bombas.
 * **Ataque Principal — *Embestida Sísmica***: Telegrafía una línea roja en cruz de 1 casilla de ancho durante 1.2s y embiste a toda velocidad hasta el borde de la sala, destruyendo cualquier obstáculo en su camino y aturdiendo a la serpiente si está cerca.
 * **Recompensa al morir**: 15 monedas + cofre dorado con ítem activo garantizado + `survivalStreak +0.2`.
 
 #### 2. Mini-Jefe Etapa 2: El Gólem de Escarcha (Frost Golem)
 * **Apariencia**: Gólem de cristal azul cian brillante con halo de escarcha (`COLOR = {0.2, 0.8, 1.0}`).
-* **Vida / Resistencia**: 4 golpes de impacto / 7 comidas en la sala.
+* **Vida / Resistencia**: 4 HP a cabezazos o 2 bombas.
 * **Ataque Principal — *Aliento Gélido***: Dispara un cono de 3 proyectiles de hielo que congelan las baldosas impactadas durante 5 segundos, convirtiéndolas en suelo ultra-resbaladizo.
 * **Ataque Secundario — *Nova de Hielo***: Al recibir daño, expulsa esquirlas en 4 direcciones diagonales.
 * **Recompensa al morir**: 20 monedas + Baya Helada garantizada + cofre de ítems.
 
 #### 3. Mini-Jefe Etapa 3: La Sierpe de Magma (Magma Wyrm)
 * **Apariencia**: Una serpiente enemiga independiente de 6 segmentos incandescentes (`COLOR = {1.0, 0.3, 0.0}`).
-* **Vida / Resistencia**: Cada segmento se destruye individualmente al pasar sobre él con escudo o fuego (6 HP total) / 8 comidas.
+* **Vida / Resistencia**: 6 HP a cabezazos o 3 bombas (1 entidad, sin segmentos).
 * **Ataque Principal — *Rastro de Ceniza***: Se mueve en bucle por el perímetro de la sala dejando una estela de lava ardiente que dura 4 segundos.
 * **Recompensa al morir**: 25 monedas + Guindilla Picante garantizada + cofre dorado.
 
 #### 4. Mini-Jefe Etapa 4: La Reina Larva (Brood Queen)
 * **Apariencia**: Nido arácnido gigante púrpura y verde que pulsa rítmicamente (`COLOR = {0.7, 0.1, 0.8}`).
-* **Vida / Resistencia**: 5 golpes de impacto / 9 comidas en la sala.
+* **Vida / Resistencia**: 5 HP a cabezazos o 3 bombas (2+1).
 * **Ataque Principal — *Enjambre Efervescente***: Invoca 3 larvas suicidas que corren hacia la serpiente y explotan en una nube de baba ralentizante tras 2 segundos.
 * **Ataque Secundario — *Red Pegajosa***: Dispara una telaraña que cubre un área de 3x3 celdas, bloqueando los giros rápidos.
 * **Recompensa al morir**: 30 monedas + Baya Constrictora garantizada + cofre dorado.
 
 #### 5. Mini-Jefe Etapa 5: El Espectro del Vacío (Void Phantom)
 * **Apariencia**: Figura estelar con halo de distorsión gravitatoria y ojos dorados (`COLOR = {0.1, 0.0, 0.3}`).
-* **Vida / Resistencia**: 6 golpes de impacto / 10 comidas en la sala.
+* **Vida / Resistencia**: 6 HP a cabezazos o 3 bombas.
 * **Ataque Principal — *Colapso Dimensional***: Abre una singularidad en el centro de la sala que atrae gravitatoriamente a la serpiente y los enemigos hacia el centro durante 3 segundos.
 * **Ataque Secundario — *Desfase Cuántico***: Se teletransporta instantáneamente detrás de la cola de la serpiente, obligando a reaccionar con giros rápidos.
 * **Recompensa al morir**: 40 monedas + cofre legendario + `survivalStreak +0.3`.
