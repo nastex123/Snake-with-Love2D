@@ -60,7 +60,7 @@ Snake-with-Love2D/
 │   │   ├── playing.lua         ← updatePlaying 999L (P03 + fase 8: economía, boss, mutadores, misterio)
 │   │   ├── transition.lua      ← updateTransition 85L (fade 1 → hold 2s → fade 2 → SHOP)
 │   │   └── death.lua           ← updateDeath + updateHighScore 72L (despiece + SHOP)
-│   ├── tarot.lua               ← draft 12 cartas + 12 hooks (GDD §14, TDD §10.13)
+│   ├── tarot.lua               ← 12 cartas comprables + 12 hooks, sin draft (GDD §14, TDD §10.13)
 │   ├── tarotArt.lua            ← loader PNG 20x20 cartas (TDD §10.13)
 │   ├── roomMutators.lua        ← 10 mutadores (GDD §19, TDD §10.27)
 │   ├── mystery.lua             ← 4 salas especiales (GDD §15, TDD §10.28)
@@ -205,7 +205,6 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | SHOP | 4 | Item shop |
 | PAUSED | 5 | Game paused |
 | TRANSITION | 6 | Room transition |
-| TAROT | 7 | Reservado (draft de sala retirado en tienda v2; draw/modal conservados) |
 
 ## 4. Data Flow
 
@@ -582,11 +581,11 @@ El pipeline de shaders en `render/shaders.lua` se amplía con 3 nuevos efectos a
 ### 10.13 Tarot Draft Engine & Stage Card Architecture
 
 * **Módulo**: `systems/tarot.lua` (284L, data-driven; implementado 2026-09-06 `feature/phase8-tarot`, suite scope_23 28 tests) + `systems/tarotArt.lua` (~70L loader) + 12 PNG 20x20 en `assets/tarot/` (variantes elegidas del prototipo, `nearest`, lazy-load cacheado vía `core/assets.lua` con fallback al rectángulo legacy si falta el asset).
-* **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con hasta 3 IDs), `world.state.tarotDraft` (opciones abiertas), `world.state.astralWrapUsed` (flag por sala).
+* **Almacenamiento de Estado**: `world.state.stageCards` (array de strings con IDs equipados, sin tope: manda el stock), `world.state.astralWrapUsed` (flag por sala).
 * **Ciclo de Vida (tienda v2)**:
   - `worldMod.avanzarEtapa()` y `worldMod.init()`: `tarot.reset()`.
   - Compra en tienda: `shop.rollStock` ofrece tarots de `shopPool()` (no equipadas) → `buy(id)` aplica sin tope (manda el stock); precios `TAROT_PRICES` S60/A45/B30/C20.
-  - Motor de draft (`sample/open/choose`, `GAME_STATE_TAROT=7`) conservado y testeado pero sin trigger en `playing`.
+  - Motor de draft eliminado por completo (2026-09-10, `chore/tarot-full-removal`): sin `GAME_STATE_TAROT`, sin modal `open/choose/draw`, sin ramas en dispatcher/render/input; solo compra en tienda.
 * **Hooks de Ejecución** (helpers puros en `tarot.*`):
   - `player.calcSpeed()` × `speedFactor()` (mercury 0.85); `playing` eat: `comboWindow()` (eagle_eye 12.0) + `comboMult()` (mercury ×2).
   - `collisions.checkEnemyCollisions()`: `ironSpineProtects()` mata chasers en últimos 3 (`iron_spine_block`); `isShatterFrozen()` quiebra congelados (`frozen_shatter`); ambos con recompensa en `playing`.
@@ -903,6 +902,7 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Reroll**: `doReroll` a `SHOP_REROLL_BASE=5 + SHOP_REROLL_STEP=2` por uso (tecla R + botón, re-anima entrada).
 * **Precios dinámicos por etapa (2026-09-10)**: `SHOP_STAGE_PRICE_MULT={0.8,0.9,1.0,1.1,1.2}` aplicado vía `shop.applyStagePrice()` (redondeo entero) en `rollOffer` (puestos) y `rerollCost`; etapa leída de `world.world.etapa` con require perezoso. Suite `tests/test_scope_28_shop_economy.lua` (modelo de ingresos + tabla de diagnóstico).
 * **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); draft de salas retirado de `playing`; draw usa PNG `tarotArt`.
+* **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); PNG `tarotArt` solo en tienda (scope_23 21 tests).
 
 ### 10.30 Display Pipeline & Settings Overhaul ✅ Completed (2026-09-08)
 

@@ -19,7 +19,7 @@ local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
 local function isGameState(g)
-    return g == constants.GAME_STATE_PLAYING or g == constants.GAME_STATE_PAUSED or g == constants.GAME_STATE_DEATH_ANIMATION or g == constants.GAME_STATE_HIGH_SCORE or g == constants.GAME_STATE_SHOP or g == constants.GAME_STATE_TRANSITION or g == constants.GAME_STATE_TAROT
+    return g == constants.GAME_STATE_PLAYING or g == constants.GAME_STATE_PAUSED or g == constants.GAME_STATE_DEATH_ANIMATION or g == constants.GAME_STATE_HIGH_SCORE or g == constants.GAME_STATE_SHOP or g == constants.GAME_STATE_TRANSITION
 end
 
 -- Dibuja el mundo (menú o juego) al canvas principal y aplica post-proceso.
@@ -336,8 +336,6 @@ function renderMain.drawGame(dt)
         uiMod.drawHighScoreCelebration(st.puntuacion, st.highScore)
     elseif st.gameState == constants.GAME_STATE_SHOP then
         shop.draw(st.monedas, st.velocidadActual)
-    elseif st.gameState == constants.GAME_STATE_TAROT then
-        require("systems.tarot").draw()
     elseif st.gameState == constants.GAME_STATE_PAUSED then
         uiMod.drawPauseOverlay()
     end

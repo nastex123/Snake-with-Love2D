@@ -24,7 +24,6 @@ config.GAME_STATE_HIGH_SCORE = 3
 config.GAME_STATE_SHOP = 4
 config.GAME_STATE_PAUSED = 5
 config.GAME_STATE_TRANSITION = 6
-config.GAME_STATE_TAROT = 7
 
 -- Room Mutators (GDD §19): probabilidad de mutador por sala (boss/elite excluidos)
 config.ROOM_MUTATOR_CHANCE = 0.35

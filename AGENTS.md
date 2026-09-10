@@ -11,11 +11,11 @@
 
 ## Arquitectura (65 módulos juego + helpers, 105 con 38 tests)
 Estructura de carpetas por sistema:
-- `main.lua` (504L loop fixed timestep `FIXED_DT=1/60`, 8 estados), `constants.lua` — raíz (shim de `core/config.lua`)
+- `main.lua` (504L loop fixed timestep `FIXED_DT=1/60`, 7 estados), `constants.lua` — raíz (shim de `core/config.lua`)
 - `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (339L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 118L bus P06, `input.lua` 110L centralizado P07 + `getMousePosition`, `assets.lua` 144L cache P08 (filtro configurable), `touch.lua` (lazy), `helpers.lua`
 - `entities/` → `snake.lua` 238L fachada + `snake/` 4, `enemies.lua` 391L fachada + `enemyAttackRegistry.lua` 219L pools + `enemyBossLogic.lua` + `enemySpawnLogic.lua` + `bossAttacks.lua` 239L (5 ataques) + `enemyHelpers.lua` + `chaserAI.lua` 354L + `patrollerAI.lua` + `enemyMiniBoss.lua` 383L (5 mini-jefes sala 3), `food.lua` 447L, `obstacles.lua` 437L fachada (delega a `world/biomeHazards.lua`)
 - `world/` → `world.lua` 230L (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` 514L (BSP, templates, stage modifiers) + `populate.lua` 296L (población de sala)
-- `systems/` → `items.lua` (22 items, slots 1-3), `shop.lua` 340L (fachada tienda) + `shopDraw.lua` 326L + `shopBioScanner.lua` 207L, `persistence.lua` 820L, `settings.lua` 535L (facade panel ajustes) + `settingsDraw.lua` 610L (render pestañas/controles), `profiles.lua` 301L (facade gestor max 3) + `profilesDraw.lua` 449L (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` 573L (calc speed/items), `gameflow.lua` 292L (runs/rooms), `gamestates.lua` 203L (update por estado), `debugTools.lua` 233L (menu debug Tab) + `debugLogo.lua` 194L (calibrador logo F2), `tarot.lua` 253L (draft 12 cartas) + `tarotArt.lua` (loader PNG), `roomMutators.lua` 227L (10 mutadores) + `mystery.lua` 296L (4 salas)
+- `systems/` → `items.lua` (22 items, slots 1-3), `shop.lua` 340L (fachada tienda) + `shopDraw.lua` 326L + `shopBioScanner.lua` 207L, `persistence.lua` 820L, `settings.lua` 535L (facade panel ajustes) + `settingsDraw.lua` 610L (render pestañas/controles), `profiles.lua` 301L (facade gestor max 3) + `profilesDraw.lua` 449L (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` 573L (calc speed/items), `gameflow.lua` 292L (runs/rooms), `gamestates.lua` 203L (update por estado), `debugTools.lua` 233L (menu debug Tab) + `debugLogo.lua` 194L (calibrador logo F2), `tarot.lua` 139L (12 cartas comprables + 12 hooks, sin draft) + `tarotArt.lua` (loader PNG), `roomMutators.lua` 227L (10 mutadores) + `mystery.lua` 296L (4 salas)
 - `ui/` → `ui.lua` 141L (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` 250L (intro Balatro + diamante), `menuUI.lua` 238L (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` 105L (render 2.5D cian isométrico), `menuCard.lua` 199L (tarjeta Chunky perfil #11), `hudUI.lua` 326L (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` 186L (pausa/minimapa/dungeon debug).
 - `render/` → `shaders.lua` 600L (bloom+CRT+sombra+heat + pixelScale virtual canvas + dynamic filter), `particles.lua` 316L (textura 4x4 procedural) + `renderMain.lua` 423L (drawScene) + `enemiesDraw.lua` 461L
 - `audio/` → `sound.lua` 379L (SFX procedural + single .ogg)
@@ -23,7 +23,7 @@ Estructura de carpetas por sistema:
 Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `obstaclesMod`, `particlesMod`, `persistenceMod`, `shopMod`, `settingsMod`, `profilesMod`, `playerMod`, `achievementsMod`.
 
 ## Estados (`constants.lua`)
-`MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`, `TAROT=7`
+`MENU=0`, `PLAYING=1`, `DEATH_ANIMATION=2`, `HIGH_SCORE=3`, `SHOP=4`, `PAUSED=5`, `TRANSITION=6`
 
 ## Flujo
 `MENU`(4.5s intro) → `PLAYING` → `TRANSITION`(fade-out→hold2s→fade-in) → `SHOP` → `PLAYING`

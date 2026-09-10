@@ -1,5 +1,5 @@
--- tests/test_scope_23_tarot.lua — Stage Tarot Draft System (GDD §14, TDD §10.13)
--- Suite consola-only: motor de draft, ciclo de vida y cableado de estado. Sin love.graphics.
+-- tests/test_scope_23_tarot.lua — Cartas del Destino comprables en tienda (GDD §14, TDD §10.13)
+-- Suite consola-only: catalogo, compra, ciclo de vida por etapa y hooks de gameplay. Sin love.graphics.
 local harness = require("tests.test_harness")
 local constants = require("constants")
 local world = require("core.world")
@@ -29,92 +29,12 @@ harness.describe("Scope 23 - Tarot catalog (12 defs)", function()
         end
     end)
 
-    harness.it("exposes GAME_STATE_TAROT = 7 without shifting states 0-6", function()
-        harness.assert_equal(7, constants.GAME_STATE_TAROT, "TAROT must be 7")
-        harness.assert_equal(6, constants.GAME_STATE_TRANSITION, "TRANSITION stays 6")
-    end)
-end)
-
-harness.describe("Scope 23 - Tarot draft lifecycle", function()
-    harness.it("reset clears stageCards and draft", function()
+    harness.it("reset clears stageCards", function()
         tarot.reset()
         harness.assert_equal(0, tarot.count(), "empty after reset")
-        harness.assert_false(tarot.isOpen(), "no draft open after reset")
-    end)
-
-    harness.it("sampleOptions returns 3 distinct unequipped ids", function()
+        world.state.stageCards = {"mercury"}
         tarot.reset()
-        local opts = tarot.sampleOptions()
-        harness.assert_equal(3, #opts, "3 options")
-        harness.assert_true(opts[1] ~= opts[2] and opts[1] ~= opts[3] and opts[2] ~= opts[3], "distinct")
-    end)
-
-    harness.it("sampleOptions excludes already equipped cards", function()
-        tarot.reset()
-        world.state.stageCards = {"mercury", "reaper"}
-        for _ = 1, 10 do
-            local opts = tarot.sampleOptions()
-            for _, id in ipairs(opts) do
-                harness.assert_true(id ~= "mercury" and id ~= "reaper", "equipped excluded: " .. tostring(id))
-            end
-        end
-        tarot.reset()
-    end)
-
-    harness.it("shouldOffer only on rooms 1/2/4 with < 3 active", function()
-        tarot.reset()
-        harness.assert_true(tarot.shouldOffer(1), "room 1 offers")
-        harness.assert_true(tarot.shouldOffer(2), "room 2 offers")
-        harness.assert_false(tarot.shouldOffer(3), "room 3 (elite) skips")
-        harness.assert_true(tarot.shouldOffer(4), "room 4 offers")
-        harness.assert_false(tarot.shouldOffer(5), "room 5 (boss) skips")
-        world.state.stageCards = {"mercury", "reaper", "midas_pouch"}
-        harness.assert_false(tarot.shouldOffer(1), "full deck skips")
-        tarot.reset()
-    end)
-
-    harness.it("open sets TAROT state; choose applies card and routes to TRANSITION", function()
-        tarot.reset()
-        tarot.open(2)
-        harness.assert_true(tarot.isOpen(), "draft open")
-        harness.assert_equal(constants.GAME_STATE_TAROT, world.state.gameState, "TAROT state")
-        local id = tarot.choose(1)
-        harness.assert_not_nil(id, "choose returns id")
-        harness.assert_true(tarot.has(id), "card equipped: " .. tostring(id))
-        harness.assert_equal(1, tarot.count(), "one active")
-        harness.assert_false(tarot.isOpen(), "draft closed")
-        harness.assert_equal(constants.GAME_STATE_TRANSITION, world.state.gameState, "routes to TRANSITION")
-        harness.assert_equal("siguienteSala", world.state.transitionTarget, "next room target")
-        harness.assert_equal(1, world.state.transitionPhase, "fade-out phase")
-        tarot.reset()
-    end)
-
-    harness.it("choose caps at MAX_STAGE_CARDS and ignores bad index", function()
-        tarot.reset()
-        world.state.stageCards = {"mercury", "reaper", "midas_pouch"}
-        tarot.open(1)
-        local before = tarot.count()
-        tarot.choose(1)
-        harness.assert_equal(before, tarot.count(), "cap respected")
-        tarot.reset()
-        tarot.open(1)
-        harness.assert_nil(tarot.choose(9), "bad index returns nil")
-        harness.assert_true(tarot.isOpen(), "draft stays open on bad index")
-        tarot.reset()
-    end)
-
-    harness.it("keypressed maps 1/2/3 and mousepressed misses safely headless", function()
-        tarot.reset()
-        tarot.open(4)
-        local id = tarot.keypressed("2")
-        harness.assert_not_nil(id, "key 2 chooses")
-        harness.assert_equal(1, tarot.count(), "equipped via key")
-        tarot.reset()
-        tarot.open(1)
-        harness.assert_nil(tarot.mousepressed(-9999, -9999), "off-card click misses")
-        harness.assert_nil(tarot.keypressed("x"), "other keys ignored")
-        harness.assert_true(tarot.isOpen(), "draft still open")
-        tarot.reset()
+        harness.assert_equal(0, tarot.count(), "clears equipped")
     end)
 end)
 
