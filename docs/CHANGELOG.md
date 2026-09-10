@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-10 (boss headbutt combat rework)
+
+- **feature** (completed - 2026-09-10 12:41): Combate por cabezazos contra mini-jefes y boss (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE — `systems/combatRam.lua` (nuevo)**: `damageFor` (display−1, min x2, cap 5), `ram` (rebote + fantasma 0.8s), `hasGhost`; keys `HEADBUTT_*` + `BOSS_HEADBUTT_HP=12`.
+  2. **QUE — Minis**: contacto = cabezazo (sin muerte ni consumo); gating élite exige mini muerto; fuera comida/fuego/escudo-daño; hint de entrada; bomba conserva 2.
+  3. **QUE — Boss**: HP 12 + `hitRam`, contacto marca hit sin matar, barra y enrage por HP, fuera food-counter e invulnerabilidad; hint de entrada.
+  4. **QUE — Tests**: `scope_30` (6) + `scope_22` (2 integración) + `scope_11` (2 integración + migración 06/09/11 al modelo HP).
+  5. **POR QUE**: el único daño viable era el contacto directo, que mataba (playtest). Pedido: derrotar a punta de cabezazos con combo.
+  6. **Verificación**: `love tests` consola-only `SDL_VIDEODRIVER=dummy` 725/705 PASS (20 pre-existentes, cero regresión); boot headless PASS; docs (GDD §5, TDD, AGENTS, TODO, ambos CHANGELOG).
+
 ## 2026-09-10 (status effects engine)
 
 - **feature** (completed - 2026-09-10 11:29): Status Effects Engine (GDD §16) (America/Bogota, rama `feature/phase8-status-fx`):
