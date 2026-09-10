@@ -73,7 +73,7 @@
 - [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos).
 - [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa).
 - [x] Destino de `GAME_STATE_TAROT` decidido y ejecutado (2026-09-10, `chore/tarot-full-removal`): eliminación total — enum fuera de `core/config.lua`, draft (`open/choose/sampleOptions/shouldOffer/draw/modal`) fuera de `tarot.lua` (284→139L), ramas fuera de dispatcher/render/input, `scope_23` reescrita (21 tests compra/hooks). Sistema vivo = compra en tienda + 12 hooks.
-- [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`.
+- [x] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx` (2026-09-10 ✅: overdrive/medusa/venom/cryo + scope_29 18 tests).
 - [ ] Higiene pendiente: splits fase 8 (TODO Medium), saneamiento de 20 fallos pre-existentes en mocks.
 
 ## In Progress (Phase 8: Gameplay & Combat Evolution)
@@ -118,8 +118,8 @@
   - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
   - [x] **P2 Apuesta+Oro** ✅: Apostador ruleta central apuesta 10$ + 3 doradas secuenciales en 15s (premio 40$ + item + racha, derrota 2 chasers) + Fiebre 20 monedas rebotando 12s con puerta al expirar (`mystery`+`playing`+`gameflow`+`renderMain`)
   - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
-- [ ] **Status Effects Engine**:
-  - [ ] Overdrive on combo x6, Medusa Tail petrification, Venom Spore confusion, Cryo-Stasis
+- [x] **Status Effects Engine** (2026-09-10 ✅ `feature/phase8-status-fx`):
+  - [x] Overdrive on combo x6 (frenesí 4s, smash chasers, demuele muros, glow dorado), Medusa Tail (trampa→petrifica 2s, bloqueo giro, shatter), Venom Spore (slime→controles invertidos 1.8s, viñeta verde), Cryo-Stasis (hielo+golem→lento 2.5s, inmune proyectiles) — `systems/statusFx.lua` + scope_29 18 tests
 - [ ] **Meta-Progression Shrine**:
   - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
 - [ ] **Daily Challenges, Lore Codex & Bounties**:
