@@ -211,6 +211,12 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     if type(ch) ~= "number" then ch = 0.30 end
                     if love.math.random() < ch then statusFx.apply("venom") end
                 end
+                -- Cryo (GDD §16.4): el hielo puro puede criogenizar al pisarlo
+                if isPassable and obs.type == "ice" then
+                    local ch = constants.STATUS_CRYO_ICE_CHANCE
+                    if type(ch) ~= "number" then ch = 0.15 end
+                    if love.math.random() < ch then statusFx.apply("cryo") end
+                end
                 if not isPassable then
                     if immune() then
                     elseif world.get("shop.shieldActive", false) then
