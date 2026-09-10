@@ -27,6 +27,7 @@ if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local statusFx = require("systems.statusFx")
+local combatRam = require("systems.combatRam")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -424,25 +425,24 @@ function playing.update(dt)
         end
     end
 
-    -- Contacto con mini-jefe sala 3: letal salvo escudo/armadura (que lo dañan, GDD §5)
+    -- Cabezazo al mini-jefe sala 3 (GDD §5 rework): daño por combo + rebote
     do
         local mb = enemiesMod.getMiniBoss()
         if mb and mb.alive and headOnMiniBoss(st, mb) then
-            if world.get("shop.shieldActive", false) then
-                shop.shieldActive = false
-                sound.play("shieldBreak")
-                shadersMod.triggerDamage(0.5, 0.5)
-                damageMiniBoss(st, 1)
-            elseif st.player.armor and st.player.armor > 0 then
-                st.player.armor = st.player.armor - 1
-                sound.play("shieldBreak")
-                shadersMod.triggerDamage(0.4, 0.4)
-                damageMiniBoss(st, 1)
+            local comboDisplay = (st.comboCount or 0) + 1
+            local dmg = combatRam.damageFor(comboDisplay)
+            combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla)
+            local head = st.player.body and st.player.body[1]
+            if dmg > 0 then
+                sound.play("enemyKill")
+                if head then uiMod.addPopup("-" .. dmg .. " CABEZAZO!", head.x, head.y) end
+                damageMiniBoss(st, dmg)
             else
-                if triggerBattery(st) then return end
-                st.roomDamaged = true
-                st.deathModalOpen = true
-                return true
+                st.lastRamHint = st.lastRamHint or -10
+                if head and (st.time or 0) - st.lastRamHint > 3 then
+                    st.lastRamHint = st.time or 0
+                    uiMod.addPopup("SUBE EL COMBO (x2+)!", head.x, head.y)
+                end
             end
         end
         -- Detonación de singularidad del Espectro: golpe letal telegrafiado
