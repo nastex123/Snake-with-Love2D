@@ -146,6 +146,7 @@ function gameflow.iniciarSala(keepInventory)
     local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     if mb and mb.alive then
         uiMod.addPopup("MINI-JEFE: " .. (mb.name or "ELITE"), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
+        uiMod.addPopup("CABECEALO CON COMBO x2+ PARA HERIRLO", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 1)
     end
     -- Room Mutators (GDD §19): banner del mutador activo de la sala
     local mutDef = mutatorsMod.getDef()
