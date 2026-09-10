@@ -47,6 +47,8 @@ end
 function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnetRange, twinPos)
     if not s or not s.body or #s.body == 0 then return false, false end
     s.inputQueue = s.inputQueue or {}
+    -- Medusa (GDD §16.2): direccion bloqueada, la serpiente sigue recto
+    if statusFx.has("medusa") then s.inputQueue = {} end
 
     local controlMode = world.get("controlMode") or "tactical"
     if controlMode == "tactical" then
