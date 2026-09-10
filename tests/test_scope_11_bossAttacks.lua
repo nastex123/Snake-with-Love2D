@@ -636,3 +636,95 @@ describe("Scope 11 - Laser Perimeter Attack", function()
         assert_false(shop.shieldActive, "Shield is consumed")
     end)
 end)
+
+describe("Scope 11 - Boss Headbutt Combat (GDD §5 rework)", function()
+    it("hitRam deals combo damage and loots on death", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
+        harness.assert_equal(12, boss.hp, "spawns with 12 HP")
+        local r1 = enemies.hitBossRam(5)
+        harness.assert_not_nil(r1.hit, "hit feedback")
+        harness.assert_equal(7, boss.hp, "12-5=7")
+        harness.assert_true(boss.alive, "survives")
+        local r2 = enemies.hitBossRam(5)
+        harness.assert_not_nil(r2.hit, "second hit")
+        harness.assert_equal(2, boss.hp, "7-5=2")
+        local loot = enemies.hitBossRam(5)
+        harness.assert_equal("boss", loot.type, "dies on third ram")
+        harness.assert_equal(8, loot.coins, "pays dropCoins")
+        harness.assert_false(boss.alive, "boss dead")
+    end)
+
+    it("headbutt in updatePlaying damages boss without killing player", function()
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local states = require("systems.gamestates")
+        local st = coreWorld.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = constants.VELOCIDAD_INICIAL
+        st.velocidadActual = constants.VELOCIDAD_INICIAL
+        st.puntuacion = 0
+        st.frutasContador = 0
+        st.monedas = 100
+        st.highScore = 500
+        st.coinBonus = 0
+        st.scoreMultiplier = 1
+        st.survivalStreak = 1.0
+        st.highestStreak = 1.0
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 5
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        coreWorld.set("controlMode", "classic")
+        local boss = enemies.spawnBoss(1, 32, 18, 10, 8)
+        boss.attackCooldown = 999
+        boss.spawnTimer = 999
+        boss.state = "cooldown"
+        boss.stateTimer = 999
+        local bx, by = boss.x, boss.y
+        st.player = snakeMod.reset()
+        st.player.body = {{x = bx - 1, y = by}, {x = bx - 2, y = by}, {x = bx - 3, y = by}}
+        st.player.dirX, st.player.dirY = 1, 0
+        st.player.lastMovedDirX, st.player.lastMovedDirY = 1, 0
+        st.player.inputQueue = {}
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        worldMod.etapa = 1
+        worldMod.sala = 5
+        worldMod.objetivoSala = 100
+        local coinsBefore = st.monedas
+        st.cronometro = st.velocidadActual
+        states.updatePlaying(0.02)
+        harness.assert_equal(7, boss.hp, "ram x6 deals 5 (12-5)")
+        harness.assert_true(boss.alive, "boss survives first ram")
+        harness.assert_false(st.deathModalOpen, "player survives ramming")
+        harness.assert_not_nil(st.player.bumpGhostTimer, "bounce ghost granted")
+        st.comboCount = 9
+        for _ = 1, 4 do
+            st.player.bumpGhostTimer = 0
+            st.cronometro = st.velocidadActual
+            states.updatePlaying(0.02)
+        end
+        harness.assert_false(boss.alive, "rams kill the boss")
+        harness.assert_false(boss.alive, "rams kill the boss")
+        harness.assert_true(st.monedas > coinsBefore, "boss loot paid")
+        harness.assert_equal("siguienteEtapa", st.transitionTarget, "advances on boss death")
+        coreWorld.set("controlMode", "tactical")
+    end)
+end)
