@@ -690,15 +690,11 @@ function playing.update(dt)
                         end
                     end
                     -- Overdrive (GDD §16.1): combo x6 activa frenesi; refresh silencioso
-                    if st.comboCount + 1 >= (constants.STATUS_OVERDRIVE_COMBO or 6) then
-                        if not statusFx.has("overdrive") then
-                            statusFx.apply("overdrive")
-                            local head = st.player.body and st.player.body[1]
-                            if head then uiMod.addPopup("OVERDRIVE!", head.x, head.y) end
-                            sound.play("highScore")
-                        else
-                            statusFx.apply("overdrive")
-                        end
+                    local odApplied, odFresh = statusFx.checkOverdrive(st.comboCount + 1)
+                    if odApplied and odFresh then
+                        local head = st.player.body and st.player.body[1]
+                        if head then uiMod.addPopup("OVERDRIVE!", head.x, head.y) end
+                        sound.play("highScore")
                     end
                 else
                     st.comboCount = 0

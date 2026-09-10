@@ -71,6 +71,16 @@ function statusFx.clearAll()
     world.state.statusFx = {}
 end
 
+-- Decide y aplica overdrive segun combo display; retorna applied, fresh
+function statusFx.checkOverdrive(comboDisplay)
+    if (comboDisplay or 0) >= (constants.STATUS_OVERDRIVE_COMBO or 6) then
+        local fresh = not statusFx.has("overdrive")
+        statusFx.apply("overdrive")
+        return true, fresh
+    end
+    return false, false
+end
+
 -- Producto de multiplicadores de intervalo de paso (hook de player.calcSpeed)
 function statusFx.speedMult()
     local m = 1.0
