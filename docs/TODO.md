@@ -120,6 +120,8 @@
   - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
 - [x] **Status Effects Engine** (2026-09-10 ✅ `feature/phase8-status-fx`):
   - [x] Overdrive on combo x6 (frenesí 4s, smash chasers, demuele muros, glow dorado), Medusa Tail (trampa→petrifica 2s, bloqueo giro, shatter), Venom Spore (slime→controles invertidos 1.8s, viñeta verde), Cryo-Stasis (hielo+golem→lento 2.5s, inmune proyectiles) — `systems/statusFx.lua` + scope_29 18 tests
+- [x] **Combate por cabezazos mini/boss** (2026-09-10 ✅ `feat/boss-headbutt-combat`):
+  - [x] Daño solo por cabezazos (display−1, min x2, cap 5) + rebote y fantasma 0.8s (`systems/combatRam.lua` + scope_30); minis con gating élite; boss HP 12 con barra y enrage por HP; bomba conserva 2 a minis
 - [ ] **Meta-Progression Shrine**:
   - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
 - [ ] **Daily Challenges, Lore Codex & Bounties**:
