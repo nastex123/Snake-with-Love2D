@@ -46,6 +46,9 @@ config.SHOP_REROLL_BASE = 5
 config.SHOP_REROLL_STEP = 2
 config.SHOP_STALLS = 3
 config.SHOP_TAROT_CHANCE = 0.40
+-- Precios dinamicos por etapa (GDD §13.3): multiplicador sobre precios de
+-- puestos y reroll. E1-E2 abaratan (bolsillo real <40$), E4-E5 encarecen.
+config.SHOP_STAGE_PRICE_MULT = {0.8, 0.9, 1.0, 1.1, 1.2}
 -- Escala manual de la tienda (1.0 = automatico/1x, 1.25, 1.5, 2.0, etc.)
 config.SHOP_MANUAL_SCALE = 1.0
 -- 15.1 Apostador: apuesta, tiempo, doradas, premio oro y chasers de derrota

@@ -891,6 +891,7 @@ $$G_{\text{monedas}} = \lfloor (D_{\text{base}} + B_{\text{coin}}) \times M_{\te
 * $D_{\text{base}}$: Normal: 1$, Oro: 2$, Moneda: 3$, Chaser: 3$, Patroller: 2$, Spawner: 1$, Boss: $5 + 2 \times \text{etapa}$.
 * $B_{\text{coin}} = 1$ si el pasivo `extraCoin` está activo.
 * **Sumideros Tienda v2**: tarots por tier (S 60$ / A 45$ / B 30$ / C 20$) + reroll global $R(n) = 5 + 2n$ por visita ($n$ = rerolls usados, resetea cada tienda) + ítems 5–40$.
+* **Precios dinámicos por etapa**: todos los precios de puestos y reroll se multiplican por `SHOP_STAGE_PRICE_MULT = {0.8, 0.9, 1.0, 1.1, 1.2}` (etapas 1–5) con redondeo entero (`shop.applyStagePrice`). E1–E2 abaratan (playtest: bolsillo real <40$), E4–E5 encarecen para sostener la tensión con ingresos altos.
 
 ### 13.4 Escalado de Dificultad e IA por Etapa
 La velocidad de decisión de los enemigos Chaser disminuye su intervalo ($I_{\text{chaser}}$) según la etapa actual $E \in [1, 5]$:

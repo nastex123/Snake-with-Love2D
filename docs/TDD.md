@@ -900,6 +900,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Módulo**: `systems/shop.lua` (split en `shop.lua`, `shopDraw.lua`, `shopBioScanner.lua`; suite scope_15 + scope_26 8 tests).
 * **Stock**: 3 puestos, 60% item / 40% tarot (`SHOP_TAROT_CHANCE`), sin duplicados ni poseídos/equipados; `abrir(monedas, renew)` conserva stock salvo visita fresca (`transitionToShop`, muerte).
 * **Reroll**: `doReroll` a `SHOP_REROLL_BASE=5 + SHOP_REROLL_STEP=2` por uso (tecla R + botón, re-anima entrada).
+* **Precios dinámicos por etapa (2026-09-10)**: `SHOP_STAGE_PRICE_MULT={0.8,0.9,1.0,1.1,1.2}` aplicado vía `shop.applyStagePrice()` (redondeo entero) en `rollOffer` (puestos) y `rerollCost`; etapa leída de `world.world.etapa` con require perezoso. Suite `tests/test_scope_28_shop_economy.lua` (modelo de ingresos + tabla de diagnóstico).
+* **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); draft de salas retirado de `playing`; draw usa PNG `tarotArt`.
 * **Tarot comprable**: `tarot.price` (tiers S60/A45/B30/C20 en `TAROT_PRICES`), `shopPool`, `buy` sin tope (manda el stock); PNG `tarotArt` solo en tienda (scope_23 21 tests).
 
 ### 10.30 Display Pipeline & Settings Overhaul ✅ Completed (2026-09-08)
