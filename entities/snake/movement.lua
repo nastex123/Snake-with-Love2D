@@ -14,6 +14,8 @@ local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
 local statusFx = require("systems.statusFx")
+local hasRam, combatRam = pcall(require, "systems.combatRam")
+if not hasRam or type(combatRam) ~= "table" then combatRam = nil end
 
 local function immune()
     return world.get("debugImmune") or false
@@ -218,7 +220,8 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     if love.math.random() < ch then statusFx.apply("cryo") end
                 end
                 if not isPassable then
-                    if immune() then
+                    -- Fantasma de cabezazo: atraviesa sin daño (cubre rebote a muro)
+                    if immune() or (combatRam and combatRam.hasGhost(s)) then
                     elseif world.get("shop.shieldActive", false) then
                         shop.shieldActive = false
                         return true, false
@@ -234,7 +237,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     end
 
     if enemies.boss and enemies.boss.alive and nuevaCabezaX == enemies.boss.x and nuevaCabezaY == enemies.boss.y then
-        if not s.ghost and not immune() then
+        if not s.ghost and not immune() and not (combatRam and combatRam.hasGhost(s)) then
             local bossResult = enemies.hitBoss and enemies.hitBoss() or {hit = true}
             if bossResult then
                 if world.get("shop.shieldActive", false) then
@@ -274,8 +277,9 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 end
             end
             if hit then
-                -- Medusa (GDD §16.2) / Cryo (GDD §16.4): inmunes a proyectiles
-                if s.ghost or immune() or statusFx.has("medusa") or statusFx.has("cryo") then
+                -- Medusa (GDD §16.2) / Cryo (GDD §16.4) / cabezazo: inmunes
+                if s.ghost or immune() or statusFx.has("medusa") or statusFx.has("cryo")
+                    or (combatRam and combatRam.hasGhost(s)) then
                 elseif world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
                     -- Prisma Refractor (GDD item 60): el proyectil se vuelve 3 monedas

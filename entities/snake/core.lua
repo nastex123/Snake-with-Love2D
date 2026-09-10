@@ -79,6 +79,9 @@ function core.update(s, dt)
     if s.slimeSlowTimer and s.slimeSlowTimer > 0 then
         s.slimeSlowTimer = math.max(0, s.slimeSlowTimer - dt)
     end
+    if s.bumpGhostTimer and s.bumpGhostTimer > 0 then
+        s.bumpGhostTimer = math.max(0, s.bumpGhostTimer - dt)
+    end
     if s.fireTrail then
         for i = #s.fireTrail, 1, -1 do
             local ft = s.fireTrail[i]
