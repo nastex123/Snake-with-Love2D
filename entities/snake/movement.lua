@@ -237,19 +237,10 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     end
 
     if enemies.boss and enemies.boss.alive and nuevaCabezaX == enemies.boss.x and nuevaCabezaY == enemies.boss.y then
+        -- Cabezazo (GDD §5 rework): sin muerte ni consumo; playing resuelve el daño.
+        -- Solo marca contacto para el ram post-mover.
         if not s.ghost and not immune() and not (combatRam and combatRam.hasGhost(s)) then
-            local bossResult = enemies.hitBoss and enemies.hitBoss() or {hit = true}
-            if bossResult then
-                if world.get("shop.shieldActive", false) then
-                    shop.shieldActive = false
-                    return true, false, nil, bossResult
-                elseif s.armor and s.armor > 0 then
-                    s.armor = s.armor - 1
-                    return true, false, nil, bossResult
-                else
-                    return false, false, nil, bossResult
-                end
-            end
+            return true, false, nil, {hit = true}
         end
     end
 
