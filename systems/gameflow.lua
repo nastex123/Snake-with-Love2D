@@ -141,7 +141,7 @@ function gameflow.iniciarSala(keepInventory)
         uiMod.addPopup("ETAPA " .. worldMod.etapa .. ": " .. string.upper(bName), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 3)
     end
     if enemiesMod.boss and enemiesMod.boss.alive then
-        uiMod.addPopup("Derrota al jefe recogiendo " .. constants.BOSS_FOOD_TARGET .. " comidas", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
+        uiMod.addPopup("JEFE: CABECEALO CON COMBO x2+ PARA HERIRLO", math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 2)
     end
     local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     if mb and mb.alive then
