@@ -127,6 +127,10 @@ function enemies.hitBoss()
     return bossLogic.hitBoss(enemies, attackRegistry)
 end
 
+function enemies.hitBossRam(dmg)
+    return bossLogic.hitRam(enemies, dmg, attackRegistry)
+end
+
 function enemies.onBossDefeatedByFood()
     return bossLogic.onBossDefeatedByFood(enemies, attackRegistry)
 end

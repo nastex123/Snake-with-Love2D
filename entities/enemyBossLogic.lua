@@ -32,7 +32,9 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
         telegraphPositions = {},
         foodCollected = 0,
         foodTarget = constants.BOSS_FOOD_TARGET,
-        invulnerable = true,
+        hp = constants.BOSS_HEADBUTT_HP or 12,
+        maxHp = constants.BOSS_HEADBUTT_HP or 12,
+        invulnerable = false,
         enraged = false,
         enrageFlash = 0,
         _uiBarFill = 1.0,
@@ -66,6 +68,28 @@ function bossLogic.hitBoss(enemiesMod, attackRegistry)
         }
     end
     return {hit = true, vida = boss.vida, vidaMax = boss.vidaMax}
+end
+
+-- Daño por cabezazo (GDD §5 rework): hp directo, loot al morir
+function bossLogic.hitRam(enemiesMod, dmg, attackRegistry)
+    local boss = enemiesMod.boss
+    if not boss or not boss.alive then return nil end
+    boss.hp = (boss.hp or boss.maxHp or 12) - (dmg or 1)
+    boss.maxHp = boss.maxHp or (boss.hp + (dmg or 1))
+    boss.flash = 0.3
+    if boss.hp <= 0 then
+        boss.alive = false
+        if attackRegistry then attackRegistry.clearAll() end
+        local tam = constants.TAMANIO_BLOQUE
+        return {
+            px = boss.x * tam + tam / 2,
+            py = boss.y * tam + tam / 2,
+            gx = boss.x, gy = boss.y,
+            coins = boss.dropCoins,
+            type = "boss"
+        }
+    end
+    return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
 end
 
 function bossLogic.onBossDefeatedByFood(enemiesMod, attackRegistry)
