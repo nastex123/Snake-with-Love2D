@@ -19,7 +19,6 @@ local achievementsMod = require("systems.achievements")
 local playing = require("systems.gamestates.playing")
 local transition = require("systems.gamestates.transition")
 local death = require("systems.gamestates.death")
-local tarotMod = require("systems.tarot")
 
 function states.overlaysOpen()
     local profilesMod = require("systems.profiles")
@@ -197,10 +196,6 @@ end
 function states.updatePaused(dt)
 end
 
-function states.updateTarot(dt)
-    tarotMod.update(dt)
-end
-
 function states.update(dt)
     states.updateCommon(dt)
     local g = world.state.gameState
@@ -218,8 +213,6 @@ function states.update(dt)
         return states.updatePaused(dt)
     elseif g == constants.GAME_STATE_TRANSITION then
         return states.updateTransition(dt)
-    elseif g == constants.GAME_STATE_TAROT then
-        return states.updateTarot(dt)
     end
 end
 
