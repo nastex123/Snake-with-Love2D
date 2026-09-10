@@ -199,6 +199,12 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     statusFx.apply("medusa")
                     return true, false
                 end
+                -- Venom (GDD §16.3): la baba puede esporular al pisarla
+                if isPassable and obs.type == "slime" then
+                    local ch = constants.STATUS_VENOM_SPORE_CHANCE
+                    if type(ch) ~= "number" then ch = 0.30 end
+                    if love.math.random() < ch then statusFx.apply("venom") end
+                end
                 if not isPassable then
                     if immune() then
                     elseif world.get("shop.shieldActive", false) then
