@@ -76,6 +76,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                         local res = enemies.killEnemy(idx)
                         return {type = "iron_spine_block", result = res}
                     end
+                    -- Medusa (GDD §16.2): el cuerpo de granito aplasta al contacto
+                    if statusFx.has("medusa") then
+                        local res = enemies.killEnemy(idx)
+                        return {type = "medusa_shatter", result = res}
+                    end
                     local minSliceLen = constants.PATROLLER_SLICE_MIN_LEN or 5
                     if e.type ~= "patroller" or segIdx < 4 or #s.body < minSliceLen then
                         if world.get("shop.shieldActive", false) then

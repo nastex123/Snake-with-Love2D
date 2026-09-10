@@ -341,6 +341,20 @@ function renderMain.drawGame(dt)
         uiMod.drawPauseOverlay()
     end
 
+    -- Venom (GDD §16.3): viñeta verde pulsante, overlay sobrio sin shader
+    if statusFx.has("venom") then
+        local w = love.graphics.getWidth()
+        local h = love.graphics.getHeight()
+        local pulse = 0.5 + 0.5 * math.sin((st.time or 0) * 4)
+        love.graphics.setColor(0.1, 0.8, 0.2, 0.05 + 0.04 * pulse)
+        love.graphics.rectangle("fill", 0, 0, w, h)
+        love.graphics.setColor(0.1, 0.9, 0.25, 0.35 + 0.25 * pulse)
+        love.graphics.setLineWidth(6)
+        love.graphics.rectangle("line", 3, 3, w - 6, h - 6)
+        love.graphics.setLineWidth(1)
+        love.graphics.setColor(1, 1, 1)
+    end
+
     if st.mundoCompletado then
         local w = love.graphics.getWidth()
         local h = love.graphics.getHeight()
