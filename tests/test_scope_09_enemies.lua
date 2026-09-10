@@ -305,21 +305,22 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
         enemies.init()
     end)
 
-    harness.it("spawns boss with invulnerability and food target configuration", function()
+    harness.it("spawns boss vulnerable with 12 HP configuration", function()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
         harness.assert_not_nil(boss)
         harness.assert_equal(15, boss.x, "Boss centered at grid center")
         harness.assert_equal(10, boss.y)
         harness.assert_true(boss.alive)
-        harness.assert_true(boss.invulnerable, "Boss is invulnerable to direct hits")
-        harness.assert_equal(constants.BOSS_FOOD_TARGET, boss.foodTarget)
-        harness.assert_equal(0, boss.foodCollected)
+        harness.assert_false(boss.invulnerable, "Boss is vulnerable to rams")
+        harness.assert_equal(12, boss.hp)
+        harness.assert_equal(12, boss.maxHp)
         harness.assert_equal(1, boss.phase)
         harness.assert_equal(8, boss.dropCoins)
     end)
 
     harness.it("hitBoss() returns hit feedback without reducing HP while invulnerable", function()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
+        boss.invulnerable = true
         local res = enemies.hitBoss()
         harness.assert_not_nil(res)
         harness.assert_true(res.hit)
@@ -357,25 +358,25 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
         harness.assert_equal(0, #enemies.getAttackObjects(), "Attack objects cleared")
     end)
 
-    harness.it("progresses through Boss Phase 1 -> 2 -> 3 and enrage as food is collected", function()
+    harness.it("progresses through Boss Phase 1 -> 2 -> 3 and enrage as HP drops", function()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
         local snakeBody = {{x = 2, y = 2}}
 
-        -- Start: 0/15 food collected -> Phase 1
+        -- Start: 12/12 HP -> Phase 1
         enemies.update(0.016, snakeBody, 30, 20, nil, 1, nil)
         harness.assert_equal(1, boss.phase, "Initial phase is 1")
         harness.assert_false(boss.enraged)
 
-        -- 7/15 food collected (remaining 8/15 = 0.53 <= 0.60) -> Phase 2
-        boss.foodCollected = 7
+        -- 7/12 HP (0.58 <= 0.60) -> Phase 2
+        boss.hp = 7
         enemies.update(0.016, snakeBody, 30, 20, nil, 1, nil)
-        harness.assert_equal(2, boss.phase, "Phase transitions to 2 at <= 60% remaining")
+        harness.assert_equal(2, boss.phase, "Phase transitions to 2 at <= 60% HP")
 
-        -- 12/15 food collected (remaining 3/15 = 0.20 <= 0.30) -> Phase 3 and Enrage
-        boss.foodCollected = 12
+        -- 3/12 HP (0.25 <= 0.30) -> Phase 3 and Enrage
+        boss.hp = 3
         enemies.update(0.016, snakeBody, 30, 20, nil, 1, nil)
-        harness.assert_equal(3, boss.phase, "Phase transitions to 3 at <= 30% remaining")
-        harness.assert_true(boss.enraged, "Boss is enraged when foodCollected >= foodTarget - 3")
+        harness.assert_equal(3, boss.phase, "Phase transitions to 3 at <= 30% HP")
+        harness.assert_true(boss.enraged, "Boss is enraged at HP <= 3")
     end)
 
     harness.it("smoothly animates boss UI health bar fill towards target", function()

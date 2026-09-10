@@ -381,15 +381,15 @@ describe("Scope 11 - Full Combat Lifecycle & enemies.lua Integration", function(
         shop.reset()
     end)
 
-    it("spawns boss with default state and invulnerability", function()
+    it("spawns boss with HP model and vulnerability", function()
         enemies.spawnBoss(1, 40, 28, 5, 10)
         assert_not_nil(enemies.boss)
         assert_true(enemies.boss.alive)
-        assert_true(enemies.boss.invulnerable)
+        assert_false(enemies.boss.invulnerable)
         assert_equal(1, enemies.boss.phase)
         assert_equal("idle", enemies.boss.state)
-        assert_equal(0, enemies.boss.foodCollected)
-        assert_equal(constants.BOSS_FOOD_TARGET or 15, enemies.boss.foodTarget)
+        assert_equal(12, enemies.boss.hp)
+        assert_equal(12, enemies.boss.maxHp)
         assert_equal(0, #enemies.getAttackObjects())
         assert_equal(0, #enemies.getTelegraphs())
     end)
@@ -513,22 +513,21 @@ end)
 -- SUITE: Boss Enrage Phase (Fase de Furia, GDD)
 -- =========================================================================
 describe("Scope 11 - Boss Enrage Phase", function()
-    it("raises enraged flag with crimson flash at foodTarget-3", function()
+    it("raises enraged flag at low HP", function()
         enemies.init()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
-        boss.foodCollected = 11
+        boss.hp = 4
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
-        assert_false(boss.enraged, "11/15 food must not enrage")
-        boss.foodCollected = 12
+        assert_false(boss.enraged, "4/12 HP must not enrage")
+        boss.hp = 3
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
-        assert_true(boss.enraged, "12/15 food must enrage")
-        assert_gt(boss.enrageFlash or 0, 0, "Crimson flash must trigger on enrage")
+        assert_true(boss.enraged, "3/12 HP must enrage")
     end)
 
     it("scales telegraph time by 1/ENRAGE_MULT when enraged", function()
         enemies.init()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
-        boss.foodCollected = 12
+        boss.hp = 2
         boss.state = "idle"
         boss.attackCooldown = 0
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
@@ -547,7 +546,7 @@ describe("Scope 11 - Boss Enrage Phase", function()
     end)
 
     it("defines enrage tuning constants", function()
-        assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 foods")
+        assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 HP")
         assert_almost_equal(1.35, constants.BOSS_ENRAGE_MULT, 0.001, "Enrage mult must be 1.35")
     end)
 end)
