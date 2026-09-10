@@ -29,7 +29,7 @@ function combatRam.ram(s, w, h)
 end
 
 function combatRam.hasGhost(s)
-    return s and s.bumpGhostTimer and s.bumpGhostTimer > 0
+    return s ~= nil and s.bumpGhostTimer ~= nil and s.bumpGhostTimer > 0
 end
 
 return combatRam
