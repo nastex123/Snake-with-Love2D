@@ -26,6 +26,7 @@ local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
+local statusFx = require("systems.statusFx")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -686,6 +687,17 @@ function playing.update(dt)
                             Events.emit("comboAchieved", {count = st.comboCount + 1})
                         else
                             achievementsMod.check("comboAchieved", {count = st.comboCount + 1})
+                        end
+                    end
+                    -- Overdrive (GDD §16.1): combo x6 activa frenesi; refresh silencioso
+                    if st.comboCount + 1 >= (constants.STATUS_OVERDRIVE_COMBO or 6) then
+                        if not statusFx.has("overdrive") then
+                            statusFx.apply("overdrive")
+                            local head = st.player.body and st.player.body[1]
+                            if head then uiMod.addPopup("OVERDRIVE!", head.x, head.y) end
+                            sound.play("highScore")
+                        else
+                            statusFx.apply("overdrive")
                         end
                     end
                 else
