@@ -18,7 +18,6 @@ local debugTools = require('systems.debugTools')
 local renderMain = require('render.renderMain')
 local touch = require('core.touch')
 local achievementsMod = require('systems.achievements')
-local tarotMod = require('systems.tarot')
 local mutatorsMod = require('systems.roomMutators')
 
 local FIXED_DT = 1 / 60
@@ -305,10 +304,6 @@ function love.mousepressed(x, y, button)
             shop.abrir(world.state.monedas)
         end
     end
-
-    if button == 1 and world.state.gameState == constants.GAME_STATE_TAROT then
-        tarotMod.mousepressed(x, y)
-    end
 end
 
 function love.touchpressed(id, x, y, dx, dy, pressure)
@@ -550,7 +545,5 @@ function love.keypressed(tecla)
             shop.abrir(world.state.monedas)
         end
 
-    elseif world.state.gameState == constants.GAME_STATE_TAROT then
-        tarotMod.keypressed(tecla)
     end
 end

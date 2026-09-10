@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-10 (tarot draft full removal)
+
+- **chore** (completed - 2026-09-10 10:06): Eliminación total del draft de Tarot y del estado `GAME_STATE_TAROT` (America/Bogota, rama `chore/tarot-full-removal`):
+  1. **QUE — `core/config.lua`**: eliminado `GAME_STATE_TAROT = 7` (7 estados: MENU..TRANSITION; `constants.lua` lo hereda por ser re-export puro).
+  2. **QUE — `systems/tarot.lua` (284→139L)**: fuera `DRAFT_ROOMS/MAX_STAGE_CARDS/OPTIONS_COUNT`, `tarot.g`, `sampleOptions/shouldOffer/isOpen/open/choose/update/mousepressed/keypressed/draw` y require de `tarotArt`; `reset()` solo limpia `stageCards`. Vive: catálogo 12 cartas, `price/shopPool/buy` y 12 hooks de gameplay.
+  3. **QUE — dispatchers**: fuera rama TAROT en `render/renderMain.lua` (`isGameState` + draw), `systems/gamestates.lua` (`updateTarot` + dispatch + require) y `main.lua` (click + teclas + require).
+  4. **QUE — Tests**: `tests/test_scope_23_tarot.lua` reescrita (8 tests draft fuera, 1 test `reset` nuevo, 21 tests compra/hooks/catálogo/art conservados).
+  5. **POR QUE**: el draft no tenía llamadores en juego desde Tienda v2 (muerto verificado por grep); solo quedaba cableado huérfano y un enum reservado. Decisión de TODO "Próxima sesión": eliminar, no reutilizar.
+  6. **Verificación**: `love tests` consola-only con `SDL_VIDEODRIVER=dummy` 690/670 PASS (20 pre-existentes, mismo conjunto, cero regresión); boot headless del juego real (`t.window=nil`, runner en `/tmp`) 14/14 PASS sin abrir ventanas: `love.load`, 120 ticks MENU, compra tarot, `iniciarSala`, 60 ticks PLAYING, inputs y los 7 estados por dispatcher+draw; docs sincronizados (GDD §14 ya era shop-only, TDD §10.13/tabla estados, TODO, ROADMAP, AGENTS.md, ambos CHANGELOG).
+
 ## 2026-09-09 (pixelScale default to 1 viewport proportionality fix)
 
 - **fix** (render - 2026-09-09 00:41): Corrección de desproporción visual en el arranque restableciendo `pixelScale = 1` por defecto (America/Bogota, rama `docs/audit-settings-display-pipeline`):
@@ -177,6 +187,22 @@ Categories: feature, fix, refactor, docs, balance, polish
   2. **QUE — cableado**: `ROOM_MUTATOR_CHANCE=0.35` (config), roll en `gameflow.iniciarSala` antes de poblar (boss/elite excluidos), banner popup `MUTADOR: <TAG>` + badge en `ui/hudUI.lua`.
   3. **QUE — Tests + docs**: suite scope_24 (8 tests) cableada en runner; GDD §19.1, TDD §10.27, TODO.
   4. **Verificación**: `love tests` 646/626 PASS (20 pre-existentes), `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07 (tarot art)
+
+- **feature** (completed - 2026-09-07): Tarot card textures in-game (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `assets/tarot/` (12 PNG 20x20 nuevos)**: variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C, generados por script desde `prototypes/tarot-cards.html` (marco runa/oro + fondo de arquetipo).
+  2. **QUE — `systems/tarotArt.lua` (nuevo, ~70L)**: mapa id→ruta + lazy-load cacheado vía `core/assets.lua` (`nearest`) con `draw()` de escala y fallo suave; `systems/tarot.lua` `draw()` muestra textura x4 con fallback al layout anterior.
+  3. **QUE — Tests**: suite scope_23 +4 (mapeo 12 rutas, cache, draw escalado, id desconocido): 638 tests, 618 PASS, 20 pre-existentes sin regresión.
+  4. **Verificación**: `love tests` consola-only, `love .` 10s sin crash, `error.log` 0 bytes.
+
+## 2026-09-07
+
+- **feature** (completed - 2026-09-07): 60 texture proposals for Stage Tarot (America/Bogota, rama `feature/phase8-tarot`):
+  1. **QUE — `prototypes/tarot-cards.html` (217 → ~380L)**: `CARDS` pasa de 1 diseño a `variants[5]` por carta (rediseño total A-E, 60 retículas 14x14 validadas por script); galería agrupada por carta a tamaño completo con botón PNG por variante; render Pixi + fallback Canvas2D generalizados sin cambios de lógica.
+  2. **QUE — paleta**: `eagle_eye` suma `L: 0xffe9b8` (ala de variante E); resto de paletas y marco runa/oro intactos.
+  3. **POR QUE**: el draft del Tarot necesita dirección de arte elegible por carta antes de integrar texturas en Love2D; sin exportación a PNG, todo vive en el prototipo.
+  4. **Verificación**: script 60x14x14 + claves de paleta 0 errores, `node --check` OK; `love .` 10s sin crash, `error.log` 0 bytes (cambio fuera del runtime).
 
 ## 2026-09-06 00:08
 

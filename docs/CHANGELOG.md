@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-10 (tarot draft full removal)
+
+- **chore** (completed - 2026-09-10 10:06): Eliminación total del draft de Tarot y del estado `GAME_STATE_TAROT` (America/Bogota, rama `chore/tarot-full-removal`):
+  1. **QUE — `core/config.lua`**: eliminado `GAME_STATE_TAROT = 7` (7 estados: MENU..TRANSITION; `constants.lua` lo hereda por ser re-export puro).
+  2. **QUE — `systems/tarot.lua` (284→139L)**: fuera `DRAFT_ROOMS/MAX_STAGE_CARDS/OPTIONS_COUNT`, `tarot.g`, `sampleOptions/shouldOffer/isOpen/open/choose/update/mousepressed/keypressed/draw` y require de `tarotArt`; `reset()` solo limpia `stageCards`. Vive: catálogo 12 cartas, `price/shopPool/buy` y 12 hooks de gameplay.
+  3. **QUE — dispatchers**: fuera rama TAROT en `render/renderMain.lua` (`isGameState` + draw), `systems/gamestates.lua` (`updateTarot` + dispatch + require) y `main.lua` (click + teclas + require).
+  4. **QUE — Tests**: `tests/test_scope_23_tarot.lua` reescrita (8 tests draft fuera, 1 test `reset` nuevo, 21 tests compra/hooks/catálogo/art conservados).
+  5. **POR QUE**: el draft no tenía llamadores en juego desde Tienda v2 (muerto verificado por grep); solo quedaba cableado huérfano y un enum reservado. Decisión de TODO "Próxima sesión": eliminar, no reutilizar.
+  6. **Verificación**: `love tests` consola-only con `SDL_VIDEODRIVER=dummy` 690/670 PASS (20 pre-existentes, mismo conjunto, cero regresión); boot headless del juego real (`t.window=nil`, runner en `/tmp`) 14/14 PASS sin abrir ventanas: `love.load`, 120 ticks MENU, compra tarot, `iniciarSala`, 60 ticks PLAYING, inputs y los 7 estados por dispatcher+draw; docs sincronizados (GDD §14 ya era shop-only, TDD §10.13/tabla estados, TODO, ROADMAP, AGENTS.md, ambos CHANGELOG).
+
 ## 2026-09-09 (pixelScale default to 1 viewport proportionality fix)
 
 - **fix** (render - 2026-09-09 00:41): Corrección de desproporción visual en el arranque restableciendo `pixelScale = 1` por defecto (America/Bogota, rama `docs/audit-settings-display-pipeline`):

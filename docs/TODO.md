@@ -70,7 +70,7 @@
   - [x] Ajustar coordenadas de ratón en `core/input.lua` y `systems/shop.lua` para considerar `pixelScale`.
   - [x] Suite de pruebas unitarias automatizadas `tests/test_scope_27_display_settings.lua`.
 - [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa).
-- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos).
+- [x] Destino de `GAME_STATE_TAROT` decidido y ejecutado (2026-09-10, `chore/tarot-full-removal`): eliminación total — enum fuera de `core/config.lua`, draft (`open/choose/sampleOptions/shouldOffer/draw/modal`) fuera de `tarot.lua` (284→139L), ramas fuera de dispatcher/render/input, `scope_23` reescrita (21 tests compra/hooks). Sistema vivo = compra en tienda + 12 hooks.
 - [ ] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx`.
 - [ ] Higiene pendiente: splits fase 8 (TODO Medium), saneamiento de 20 fallos pre-existentes en mocks.
 
@@ -250,4 +250,4 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Sound system with segmented music
 
 ---
-*Last updated: 2026-09-07 (Tienda v2 en feature/phase8-mystery-rooms - puestos mixtos + reroll + tarot comprable, scope_26 8 tests, 692 tests 672 PASS, 20 pre-existentes)*
+*Last updated: 2026-09-10 (Rama A chore/tarot-full-removal - eliminacion total TAROT, scope_23 21 tests, suite 690/670 PASS, 20 pre-existentes, boot headless 14/14)*
