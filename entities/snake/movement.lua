@@ -13,6 +13,7 @@ local world = require("core.world")
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
+local statusFx = require("systems.statusFx")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -180,9 +181,15 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     end
 
     if obstaclePos then
-        for _, obs in ipairs(obstaclePos) do
+        for oi = #obstaclePos, 1, -1 do
+            local obs = obstaclePos[oi]
             if nuevaCabezaX == obs.x and nuevaCabezaY == obs.y then
                 local isPassable = (obs.type == "ice" or obs.type == "slime" or (obs.type == "lava" and obs.state ~= "active") or (obs.type == "pressure_spike" and obs.state ~= "extended"))
+                -- Overdrive (GDD §16.1): la cabeza demuele muros de piedra
+                if not isPassable and obs.type == "wall" and statusFx.has("overdrive") then
+                    table.remove(obstaclePos, oi)
+                    isPassable = true
+                end
                 if not isPassable then
                     if immune() then
                     elseif world.get("shop.shieldActive", false) then

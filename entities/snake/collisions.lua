@@ -10,6 +10,7 @@ local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
 local tarotMod = require("systems.tarot")
+local statusFx = require("systems.statusFx")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -43,6 +44,11 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                 if tarotMod.isShatterFrozen() then
                     local res = enemies.killEnemy(idx)
                     return {type = "frozen_shatter", result = res}
+                end
+                -- Overdrive (GDD §16.1): la cabeza aplasta Chasers sin daño
+                if e.type == "chaser" and statusFx.has("overdrive") then
+                    local res = enemies.killEnemy(idx)
+                    return {type = "overdrive_smash", result = res}
                 end
                 if world.get("shop.shieldActive", false) then
                     shop.shieldActive = false
