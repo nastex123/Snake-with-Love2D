@@ -165,3 +165,67 @@ harness.describe("Scope 29 - Overdrive (GDD 16.1)", function()
         world.set("controlMode", "tactical")
     end)
 end)
+
+harness.describe("Scope 29 - Medusa Tail (GDD 16.2)", function()
+    harness.it("trap step petrifies and absorbs the hit", function()
+        local snakeMod = require("entities.snake")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        world.set("controlMode", "classic")
+        local s = snakeMod.reset()
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}
+        s.dirX, s.dirY = 1, 0
+        s.inputQueue = {}
+        local traps = {{x = 6, y = 5, type = "trap"}}
+        local vivo = snakeMod.mover(s, {x = 20, y = 20}, 32, 18, traps, 0, nil)
+        harness.assert_true(vivo, "trampa petrifica en vez de matar")
+        harness.assert_true(statusFx.has("medusa"), "medusa activa")
+        statusFx.clearAll()
+        timers.clear()
+        world.set("controlMode", "tactical")
+    end)
+
+    harness.it("locked direction ignores new inputs", function()
+        local snakeMod = require("entities.snake")
+        local movement = require("entities.snake.movement")
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        local s = snakeMod.reset()
+        s.body = {{x = 5, y = 5}, {x = 4, y = 5}}
+        s.dirX, s.dirY = 1, 0
+        s.inputQueue = {{x = 0, y = 1}}
+        statusFx.apply("medusa", 30)
+        movement.encolarDireccion(s, 0, 1)
+        harness.assert_equal(1, s.dirX, "dir intacta tras encolar")
+        movement.mover(s, {x = 20, y = 20}, 32, 18, nil, 0, nil)
+        harness.assert_equal(0, #s.inputQueue, "cola vaciada")
+        harness.assert_equal(1, s.dirX, "sigue recto")
+        statusFx.clearAll()
+        timers.clear()
+    end)
+
+    harness.it("granite body shatters any enemy on contact", function()
+        local enemiesMod = require("entities.enemies")
+        local collisions = require("entities.snake.collisions")
+        local shop = require("systems.shop")
+        world.reset()
+        shop.reset(false)
+        enemiesMod.init()
+        statusFx.clearAll()
+        timers.clear()
+        world.state.activeTimers = {}
+        statusFx.apply("medusa", 30)
+        local e = enemiesMod.spawnAt("patroller", 5, 5)
+        local col = collisions.checkEnemyCollisions({body = {{x = 5, y = 5}}}, enemiesMod.list)
+        harness.assert_equal("medusa_shatter", col.type, "patroller aplastado")
+        harness.assert_false(e.alive, "enemigo destruido")
+        statusFx.clearAll()
+        timers.clear()
+        enemiesMod.init()
+    end)
+end)
