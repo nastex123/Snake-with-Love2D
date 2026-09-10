@@ -71,13 +71,19 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     if #s.inputQueue == 0 and (Input.isHeld("up") or Input.isHeld("down") or Input.isHeld("left") or Input.isHeld("right")) then
         local refY = s.lastMovedDirY or s.dirY
         local refX = s.lastMovedDirX or s.dirX
-        if Input.isHeld("up") and refY == 0 then
+        -- Venom (GDD §16.3): controles invertidos arriba<->abajo, izq<->der
+        local heldUp, heldDown = Input.isHeld("up"), Input.isHeld("down")
+        local heldLeft, heldRight = Input.isHeld("left"), Input.isHeld("right")
+        if statusFx.has("venom") then
+            heldUp, heldDown, heldLeft, heldRight = heldDown, heldUp, heldRight, heldLeft
+        end
+        if heldUp and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = -1})
-        elseif Input.isHeld("down") and refY == 0 then
+        elseif heldDown and refY == 0 then
             table.insert(s.inputQueue, {x = 0, y = 1})
-        elseif Input.isHeld("left") and refX == 0 then
+        elseif heldLeft and refX == 0 then
             table.insert(s.inputQueue, {x = -1, y = 0})
-        elseif Input.isHeld("right") and refX == 0 then
+        elseif heldRight and refX == 0 then
             table.insert(s.inputQueue, {x = 1, y = 0})
         end
     end
