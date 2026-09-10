@@ -854,7 +854,19 @@ function playing.update(dt)
                 enemiesMod.generar(st.player.body, foodMod.pos, obstaclesMod.pos, st.anchoGrilla, st.altoGrilla, mod)
             end
 
-            if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not st.transitionTarget then
+            -- Gating elite (GDD §5 rework): con mini vivo no hay salida por puntos
+            local mbGate = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+            local miniAlive = mbGate and mbGate.alive
+            if miniAlive and st.puntuacion >= worldMod.objetivoSala and not st.transitionTarget then
+                st.lastMiniGateHint = st.lastMiniGateHint or -10
+                if (st.time or 0) - st.lastMiniGateHint > 4 then
+                    st.lastMiniGateHint = st.time or 0
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("DERROTA AL MINI-JEFE PARA AVANZAR", head.x, head.y) end
+                end
+            end
+
+            if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not miniAlive and not st.transitionTarget then
                 -- Contrarreloj (GDD §19.66): premio si el objetivo se cumple a tiempo
                 if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
                     mutatorsMod.data().rewarded = true
