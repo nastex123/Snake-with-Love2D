@@ -127,6 +127,10 @@
   - [x] `miniBoss.parry` x0.6 + `parryCooldown` 2.0s + passthrough `enemies.parryMiniBoss` + popup "¡PARRY!"
   - [x] Boss a `hp/maxHp` único (fuera `vida/vidaMax`; guards en `renderMain`/`enemiesDraw`; asserts `vida`→`hp` en tests)
   - [x] Tests scope_30 (+3) / scope_22 (+4 parry) / scope_09+11 (HP explícito); suite 732: 712 PASS / 20 pre-existentes
+- [x] **Arrollamiento Triturador 2x2 escalado** (2026-09-11 ✅ `feat/boss-headbutt-combat`, 9 commits):
+  - [x] Keys `CRUSHER_TRAMPLE_*` + telegraph 2 líneas + `chargeLane`/`trampleHits`
+  - [x] Corte `min(2+hits,4)` piso 3 + racha `-0.1x*hits` piso 1.0 + cadena fantasma/escudo/armadura
+  - [x] Tests scope_22 +8 (lane 3 + trample 5); suite 740: 720 PASS / 20 pre-existentes
 - [ ] **Meta-Progression Shrine**:
   - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
 - [ ] **Daily Challenges, Lore Codex & Bounties**:

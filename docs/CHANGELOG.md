@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-11 (crusher trample: 2-wide scaled partial damage)
+
+- **feat** (completed - 2026-09-11): Arrollamiento del Triturador con daño parcial escalado (America/Bogota, rama `feat/boss-headbutt-combat`, 9 commits):
+  1. **QUE**: telegraph del charge a 2 líneas (ancho 2x2); `execute` registra `chargeLane` + `trampleHits`; corte `min(2+hits,4)` con piso 3 segmentos + `sliceGraceTimer`; racha `-0.1x*hits` con piso x1.0 + `roomDamaged`; cadena fantasma/escudo/armadura (el bloqueo no avanza el contador); keys `CRUSHER_TRAMPLE_*`.
+  2. **QUE — Tests**: scope_22 +8 (lane 3 + trample 5 vía `updatePlaying`).
+  3. **POR QUE**: el charge era teatro sin daño; ahora es amenaza física real pero parcial y progresiva, sin matar.
+  4. **Verificación**: `love tests` 720 PASS / 20 FAIL pre-existentes (baseline 712 + 8 nuevos); `error.log` 0 bytes.
+
 ## 2026-09-11 (headbutt fixes: safe bounce, miniboss parry, unified boss HP)
 
 - **fix** (completed - 2026-09-11): Rebote seguro, parry del mini-jefe y HP único del boss (America/Bogota, rama `feat/boss-headbutt-combat`):

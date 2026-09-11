@@ -359,6 +359,7 @@ profile = {
 - Cabezazo: `combatRam.damageFor(comboDisplay)` + rebote seguro + fantasma 0.8s
 - `miniBoss.parry(mb, ctx)` (2026-09-11 ✅): fuerza `telegraph` x0.6 (`PARRY_TELEGRAPH_MULT`) solo en `idle` + `parryCooldown` 2.0s; passthrough `enemies.parryMiniBoss()`
 - Enrage a HP <= 3 (`BOSS_ENRAGE_THRESHOLD`); barra por fracción HP
+- Triturador (2026-09-11 ✅): `planCharge` 2 líneas; `execute` guarda `chargeLane {horizontal, fixed0, fixed1}` + `trampleHits` en spawn; `playing` resuelve corte `min(CUT_BASE+hits, CUT_MAX)` piso 3 + racha `-STEP*hits` piso 1.0 con cadena fantasma/escudo/armadura
 
 ### Boss Health Bar Lerp
 ```

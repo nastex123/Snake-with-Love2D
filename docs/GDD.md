@@ -382,6 +382,12 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 ### Mini-Jefes (HP 3/4/6/5/6 por etapa)
 - Mismo cabezazo; la Bomba pega 2 como válvula táctica.
 
+### Arrollamiento del Triturador (2026-09-11 ✅)
+- Charge de **2 líneas** (filas `y/y+1` o columnas `x/x+1`, ancho del cuerpo 2x2) con telegraph visible.
+- Daño parcial **escalado**: corte `min(2 + arrollamientos previos, 4)` en la cola, piso de 3 segmentos (si mide ≤3, solo shake).
+- Racha **progresiva**: `roomDamaged` + `-0.1x * arrollamientos` a `survivalStreak` (piso x1.0).
+- Defensas: fantasma/debug inmune; escudo se consume y bloquea; armadura -1 y bloquea. Solo el corte real avanza el contador.
+
 ### Rebote seguro + Parry del mini-jefe (2026-09-11 ✅)
 - Rebote con destino validado: atrás → laterales → quedarse; nunca sobre cuello/cuerpo/muro/dentro del 2x2; si bloqueado, solo fantasma.
 - Al rebotar, el mini-jefe hace **parry**: fuerza su máquina a `telegraph` con tiempo x0.6 (`PARRY_TELEGRAPH_MULT`), popup "¡PARRY!"; solo en `idle` + `parryCooldown` 2.0s (sin interrumpir ataques en curso).
