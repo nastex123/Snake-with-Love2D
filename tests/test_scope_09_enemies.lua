@@ -359,7 +359,7 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
     end)
 
     harness.it("progresses through Boss Phase 1 -> 2 -> 3 and enrage as HP drops", function()
-        local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
+        local boss = enemies.spawnBoss(1, 30, 20, 12, 5)
         local snakeBody = {{x = 2, y = 2}}
 
         -- Start: 12/12 HP -> Phase 1

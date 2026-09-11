@@ -382,7 +382,7 @@ describe("Scope 11 - Full Combat Lifecycle & enemies.lua Integration", function(
     end)
 
     it("spawns boss with HP model and vulnerability", function()
-        enemies.spawnBoss(1, 40, 28, 5, 10)
+        enemies.spawnBoss(1, 40, 28, 12, 10)
         assert_not_nil(enemies.boss)
         assert_true(enemies.boss.alive)
         assert_false(enemies.boss.invulnerable)
@@ -640,7 +640,7 @@ end)
 describe("Scope 11 - Boss Headbutt Combat (GDD §5 rework)", function()
     it("hitRam deals combo damage and loots on death", function()
         enemies.init()
-        local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
+        local boss = enemies.spawnBoss(1, 30, 20, 12, 8)
         harness.assert_equal(12, boss.hp, "spawns with 12 HP")
         local r1 = enemies.hitBossRam(5)
         harness.assert_not_nil(r1.hit, "hit feedback")
@@ -689,7 +689,7 @@ describe("Scope 11 - Boss Headbutt Combat (GDD §5 rework)", function()
         st.pendingAchievements = {}
         st.debugImmune = false
         coreWorld.set("controlMode", "classic")
-        local boss = enemies.spawnBoss(1, 32, 18, 10, 8)
+        local boss = enemies.spawnBoss(1, 32, 18, 12, 8)
         boss.attackCooldown = 999
         boss.spawnTimer = 999
         boss.state = "cooldown"
@@ -717,11 +717,16 @@ describe("Scope 11 - Boss Headbutt Combat (GDD §5 rework)", function()
         harness.assert_not_nil(st.player.bumpGhostTimer, "bounce ghost granted")
         st.comboCount = 9
         for _ = 1, 4 do
+            if boss.alive then
+                -- Reaproxima la cabeza al boss (el rebote seguro la desplaza)
+                st.player.body = {{x = bx - 1, y = by}, {x = bx - 2, y = by}, {x = bx - 3, y = by}}
+                st.player.dirX, st.player.dirY = 1, 0
+                st.player.inputQueue = {}
+            end
             st.player.bumpGhostTimer = 0
             st.cronometro = st.velocidadActual
             states.updatePlaying(0.02)
         end
-        harness.assert_false(boss.alive, "rams kill the boss")
         harness.assert_false(boss.alive, "rams kill the boss")
         harness.assert_true(st.monedas > coinsBefore, "boss loot paid")
         harness.assert_equal("siguienteEtapa", st.transitionTarget, "advances on boss death")
