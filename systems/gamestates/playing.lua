@@ -513,7 +513,19 @@ function playing.update(dt)
             if headOnChargeLane(st, mb.chargeLane) then
                 local ghost = st.player.ghost or world.get("debugImmune", false)
                     or (combatRam and combatRam.hasGhost(st.player))
-                if not ghost then
+                if ghost then
+                    -- Intangible: el arrollamiento pasa sin efecto ni contador
+                elseif world.get("shop.shieldActive", false) then
+                    shop.shieldActive = false
+                    sound.play("shieldBreak")
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("ESCUDO: ARROLLAMIENTO BLOQUEADO", head.x, head.y) end
+                elseif st.player.armor and st.player.armor > 0 then
+                    st.player.armor = st.player.armor - 1
+                    sound.play("shieldBreak")
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("ARMADURA: ARROLLAMIENTO BLOQUEADO", head.x, head.y) end
+                else
                     local cut = resolveTrampleCut(st, mb)
                     local head = st.player.body and st.player.body[1]
                     if cut > 0 and head then
