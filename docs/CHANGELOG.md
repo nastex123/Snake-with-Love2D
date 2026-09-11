@@ -8,6 +8,16 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-11 (headbutt fixes: safe bounce, miniboss parry, unified boss HP)
+
+- **fix** (completed - 2026-09-11): Rebote seguro, parry del mini-jefe y HP único del boss (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE — `systems/combatRam.lua`**: `ram(s, w, h, opts)` con destino validado (atrás→laterales→quedarse; nunca cuello/cuerpo/muro/rect; `avoidRects` desde playing); si bloqueado, solo fantasma; retorna si movió.
+  2. **QUE — Parry (`entities/enemyMiniBoss.lua` + `entities/enemies.lua` + `playing.lua`)**: `miniBoss.parry` fuerza `telegraph` x0.6 (`PARRY_TELEGRAPH_MULT`) solo en `idle` + `parryCooldown` 2.0s; helper `nextAttackName` reutilizado en `update`; Sierpe embiste 2 celdas + lava; passthrough `enemies.parryMiniBoss`; popups REBOTE!/¡PARRY!.
+  3. **QUE — HP único**: fuera `vida/vidaMax` del boss (`spawnBoss/hitBoss/hitRam` solo `hp/maxHp`); `populate` usa `BOSS_HEADBUTT_HP`; display HUD desde el boss real; guards nil + clamp en `renderMain`/`enemiesDraw`. Cierra el crash `renderMain.lua:155`.
+  4. **QUE — Tests**: scope_30 +3 (cuello, bloqueo, fracción), scope_22 +4 parry, migración `vida`→`hp` + HP explícito en scope_09/11/20/entities.
+  5. **POR QUE**: el rebote ciego aterrizaba en el cuello (muerte a x1) y el mini no reaccionaba; el doble modelo HP crasheaba el render al primer contacto.
+  6. **Verificación**: `love tests` 712 PASS / 20 FAIL pre-existentes (baseline + 7 nuevos); `error.log` 0 bytes.
+
 ## 2026-09-10 (boss headbutt combat rework)
 
 - **feature** (completed - 2026-09-10 12:41): Combate por cabezazos contra mini-jefes y boss (America/Bogota, rama `feat/boss-headbutt-combat`):

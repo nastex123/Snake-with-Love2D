@@ -382,6 +382,11 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 ### Mini-Jefes (HP 3/4/6/5/6 por etapa)
 - Mismo cabezazo; la Bomba pega 2 como válvula táctica.
 
+### Rebote seguro + Parry del mini-jefe (2026-09-11 ✅)
+- Rebote con destino validado: atrás → laterales → quedarse; nunca sobre cuello/cuerpo/muro/dentro del 2x2; si bloqueado, solo fantasma.
+- Al rebotar, el mini-jefe hace **parry**: fuerza su máquina a `telegraph` con tiempo x0.6 (`PARRY_TELEGRAPH_MULT`), popup "¡PARRY!"; solo en `idle` + `parryCooldown` 2.0s (sin interrumpir ataques en curso).
+- Sierpe Magma (sin ataques): parry = embestida corta de 2 celdas hacia la cabeza + rastro de lava.
+
 ### Attacks
 Los 5 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers visibles antes de ejecutarse):
 

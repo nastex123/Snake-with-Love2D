@@ -354,9 +354,10 @@ profile = {
 ## 7. Key Algorithms
 
 ### Boss Headbutt Defeat (rework 2026-09-10)
-- Boss con `hp/maxHp = 12` (`BOSS_HEADBUTT_HP`), `invulnerable = false`
+- Boss con `hp/maxHp = 12` (`BOSS_HEADBUTT_HP`), `invulnerable = false`; modelo HP único (sin `vida/vidaMax`; display HUD `{hp, maxHp}` con guard)
 - `hitBossRam(dmg)` aplica daño; al morir retorna loot `type="boss"`
-- Cabezazo: `combatRam.damageFor(comboDisplay)` + rebote + fantasma 0.8s
+- Cabezazo: `combatRam.damageFor(comboDisplay)` + rebote seguro + fantasma 0.8s
+- `miniBoss.parry(mb, ctx)` (2026-09-11 ✅): fuerza `telegraph` x0.6 (`PARRY_TELEGRAPH_MULT`) solo en `idle` + `parryCooldown` 2.0s; passthrough `enemies.parryMiniBoss()`
 - Enrage a HP <= 3 (`BOSS_ENRAGE_THRESHOLD`); barra por fracción HP
 
 ### Boss Health Bar Lerp
