@@ -69,7 +69,7 @@ function miniBoss.spawn(etapa, gx, gy)
         telegraphCells = {}, flash = 0,
         trail = {}, singu = nil, singuPull = 0,
         wpIndex = 1, slammed = false, pendingHit = false,
-        justTeleported = false,
+        justTeleported = false, trampleHits = 0, chargeLane = nil,
     }
     world.set("enemies.miniboss", mb)
     return mb
@@ -376,7 +376,8 @@ function miniBoss.execute(mb, ctx)
     local obstacles = ctx.obstacles
 
     if atk == "charge" then
-        -- Embestida sísmica: cruza hasta el borde destruyendo obstáculos
+        -- Embestida sísmica 2x2: cruza hasta el borde destruyendo obstáculos
+        -- en ambas líneas y registra la franja para resolver el arrollamiento
         local cells, horizontal = planCharge(mb, ctx)
         local step = 0
         if horizontal then
@@ -385,16 +386,20 @@ function miniBoss.execute(mb, ctx)
             while inBounds(x + step, mb.y, w, h) do
                 x = x + step
                 destroyAt(obstacles, x, mb.y)
+                destroyAt(obstacles, x, mb.y + 1)
             end
             mb.x = math.max(0, math.min(w - 2, x))
+            mb.chargeLane = {horizontal = true, fixed0 = mb.y, fixed1 = mb.y + 1}
         else
             step = (ctx.head and ctx.head.y or mb.y) >= mb.y and 1 or -1
             local y = mb.y
             while inBounds(mb.x, y + step, w, h) do
                 y = y + step
                 destroyAt(obstacles, mb.x, y)
+                destroyAt(obstacles, mb.x + 1, y)
             end
             mb.y = math.max(0, math.min(h - 2, y))
+            mb.chargeLane = {horizontal = false, fixed0 = mb.x, fixed1 = mb.x + 1}
         end
         mb.slammed = true
     elseif atk == "breath" then
