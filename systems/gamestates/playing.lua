@@ -517,7 +517,13 @@ function playing.update(dt)
                     local cut = resolveTrampleCut(st, mb)
                     local head = st.player.body and st.player.body[1]
                     if cut > 0 and head then
-                        uiMod.addPopup("¡COLA SEGADA -" .. cut .. "!", head.x, head.y)
+                        -- Penalización de racha progresiva: -STEP*hits, piso x1.0
+                        local step = constants.CRUSHER_TRAMPLE_STREAK_STEP or 0.1
+                        st.roomDamaged = true
+                        st.survivalStreak = math.max(1.0,
+                            (st.survivalStreak or 1.0) - step * (mb.trampleHits or 1))
+                        local pen = string.format("%.1f", step * (mb.trampleHits or 1))
+                        uiMod.addPopup("¡COLA SEGADA -" .. cut .. "! RACHA -" .. pen .. "x", head.x, head.y)
                     elseif head then
                         uiMod.addPopup("¡AGUANTA!", head.x, head.y)
                     end
