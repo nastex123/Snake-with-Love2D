@@ -388,6 +388,15 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 - Racha **progresiva**: `roomDamaged` + `-0.1x * arrollamientos` a `survivalStreak` (piso x1.0).
 - Defensas: fantasma/debug inmune; escudo se consume y bloquea; armadura -1 y bloquea. Solo el corte real avanza el contador.
 
+### Sprite Perforador de Plasma (handoff próxima sesión, 2026-09-11)
+- Elegida la variante **#4 Perforador de Plasma** del HTML de 5 propuestas (taladro rotatorio + calor residual; telegraph helicoidal con mejor lectura direccional). Alcance: **solo Triturador, solo telegraph del charge**.
+- Texturas en **PNG 16x16** exportados del HTML → `assets/enemies/crusher/`: `plasma_idle_f1/f2` (4 FPS), `plasma_attack_f1/f2` (5 FPS), `plasma_telegraph_f1/f2` (amarillo→rojo, 3 FPS). Paleta: base #28231A, metal #665843/#BA9F74, calor #FA5B16; telegraph Y #FFD93C / R #FF2A1A.
+- Loader nuevo `systems/miniBossArt.lua` (espejo de `tarotArt.lua`: mapa `wall_crusher`→rutas, `get()` lazy vía `core/assets.lua` con `nearest`, fallback nil). No tocar `tarotArt`.
+- `render/enemiesDraw.lua`: en `drawMiniBoss`, si `defId=="wall_crusher"` y hay textura → PNG escalado al bloque 2x2 (`tam*2/16`), idle 4 FPS, frames de ataque en telegraph/execute; conservar sombra, borde dorado y barra HP. Fallback procedural si falta PNG o es otro mini.
+- Telegraph del charge texturizado: en `draw:274-284`, si tipo `miniboss_charge` y hay tile → F1 (`frac<0.5`) / F2 por celda en mosaico; resto de telegraphs intactos.
+- Tinte `MINIBOSS_DEFS[1].color` → naranja plasma.
+- Tests scope_22 +4 (mapeo 6 rutas, cache, fallback sin PNG, tile en charge). No tocar `core/assets.lua` ni shaders.
+
 ### Rebote seguro + Parry del mini-jefe (2026-09-11 ✅)
 - Rebote con destino validado: atrás → laterales → quedarse; nunca sobre cuello/cuerpo/muro/dentro del 2x2; si bloqueado, solo fantasma.
 - Al rebotar, el mini-jefe hace **parry**: fuerza su máquina a `telegraph` con tiempo x0.6 (`PARRY_TELEGRAPH_MULT`), popup "¡PARRY!"; solo en `idle` + `parryCooldown` 2.0s (sin interrumpir ataques en curso).

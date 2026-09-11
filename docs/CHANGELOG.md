@@ -8,6 +8,12 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-11 (plasma crusher art handoff)
+
+- **docs** (handoff - 2026-09-11): Handoff documentado para la próxima sesión — sprite Perforador de Plasma del Triturador (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE**: GDD §5 + TDD + TODO con spec cerrada (variante #4 del HTML; 6 PNG 16x16 → `assets/enemies/crusher/`; loader `miniBossArt.lua`; sprite 2x2 + tile charge; scope_22 +4; 3 commits).
+  2. **POR QUE**: dejar alcance, archivos y riesgos fijados para que la próxima sesión implemente sin ambigüedad.
+
 ## 2026-09-11 (crusher trample: 2-wide scaled partial damage)
 
 - **feat** (completed - 2026-09-11): Arrollamiento del Triturador con daño parcial escalado (America/Bogota, rama `feat/boss-headbutt-combat`, 9 commits):

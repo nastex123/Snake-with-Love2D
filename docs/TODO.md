@@ -131,6 +131,12 @@
   - [x] Keys `CRUSHER_TRAMPLE_*` + telegraph 2 líneas + `chargeLane`/`trampleHits`
   - [x] Corte `min(2+hits,4)` piso 3 + racha `-0.1x*hits` piso 1.0 + cadena fantasma/escudo/armadura
   - [x] Tests scope_22 +8 (lane 3 + trample 5); suite 740: 720 PASS / 20 pre-existentes
+- [ ] **Sprite Perforador de Plasma del Triturador** (handoff próxima sesión 2026-09-11, variante #4 del HTML):
+  - [ ] Exportar 6 PNG 16x16 del HTML → `assets/enemies/crusher/` (idle f1/f2, attack f1/f2, telegraph f1/f2)
+  - [ ] Loader `systems/miniBossArt.lua` (espejo `tarotArt`; fallback nil sin PNG)
+  - [ ] Sprite 2x2 en `drawMiniBoss` (idle 4 FPS, ataque en telegraph/execute; conserva sombra/borde/barra) + tile en telegraph `miniboss_charge` (F1/F2) + tinte `DEFS[1].color` plasma
+  - [ ] Tests scope_22 +4 (mapeo, cache, fallback, tile); objetivo suite 744 (720 + 4)
+  - [ ] Docs + 3 commits (`feat` + `test` + `docs`)
 - [ ] **Meta-Progression Shrine**:
   - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
 - [ ] **Daily Challenges, Lore Codex & Bounties**:
