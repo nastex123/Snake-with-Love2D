@@ -367,3 +367,50 @@ harness.describe("MiniBoss - Parry riposte on headbutt (GDD §5)", function()
         harness.assert_equal("telegraph", mb.state, "contraataca")
     end)
 end)
+
+harness.describe("MiniBoss - Crusher 2-wide trample lane", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    harness.it("charge telegraph covers 2 rows when horizontal", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 25, y = 8}
+        mb.state = "idle"
+        mb.attackCooldown = 0
+        miniBoss.update(0.016, mb, ctx)
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local rows = {}
+        for _, c in ipairs(mb.telegraphCells) do rows[c.y] = true end
+        harness.assert_true(rows[8] and rows[9], "cubre filas 8 y 9")
+        harness.assert_equal(64, #mb.telegraphCells, "32 cols x 2 filas")
+    end)
+
+    harness.it("charge telegraph covers 2 columns when vertical", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 10, y = 0}
+        mb.state = "idle"
+        mb.attackCooldown = 0
+        miniBoss.update(0.016, mb, ctx)
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local cols = {}
+        for _, c in ipairs(mb.telegraphCells) do cols[c.x] = true end
+        harness.assert_true(cols[10] and cols[11], "cubre columnas 10 y 11")
+        harness.assert_equal(36, #mb.telegraphCells, "18 filas x 2 columnas")
+    end)
+
+    harness.it("execute records chargeLane and clears both rows", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 25, y = 8}
+        mb.currentAttack = "charge"
+        ctx.obstacles.pos = {{x = 15, y = 8, type = "wall"}, {x = 20, y = 9, type = "wall"}}
+        miniBoss.execute(mb, ctx)
+        harness.assert_equal(0, #ctx.obstacles.pos, "limpia ambas filas")
+        harness.assert_not_nil(mb.chargeLane, "lane registrada")
+        harness.assert_true(mb.chargeLane.horizontal, "eje horizontal")
+        harness.assert_equal(0, mb.trampleHits, "contador intacto tras execute")
+    end)
+end)
