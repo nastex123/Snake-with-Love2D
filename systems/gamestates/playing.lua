@@ -414,14 +414,34 @@ function playing.update(dt)
         end
     end
 
-    -- Cabezazo al mini-jefe sala 3 (GDD §5 rework): daño por combo + rebote
+    -- Cabezazo al mini-jefe sala 3 (GDD §5 rework): daño por combo + rebote seguro + parry
     do
         local mb = enemiesMod.getMiniBoss()
         if mb and mb.alive and headOnMiniBoss(st, mb) then
             local comboDisplay = (st.comboCount or 0) + 1
             local dmg = combatRam.damageFor(comboDisplay)
-            combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla)
+            local head0 = st.player.body and st.player.body[1]
+            combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla, {
+                body = st.player.body,
+                avoidRects = {{x0 = mb.x, y0 = mb.y, x1 = mb.x + 1, y1 = mb.y + 1}},
+            })
             local head = st.player.body and st.player.body[1]
+            if head0 and head and (head.x ~= head0.x or head.y ~= head0.y) then
+                uiMod.addPopup("REBOTE!", head.x, head.y)
+            end
+            local parryCtx = {
+                enemies = enemiesMod,
+                obstacles = obstaclesMod,
+                attackRegistry = enemiesMod,
+                head = head,
+                tail = st.player.body and st.player.body[#st.player.body],
+                anchoGrilla = st.anchoGrilla,
+                altoGrilla = st.altoGrilla,
+            }
+            if enemiesMod.parryMiniBoss and enemiesMod.parryMiniBoss(parryCtx) then
+                if head then uiMod.addPopup("¡PARRY!", head.x, head.y) end
+                sound.play("shieldBreak")
+            end
             if dmg > 0 then
                 sound.play("enemyKill")
                 if head then uiMod.addPopup("-" .. dmg .. " CABEZAZO!", head.x, head.y) end
@@ -570,10 +590,15 @@ function playing.update(dt)
 
         if bossResult then
             if bossResult.hit then
-                -- Cabezazo al boss (GDD §5 rework): daño por combo + rebote
+                -- Cabezazo al boss (GDD §5 rework): daño por combo + rebote seguro
                 local comboDisplay = (st.comboCount or 0) + 1
                 local dmg = combatRam.damageFor(comboDisplay)
-                combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla)
+                local boss = enemiesMod.boss
+                local avoid = nil
+                if boss and boss.alive then
+                    avoid = {{x0 = boss.x, y0 = boss.y, x1 = boss.x, y1 = boss.y}}
+                end
+                combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla, {body = st.player.body, avoidRects = avoid})
                 local head = st.player.body and st.player.body[1]
                 if dmg > 0 then
                     sound.play("enemyKill")

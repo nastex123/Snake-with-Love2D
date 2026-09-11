@@ -156,6 +156,10 @@ function enemies.addMiniBossFood()
     return miniBossLogic.addFood(mb)
 end
 
+function enemies.parryMiniBoss(ctx)
+    return miniBossLogic.parry(miniBossLogic.get(), ctx)
+end
+
 -- ============================================================
 -- Combat helpers — permanecen en fachada (sin estado externo)
 -- ============================================================

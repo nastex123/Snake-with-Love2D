@@ -168,6 +168,64 @@ local function stepToward(mb, tx, ty, w, h)
     mb.y = math.max(0, math.min(h - 2, mb.y))
 end
 
+local function nextAttackName(mb, def)
+    mb.attackCount = (mb.attackCount or 0) + 1
+    local atk = def.attacks[((mb.attackCount - 1) % #def.attacks) + 1]
+    mb.currentAttack = atk
+    return atk
+end
+
+-- Parry (GDD §5): tras un cabezazo, fuerza telegraph x0.6 si está idle.
+-- Retorna true si inicia contraataque. Sierpe (sin ataques): embestida corta.
+function miniBoss.parry(mb, ctx)
+    if not mb or not mb.alive then return false end
+    if mb.state ~= "idle" then return false end
+    if (mb.parryCooldown or 0) > 0 then return false end
+    ctx = ctx or {}
+    local w = ctx.anchoGrilla or constants.MAX_GRID_COLS or 32
+    local h = ctx.altoGrilla or constants.MAX_GRID_ROWS or 18
+    local def = miniBoss.getDef(mb.etapa)
+    local mult = constants.PARRY_TELEGRAPH_MULT or 0.6
+    mb.parryCooldown = constants.PARRY_COOLDOWN or 2.0
+    if #(def.attacks or {}) == 0 then
+        local head = ctx.head or {x = mb.x + 1, y = mb.y}
+        stepToward(mb, head.x, head.y, w, h)
+        stepToward(mb, head.x, head.y, w, h)
+        if ctx.obstacles and ctx.obstacles.spawnAt and inBounds(mb.x, mb.y, w, h) then
+            ctx.obstacles.spawnAt(mb.x, mb.y, "lava")
+            mb.trail[#mb.trail + 1] = {x = mb.x, y = mb.y, timer = 4.0}
+        end
+        mb.flash = 0.5
+        return true
+    end
+    local atk = nextAttackName(mb, def)
+    mb.telegraphCells = {}
+    local tTime = (def.telegraphTime or 0.8) * mult
+    if atk == "charge" then
+        local cells = planCharge(mb, ctx)
+        mb.telegraphCells = cells
+        markTelegraph(ctx, cells, tTime, "miniboss_charge")
+    elseif atk == "breath" then
+        local head = ctx.head or {x = mb.x + 1, y = mb.y}
+        local dx = (head.x or mb.x) - mb.x
+        local sx = dx ~= 0 and (dx > 0 and 1 or -1) or 1
+        for d = 1, 3 do
+            local cx, cy = mb.x + sx * d, mb.y
+            if inBounds(cx, cy, w, h) then
+                mb.telegraphCells[#mb.telegraphCells + 1] = {x = cx, y = cy}
+            end
+        end
+        markTelegraph(ctx, mb.telegraphCells, tTime, "miniboss_breath")
+    else
+        markTelegraph(ctx, {{x = mb.x, y = mb.y}}, tTime, "miniboss_" .. atk)
+        mb.telegraphCells = {{x = mb.x, y = mb.y}}
+    end
+    mb.flash = 0.5
+    mb.state = "telegraph"
+    mb.stateTimer = tTime
+    return true
+end
+
 function miniBoss.update(dt, mb, ctx)
     if not mb or not mb.alive then return end
     ctx = ctx or {}
@@ -177,6 +235,9 @@ function miniBoss.update(dt, mb, ctx)
 
     if mb.flash and mb.flash > 0 then
         mb.flash = math.max(0, mb.flash - dt)
+    end
+    if mb.parryCooldown and mb.parryCooldown > 0 then
+        mb.parryCooldown = math.max(0, mb.parryCooldown - dt)
     end
 
     -- Estela de lava de la sierpe: expira a los 4s
@@ -243,9 +304,7 @@ function miniBoss.update(dt, mb, ctx)
     if mb.state == "idle" then
         mb.attackCooldown = (mb.attackCooldown or 3.0) - dt
         if mb.attackCooldown <= 0 and #(def.attacks or {}) > 0 then
-            mb.attackCount = (mb.attackCount or 0) + 1
-            local atk = def.attacks[((mb.attackCount - 1) % #def.attacks) + 1]
-            mb.currentAttack = atk
+            local atk = nextAttackName(mb, def)
             mb.telegraphCells = {}
             if atk == "charge" then
                 local cells = planCharge(mb, ctx)
