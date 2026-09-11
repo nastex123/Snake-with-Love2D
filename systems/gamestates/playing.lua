@@ -130,6 +130,35 @@ local function headOnMiniBoss(st, mb)
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
 end
 
+-- ¿Cabeza dentro de la franja arrollada por el charge? (lane 2x2 de ancho)
+local function headOnChargeLane(st, lane)
+    local head = st.player.body and st.player.body[1]
+    if not head or not lane then return false end
+    if lane.horizontal then
+        return head.y == lane.fixed0 or head.y == lane.fixed1
+    end
+    return head.x == lane.fixed0 or head.x == lane.fixed1
+end
+
+-- Arrollamiento del Triturador: corte de cola escalado (GDD §5).
+-- cut = min(BASE + trampleHits, MAX), piso de 3 segmentos. Retorna nº cortado.
+local function resolveTrampleCut(st, mb)
+    local body = st.player.body
+    if not body or #body <= 3 then return 0 end
+    local base = constants.CRUSHER_TRAMPLE_CUT_BASE or 2
+    local maxCut = constants.CRUSHER_TRAMPLE_CUT_MAX or 4
+    local cut = math.min(base + (mb.trampleHits or 0), maxCut)
+    cut = math.min(cut, #body - 3)
+    for _ = 1, cut do table.remove(body) end
+    st.player.prevBody = {}
+    for i, b in ipairs(body) do
+        st.player.prevBody[i] = {x = b.x, y = b.y}
+    end
+    st.player.sliceGraceTimer = constants.PATROLLER_SLICE_GRACE_TIME or 1.0
+    mb.trampleHits = (mb.trampleHits or 0) + 1
+    return cut
+end
+
 -- Item aleatorio no poseido via tienda costo 0 (premios Contrarreloj/Espejo/Altar)
 local function grantRandomItem(st, onlyPassive)
     local hasItems, itemsMod = pcall(require, "systems.items")
@@ -474,13 +503,27 @@ function playing.update(dt)
                 end
             end
         end
-        -- Embestida del Triturador: sacudida no letal (aturdido, GDD)
+        -- Embestida del Triturador: arrollamiento con corte de cola (GDD §5)
         if mb and mb.slammed then
             mb.slammed = false
             st.shakeTimer = 0.3
             shadersMod.triggerDamage(0.6, 0.4)
             uiMod.addPopup("TERREMOTO!", mb.x, mb.y)
             sound.play("shieldBreak")
+            if headOnChargeLane(st, mb.chargeLane) then
+                local ghost = st.player.ghost or world.get("debugImmune", false)
+                    or (combatRam and combatRam.hasGhost(st.player))
+                if not ghost then
+                    local cut = resolveTrampleCut(st, mb)
+                    local head = st.player.body and st.player.body[1]
+                    if cut > 0 and head then
+                        uiMod.addPopup("¡COLA SEGADA -" .. cut .. "!", head.x, head.y)
+                    elseif head then
+                        uiMod.addPopup("¡AGUANTA!", head.x, head.y)
+                    end
+                end
+            end
+            mb.chargeLane = nil
         end
     end
 
