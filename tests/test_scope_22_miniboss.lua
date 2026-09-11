@@ -414,3 +414,120 @@ harness.describe("MiniBoss - Crusher 2-wide trample lane", function()
         harness.assert_equal(0, mb.trampleHits, "contador intacto tras execute")
     end)
 end)
+
+harness.describe("MiniBoss - Crusher progressive trample damage", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    local function setupTrample(nSegs)
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local states = require("systems.gamestates")
+        local st = world.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = 999
+        st.velocidadActual = 999
+        st.puntuacion = 0
+        st.frutasContador = 0
+        st.monedas = 100
+        st.survivalStreak = 1.5
+        st.highestStreak = 1.5
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 0
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        st.shakeTimer = 0
+        st.player = snakeMod.reset()
+        st.player.body = {}
+        for i = 0, (nSegs or 8) - 1 do
+            st.player.body[#st.player.body + 1] = {x = 5 - i, y = 8}
+        end
+        st.player.dirX, st.player.dirY = 0, 0
+        st.player.inputQueue = {}
+        st.player.ghost = false
+        st.player.bumpGhostTimer = 0
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        enemies.boss = nil
+        worldMod.etapa = 1
+        worldMod.sala = 3
+        local mb = enemies.spawnMiniBoss(1, 20, 10)
+        mb.state = "cooldown"
+        mb.stateTimer = 999
+        mb.attackCooldown = 999
+        return st, mb, states
+    end
+
+    local function trample(st, mb, states)
+        mb.slammed = true
+        mb.chargeLane = {horizontal = true, fixed0 = 8, fixed1 = 9}
+        states.updatePlaying(0.02)
+    end
+
+    harness.it("first trample cuts 2 and docks 0.1x streak", function()
+        local st, mb, states = setupTrample(8)
+        trample(st, mb, states)
+        harness.assert_equal(6, #st.player.body, "corta 2")
+        harness.assert_equal(1, mb.trampleHits, "contador 1")
+        harness.assert_true(st.roomDamaged, "racha marcada")
+        harness.assert_true(math.abs(st.survivalStreak - 1.4) < 0.001, "1.5-0.1")
+        harness.assert_false(st.deathModalOpen, "sin muerte")
+        harness.assert_true((st.player.sliceGraceTimer or 0) > 0, "gracia activa")
+    end)
+
+    harness.it("cut scales 2-3-4 capped across hits", function()
+        local st, mb, states = setupTrample(12)
+        trample(st, mb, states)
+        harness.assert_equal(10, #st.player.body, "1er: -2")
+        trample(st, mb, states)
+        harness.assert_equal(7, #st.player.body, "2do: -3")
+        harness.assert_true(math.abs(st.survivalStreak - 1.2) < 0.001, "1.5-0.1-0.2")
+        trample(st, mb, states)
+        harness.assert_equal(3, #st.player.body, "3ro: -4 (cap)")
+        harness.assert_equal(3, mb.trampleHits, "contador 3")
+    end)
+
+    harness.it("short snake holds without cut", function()
+        local st, mb, states = setupTrample(3)
+        trample(st, mb, states)
+        harness.assert_equal(3, #st.player.body, "piso 3 intacto")
+        harness.assert_equal(0, mb.trampleHits, "sin contador sin corte")
+        harness.assert_false(st.deathModalOpen, "sin muerte")
+    end)
+
+    harness.it("shield blocks without counter progress", function()
+        local st, mb, states = setupTrample(8)
+        local shop = require("systems.shop")
+        shop.shieldActive = true
+        trample(st, mb, states)
+        harness.assert_equal(8, #st.player.body, "sin corte")
+        harness.assert_false(shop.shieldActive, "escudo consumido")
+        harness.assert_equal(0, mb.trampleHits, "sin contador")
+        harness.assert_equal(1.5, st.survivalStreak, "racha intacta")
+    end)
+
+    harness.it("head outside lane takes no damage", function()
+        local st, mb, states = setupTrample(8)
+        st.player.body[1] = {x = 5, y = 5}
+        trample(st, mb, states)
+        harness.assert_equal(8, #st.player.body, "sin corte fuera de franja")
+        harness.assert_equal(0, mb.trampleHits, "sin contador")
+    end)
+end)
