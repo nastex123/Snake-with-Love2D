@@ -130,16 +130,23 @@ local function markTelegraph(ctx, cells, timer, attackType)
     end
 end
 
--- Elige eje de embestida por la fila/columna de la cabeza y marca la línea
+-- Elige eje de embestida por la fila/columna de la cabeza y marca 2 líneas
+-- (el mini es 2x2: filas mb.y/mb.y+1 o columnas mb.x/mb.x+1)
 local function planCharge(mb, ctx)
     local head = ctx.head or {x = mb.x, y = mb.y}
     local w, h = ctx.anchoGrilla, ctx.altoGrilla
     local horizontal = math.abs(head.x - mb.x) >= math.abs(head.y - mb.y)
     local cells = {}
     if horizontal then
-        for x = 0, w - 1 do cells[#cells + 1] = {x = x, y = mb.y} end
+        for x = 0, w - 1 do
+            cells[#cells + 1] = {x = x, y = mb.y}
+            cells[#cells + 1] = {x = x, y = mb.y + 1}
+        end
     else
-        for y = 0, h - 1 do cells[#cells + 1] = {x = mb.x, y = y} end
+        for y = 0, h - 1 do
+            cells[#cells + 1] = {x = mb.x, y = y}
+            cells[#cells + 1] = {x = mb.x + 1, y = y}
+        end
     end
     return cells, horizontal
 end
