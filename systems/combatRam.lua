@@ -14,18 +14,46 @@ function combatRam.damageFor(comboDisplay)
     return dmg
 end
 
--- Rebote: retrocede la cabeza 1 celda (si cabe) y otorga fantasma
-function combatRam.ram(s, w, h)
+-- Rebote seguro: atrás → laterales → quedarse. Nunca sobre cuerpo/muro/rect.
+-- opts = {body={{x,y}...}, avoidRects={{x0,y0,x1,y1}...}} ; retorna true si movió.
+function combatRam.ram(s, w, h, opts)
     if not s or not s.body or #s.body == 0 then return false end
     local head = s.body[1]
-    local nx, ny = head.x - (s.dirX or 0), head.y - (s.dirY or 0)
+    local dx, dy = (s.dirX or 0), (s.dirY or 0)
     w = w or constants.MAX_GRID_COLS or 32
     h = h or constants.MAX_GRID_ROWS or 18
-    if nx >= 0 and nx < w and ny >= 0 and ny < h then
-        head.x, head.y = nx, ny
+    local cands = {{x = head.x - dx, y = head.y - dy}}
+    if dx ~= 0 then
+        cands[#cands + 1] = {x = head.x, y = head.y - 1}
+        cands[#cands + 1] = {x = head.x, y = head.y + 1}
+    else
+        cands[#cands + 1] = {x = head.x - 1, y = head.y}
+        cands[#cands + 1] = {x = head.x + 1, y = head.y}
+    end
+    local function blocked(cx, cy)
+        if cx < 0 or cx >= w or cy < 0 or cy >= h then return true end
+        if opts and opts.body then
+            for i = 2, #opts.body do
+                local seg = opts.body[i]
+                if seg and seg.x == cx and seg.y == cy then return true end
+            end
+        end
+        if opts and opts.avoidRects then
+            for _, r in ipairs(opts.avoidRects) do
+                if cx >= r.x0 and cx <= r.x1 and cy >= r.y0 and cy <= r.y1 then return true end
+            end
+        end
+        return false
+    end
+    for _, c in ipairs(cands) do
+        if not blocked(c.x, c.y) then
+            head.x, head.y = c.x, c.y
+            s.bumpGhostTimer = constants.HEADBUTT_GHOST_TIME or 0.8
+            return true
+        end
     end
     s.bumpGhostTimer = constants.HEADBUTT_GHOST_TIME or 0.8
-    return true
+    return false
 end
 
 function combatRam.hasGhost(s)
