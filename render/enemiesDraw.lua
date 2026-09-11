@@ -377,7 +377,8 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
     if boss and boss.alive then
         local cx = boss.x * tam + tam / 2
         local cy = boss.y * tam + tam / 2
-        local vidaFrac = boss.vida / boss.vidaMax
+        local maxHp = boss.maxHp or 1
+        local vidaFrac = math.max(0, math.min(1, (boss.hp or maxHp) / maxHp))
         local pulse = math.sin(time * 3) * 0.2 + 0.8
 
         local r, g, b

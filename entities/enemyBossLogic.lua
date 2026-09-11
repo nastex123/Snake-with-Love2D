@@ -17,8 +17,6 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
     local cy = math.floor(altoGrilla / 2)
     enemiesMod.boss = {
         x = cx, y = cy,
-        vida = bossVida,
-        vidaMax = bossVida,
         bossType = "teleporter",
         alive = true,
         moveTimer = 0,
@@ -32,8 +30,8 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
         telegraphPositions = {},
         foodCollected = 0,
         foodTarget = constants.BOSS_FOOD_TARGET,
-        hp = constants.BOSS_HEADBUTT_HP or 12,
-        maxHp = constants.BOSS_HEADBUTT_HP or 12,
+        hp = bossVida or constants.BOSS_HEADBUTT_HP or 12,
+        maxHp = bossVida or constants.BOSS_HEADBUTT_HP or 12,
         invulnerable = false,
         enraged = false,
         enrageFlash = 0,
@@ -50,12 +48,12 @@ function bossLogic.hitBoss(enemiesMod, attackRegistry)
     local boss = enemiesMod.boss
     if not boss or not boss.alive then return nil end
     if boss.invulnerable then
-        return {hit = true, vida = boss.vida, vidaMax = boss.vidaMax}
+        return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
     end
-    -- Defensive: tests may create boss without vida initialized (e.g. direct table)
-    boss.vida = (boss.vida or boss.vidaMax or boss.hp or 3) - 1
-    boss.vidaMax = boss.vidaMax or boss.vida + 1
-    if boss.vida <= 0 then
+    -- Modelo HP único (GDD §5 rework): sin vida/vidaMax
+    boss.hp = (boss.hp or boss.maxHp or 3) - 1
+    boss.maxHp = boss.maxHp or boss.hp + 1
+    if boss.hp <= 0 then
         boss.alive = false
         if attackRegistry then attackRegistry.clearAll() end
         local tam = constants.TAMANIO_BLOQUE
@@ -67,7 +65,7 @@ function bossLogic.hitBoss(enemiesMod, attackRegistry)
             type = "boss"
         }
     end
-    return {hit = true, vida = boss.vida, vidaMax = boss.vidaMax}
+    return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
 end
 
 -- Daño por cabezazo (GDD §5 rework): hp directo, loot al morir

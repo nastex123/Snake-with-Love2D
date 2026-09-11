@@ -599,6 +599,13 @@ function playing.update(dt)
                     avoid = {{x0 = boss.x, y0 = boss.y, x1 = boss.x, y1 = boss.y}}
                 end
                 combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla, {body = st.player.body, avoidRects = avoid})
+                -- Display HUD desde el boss real (modelo hp único), nunca el {hit} pelado del mover
+                local function refreshBossDisplay()
+                    local b = enemiesMod.boss
+                    if b and b.alive then
+                        st.bossHealthDisplay = {hp = b.hp, maxHp = b.maxHp}
+                    end
+                end
                 local head = st.player.body and st.player.body[1]
                 if dmg > 0 then
                     sound.play("enemyKill")
@@ -607,7 +614,7 @@ function playing.update(dt)
                     if ramLoot and ramLoot.type == "boss" then
                         bossResult = ramLoot
                     else
-                        st.bossHealthDisplay = bossResult
+                        refreshBossDisplay()
                         -- Enrage al cruzar el umbral de HP (GDD §5 rework)
                         local boss = enemiesMod.boss
                         if boss and boss.alive and not boss.enraged
@@ -621,7 +628,7 @@ function playing.update(dt)
                         end
                     end
                 else
-                    st.bossHealthDisplay = bossResult
+                    refreshBossDisplay()
                     st.lastRamHint = st.lastRamHint or -10
                     if head and (st.time or 0) - st.lastRamHint > 3 then
                         st.lastRamHint = st.time or 0
