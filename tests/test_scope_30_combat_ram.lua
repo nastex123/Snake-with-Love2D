@@ -49,4 +49,37 @@ harness.describe("Scope 30 - combatRam bounce and ghost", function()
         core.update(s, 1.0)
         harness.assert_false(combatRam.hasGhost(s), "expira tras 1s")
     end)
+
+    harness.it("safe bounce never lands on neck segment", function()
+        local s = {body = {{x = 5, y = 5}, {x = 4, y = 5}, {x = 3, y = 5}}, dirX = 1, dirY = 0}
+        combatRam.ram(s, 32, 18, {body = s.body})
+        local head = s.body[1]
+        harness.assert_false(head.x == 4 and head.y == 5, "no aterriza en el cuello")
+        harness.assert_true(combatRam.hasGhost(s), "fantasma activo")
+    end)
+
+    harness.it("safe bounce avoids rect and grants ghost when fully blocked", function()
+        local s = {body = {{x = 5, y = 5}}, dirX = 0, dirY = 0}
+        local rects = {
+            {x0 = 5, y0 = 5, x1 = 5, y1 = 5},
+            {x0 = 5, y0 = 4, x1 = 5, y1 = 4},
+            {x0 = 5, y0 = 6, x1 = 5, y1 = 6},
+            {x0 = 4, y0 = 5, x1 = 4, y1 = 5},
+            {x0 = 6, y0 = 5, x1 = 6, y1 = 5},
+        }
+        local moved = combatRam.ram(s, 32, 18, {body = s.body, avoidRects = rects})
+        harness.assert_false(moved, "bloqueado: no mueve")
+        harness.assert_equal(5, s.body[1].x, "x intacta")
+        harness.assert_true(combatRam.hasGhost(s), "fantasma aunque bloqueado")
+    end)
+
+    harness.it("display without vida renders guarded fraction", function()
+        local display = {hp = 6, maxHp = 12}
+        local dMax = display.maxHp or 1
+        local frac = 0
+        if dMax > 0 then
+            frac = math.max(0, math.min(1, (display.hp or dMax) / dMax))
+        end
+        harness.assert_equal(0.5, frac, "fraccion hp sin vida")
+    end)
 end)

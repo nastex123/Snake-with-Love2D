@@ -322,3 +322,48 @@ harness.describe("MiniBoss - Headbutt Combat (GDD §5 rework)", function()
         world.set("controlMode", "tactical")
     end)
 end)
+
+harness.describe("MiniBoss - Parry riposte on headbutt (GDD §5)", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    harness.it("parry forces telegraph x0.6 when idle", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        mb.state = "idle"
+        mb.attackCooldown = 99
+        harness.assert_true(miniBoss.parry(mb, ctx), "parry inicia")
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local expected = (miniBoss.getDef(1).telegraphTime or 0.8) * (constants.PARRY_TELEGRAPH_MULT or 0.6)
+        harness.assert_true(math.abs(mb.stateTimer - expected) < 0.001, "timer x0.6")
+    end)
+
+    harness.it("parry refuses while busy and respects cooldown", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        mb.state = "cooldown"
+        harness.assert_false(miniBoss.parry(mb, ctx), "ocupado: sin parry")
+        mb.state = "idle"
+        mb.parryCooldown = 1.5
+        harness.assert_false(miniBoss.parry(mb, ctx), "cooldown: sin parry")
+    end)
+
+    harness.it("wyrm parry lunges without telegraph state", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(3, 10, 8)
+        mb.state = "idle"
+        local ox, oy = mb.x, mb.y
+        harness.assert_true(miniBoss.parry(mb, ctx), "sierpe responde")
+        harness.assert_equal("idle", mb.state, "sin telegraph")
+        harness.assert_true(mb.x ~= ox or mb.y ~= oy, "embiste")
+    end)
+
+    harness.it("enemies.parryMiniBoss passthrough works", function()
+        local mb = enemies.spawnMiniBoss(2, 10, 8)
+        mb.state = "idle"
+        mb.attackCooldown = 99
+        harness.assert_true(enemies.parryMiniBoss(testCtx()), "passthrough ok")
+        harness.assert_equal("telegraph", mb.state, "contraataca")
+    end)
+end)

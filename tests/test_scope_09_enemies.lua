@@ -306,7 +306,7 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
     end)
 
     harness.it("spawns boss vulnerable with 12 HP configuration", function()
-        local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
+        local boss = enemies.spawnBoss(1, 30, 20, 12, 8)
         harness.assert_not_nil(boss)
         harness.assert_equal(15, boss.x, "Boss centered at grid center")
         harness.assert_equal(10, boss.y)
@@ -319,12 +319,12 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
     end)
 
     harness.it("hitBoss() returns hit feedback without reducing HP while invulnerable", function()
-        local boss = enemies.spawnBoss(1, 30, 20, 10, 8)
+        local boss = enemies.spawnBoss(1, 30, 20, 12, 8)
         boss.invulnerable = true
         local res = enemies.hitBoss()
         harness.assert_not_nil(res)
         harness.assert_true(res.hit)
-        harness.assert_equal(10, res.vida, "HP does not decrease when invulnerable")
+        harness.assert_equal(12, res.hp, "HP does not decrease when invulnerable")
         harness.assert_true(boss.alive)
     end)
 
@@ -333,11 +333,11 @@ harness.describe("Enemies Subsystem - Boss Lifecycle, Phases & Food Defeat", fun
         boss.invulnerable = false
 
         local res1 = enemies.hitBoss()
-        harness.assert_equal(1, boss.vida)
+        harness.assert_equal(1, boss.hp)
         harness.assert_true(boss.alive)
 
         local res2 = enemies.hitBoss()
-        harness.assert_equal(0, boss.vida)
+        harness.assert_equal(0, boss.hp)
         harness.assert_false(boss.alive)
         harness.assert_equal("boss", res2.type)
         harness.assert_equal(8, res2.coins)
