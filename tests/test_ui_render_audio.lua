@@ -458,8 +458,8 @@ harness.describe("Enemies Rendering & Boss Visuals (render/enemiesDraw.lua)", fu
         local boss = {
             x = 15, y = 15,
             alive = true,
-            vida = 50,
-            vidaMax = 100,
+            hp = 50,
+            maxHp = 100,
             state = "telegraph",
             _uiBarFill = 0.5,
             foodCollected = 5,

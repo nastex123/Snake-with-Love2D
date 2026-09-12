@@ -227,6 +227,16 @@ config.PATROLLER_SLICE_MIN_LEN   = 5      -- Longitud minima de serpiente para c
 config.PATROLLER_SLICE_GRACE_TIME= 1.0    -- Intangibilidad de gracia tras seccionamiento (s)
 
 config.BOSS_FOOD_TARGET = 15
+-- Combate por cabezazos (GDD §5 rework): daño = comboDisplay - 1 si >= minimo
+config.HEADBUTT_MIN_COMBO = 2
+config.HEADBUTT_GHOST_TIME = 0.8
+config.HEADBUTT_MAX_DMG = 5
+config.BOSS_HEADBUTT_HP = 12
+config.PARRY_TELEGRAPH_MULT = 0.6  -- Parry miniboss: telegraph reducido (reacción rápida pero esquivable)
+config.PARRY_COOLDOWN = 2.0        -- Anti-spam de parry tras cada contraataque (s)
+config.CRUSHER_TRAMPLE_CUT_BASE = 2   -- Corte base del arrollamiento del Triturador (segmentos)
+config.CRUSHER_TRAMPLE_CUT_MAX = 4    -- Tope del corte escalado por arrollamientos previos
+config.CRUSHER_TRAMPLE_STREAK_STEP = 0.1 -- Penalización de racha por arrollamiento (x, progresiva)
 config.BOSS_ENRAGE_THRESHOLD = 3      -- Comidas restantes para activar la furia (12/15)
 config.BOSS_ENRAGE_MULT = 1.35        -- Acelerador de telegrafiados y ataques en furia (-35% tiempos)
 config.BOSS_ENRAGE_PITCH = 1.15       -- Tempo musical en furia (pitch del segmento boss)

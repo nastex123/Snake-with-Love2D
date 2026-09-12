@@ -240,3 +240,294 @@ harness.describe("MiniBoss - Elite Room 3 Integration", function()
         harness.assert_true(true, "Draw must not throw")
     end)
 end)
+
+harness.describe("MiniBoss - Headbutt Combat (GDD §5 rework)", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    local function setupPlayingWithMini(etapa, mx, my)
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local st = world.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = constants.VELOCIDAD_INICIAL
+        st.velocidadActual = constants.VELOCIDAD_INICIAL
+        st.puntuacion = 500
+        st.frutasContador = 0
+        st.monedas = 100
+        st.highScore = 500
+        st.coinBonus = 0
+        st.scoreMultiplier = 1
+        st.survivalStreak = 1.0
+        st.highestStreak = 1.0
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 0
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        st.player = snakeMod.reset()
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        enemies.boss = nil
+        worldMod.etapa = etapa or 1
+        worldMod.sala = 3
+        worldMod.objetivoSala = 100
+        world.set("controlMode", "tactical")
+        return st
+    end
+
+    harness.it("elite room does not complete with mini alive", function()
+        local states = require("systems.gamestates")
+        local st = setupPlayingWithMini(1)
+        st.player.body = {{x = 2, y = 2}, {x = 1, y = 2}, {x = 0, y = 2}}
+        st.player.dirX, st.player.dirY = 1, 0
+        st.player.inputQueue = {}
+        enemies.spawnMiniBoss(1, 20, 10)
+        states.updatePlaying(0.02)
+        harness.assert_equal(constants.GAME_STATE_PLAYING, st.gameState, "sigue en sala elite")
+        harness.assert_nil(st.transitionTarget, "sin transicion con mini vivo")
+        world.set("controlMode", "tactical")
+    end)
+
+    harness.it("headbutt with combo x6 kills crusher and loots", function()
+        local states = require("systems.gamestates")
+        local st = setupPlayingWithMini(1)
+        st.player.body = {{x = 10, y = 8}, {x = 9, y = 8}, {x = 8, y = 8}}
+        st.player.dirX, st.player.dirY = 0, 0
+        st.player.inputQueue = {}
+        st.comboCount = 5
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        local coinsBefore = st.monedas
+        states.updatePlaying(0.02)
+        harness.assert_false(mb.alive, "cabezazo x6 (5 dmg) mata crusher 3HP")
+        harness.assert_nil(enemies.getMiniBoss(), "tienda limpia al morir")
+        harness.assert_true(st.monedas > coinsBefore, "loot pagado")
+        harness.assert_false(st.deathModalOpen, "sin muerte del jugador")
+        world.set("controlMode", "tactical")
+    end)
+end)
+
+harness.describe("MiniBoss - Parry riposte on headbutt (GDD §5)", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    harness.it("parry forces telegraph x0.6 when idle", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        mb.state = "idle"
+        mb.attackCooldown = 99
+        harness.assert_true(miniBoss.parry(mb, ctx), "parry inicia")
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local expected = (miniBoss.getDef(1).telegraphTime or 0.8) * (constants.PARRY_TELEGRAPH_MULT or 0.6)
+        harness.assert_true(math.abs(mb.stateTimer - expected) < 0.001, "timer x0.6")
+    end)
+
+    harness.it("parry refuses while busy and respects cooldown", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        mb.state = "cooldown"
+        harness.assert_false(miniBoss.parry(mb, ctx), "ocupado: sin parry")
+        mb.state = "idle"
+        mb.parryCooldown = 1.5
+        harness.assert_false(miniBoss.parry(mb, ctx), "cooldown: sin parry")
+    end)
+
+    harness.it("wyrm parry lunges without telegraph state", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(3, 10, 8)
+        mb.state = "idle"
+        local ox, oy = mb.x, mb.y
+        harness.assert_true(miniBoss.parry(mb, ctx), "sierpe responde")
+        harness.assert_equal("idle", mb.state, "sin telegraph")
+        harness.assert_true(mb.x ~= ox or mb.y ~= oy, "embiste")
+    end)
+
+    harness.it("enemies.parryMiniBoss passthrough works", function()
+        local mb = enemies.spawnMiniBoss(2, 10, 8)
+        mb.state = "idle"
+        mb.attackCooldown = 99
+        harness.assert_true(enemies.parryMiniBoss(testCtx()), "passthrough ok")
+        harness.assert_equal("telegraph", mb.state, "contraataca")
+    end)
+end)
+
+harness.describe("MiniBoss - Crusher 2-wide trample lane", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    harness.it("charge telegraph covers 2 rows when horizontal", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 25, y = 8}
+        mb.state = "idle"
+        mb.attackCooldown = 0
+        miniBoss.update(0.016, mb, ctx)
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local rows = {}
+        for _, c in ipairs(mb.telegraphCells) do rows[c.y] = true end
+        harness.assert_true(rows[8] and rows[9], "cubre filas 8 y 9")
+        harness.assert_equal(64, #mb.telegraphCells, "32 cols x 2 filas")
+    end)
+
+    harness.it("charge telegraph covers 2 columns when vertical", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 10, y = 0}
+        mb.state = "idle"
+        mb.attackCooldown = 0
+        miniBoss.update(0.016, mb, ctx)
+        harness.assert_equal("telegraph", mb.state, "entra a telegraph")
+        local cols = {}
+        for _, c in ipairs(mb.telegraphCells) do cols[c.x] = true end
+        harness.assert_true(cols[10] and cols[11], "cubre columnas 10 y 11")
+        harness.assert_equal(36, #mb.telegraphCells, "18 filas x 2 columnas")
+    end)
+
+    harness.it("execute records chargeLane and clears both rows", function()
+        local ctx = testCtx()
+        local mb = enemies.spawnMiniBoss(1, 10, 8)
+        ctx.head = {x = 25, y = 8}
+        mb.currentAttack = "charge"
+        ctx.obstacles.pos = {{x = 15, y = 8, type = "wall"}, {x = 20, y = 9, type = "wall"}}
+        miniBoss.execute(mb, ctx)
+        harness.assert_equal(0, #ctx.obstacles.pos, "limpia ambas filas")
+        harness.assert_not_nil(mb.chargeLane, "lane registrada")
+        harness.assert_true(mb.chargeLane.horizontal, "eje horizontal")
+        harness.assert_equal(0, mb.trampleHits, "contador intacto tras execute")
+    end)
+end)
+
+harness.describe("MiniBoss - Crusher progressive trample damage", function()
+    harness.before_each(function()
+        setupMiniWorld()
+    end)
+
+    local function setupTrample(nSegs)
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local states = require("systems.gamestates")
+        local st = world.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = 999
+        st.velocidadActual = 999
+        st.puntuacion = 0
+        st.frutasContador = 0
+        st.monedas = 100
+        st.survivalStreak = 1.5
+        st.highestStreak = 1.5
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 0
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        st.shakeTimer = 0
+        st.player = snakeMod.reset()
+        st.player.body = {}
+        for i = 0, (nSegs or 8) - 1 do
+            st.player.body[#st.player.body + 1] = {x = 5 - i, y = 8}
+        end
+        st.player.dirX, st.player.dirY = 0, 0
+        st.player.inputQueue = {}
+        st.player.ghost = false
+        st.player.bumpGhostTimer = 0
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        enemies.boss = nil
+        worldMod.etapa = 1
+        worldMod.sala = 3
+        local mb = enemies.spawnMiniBoss(1, 20, 10)
+        mb.state = "cooldown"
+        mb.stateTimer = 999
+        mb.attackCooldown = 999
+        return st, mb, states
+    end
+
+    local function trample(st, mb, states)
+        mb.slammed = true
+        mb.chargeLane = {horizontal = true, fixed0 = 8, fixed1 = 9}
+        states.updatePlaying(0.02)
+    end
+
+    harness.it("first trample cuts 2 and docks 0.1x streak", function()
+        local st, mb, states = setupTrample(8)
+        trample(st, mb, states)
+        harness.assert_equal(6, #st.player.body, "corta 2")
+        harness.assert_equal(1, mb.trampleHits, "contador 1")
+        harness.assert_true(st.roomDamaged, "racha marcada")
+        harness.assert_true(math.abs(st.survivalStreak - 1.4) < 0.001, "1.5-0.1")
+        harness.assert_false(st.deathModalOpen, "sin muerte")
+        harness.assert_true((st.player.sliceGraceTimer or 0) > 0, "gracia activa")
+    end)
+
+    harness.it("cut scales 2-3-4 capped across hits", function()
+        local st, mb, states = setupTrample(12)
+        trample(st, mb, states)
+        harness.assert_equal(10, #st.player.body, "1er: -2")
+        trample(st, mb, states)
+        harness.assert_equal(7, #st.player.body, "2do: -3")
+        harness.assert_true(math.abs(st.survivalStreak - 1.2) < 0.001, "1.5-0.1-0.2")
+        trample(st, mb, states)
+        harness.assert_equal(3, #st.player.body, "3ro: -4 (cap)")
+        harness.assert_equal(3, mb.trampleHits, "contador 3")
+    end)
+
+    harness.it("short snake holds without cut", function()
+        local st, mb, states = setupTrample(3)
+        trample(st, mb, states)
+        harness.assert_equal(3, #st.player.body, "piso 3 intacto")
+        harness.assert_equal(0, mb.trampleHits, "sin contador sin corte")
+        harness.assert_false(st.deathModalOpen, "sin muerte")
+    end)
+
+    harness.it("shield blocks without counter progress", function()
+        local st, mb, states = setupTrample(8)
+        local shop = require("systems.shop")
+        shop.shieldActive = true
+        trample(st, mb, states)
+        harness.assert_equal(8, #st.player.body, "sin corte")
+        harness.assert_false(shop.shieldActive, "escudo consumido")
+        harness.assert_equal(0, mb.trampleHits, "sin contador")
+        harness.assert_equal(1.5, st.survivalStreak, "racha intacta")
+    end)
+
+    harness.it("head outside lane takes no damage", function()
+        local st, mb, states = setupTrample(8)
+        st.player.body[1] = {x = 5, y = 5}
+        trample(st, mb, states)
+        harness.assert_equal(8, #st.player.body, "sin corte fuera de franja")
+        harness.assert_equal(0, mb.trampleHits, "sin contador")
+    end)
+end)

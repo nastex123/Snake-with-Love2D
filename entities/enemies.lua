@@ -127,6 +127,10 @@ function enemies.hitBoss()
     return bossLogic.hitBoss(enemies, attackRegistry)
 end
 
+function enemies.hitBossRam(dmg)
+    return bossLogic.hitRam(enemies, dmg, attackRegistry)
+end
+
 function enemies.onBossDefeatedByFood()
     return bossLogic.onBossDefeatedByFood(enemies, attackRegistry)
 end
@@ -150,6 +154,10 @@ function enemies.addMiniBossFood()
     local mb = miniBossLogic.get()
     if not mb then return nil end
     return miniBossLogic.addFood(mb)
+end
+
+function enemies.parryMiniBoss(ctx)
+    return miniBossLogic.parry(miniBossLogic.get(), ctx)
 end
 
 -- ============================================================

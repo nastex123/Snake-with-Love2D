@@ -152,7 +152,11 @@ function renderMain.drawGame(dt)
         local barH = 8
         local bx = (w - barW) / 2
         local by = 32
-        local frac = st.bossHealthDisplay.vida / st.bossHealthDisplay.vidaMax
+        local dMax = st.bossHealthDisplay.maxHp or 1
+        local frac = 0
+        if dMax > 0 then
+            frac = math.max(0, math.min(1, (st.bossHealthDisplay.hp or dMax) / dMax))
+        end
         love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
         love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
         love.graphics.setColor(1, 0.2 * frac + 0.6, 0.2 * frac + 0.2, 0.9)

@@ -8,6 +8,40 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-11 (plasma crusher art handoff)
+
+- **docs** (handoff - 2026-09-11): Handoff documentado para la próxima sesión — sprite Perforador de Plasma del Triturador (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE**: GDD §5 + TDD + TODO con spec cerrada (variante #4 del HTML; 6 PNG 16x16 → `assets/enemies/crusher/`; loader `miniBossArt.lua`; sprite 2x2 + tile charge; scope_22 +4; 3 commits).
+  2. **POR QUE**: dejar alcance, archivos y riesgos fijados para que la próxima sesión implemente sin ambigüedad.
+
+## 2026-09-11 (crusher trample: 2-wide scaled partial damage)
+
+- **feat** (completed - 2026-09-11): Arrollamiento del Triturador con daño parcial escalado (America/Bogota, rama `feat/boss-headbutt-combat`, 9 commits):
+  1. **QUE**: telegraph del charge a 2 líneas (ancho 2x2); `execute` registra `chargeLane` + `trampleHits`; corte `min(2+hits,4)` con piso 3 segmentos + `sliceGraceTimer`; racha `-0.1x*hits` con piso x1.0 + `roomDamaged`; cadena fantasma/escudo/armadura (el bloqueo no avanza el contador); keys `CRUSHER_TRAMPLE_*`.
+  2. **QUE — Tests**: scope_22 +8 (lane 3 + trample 5 vía `updatePlaying`).
+  3. **POR QUE**: el charge era teatro sin daño; ahora es amenaza física real pero parcial y progresiva, sin matar.
+  4. **Verificación**: `love tests` 720 PASS / 20 FAIL pre-existentes (baseline 712 + 8 nuevos); `error.log` 0 bytes.
+
+## 2026-09-11 (headbutt fixes: safe bounce, miniboss parry, unified boss HP)
+
+- **fix** (completed - 2026-09-11): Rebote seguro, parry del mini-jefe y HP único del boss (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE — `systems/combatRam.lua`**: `ram(s, w, h, opts)` con destino validado (atrás→laterales→quedarse; nunca cuello/cuerpo/muro/rect; `avoidRects` desde playing); si bloqueado, solo fantasma; retorna si movió.
+  2. **QUE — Parry (`entities/enemyMiniBoss.lua` + `entities/enemies.lua` + `playing.lua`)**: `miniBoss.parry` fuerza `telegraph` x0.6 (`PARRY_TELEGRAPH_MULT`) solo en `idle` + `parryCooldown` 2.0s; helper `nextAttackName` reutilizado en `update`; Sierpe embiste 2 celdas + lava; passthrough `enemies.parryMiniBoss`; popups REBOTE!/¡PARRY!.
+  3. **QUE — HP único**: fuera `vida/vidaMax` del boss (`spawnBoss/hitBoss/hitRam` solo `hp/maxHp`); `populate` usa `BOSS_HEADBUTT_HP`; display HUD desde el boss real; guards nil + clamp en `renderMain`/`enemiesDraw`. Cierra el crash `renderMain.lua:155`.
+  4. **QUE — Tests**: scope_30 +3 (cuello, bloqueo, fracción), scope_22 +4 parry, migración `vida`→`hp` + HP explícito en scope_09/11/20/entities.
+  5. **POR QUE**: el rebote ciego aterrizaba en el cuello (muerte a x1) y el mini no reaccionaba; el doble modelo HP crasheaba el render al primer contacto.
+  6. **Verificación**: `love tests` 712 PASS / 20 FAIL pre-existentes (baseline + 7 nuevos); `error.log` 0 bytes.
+
+## 2026-09-10 (boss headbutt combat rework)
+
+- **feature** (completed - 2026-09-10 12:41): Combate por cabezazos contra mini-jefes y boss (America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE — `systems/combatRam.lua` (nuevo)**: `damageFor` (display−1, min x2, cap 5), `ram` (rebote + fantasma 0.8s), `hasGhost`; keys `HEADBUTT_*` + `BOSS_HEADBUTT_HP=12`.
+  2. **QUE — Minis**: contacto = cabezazo (sin muerte ni consumo); gating élite exige mini muerto; fuera comida/fuego/escudo-daño; hint de entrada; bomba conserva 2.
+  3. **QUE — Boss**: HP 12 + `hitRam`, contacto marca hit sin matar, barra y enrage por HP, fuera food-counter e invulnerabilidad; hint de entrada.
+  4. **QUE — Tests**: `scope_30` (6) + `scope_22` (2 integración) + `scope_11` (2 integración + migración 06/09/11 al modelo HP).
+  5. **POR QUE**: el único daño viable era el contacto directo, que mataba (playtest). Pedido: derrotar a punta de cabezazos con combo.
+  6. **Verificación**: `love tests` consola-only `SDL_VIDEODRIVER=dummy` 725/705 PASS (20 pre-existentes, cero regresión); boot headless PASS; docs (GDD §5, TDD, AGENTS, TODO, ambos CHANGELOG).
+
 ## 2026-09-10 (status effects engine)
 
 - **feature** (completed - 2026-09-10 11:29): Status Effects Engine (GDD §16) (America/Bogota, rama `feature/phase8-status-fx`):

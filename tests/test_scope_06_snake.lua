@@ -425,10 +425,11 @@ harness.describe("entities.snake - Enemy and Boss Collisions", function()
     harness.it("handles boss collision and returns bossResult", function()
         enemies.boss = {x = 6, y = 5, alive = true, type = "boss", hp = 5, maxHp = 5}
         local s = snake.reset()
-        s.inputQueue = {{x = 1, y = 0}}
+        s.inputQueue = {{x = 1, y = 0}} -- head moves to (6, 5)
         local vivo, comio, enemyKilled, bossResult = snake.mover(s, {x = 20, y = 20}, GRID_W, GRID_H, {}, 0, nil)
-        harness.assert_false(vivo, "snake dies hitting boss without defense")
+        harness.assert_true(vivo, "snake survives boss contact (ram marks hit)")
         harness.assert_not_nil(bossResult, "bossResult returned")
+        harness.assert_true(bossResult.hit, "contact marked as hit")
     end)
 
     harness.it("handles projectile attack collision returning attackHit", function()

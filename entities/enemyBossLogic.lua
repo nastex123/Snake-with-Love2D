@@ -17,8 +17,6 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
     local cy = math.floor(altoGrilla / 2)
     enemiesMod.boss = {
         x = cx, y = cy,
-        vida = bossVida,
-        vidaMax = bossVida,
         bossType = "teleporter",
         alive = true,
         moveTimer = 0,
@@ -32,7 +30,9 @@ function bossLogic.spawnBoss(enemiesMod, etapa, anchoGrilla, altoGrilla, bossVid
         telegraphPositions = {},
         foodCollected = 0,
         foodTarget = constants.BOSS_FOOD_TARGET,
-        invulnerable = true,
+        hp = bossVida or constants.BOSS_HEADBUTT_HP or 12,
+        maxHp = bossVida or constants.BOSS_HEADBUTT_HP or 12,
+        invulnerable = false,
         enraged = false,
         enrageFlash = 0,
         _uiBarFill = 1.0,
@@ -48,12 +48,12 @@ function bossLogic.hitBoss(enemiesMod, attackRegistry)
     local boss = enemiesMod.boss
     if not boss or not boss.alive then return nil end
     if boss.invulnerable then
-        return {hit = true, vida = boss.vida, vidaMax = boss.vidaMax}
+        return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
     end
-    -- Defensive: tests may create boss without vida initialized (e.g. direct table)
-    boss.vida = (boss.vida or boss.vidaMax or boss.hp or 3) - 1
-    boss.vidaMax = boss.vidaMax or boss.vida + 1
-    if boss.vida <= 0 then
+    -- Modelo HP único (GDD §5 rework): sin vida/vidaMax
+    boss.hp = (boss.hp or boss.maxHp or 3) - 1
+    boss.maxHp = boss.maxHp or boss.hp + 1
+    if boss.hp <= 0 then
         boss.alive = false
         if attackRegistry then attackRegistry.clearAll() end
         local tam = constants.TAMANIO_BLOQUE
@@ -65,7 +65,30 @@ function bossLogic.hitBoss(enemiesMod, attackRegistry)
             type = "boss"
         }
     end
-    return {hit = true, vida = boss.vida, vidaMax = boss.vidaMax}
+    return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
+end
+
+-- Daño por cabezazo (GDD §5 rework): hp directo, loot al morir
+function bossLogic.hitRam(enemiesMod, dmg, attackRegistry)
+    local boss = enemiesMod.boss
+    if not boss or not boss.alive then return nil end
+    boss.hp = (boss.hp or boss.maxHp or 12) - (dmg or 1)
+    boss.maxHp = boss.maxHp or (boss.hp + (dmg or 1))
+    boss.flash = 0.3
+    boss._uiBarTarget = math.max(0, boss.hp / (boss.maxHp or 1))
+    if boss.hp <= 0 then
+        boss.alive = false
+        if attackRegistry then attackRegistry.clearAll() end
+        local tam = constants.TAMANIO_BLOQUE
+        return {
+            px = boss.x * tam + tam / 2,
+            py = boss.y * tam + tam / 2,
+            gx = boss.x, gy = boss.y,
+            coins = boss.dropCoins,
+            type = "boss"
+        }
+    end
+    return {hit = true, hp = boss.hp, maxHp = boss.maxHp}
 end
 
 function bossLogic.onBossDefeatedByFood(enemiesMod, attackRegistry)
@@ -90,13 +113,8 @@ end
 function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
     if not boss or not boss.alive then return end
 
-    -- Actualiza fase por vida / food progress
-    local vidaFrac
-    if boss.foodTarget and boss.foodTarget > 0 then
-        vidaFrac = math.max(0, 1 - (boss.foodCollected or 0) / boss.foodTarget)
-    else
-        vidaFrac = (boss.vidaMax and boss.vidaMax > 0) and (boss.vida / boss.vidaMax) or 1.0
-    end
+    -- Actualiza fase por HP (GDD §5 rework: sin food-counter)
+    local vidaFrac = (boss.maxHp and boss.maxHp > 0) and (boss.hp / boss.maxHp) or 1.0
 
     if vidaFrac <= 0.30 then
         boss.phase = 3
@@ -106,9 +124,8 @@ function bossLogic.updateBoss(dt, boss, ctx, attackRegistry, enemiesMod)
         boss.phase = 1
     end
 
-    local enrageAt = (boss.foodTarget or constants.BOSS_FOOD_TARGET) - (constants.BOSS_ENRAGE_THRESHOLD or 3)
-    local wasEnraged = boss.enraged
-    if boss.foodTarget and (boss.foodCollected or 0) >= enrageAt then
+    -- Enrage por HP bajo (GDD §5 rework); playing muestra popup/flash al entrar
+    if (boss.hp or 99) <= (constants.BOSS_ENRAGE_THRESHOLD or 3) then
         boss.enraged = true
     else
         boss.enraged = false
