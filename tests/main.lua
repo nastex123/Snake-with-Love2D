@@ -89,6 +89,7 @@ local source_files = {
     "systems/items.lua",
     "systems/tarot.lua",
     "systems/tarotArt.lua",
+    "systems/miniBossArt.lua",
     "systems/roomMutators.lua",
     "systems/mystery.lua",
     "systems/persistence.lua",

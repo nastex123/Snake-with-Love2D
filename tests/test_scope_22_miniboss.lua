@@ -531,3 +531,41 @@ harness.describe("MiniBoss - Crusher progressive trample damage", function()
         harness.assert_equal(0, mb.trampleHits, "sin contador")
     end)
 end)
+
+harness.describe("MiniBoss - Plasma crusher art loader (GDD sprite plasma)", function()
+    local miniBossArt = require("systems.miniBossArt")
+
+    harness.it("maps 6 crusher paths to .png files", function()
+        local ids = {
+            "wall_crusher_idle_f1", "wall_crusher_idle_f2",
+            "wall_crusher_attack_f1", "wall_crusher_attack_f2",
+            "wall_crusher_telegraph_f1", "wall_crusher_telegraph_f2",
+        }
+        for _, id in ipairs(ids) do
+            local p = miniBossArt.PATHS[id]
+            harness.assert_not_nil(p, "missing art path: " .. id)
+            harness.assert_true(p:sub(-4) == ".png", "path must end .png: " .. tostring(p))
+        end
+    end)
+
+    harness.it("get() lazy-loads and caches the same handle per id", function()
+        local a = miniBossArt.get("wall_crusher_idle_f1")
+        harness.assert_not_nil(a, "mocked backend must return an image")
+        harness.assert_true(miniBossArt.get("wall_crusher_idle_f1") == a, "second call must hit cache")
+    end)
+
+    harness.it("unknown id returns nil/false without crashing", function()
+        harness.assert_nil(miniBossArt.get("no_existe"), "unknown id must be nil")
+        harness.assert_nil(miniBossArt.frameFor("frost_golem", "idle", 0), "other minis have no sprite")
+        harness.assert_true(miniBossArt.draw("no_existe", 0, 0, 32) == false, "draw must fail soft")
+    end)
+
+    harness.it("frameFor/tileFor select F1/F2 for charge telegraph", function()
+        harness.assert_equal("wall_crusher_telegraph_f1", miniBossArt.tileFor(0.2), "frac<0.5 is F1")
+        harness.assert_equal("wall_crusher_telegraph_f2", miniBossArt.tileFor(0.7), "frac>=0.5 is F2")
+        local atk = miniBossArt.frameFor("wall_crusher", "telegraph", 0.1)
+        harness.assert_true(atk == "wall_crusher_attack_f1" or atk == "wall_crusher_attack_f2", "telegraph uses attack frames")
+        local idle = miniBossArt.frameFor("wall_crusher", "idle", 0.1)
+        harness.assert_true(idle == "wall_crusher_idle_f1" or idle == "wall_crusher_idle_f2", "idle uses idle frames")
+    end)
+end)
