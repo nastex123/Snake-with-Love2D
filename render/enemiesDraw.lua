@@ -2,6 +2,9 @@ local draw = {}
 local constants = require("constants")
 local world = require("core.world")
 
+local mbArtOk, mbArt = pcall(require, "systems.miniBossArt")
+if not mbArtOk or type(mbArt) ~= "table" then mbArt = nil end
+
 local TAU = math.pi * 2
 
 local AMBER = {0.95, 0.64, 0.24}
@@ -273,6 +276,13 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
     -- Draw telegraph markers (under enemies)
     for _, t in ipairs(telegraphs) do
         local frac = 1 - t.timer / t.maxTimer
+        local painted = false
+        if t.attackType == "miniboss_charge" and mbArt then
+            love.graphics.setColor(1, 1, 1, 1)
+            local ok, res = pcall(mbArt.draw, mbArt.tileFor(frac), t.gx * tam + 1, t.gy * tam + 1, tam - 2)
+            painted = ok and res
+        end
+        if not painted then
         local alpha = 0.3 + frac * 0.5
         local pulse = math.sin(time * 10 + frac * math.pi * 2) * 0.2 + 0.8
         love.graphics.setColor(1, 0.2 + frac * 0.8, 0.1, alpha * pulse)
@@ -281,6 +291,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
         love.graphics.setLineWidth(2)
         love.graphics.rectangle("line", t.gx * tam + 1, t.gy * tam + 1, tam - 2, tam - 2, 2, 2)
         love.graphics.setLineWidth(1)
+        end
     end
 
     -- Draw normal enemies
@@ -468,6 +479,17 @@ function draw.drawMiniBoss(mb)
 
     love.graphics.setColor(0, 0, 0, 0.35)
     love.graphics.rectangle("fill", x0 + 3, y0 + 4, tam * 2, tam * 2, 3, 3)
+    -- Sprite Perforador de Plasma solo para el Triturador (fallback procedural)
+    local sprited = false
+    if mb.defId == "wall_crusher" and mbArt then
+        local fid = mbArt.frameFor(mb.defId, mb.state, time)
+        if fid then
+            love.graphics.setColor(1, 1, 1, 1)
+            local ok, res = pcall(mbArt.draw, fid, x0, y0, tam * 2)
+            sprited = ok and res
+        end
+    end
+    if not sprited then
     love.graphics.setColor(
         math.min(1, def[1] * pulse + flash),
         math.min(1, def[2] * pulse + flash),
@@ -480,6 +502,7 @@ function draw.drawMiniBoss(mb)
     love.graphics.setColor(0, 0, 0)
     love.graphics.circle("fill", x0 + tam * 0.7, y0 + tam * 0.7, 1.5)
     love.graphics.circle("fill", x0 + tam * 1.3, y0 + tam * 0.7, 1.5)
+    end
     -- Borde: dorado telegrafiando, blanco normal
     if mb.state == "telegraph" then
         love.graphics.setColor(1, 0.84, 0, 0.9 + math.sin(time * 12) * 0.1)

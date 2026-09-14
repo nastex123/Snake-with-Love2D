@@ -12,7 +12,7 @@ local world = require("core.world")
 
 miniBoss.DEFS = {
     [1] = {
-        id = "wall_crusher", name = "TRITURADOR", color = {0.6, 0.6, 0.7},
+        id = "wall_crusher", name = "TRITURADOR", color = {0.98, 0.36, 0.09},
         hp = 3, foodTarget = 6, coins = 15, streakBonus = 0.2,
         attacks = {"charge"}, telegraphTime = 1.2, cooldown = 4.0,
         moveInterval = nil, reward = "shield",
