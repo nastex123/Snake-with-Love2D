@@ -19,6 +19,14 @@ Categories: feature, fix, refactor, docs, balance, polish
   3. **POR QUE**: acelerar el ciclo de desarrollo en tiempo real sin reiniciar el juego ante cada cambio de código, garantizando a la vez un menú asimétrico impecable y responsivo en pantallas panorámicas y de alta resolución.
   4. **Verificación**: `love tests` 728 PASS / 20 FAIL pre-existentes (8 tests de livecoding 100% pasando); `love .` ejecuta de forma limpia y fluida a 60 FPS sin advertencias en consola.
 
+## 2026-09-14 (plasma crusher sprite)
+
+- **feat** (completed - 2026-09-14): Sprite Perforador de Plasma del Triturador (America/Bogota, rama `feat/boss-headbutt-combat`, 3 commits):
+  1. **QUE**: 6 PNG 16x16 RGB en `assets/enemies/crusher/` (`plasma_idle/attack/telegraph_f1/f2`, paleta spec base #28231A metal #665843/#BA9F74 calor #FA5B16, telegraph Y #FFD93C/R #FF2A1A); loader `systems/miniBossArt.lua` (espejo `tarotArt`: `PATHS` + `get()` cache + `frameFor`/`tileFor` + `draw()` fallback nil); `enemiesDraw.drawMiniBoss` sprite 2x2 en Triturador (ataque en telegraph/execute, sombra/borde/barra intactos) + tile `miniboss_charge` F1/F2 por celda; tinte `DEFS[1].color` a naranja plasma {0.98,0.36,0.09}.
+  2. **POR QUE**: cerrar el handoff 2026-09-11; el charge del Triturador gana lectura direccional sin tocar otros minis ni telegraphs.
+  3. **Desviacion**: el HTML de 5 propuestas no existe en el repo; pixel art recreado fiel a la paleta del spec.
+  4. **Verificacion**: `love tests` 724 PASS / 20 FAIL pre-existentes (baseline 720 + 4 nuevos scope_22); render smoke con graficos reales (drawMiniBoss idle/telegraph + tile charge + default intacto); `love .` bajo xvfb sin errores Lua, `error.log` 0 bytes.
+
 ## 2026-09-11 (plasma crusher art handoff)
 
 - **docs** (handoff - 2026-09-11): Handoff documentado para la próxima sesión — sprite Perforador de Plasma del Triturador (America/Bogota, rama `feat/boss-headbutt-combat`):
