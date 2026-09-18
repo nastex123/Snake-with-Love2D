@@ -8,6 +8,17 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-17 (livecoding system & responsive menu polish)
+
+- **feat** (completed - 2026-09-17 23:07 America/Bogota, rama `feat/boss-headbutt-combat`):
+  1. **QUE — Livecoding (`core/livecoding.lua` + `tests/test_scope_31_livecoding.lua`)**: Módulo de hot reload automático en caliente que monitorea timestamps (`modtime`) de archivos Lua cada 250ms; in-place patching sobre `package.loaded` sin destruir referencias activas; captura de errores de sintaxis y ejecución con `pcall` desplegando banner rojo no bloqueante en la cabecera; tecla `F5` para recarga manual forzada; hooks de recarga para recompilación de shaders (`shaders.init()`) y assets gráficos de UI. Suite de tests unitarios (8 tests, scope_31).
+  2. **QUE — Menú Principal Responsivo (`ui/menuLogo.lua`, `ui/menuCard.lua`, `ui/menuUI.lua`)**:
+     - Logo 2.5D isométrico cian: anclado responsivamente a la derecha de la pantalla con margen dinámico (`math.max(20, math.floor(w * 0.04))`), perfectamente centrado verticalmente (`math.floor(h / 2 - totalH / 2)`), evitando desbordes y colisiones con el diamante arcade central en cualquier resolución.
+     - Tarjeta Chunky de Jugador (`ui/menuCard.lua`): anclaje dinámico inferior derecho y auto-escalado matricial con `love.graphics.scale()` para evitar desbordes en resoluciones reducidas.
+     - Botones del panel izquierdo (`ui/menuUI.lua`): retirado el botón "PERFILES" redundante de la botonera lateral (la tarjeta inferior derecha actúa como acceso interactivo al gestor de perfiles); 3 botones centrados verticalmente (JUGAR, CONFIGURACIÓN, SALIR).
+  3. **POR QUE**: acelerar el ciclo de desarrollo en tiempo real sin reiniciar el juego ante cada cambio de código, garantizando a la vez un menú asimétrico impecable y responsivo en pantallas panorámicas y de alta resolución.
+  4. **Verificación**: `love tests` 728 PASS / 20 FAIL pre-existentes (8 tests de livecoding 100% pasando); `love .` ejecuta de forma limpia y fluida a 60 FPS sin advertencias en consola.
+
 ## 2026-09-11 (plasma crusher art handoff)
 
 - **docs** (handoff - 2026-09-11): Handoff documentado para la próxima sesión — sprite Perforador de Plasma del Triturador (America/Bogota, rama `feat/boss-headbutt-combat`):

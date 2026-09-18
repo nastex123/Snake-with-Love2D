@@ -1,5 +1,18 @@
 # TODO — Snake Dungeon Crawler
 
+## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
+- [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:
+  - [x] Monitoreo automático por sondeo (rate-limited a 250ms) en `core/`, `entities/`, `world/`, `systems/`, `ui/`, `render/`, `audio/`, `main.lua` y `constants.lua`.
+  - [x] Parcheo en tabla viva (*in-place table patching*) sobre `package.loaded` preservando referencias vivas en closures y fachadas.
+  - [x] Tolerancia y resiliencia ante errores de sintaxis (*syntax error safety*) con `pcall` sin crashear el juego (`love .`), desplegando banner HUD superior rojo.
+  - [x] Recarga manual forzada vía tecla `F5`.
+  - [x] Hooks de recarga automática para recompilación de shaders (`shaders.init()`) y assets de interfaz (`ui.load()`).
+  - [x] Suite de tests unitarios dedicada (`tests/test_scope_31_livecoding.lua`, 8 tests pasando al 100%).
+- [x] **Pulido Responsivo del Menú Principal Asimétrico (`ui/`)**:
+  - [x] **Logotipo 2.5D Cian (`ui/menuLogo.lua`)**: Anclado responsivo a la derecha de la pantalla con margen dinámico y centrado vertical absoluto (`h / 2 - totalH / 2`), adaptándose limpiamente tanto a resoluciones compactas como panorámicas/altas sin colisionar con el diamante central.
+  - [x] **Tarjeta de Jugador Chunky (`ui/menuCard.lua`)**: Anclaje dinámico inferior derecho con matriz de escalado (`love.graphics.scale()`) para prevenir desbordes de pantalla.
+  - [x] **Botonera Izquierda (`ui/menuUI.lua`)**: Retirado el botón "PERFILES" redundante de la botonera lateral (la tarjeta inferior derecha cumple dicho rol interactivo), quedando 3 botones principales (JUGAR, CONFIGURACIÓN, SALIR) centrados verticalmente.
+
 ## Completed (Documentación - 17:08:2026)
 - [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
 
