@@ -7,17 +7,34 @@ local COLOR_CYAN = {0.0, 0.94, 1.0}
 function menuLogo.getBounds(t)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
-    local panelW = math.floor(w * 0.40)
-    local rightCenterX = panelW + math.floor((w - panelW) / 2)
     local floatOffset = math.sin((t or 0) * 1.5) * 3
     local logoCfg = persistence.getLogoConfig()
-    local pScale = logoCfg.scale or 6
     local spacing = logoCfg.spacing or 10
     local depth = logoCfg.depth or 5
+
+    -- El area derecha comienza tras el diamante central (w/2 + radio del emblema)
+    local diamondRight = math.floor(w * 0.5) + 56
+    local rightAreaW = w - diamondRight
+
+    -- Ajuste responsivo de escala si el espacio horizontal disponible es reducido
+    local pScale = logoCfg.scale or 6
     local totalW = 5 * (7 * pScale) + 4 * spacing
+    if totalW > rightAreaW - 16 then
+        pScale = math.max(2, math.floor((rightAreaW - 16 - 4 * spacing) / 35))
+        totalW = 5 * (7 * pScale) + 4 * spacing
+    end
     local totalH = 7 * pScale
-    local startX = rightCenterX - math.floor(totalW / 2) + (logoCfg.offsetX or 0)
-    local startY = math.floor(h * 0.36 - totalH / 2) + floatOffset + (logoCfg.offsetY or 0)
+
+    -- Posicionamiento horizontal: anclado a la derecha de la pantalla con margen simétrico responsivo
+    local marginX = math.max(20, math.floor(w * 0.04))
+    local rawX = w - totalW - marginX + (logoCfg.offsetX or 0)
+    local startX = math.max(diamondRight + 12, math.min(w - totalW - 10, rawX))
+
+    -- Posicionamiento vertical: siempre centrado verticalmente en la pantalla
+    local centerY = math.floor(h / 2)
+    local rawY = centerY - math.floor(totalH / 2) + floatOffset + (logoCfg.offsetY or 0)
+    local startY = math.max(10, math.min(h - totalH - 10, rawY))
+
     return startX, startY, totalW, totalH, depth, pScale, spacing, floatOffset
 end
 

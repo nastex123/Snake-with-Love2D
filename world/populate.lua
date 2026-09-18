@@ -286,9 +286,9 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
         end
     end
 
-    -- 5. Boss room spawn
+    -- 5. Boss room spawn (GDD §5 rework: HP de cabezazos, no comidas)
     if isBossRoom and enemiesMod and enemiesMod.spawnBoss then
-        local hp = math.floor(((bossRule and bossRule.baseHP) or 3) * stageMod.hpMult)
+        local hp = math.floor((constants.BOSS_HEADBUTT_HP or 12) * (stageMod.hpMult or 1))
         local coins = ((bossRule and bossRule.dropCoins) or 5) + (world.etapa or 1) * 2
         enemiesMod.spawnBoss(world.etapa or 1, anchoGrilla, altoGrilla, hp, coins)
     end

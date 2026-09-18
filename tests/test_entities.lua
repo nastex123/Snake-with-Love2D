@@ -770,9 +770,9 @@ harness.describe("Boss Mechanics & Attack Phases (entities/bossAttacks.lua & ene
         harness.assert_not_nil(boss, "Boss spawned")
         harness.assert_equal(15, boss.x, "Boss centered on grid width / 2")
         harness.assert_equal(10, boss.y, "Boss centered on grid height / 2")
-        harness.assert_true(boss.invulnerable, "Boss is invulnerable by default")
+        harness.assert_true(not boss.invulnerable, "Boss is vulnerable by default (HP rework)")
         harness.assert_equal(constants.BOSS_FOOD_TARGET, boss.foodTarget)
-        harness.assert_equal(10, boss.vida)
+        harness.assert_equal(10, boss.hp)
     end)
 
     harness.it("maintains invulnerability against direct hit and registers food-based defeat", function()
@@ -781,7 +781,7 @@ harness.describe("Boss Mechanics & Attack Phases (entities/bossAttacks.lua & ene
         -- Direct hit while invulnerable does not reduce HP
         local hitRes = enemiesMod.hitBoss()
         harness.assert_not_nil(hitRes)
-        harness.assert_equal(10, enemiesMod.boss.vida, "HP unchanged while invulnerable")
+        harness.assert_equal(10, enemiesMod.boss.hp, "HP unchanged while invulnerable")
 
         -- Defeated by food completion
         local defeat = enemiesMod.onBossDefeatedByFood()

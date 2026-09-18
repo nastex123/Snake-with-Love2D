@@ -19,6 +19,7 @@ local renderMain = require('render.renderMain')
 local touch = require('core.touch')
 local achievementsMod = require('systems.achievements')
 local mutatorsMod = require('systems.roomMutators')
+local livecoding = require('core.livecoding')
 
 local FIXED_DT = 1 / 60
 local accumulator = 0
@@ -97,6 +98,7 @@ function love.load()
     persistenceMod.loadSettings()
     persistenceMod.applySettings(persistenceMod.settings, {heavy = true})
     recalcularGrilla()
+    livecoding.init()
 
     world.state.menuPS = particles.menuFondo()
 
@@ -149,6 +151,7 @@ function love.load()
 end
 
 function love.update(dt)
+    livecoding.update(dt)
     local scaled = dt * (world.state.timeScale or 1)
     accumulator = accumulator + scaled
     if accumulator > MAX_ACCUMULATOR then accumulator = MAX_ACCUMULATOR end
@@ -163,6 +166,7 @@ function love.update(dt)
         ss.frame = ss.frame + 1
         if ss.frame == 10 then
             world.state.introTimer = 4.5
+            if profilesMod then profilesMod.close() end
         elseif ss.frame == 15 then
             love.graphics.captureScreenshot(function(imgData)
                 imgData:encode("png", "screenshot_menu.png")
@@ -192,6 +196,7 @@ function love.draw()
     if settingsMod and settingsMod.visible then
         settingsMod.draw()
     end
+    livecoding.draw()
 end
 
 function love.resize(w, h)
@@ -371,6 +376,11 @@ function love.textinput(text)
 end
 
 function love.keypressed(tecla)
+    if tecla == "f5" then
+        livecoding.reloadAll()
+        return
+    end
+
     if tecla == "f12" then
         love.graphics.captureScreenshot(function(imgData)
             local filename = "screenshot_" .. os.date("%Y%m%d_%H%M%S") .. ".png"

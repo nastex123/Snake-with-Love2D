@@ -1,5 +1,18 @@
 # TODO — Snake Dungeon Crawler
 
+## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
+- [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:
+  - [x] Monitoreo automático por sondeo (rate-limited a 250ms) en `core/`, `entities/`, `world/`, `systems/`, `ui/`, `render/`, `audio/`, `main.lua` y `constants.lua`.
+  - [x] Parcheo en tabla viva (*in-place table patching*) sobre `package.loaded` preservando referencias vivas en closures y fachadas.
+  - [x] Tolerancia y resiliencia ante errores de sintaxis (*syntax error safety*) con `pcall` sin crashear el juego (`love .`), desplegando banner HUD superior rojo.
+  - [x] Recarga manual forzada vía tecla `F5`.
+  - [x] Hooks de recarga automática para recompilación de shaders (`shaders.init()`) y assets de interfaz (`ui.load()`).
+  - [x] Suite de tests unitarios dedicada (`tests/test_scope_31_livecoding.lua`, 8 tests pasando al 100%).
+- [x] **Pulido Responsivo del Menú Principal Asimétrico (`ui/`)**:
+  - [x] **Logotipo 2.5D Cian (`ui/menuLogo.lua`)**: Anclado responsivo a la derecha de la pantalla con margen dinámico y centrado vertical absoluto (`h / 2 - totalH / 2`), adaptándose limpiamente tanto a resoluciones compactas como panorámicas/altas sin colisionar con el diamante central.
+  - [x] **Tarjeta de Jugador Chunky (`ui/menuCard.lua`)**: Anclaje dinámico inferior derecho con matriz de escalado (`love.graphics.scale()`) para prevenir desbordes de pantalla.
+  - [x] **Botonera Izquierda (`ui/menuUI.lua`)**: Retirado el botón "PERFILES" redundante de la botonera lateral (la tarjeta inferior derecha cumple dicho rol interactivo), quedando 3 botones principales (JUGAR, CONFIGURACIÓN, SALIR) centrados verticalmente.
+
 ## Completed (Documentación - 17:08:2026)
 - [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
 
@@ -120,6 +133,23 @@
   - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
 - [x] **Status Effects Engine** (2026-09-10 ✅ `feature/phase8-status-fx`):
   - [x] Overdrive on combo x6 (frenesí 4s, smash chasers, demuele muros, glow dorado), Medusa Tail (trampa→petrifica 2s, bloqueo giro, shatter), Venom Spore (slime→controles invertidos 1.8s, viñeta verde), Cryo-Stasis (hielo+golem→lento 2.5s, inmune proyectiles) — `systems/statusFx.lua` + scope_29 18 tests
+- [x] **Combate por cabezazos mini/boss** (2026-09-10 ✅ `feat/boss-headbutt-combat`):
+  - [x] Daño solo por cabezazos (display−1, min x2, cap 5) + rebote y fantasma 0.8s (`systems/combatRam.lua` + scope_30); minis con gating élite; boss HP 12 con barra y enrage por HP; bomba conserva 2 a minis
+- [x] **Fix cabezazos: rebote seguro + parry miniboss + HP único boss** (2026-09-11 ✅ `feat/boss-headbutt-combat`):
+  - [x] Rebote validado en `combatRam.ram` (atrás→lateral→quedarse; nunca cuello/muro/2x2)
+  - [x] `miniBoss.parry` x0.6 + `parryCooldown` 2.0s + passthrough `enemies.parryMiniBoss` + popup "¡PARRY!"
+  - [x] Boss a `hp/maxHp` único (fuera `vida/vidaMax`; guards en `renderMain`/`enemiesDraw`; asserts `vida`→`hp` en tests)
+  - [x] Tests scope_30 (+3) / scope_22 (+4 parry) / scope_09+11 (HP explícito); suite 732: 712 PASS / 20 pre-existentes
+- [x] **Arrollamiento Triturador 2x2 escalado** (2026-09-11 ✅ `feat/boss-headbutt-combat`, 9 commits):
+  - [x] Keys `CRUSHER_TRAMPLE_*` + telegraph 2 líneas + `chargeLane`/`trampleHits`
+  - [x] Corte `min(2+hits,4)` piso 3 + racha `-0.1x*hits` piso 1.0 + cadena fantasma/escudo/armadura
+  - [x] Tests scope_22 +8 (lane 3 + trample 5); suite 740: 720 PASS / 20 pre-existentes
+- [x] **Sprite Perforador de Plasma del Triturador** (completado 2026-09-14, `feat/boss-headbutt-combat`):
+  - [x] 6 PNG 16x16 en `assets/enemies/crusher/` (idle f1/f2 4 FPS, attack f1/f2, telegraph f1/f2 Y→R)
+  - [x] Loader `systems/miniBossArt.lua` (espejo `tarotArt`; `frameFor`/`tileFor`; fallback nil sin PNG)
+  - [x] Sprite 2x2 en `drawMiniBoss` (ataque en telegraph/execute; sombra/borde/barra intactos) + tile en telegraph `miniboss_charge` + tinte `DEFS[1].color` naranja plasma {0.98,0.36,0.09}
+  - [x] Tests scope_22 +4 (mapeo, cache, fallback, tile); suite 744: 724 PASS / 20 pre-existentes
+  - [x] Desviacion honesta: HTML de 5 propuestas no existe en el repo (solo shop/tarot en `prototypes/`); pixel art recreado desde la paleta del spec
 - [ ] **Meta-Progression Shrine**:
   - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
 - [ ] **Daily Challenges, Lore Codex & Bounties**:

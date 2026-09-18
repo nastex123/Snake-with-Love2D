@@ -4,8 +4,8 @@
 
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (504L fixed timestep `FIXED_DT=1/60`)
-**Total Modules**: 65 juego (68 con `conf.lua`+`constants.lua`+`scratch_test_debug.lua`, 105 con 38 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), tests 34→38 (scope_24/25/26/27)
-**Total Lines**: ~20,800 src juego (medido 2026-09-08; módulos grandes bajo monitoreo: `playing` 936L, `persistence` 820L, `settingsDraw` 610L, `shaders` 600L, `player` 573L, `settings` 535L, `dungeonGen` 514L)
+**Total Modules**: 66 juego (69 con `conf.lua`+`constants.lua`+`scratch_test_debug.lua`, 106 con 39 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), livecoding +1 (`core/livecoding.lua`), tests 34→39 (scope_24/25/26/27/31)
+**Total Lines**: ~21,050 src juego (medido 2026-09-17)
 
 ### Folder Structure
 
@@ -20,6 +20,7 @@ Snake-with-Love2D/
 │   ├── events.lua              ← 134L Event Bus `on/off/emit` (P06)
 │   ├── input.lua               ← 89L `isDown/isHeld/isAnyHeld` + gamepad (P07)
 │   ├── assets.lua              ← 144L `getFont/getImage/getCanvas` cache (P08)
+│   ├── livecoding.lua          ← hot reload automático + in-place patching + error resilience banner (F5)
 │   ├── touch.lua               ← input táctil (swipes, lazy require P-fix circular)
 │   └── helpers.lua             ← deep_copy, math/rect utilities
 ├── entities/
@@ -68,9 +69,9 @@ Snake-with-Love2D/
 ├── ui/
 │   ├── ui.lua                  ← facade: popups/toasts/menu/fuentes/accesibilidad
 │   ├── introUI.lua             ← intro Balatro + high score
-│   ├── menuUI.lua              ← facade 252L: panel 40% + botones 260×40 gap14, delega logo/card
-│   ├── menuLogo.lua            ← logo procedural cian isométrico 2.5D (getBounds, draw, drawGlow) 110L
-│   ├── menuCard.lua            ← tarjeta #11 Chunky 344×76 circular 3D coin 202L
+│   ├── menuUI.lua              ← facade 250L: panel 40% + 3 botones 260×40 (JUGAR, CONFIG, SALIR), delega logo/card
+│   ├── menuLogo.lua            ← logo procedural cian isométrico 2.5D responsivo (centrado V, anclado der, F2 calibrador)
+│   ├── menuCard.lua            ← tarjeta #11 Chunky 344×76 responsiva con matrix scaling y acceso a perfiles
 │   ├── hudUI.lua               ← grid/HUD/slots/combo + badges mutador/misterio 368L
 │   ├── toastsUI.lua            ← toasts
 │   ├── popupsUI.lua            ← popups
@@ -353,11 +354,14 @@ profile = {
 
 ## 7. Key Algorithms
 
-### Boss Food Defeat
-- Boss `invulnerable = true`
-- `hitBoss()` returns `{hit=true}` without damage
-- Collecting food increments counter
-- At `BOSS_FOOD_TARGET = 15`: `onBossDefeatedByFood()`
+### Boss Headbutt Defeat (rework 2026-09-10)
+- Boss con `hp/maxHp = 12` (`BOSS_HEADBUTT_HP`), `invulnerable = false`; modelo HP único (sin `vida/vidaMax`; display HUD `{hp, maxHp}` con guard)
+- `hitBossRam(dmg)` aplica daño; al morir retorna loot `type="boss"`
+- Cabezazo: `combatRam.damageFor(comboDisplay)` + rebote seguro + fantasma 0.8s
+- `miniBoss.parry(mb, ctx)` (2026-09-11 ✅): fuerza `telegraph` x0.6 (`PARRY_TELEGRAPH_MULT`) solo en `idle` + `parryCooldown` 2.0s; passthrough `enemies.parryMiniBoss()`
+- Enrage a HP <= 3 (`BOSS_ENRAGE_THRESHOLD`); barra por fracción HP
+- Triturador (2026-09-11 ✅): `planCharge` 2 líneas; `execute` guarda `chargeLane {horizontal, fixed0, fixed1}` + `trampleHits` en spawn; `playing` resuelve corte `min(CUT_BASE+hits, CUT_MAX)` piso 3 + racha `-STEP*hits` piso 1.0 con cadena fantasma/escudo/armadura
+- Sprite plasma (completado 2026-09-14 ✅): `systems/miniBossArt.lua` (6 PNG en `assets/enemies/crusher/`, `get()` vía `Assets.getImage` + `frameFor`/`tileFor` + `draw()` fallback nil); `enemiesDraw.drawMiniBoss` usa sprite 2x2 si hay textura; telegraph `miniboss_charge` usa tile F1/F2; scope_22 +4 (suite 744: 724 PASS / 20 pre-existentes)
 
 ### Boss Health Bar Lerp
 ```
@@ -448,7 +452,7 @@ The project uses `PressStart2P-Regular.ttf` loaded dynamically with `pcall` and 
   1. Si `head` es adyacente Manhattan a un segmento no-cabeza (cierre de anillo), construir polígono desde los segmentos del cuerpo.
   2. Para cada celda encerrada: **Ray Casting** (even-odd) sobre el polígono en coordenadas de grilla `(gx, gy)`.
   3. Toda celda de enemigo (chasers/patrollers/spawners) dentro del polígono → destrucción instantánea vía `enemies.killEnemy(idx)` + `particles.shockwave` + `sound.play("enemyKill")` + bonus combo.
-  4. No aplica sobre `invulnerable = true` (boss).
+  4. No aplica sobre jefes en medio de cabezazo (fantasma de rebote).
 - Config propuesto: `CONSTRICTOR_DURATION = 5.0`.
 
 ### 10.4 Special Foods (4)
@@ -556,6 +560,7 @@ miniboss = {
 ```
 * **Integración con Render**: `render/enemiesDraw.lua` incluye `drawMiniBoss(mb, dt)` con interpolación suave de posición, sombra proyectada y barra de salud superior.
 * **Implementación (2026-09-05, `feature/phase8-minibosses`)**: `entities/enemyMiniBoss.lua` (~400L, `MINIBOSS_DEFS` 5 + máquina idle/telegraph/execute/cooldown) + API en fachada `enemies` (`spawnMiniBoss/getMiniBoss/hitMiniBoss/addMiniBossFood`) + estado en `World.state.enemies.miniboss`; sala 3 marcada `isElite` en `dungeonGen.generar` y poblada en `populate` (paso 6); `playing.lua` premia (`awardMiniBoss`: monedas + streak + cofre-buff temático) y resuelve contacto 2x2, comidas, fuego, bomba y singularidad; `drawMiniBoss` 2x2 con borde dorado al telegrafiar. Desviaciones honestas: wyrm = 1 entidad hp 6 (no 6 segmentos), red = 3x3 slime, crusher/wyrm sin daño directo a serpiente, sin variante élite-chaser (la sala 3 la ocupa el mini-jefe).
+* **Rework cabezazos (2026-09-10)**: contacto mini = ram por combo (`combatRam`); comida/fuego/escudo ya no dañan; gating élite exige mini muerto; `gameflow` anuncia regla al entrar.
 
 ### 10.11 Object Pooling & Zero-GC Memory Architecture
 

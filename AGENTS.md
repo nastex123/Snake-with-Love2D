@@ -12,11 +12,11 @@
 ## Arquitectura (65 módulos juego + helpers, 105 con 38 tests)
 Estructura de carpetas por sistema:
 - `main.lua` (504L loop fixed timestep `FIXED_DT=1/60`, 7 estados), `constants.lua` — raíz (shim de `core/config.lua`)
-- `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (339L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 118L bus P06, `input.lua` 110L centralizado P07 + `getMousePosition`, `assets.lua` 144L cache P08 (filtro configurable), `touch.lua` (lazy), `helpers.lua`
+- `core/` → `config.lua` (+`KEYBINDS`, `ENABLE_VORONOI`), `logger.lua`, `timers.lua` (único pooled P05), `world.lua` (339L dot-notation + `SCHEMA`/`validate()` P04/P13), `events.lua` 118L bus P06, `input.lua` 110L centralizado P07 + `getMousePosition`, `assets.lua` 144L cache P08 (filtro configurable), `livecoding.lua` (hot reload automático cada 250ms, in-place patching, banner error, F5), `touch.lua` (lazy), `helpers.lua`
 - `entities/` → `snake.lua` 238L fachada + `snake/` 4, `enemies.lua` 391L fachada + `enemyAttackRegistry.lua` 219L pools + `enemyBossLogic.lua` + `enemySpawnLogic.lua` + `bossAttacks.lua` 239L (5 ataques) + `enemyHelpers.lua` + `chaserAI.lua` 354L + `patrollerAI.lua` + `enemyMiniBoss.lua` 383L (5 mini-jefes sala 3), `food.lua` 447L, `obstacles.lua` 437L fachada (delega a `world/biomeHazards.lua`)
 - `world/` → `world.lua` 230L (facade: estado etapa/sala/objetivoSala, getters) + `dungeonGen.lua` 514L (BSP, templates, stage modifiers) + `populate.lua` 296L (población de sala)
 - `systems/` → `items.lua` (22 items, slots 1-3), `shop.lua` 340L (fachada tienda) + `shopDraw.lua` 326L + `shopBioScanner.lua` 207L, `persistence.lua` 820L, `settings.lua` 535L (facade panel ajustes) + `settingsDraw.lua` 610L (render pestañas/controles), `profiles.lua` 301L (facade gestor max 3) + `profilesDraw.lua` 449L (render perfiles/achievements), `achievements.lua` (11 logros), `player.lua` 573L (calc speed/items), `gameflow.lua` 292L (runs/rooms), `gamestates.lua` 203L (update por estado), `debugTools.lua` 233L (menu debug Tab) + `debugLogo.lua` 194L (calibrador logo F2), `tarot.lua` 139L (12 cartas comprables + 12 hooks, sin draft) + `tarotArt.lua` (loader PNG), `roomMutators.lua` 227L (10 mutadores) + `mystery.lua` 296L (4 salas)
-- `ui/` → `ui.lua` 141L (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` 250L (intro Balatro + diamante), `menuUI.lua` 238L (facade menú + panel 40% + 4 botones Cyber-Step #03), `menuLogo.lua` 105L (render 2.5D cian isométrico), `menuCard.lua` 199L (tarjeta Chunky perfil #11), `hudUI.lua` 326L (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` 186L (pausa/minimapa/dungeon debug).
+- `ui/` → `ui.lua` 141L (facade: estado popups/toasts/menu, fuentes, texturas, accesibilidad) + submódulos `introUI.lua` 250L (intro Balatro + diamante), `menuUI.lua` 238L (facade menú + panel 40% + 3 botones Cyber-Step #03: JUGAR, CONFIGURACIÓN, SALIR), `menuLogo.lua` 105L (render 2.5D cian isométrico responsivo anclado der/centrado V), `menuCard.lua` 199L (tarjeta Chunky perfil #11 responsiva), `hudUI.lua` 326L (grid/HUD/slots/combo), `toastsUI.lua`, `popupsUI.lua`, `overlaysUI.lua` 186L (pausa/minimapa/dungeon debug).
 - `render/` → `shaders.lua` 600L (bloom+CRT+sombra+heat + pixelScale virtual canvas + dynamic filter), `particles.lua` 316L (textura 4x4 procedural) + `renderMain.lua` 423L (drawScene) + `enemiesDraw.lua` 461L
 - `audio/` → `sound.lua` 379L (SFX procedural + single .ogg)
 
@@ -31,16 +31,15 @@ Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `
 `PLAYING` → `DEATH_ANIMATION` → `HIGH_SCORE`(1.3s si record) o `SHOP` → `MENU`
 Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 
-## Boss (food-based defeat)
-- Boss es `invulnerable = true` por defecto. `hitBoss()` retorna `{hit=true}` sin reducir vida.
-- Unica forma de derrotarlo: recolectar `BOSS_FOOD_TARGET` (15) comidas NO-moneda durante el encuentro.
-- `enemies.onBossDefeatedByFood()` limpia telegraphs/attackObjects/pendingRespawns y retorna resultado compatible (`{px, py, gx, gy, coins, type="boss"}`).
-- Barra de vida sobre el boss (mundo): fill suave via `_uiBarFill` → `_uiBarTarget` lerp (6.0/s).
-- `iniciarSala()` muestra popup: "Derrota al jefe recogiendo 15 comidas" si es sala boss.
+## Boss (derrota por cabezazos, rework 2026-09-10)
+- Boss con HP 12 (`BOSS_HEADBUTT_HP`), `invulnerable = false`. Daño solo por cabezazos: `display - 1` con combo x2+ (cap `HEADBUTT_MAX_DMG=5`); rebote + fantasma 0.8s.
+- `enemies.hitBossRam(dmg)` aplica daño y retorna loot `type="boss"` al morir; `hitBoss()`/`onBossDefeatedByFood()` legacy sin uso en juego.
+- Barra de vida sobre el boss (mundo): fill suave via `_uiBarFill` → `_uiBarTarget` lerp (6.0/s), fracción de HP.
+- `iniciarSala()` muestra popup: "JEFE: CABECEALO CON COMBO x2+ PARA HERIRLO" si es sala boss.
 - `world.populateRoom()` reserva las 9 celdas (centro + 8 adyacentes) en boss room para evitar comida sobre el boss.
 - Los ataques tienen `telegraphTime` antes de ejecutarse (telegraph markers visibles).
 - 5 ataques: `projectile_spread` (radial), `spawn_adds` (patrollers, respeta caps), `radial_pulse` (onda), `teleport` (pos aleatoria lejos de head), `laser_perimeter` (jaula central 4 rayos, minPhase 2).
-- Enrage a 3 comidas del objetivo: telegraphs /1.35, tempo música 1.15x, pulso carmesí + popup.
+- Enrage a HP <= 3: telegraphs /1.35, tempo música 1.15x, pulso carmesí + popup.
 - Mini-jefes sala 3 (`entities/enemyMiniBoss.lua`, 5 con telegraphs y cofre-buff dorado).
 - `canSpawn(type)` respeta `BOSS_MAX_RED=3` / `BOSS_MAX_BLUE=4` durante boss. `sampleFreeTile()` busca tile seguro >=6 de head, con attempts.
 - **Timeout**: enemigos que llevan `BOSS_ENEMY_LIFETIME=15s` vivos durante boss: chasers se encolan en `pendingRespawns` (reaparecen 5s despues), patrollers se eliminan.
@@ -50,6 +49,7 @@ Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
 Retorna 6 valores: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 Con `attackHit`: proyecto true si un ataque del boss conecta (sin shield/armor/ghost).
 Orden colision: cuerpo → obstaculos → boss → proyectiles → enemigos
+- Contacto con boss = `{hit=true}` sin muerte (el daño lo resuelve el ram en playing)
 - `debugImmune` global: atraviesa todo sin morir
 - `love.mousepressed()` maneja SHOP, debug menu, settings y profiles
 
@@ -67,8 +67,8 @@ Single .ogg, 4 segmentos: intro(1-9s), comboEnter(10-17s), comboLoop(13-17s), bo
 
 ## Menú Principal Asimétrico Cyberpunk (`ui/menuUI.lua`)
 - Panel lateral izquierdo ($40\%$ de ancho de pantalla) con fondo procedural de Matriz de Puntos HUD (#14) y Círculo Alquímico de Invocación (#17 Render 1) rotatorio a 60 FPS con pulso de respiración y pase bloom glow.
-- 4 Botones arcade Cyber-Step #03 de $260\times 40\,\text{px}$ centrados verticalmente.
-- Logotipo 2.5D isométrico cian (`ui/menuLogo.lua`) y tarjeta de perfil Chunky #11 (`ui/menuCard.lua`).
+- 3 Botones arcade Cyber-Step #03 de $260\times 40\,\text{px}$ centrados verticalmente (JUGAR, CONFIGURACIÓN, SALIR).
+- Logotipo 2.5D isométrico cian anclado responsivamente a la derecha y centrado verticalmente (`ui/menuLogo.lua`) y tarjeta de perfil Chunky #11 interactiva con escalado responsivo (`ui/menuCard.lua`).
 
 ## Pipeline render (`shaders.lua`)
 `shaders.composite()`: sceneCanvas → (glow → blurH → blurV) bloom additive → shadow blur → CRT sobre canvasFinal.

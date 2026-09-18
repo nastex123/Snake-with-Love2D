@@ -381,15 +381,15 @@ describe("Scope 11 - Full Combat Lifecycle & enemies.lua Integration", function(
         shop.reset()
     end)
 
-    it("spawns boss with default state and invulnerability", function()
-        enemies.spawnBoss(1, 40, 28, 5, 10)
+    it("spawns boss with HP model and vulnerability", function()
+        enemies.spawnBoss(1, 40, 28, 12, 10)
         assert_not_nil(enemies.boss)
         assert_true(enemies.boss.alive)
-        assert_true(enemies.boss.invulnerable)
+        assert_false(enemies.boss.invulnerable)
         assert_equal(1, enemies.boss.phase)
         assert_equal("idle", enemies.boss.state)
-        assert_equal(0, enemies.boss.foodCollected)
-        assert_equal(constants.BOSS_FOOD_TARGET or 15, enemies.boss.foodTarget)
+        assert_equal(12, enemies.boss.hp)
+        assert_equal(12, enemies.boss.maxHp)
         assert_equal(0, #enemies.getAttackObjects())
         assert_equal(0, #enemies.getTelegraphs())
     end)
@@ -513,22 +513,21 @@ end)
 -- SUITE: Boss Enrage Phase (Fase de Furia, GDD)
 -- =========================================================================
 describe("Scope 11 - Boss Enrage Phase", function()
-    it("raises enraged flag with crimson flash at foodTarget-3", function()
+    it("raises enraged flag at low HP", function()
         enemies.init()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
-        boss.foodCollected = 11
+        boss.hp = 4
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
-        assert_false(boss.enraged, "11/15 food must not enrage")
-        boss.foodCollected = 12
+        assert_false(boss.enraged, "4/12 HP must not enrage")
+        boss.hp = 3
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
-        assert_true(boss.enraged, "12/15 food must enrage")
-        assert_gt(boss.enrageFlash or 0, 0, "Crimson flash must trigger on enrage")
+        assert_true(boss.enraged, "3/12 HP must enrage")
     end)
 
     it("scales telegraph time by 1/ENRAGE_MULT when enraged", function()
         enemies.init()
         local boss = enemies.spawnBoss(1, 30, 20, 10, 5)
-        boss.foodCollected = 12
+        boss.hp = 2
         boss.state = "idle"
         boss.attackCooldown = 0
         enemies.update(0.016, {{x = 2, y = 2}}, 30, 20, nil, 1, nil)
@@ -547,7 +546,7 @@ describe("Scope 11 - Boss Enrage Phase", function()
     end)
 
     it("defines enrage tuning constants", function()
-        assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 foods")
+        assert_equal(3, constants.BOSS_ENRAGE_THRESHOLD, "Enrage threshold must be 3 HP")
         assert_almost_equal(1.35, constants.BOSS_ENRAGE_MULT, 0.001, "Enrage mult must be 1.35")
     end)
 end)
@@ -635,5 +634,102 @@ describe("Scope 11 - Laser Perimeter Attack", function()
         local vivo, comio, enemyKilled, bossResult, attackHit = snake.mover(s, {x = 99, y = 99}, 20, 20, {})
         assert_true(vivo, "Shield absorbs laser hit")
         assert_false(shop.shieldActive, "Shield is consumed")
+    end)
+end)
+
+describe("Scope 11 - Boss Headbutt Combat (GDD §5 rework)", function()
+    it("hitRam deals combo damage and loots on death", function()
+        enemies.init()
+        local boss = enemies.spawnBoss(1, 30, 20, 12, 8)
+        harness.assert_equal(12, boss.hp, "spawns with 12 HP")
+        local r1 = enemies.hitBossRam(5)
+        harness.assert_not_nil(r1.hit, "hit feedback")
+        harness.assert_equal(7, boss.hp, "12-5=7")
+        harness.assert_true(boss.alive, "survives")
+        local r2 = enemies.hitBossRam(5)
+        harness.assert_not_nil(r2.hit, "second hit")
+        harness.assert_equal(2, boss.hp, "7-5=2")
+        local loot = enemies.hitBossRam(5)
+        harness.assert_equal("boss", loot.type, "dies on third ram")
+        harness.assert_equal(8, loot.coins, "pays dropCoins")
+        harness.assert_false(boss.alive, "boss dead")
+    end)
+
+    it("headbutt in updatePlaying damages boss without killing player", function()
+        local snakeMod = require("entities.snake")
+        local foodMod = require("entities.food")
+        local obstaclesMod = require("entities.obstacles")
+        local worldMod = require("world.world")
+        local states = require("systems.gamestates")
+        local st = coreWorld.state
+        st.anchoGrilla = 32
+        st.altoGrilla = 18
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.time = 0
+        st.cronometro = 0
+        st.baseSpeed = constants.VELOCIDAD_INICIAL
+        st.velocidadActual = constants.VELOCIDAD_INICIAL
+        st.puntuacion = 0
+        st.frutasContador = 0
+        st.monedas = 100
+        st.highScore = 500
+        st.coinBonus = 0
+        st.scoreMultiplier = 1
+        st.survivalStreak = 1.0
+        st.highestStreak = 1.0
+        st.roomDamaged = false
+        st.deathModalOpen = false
+        st.comboCount = 5
+        st.comboDisplay = 0
+        st.comboIntensity = 0
+        st.comboFlashTimer = 0
+        st.lastEatTime = -100
+        st.activePS = {}
+        st.activeTimers = {}
+        st.pendingAchievements = {}
+        st.debugImmune = false
+        coreWorld.set("controlMode", "classic")
+        local boss = enemies.spawnBoss(1, 32, 18, 12, 8)
+        boss.attackCooldown = 999
+        boss.spawnTimer = 999
+        boss.state = "cooldown"
+        boss.stateTimer = 999
+        local bx, by = boss.x, boss.y
+        st.player = snakeMod.reset()
+        st.player.body = {{x = bx - 1, y = by}, {x = bx - 2, y = by}, {x = bx - 3, y = by}}
+        st.player.dirX, st.player.dirY = 1, 0
+        st.player.lastMovedDirX, st.player.lastMovedDirY = 1, 0
+        st.player.inputQueue = {}
+        foodMod.pos = {x = 25, y = 15}
+        foodMod.tipo = constants.FOOD_NORMAL
+        foodMod.twinPos = nil
+        obstaclesMod.pos = {}
+        enemies.list = {}
+        worldMod.etapa = 1
+        worldMod.sala = 5
+        worldMod.objetivoSala = 100
+        local coinsBefore = st.monedas
+        st.cronometro = st.velocidadActual
+        states.updatePlaying(0.02)
+        harness.assert_equal(7, boss.hp, "ram x6 deals 5 (12-5)")
+        harness.assert_true(boss.alive, "boss survives first ram")
+        harness.assert_false(st.deathModalOpen, "player survives ramming")
+        harness.assert_not_nil(st.player.bumpGhostTimer, "bounce ghost granted")
+        st.comboCount = 9
+        for _ = 1, 4 do
+            if boss.alive then
+                -- Reaproxima la cabeza al boss (el rebote seguro la desplaza)
+                st.player.body = {{x = bx - 1, y = by}, {x = bx - 2, y = by}, {x = bx - 3, y = by}}
+                st.player.dirX, st.player.dirY = 1, 0
+                st.player.inputQueue = {}
+            end
+            st.player.bumpGhostTimer = 0
+            st.cronometro = st.velocidadActual
+            states.updatePlaying(0.02)
+        end
+        harness.assert_false(boss.alive, "rams kill the boss")
+        harness.assert_true(st.monedas > coinsBefore, "boss loot paid")
+        harness.assert_equal("siguienteEtapa", st.transitionTarget, "advances on boss death")
+        coreWorld.set("controlMode", "tactical")
     end)
 end)

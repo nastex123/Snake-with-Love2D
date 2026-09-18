@@ -10,6 +10,8 @@ local shop = require("systems.shop")
 local enemies = require("entities.enemies")
 local world = require("core.world")
 local tarotMod = require("systems.tarot")
+local hasRam, combatRam = pcall(require, "systems.combatRam")
+if not hasRam or type(combatRam) ~= "table" then combatRam = nil end
 local statusFx = require("systems.statusFx")
 
 local function immune()
@@ -33,6 +35,10 @@ function collisions.checkEnemyCollisions(s, enemiesList)
         return nil
     end
     if s.ghost or immune() or (s.sliceGraceTimer and s.sliceGraceTimer > 0) then
+        return nil
+    end
+    -- Fantasma de cabezazo: sin colisiones letales con enemigos
+    if combatRam and combatRam.hasGhost(s) then
         return nil
     end
 

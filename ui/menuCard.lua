@@ -13,43 +13,65 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
     local stageMax = (activeProfile and activeProfile.stats and activeProfile.stats.highestStage) or 1
     if stageMax < 1 then stageMax = 1 end
     if stageMax > 5 then stageMax = 5 end
+
+    local w = love.graphics.getWidth()
+    local curH = h or love.graphics.getHeight()
+    local panelW = math.floor(w * 0.40)
     local cardW = 344
     local cardH = 76
-    local cardX = rightCenterX - math.floor(cardW / 2) + 200
-    local cardY = h - cardH - 18
+
+    -- Responsivo: espacio disponible en la zona derecha
+    local marginX = math.max(16, math.floor(w * 0.03))
+    local marginY = math.max(14, math.floor(curH * 0.03))
+    local availW = (w - panelW) - marginX * 2
+    local scale = math.min(1.0, math.max(0.65, availW / cardW))
+    local scaledW = math.floor(cardW * scale)
+    local scaledH = math.floor(cardH * scale)
+
+    -- Anclado responsivo al vertice inferior derecho sin desbordar ni chocar el panel izquierdo
+    local cardX = math.max(panelW + 12, w - scaledW - marginX)
+    local cardY = math.max(10, curH - scaledH - marginY)
     local isCardHover = (ui.menuHoverId == 'card_profile')
     local t = (globalTime or menuTime)
     local g = 3
-    ui.menuButtons[#ui.menuButtons + 1] = {id = 'card_profile', x = cardX, y = cardY, w = cardW, h = cardH}
+
+    ui.menuButtons[#ui.menuButtons + 1] = {id = 'card_profile', x = cardX, y = cardY, w = scaledW, h = scaledH}
+
+    love.graphics.push()
+    love.graphics.translate(cardX, cardY)
+    if scale ~= 1.0 then
+        love.graphics.scale(scale, scale)
+    end
+
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
-    love.graphics.rectangle("fill", cardX - g + 4, cardY - g + 4, cardW + g * 2, cardH + g * 2)
+    love.graphics.rectangle("fill", -g + 4, -g + 4, cardW + g * 2, cardH + g * 2)
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.98)
-    love.graphics.rectangle("fill", cardX - g - 1, cardY - g - 1, cardW + g * 2 + 2, cardH + g * 2 + 2)
+    love.graphics.rectangle("fill", -g - 1, -g - 1, cardW + g * 2 + 2, cardH + g * 2 + 2)
     love.graphics.setColor(0.02, 0.05, 0.09, cardAlpha * 0.96)
-    love.graphics.rectangle("fill", cardX, cardY, cardW, cardH)
+    love.graphics.rectangle("fill", 0, 0, cardW, cardH)
     love.graphics.setColor(isCardHover and 0.07 or 0.05, isCardHover and 0.14 or 0.11, isCardHover and 0.22 or 0.17, cardAlpha * 0.96)
-    local splitStartX = cardX + math.floor(cardW * 0.52)
+    local splitStartX = math.floor(cardW * 0.52)
     for py = 0, cardH - 1 do
         local currentSplitX = splitStartX + math.floor(py * 0.45)
-        love.graphics.rectangle("fill", currentSplitX, cardY + py, (cardX + cardW) - currentSplitX, 1)
+        love.graphics.rectangle("fill", currentSplitX, py, cardW - currentSplitX, 1)
     end
     love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], cardAlpha * (isCardHover and 0.9 or 0.45))
     for py = 0, cardH - 1, 2 do
         local currentSplitX = splitStartX + math.floor(py * 0.45)
-        love.graphics.rectangle("fill", currentSplitX, cardY + py, 2, 2)
+        love.graphics.rectangle("fill", currentSplitX, py, 2, 2)
     end
     love.graphics.setColor(COLOR_CYAN[1], COLOR_CYAN[2], COLOR_CYAN[3], cardAlpha * (isCardHover and 0.95 or 0.75))
-    love.graphics.rectangle("fill", cardX - g, cardY - g, cardW + g * 2, 2)
-    love.graphics.rectangle("fill", cardX - g, cardY + cardH + g - 2, cardW + g * 2, 2)
-    love.graphics.rectangle("fill", cardX - g, cardY - g, 2, cardH + g * 2)
-    love.graphics.rectangle("fill", cardX + cardW + g - 2, cardY - g, 2, cardH + g * 2)
+    love.graphics.rectangle("fill", -g, -g, cardW + g * 2, 2)
+    love.graphics.rectangle("fill", -g, cardH + g - 2, cardW + g * 2, 2)
+    love.graphics.rectangle("fill", -g, -g, 2, cardH + g * 2)
+    love.graphics.rectangle("fill", cardW + g - 2, -g, 2, cardH + g * 2)
     love.graphics.setColor(1, 1, 1, cardAlpha * (isCardHover and 0.4 or 0.15))
-    love.graphics.rectangle("line", cardX, cardY, cardW, cardH)
+    love.graphics.rectangle("line", 0, 0, cardW, cardH)
     local corners = {
-        {cardX - g - 1, cardY - g - 1},
-        {cardX + cardW + g - 5, cardY - g - 1},
-        {cardX - g - 1, cardY + cardH + g - 5},
-        {cardX + cardW + g - 5, cardY + cardH + g - 5}
+        {-g - 1, -g - 1},
+        {cardW + g - 5, -g - 1},
+        {-g - 1, cardH + g - 5},
+        {cardW + g - 5, cardH + g - 5}
     }
     for _, c in ipairs(corners) do
         love.graphics.setColor(0, 0, 0, cardAlpha)
@@ -62,17 +84,17 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
     local fontS = ui.fontSmall or ui.fontNormal
     love.graphics.setFont(fontS)
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
-    love.graphics.print(profileName, cardX + 15, cardY + 13)
+    love.graphics.print(profileName, 15, 13)
     love.graphics.setColor(1, 1, 1, cardAlpha * 0.95)
-    love.graphics.print(profileName, cardX + 14, cardY + 12)
+    love.graphics.print(profileName, 14, 12)
     for s = 1, 5 do
-        local sx = cardX + 14 + (s - 1) * 15
+        local sx = 14 + (s - 1) * 15
         local isBoss = (s == 5)
         local isCurrent = (s == stageMax)
         local isCleared = (s < stageMax)
         local pulse = isCurrent and ((math.floor(t * 8) % 2 == 0) and {1, 1, 1} or COLOR_CYAN) or COLOR_CYAN
         love.graphics.setColor(0.01, 0.02, 0.04, cardAlpha)
-        love.graphics.rectangle("fill", sx, cardY + 34, 12, 7)
+        love.graphics.rectangle("fill", sx, 34, 12, 7)
         if isCleared then
             love.graphics.setColor(COLOR_CYAN[1] * 0.6, COLOR_CYAN[2] * 0.6, COLOR_CYAN[3] * 0.6, cardAlpha)
         elseif isCurrent then
@@ -80,7 +102,7 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
         else
             love.graphics.setColor(0.06, 0.10, 0.16, cardAlpha)
         end
-        love.graphics.rectangle("fill", sx + 1, cardY + 35, 10, 5)
+        love.graphics.rectangle("fill", sx + 1, 35, 10, 5)
         if isBoss then
             local skull = {" XXXXX ", "X X X X", "XXXXXXX", " XXXXX ", " X X X "}
             local skullColor = (stageMax >= 5) and {1, 1, 1} or {0.35, 0.45, 0.55}
@@ -89,22 +111,22 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
                 for c = 1, 7 do
                     if line:sub(c, c) == 'X' then
                         love.graphics.setColor(skullColor[1], skullColor[2], skullColor[3], cardAlpha)
-                        love.graphics.rectangle("fill", sx + 2 + c, cardY + 35 + r - 1, 1, 1)
+                        love.graphics.rectangle("fill", sx + 2 + c, 35 + r - 1, 1, 1)
                     end
                 end
             end
         end
     end
     love.graphics.setColor(0.55, 0.65, 0.75, cardAlpha * 0.85)
-    love.graphics.print(string.format("STAGE 0%d/05", stageMax), cardX + 94, cardY + 33)
+    love.graphics.print(string.format("STAGE 0%d/05", stageMax), 94, 33)
     local coinAngle = t * 4.5
     local coinCosA = math.cos(coinAngle)
     local coinAbsCos = math.abs(coinCosA)
     local coinR = 5.0
     local coinRx = math.max(0.5, coinR * coinAbsCos)
     local coinThickness = math.max(1, math.floor(2.0 * (1 - coinAbsCos) + 0.5))
-    local coinCx = cardX + 19
-    local coinCy = cardY + 57
+    local coinCx = 19
+    local coinCy = 57
     if coinAbsCos < 0.95 and coinThickness > 0 then
         local edgeSide = coinCosA >= 0 and -1 or 1
         for py = -math.floor(coinR), math.floor(coinR) do
@@ -147,12 +169,12 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
         love.graphics.rectangle("fill", coinCx - 0.5, coinCy - 0.5, 1, 1)
     end
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
-    love.graphics.print(string.format("%d G", coins), cardX + 31, cardY + 53)
+    love.graphics.print(string.format("%d G", coins), 31, 53)
     love.graphics.setColor(COLOR_GOLD[1], COLOR_GOLD[2], COLOR_GOLD[3], cardAlpha)
-    love.graphics.print(string.format("%d G", coins), cardX + 30, cardY + 52)
-    local rightSideX = cardX + math.floor(cardW * 0.58)
+    love.graphics.print(string.format("%d G", coins), 30, 52)
+    local rightSideX = math.floor(cardW * 0.58)
     local medalMx = rightSideX + 4
-    local medalMy = cardY + 12
+    local medalMy = 12
     local ribbon = {"BBBBRRRRBBBB", " BBBBRRRRBB ", "  BBBBRRRR  ", "   BBBBRR   ", "    BBBR    ", "     BR     "}
     for r = 1, 6 do
         local line = ribbon[r]
@@ -187,16 +209,18 @@ function menuCard.draw(ui, cardAlpha, globalTime, menuTime, highScore, rightCent
     love.graphics.setColor(1, 1, 1, cardAlpha)
     love.graphics.rectangle("fill", medalMx + 4, medalMy + 7, 2, 2)
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
-    love.graphics.print("HI-SCORE", rightSideX + 21, cardY + 16)
+    love.graphics.print("HI-SCORE", rightSideX + 21, 16)
     love.graphics.setColor(COLOR_GOLD[1], COLOR_GOLD[2], COLOR_GOLD[3], cardAlpha)
-    love.graphics.print("HI-SCORE", rightSideX + 20, cardY + 15)
+    love.graphics.print("HI-SCORE", rightSideX + 20, 15)
     local fontL = ui.fontLarge or ui.fontNormal
     love.graphics.setFont(fontL)
     local scoreStr = tostring(highScore or 0)
     love.graphics.setColor(0, 0, 0, cardAlpha * 0.95)
-    love.graphics.print(scoreStr, rightSideX + 5, cardY + 39)
+    love.graphics.print(scoreStr, rightSideX + 5, 39)
     love.graphics.setColor(1, 1, 1, cardAlpha)
-    love.graphics.print(scoreStr, rightSideX + 4, cardY + 38)
+    love.graphics.print(scoreStr, rightSideX + 4, 38)
+
+    love.graphics.pop()
 end
 
 return menuCard

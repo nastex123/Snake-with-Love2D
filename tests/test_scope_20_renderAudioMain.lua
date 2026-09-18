@@ -335,8 +335,8 @@ harness.describe("4. Render Pipeline: Enemies and Boss Draw (render/enemiesDraw.
         local boss = {
             x = 10, y = 10,
             alive = true,
-            vida = 50,
-            vidaMax = 100,
+            hp = 50,
+            maxHp = 100,
             state = "normal",
             _uiBarFill = 0.75,
             foodCollected = 5,

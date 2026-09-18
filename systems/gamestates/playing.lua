@@ -27,6 +27,7 @@ if not hasEvents or type(Events) ~= "table" then Events = nil end
 local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local statusFx = require("systems.statusFx")
+local combatRam = require("systems.combatRam")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -127,6 +128,35 @@ local function headOnMiniBoss(st, mb)
     local head = st.player.body and st.player.body[1]
     if not head or not mb then return false end
     return head.x >= mb.x and head.x <= mb.x + 1 and head.y >= mb.y and head.y <= mb.y + 1
+end
+
+-- ¿Cabeza dentro de la franja arrollada por el charge? (lane 2x2 de ancho)
+local function headOnChargeLane(st, lane)
+    local head = st.player.body and st.player.body[1]
+    if not head or not lane then return false end
+    if lane.horizontal then
+        return head.y == lane.fixed0 or head.y == lane.fixed1
+    end
+    return head.x == lane.fixed0 or head.x == lane.fixed1
+end
+
+-- Arrollamiento del Triturador: corte de cola escalado (GDD §5).
+-- cut = min(BASE + trampleHits, MAX), piso de 3 segmentos. Retorna nº cortado.
+local function resolveTrampleCut(st, mb)
+    local body = st.player.body
+    if not body or #body <= 3 then return 0 end
+    local base = constants.CRUSHER_TRAMPLE_CUT_BASE or 2
+    local maxCut = constants.CRUSHER_TRAMPLE_CUT_MAX or 4
+    local cut = math.min(base + (mb.trampleHits or 0), maxCut)
+    cut = math.min(cut, #body - 3)
+    for _ = 1, cut do table.remove(body) end
+    st.player.prevBody = {}
+    for i, b in ipairs(body) do
+        st.player.prevBody[i] = {x = b.x, y = b.y}
+    end
+    st.player.sliceGraceTimer = constants.PATROLLER_SLICE_GRACE_TIME or 1.0
+    mb.trampleHits = (mb.trampleHits or 0) + 1
+    return cut
 end
 
 -- Item aleatorio no poseido via tienda costo 0 (premios Contrarreloj/Espejo/Altar)
@@ -255,18 +285,7 @@ function playing.update(dt)
         st.player.flashTimer = st.player.flashTimer - dt
     end
 
-    -- Rastro de fuego vs mini-jefe (GDD: vulnerable al fuego)
-    do
-        local mb = enemiesMod.getMiniBoss()
-        if mb and mb.alive and st.player.fireTrail then
-            for _, ft in ipairs(st.player.fireTrail) do
-                if ft.x >= mb.x and ft.x <= mb.x + 1 and ft.y >= mb.y and ft.y <= mb.y + 1 then
-                    damageMiniBoss(st, 1)
-                    break
-                end
-            end
-        end
-    end
+    -- Rastro de fuego vs mini-jefe: ya no daña (GDD §5 rework, solo cabezazos).
 
     if st.player.fireTrail and #st.player.fireTrail > 0 then
         local fireKills = enemiesMod.checkFireTrail(st.player.fireTrail)
@@ -424,25 +443,44 @@ function playing.update(dt)
         end
     end
 
-    -- Contacto con mini-jefe sala 3: letal salvo escudo/armadura (que lo dañan, GDD §5)
+    -- Cabezazo al mini-jefe sala 3 (GDD §5 rework): daño por combo + rebote seguro + parry
     do
         local mb = enemiesMod.getMiniBoss()
         if mb and mb.alive and headOnMiniBoss(st, mb) then
-            if world.get("shop.shieldActive", false) then
-                shop.shieldActive = false
+            local comboDisplay = (st.comboCount or 0) + 1
+            local dmg = combatRam.damageFor(comboDisplay)
+            local head0 = st.player.body and st.player.body[1]
+            combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla, {
+                body = st.player.body,
+                avoidRects = {{x0 = mb.x, y0 = mb.y, x1 = mb.x + 1, y1 = mb.y + 1}},
+            })
+            local head = st.player.body and st.player.body[1]
+            if head0 and head and (head.x ~= head0.x or head.y ~= head0.y) then
+                uiMod.addPopup("REBOTE!", head.x, head.y)
+            end
+            local parryCtx = {
+                enemies = enemiesMod,
+                obstacles = obstaclesMod,
+                attackRegistry = enemiesMod,
+                head = head,
+                tail = st.player.body and st.player.body[#st.player.body],
+                anchoGrilla = st.anchoGrilla,
+                altoGrilla = st.altoGrilla,
+            }
+            if enemiesMod.parryMiniBoss and enemiesMod.parryMiniBoss(parryCtx) then
+                if head then uiMod.addPopup("¡PARRY!", head.x, head.y) end
                 sound.play("shieldBreak")
-                shadersMod.triggerDamage(0.5, 0.5)
-                damageMiniBoss(st, 1)
-            elseif st.player.armor and st.player.armor > 0 then
-                st.player.armor = st.player.armor - 1
-                sound.play("shieldBreak")
-                shadersMod.triggerDamage(0.4, 0.4)
-                damageMiniBoss(st, 1)
+            end
+            if dmg > 0 then
+                sound.play("enemyKill")
+                if head then uiMod.addPopup("-" .. dmg .. " CABEZAZO!", head.x, head.y) end
+                damageMiniBoss(st, dmg)
             else
-                if triggerBattery(st) then return end
-                st.roomDamaged = true
-                st.deathModalOpen = true
-                return true
+                st.lastRamHint = st.lastRamHint or -10
+                if head and (st.time or 0) - st.lastRamHint > 3 then
+                    st.lastRamHint = st.time or 0
+                    uiMod.addPopup("SUBE EL COMBO (x2+)!", head.x, head.y)
+                end
             end
         end
         -- Detonación de singularidad del Espectro: golpe letal telegrafiado
@@ -465,13 +503,45 @@ function playing.update(dt)
                 end
             end
         end
-        -- Embestida del Triturador: sacudida no letal (aturdido, GDD)
+        -- Embestida del Triturador: arrollamiento con corte de cola (GDD §5)
         if mb and mb.slammed then
             mb.slammed = false
             st.shakeTimer = 0.3
             shadersMod.triggerDamage(0.6, 0.4)
             uiMod.addPopup("TERREMOTO!", mb.x, mb.y)
             sound.play("shieldBreak")
+            if headOnChargeLane(st, mb.chargeLane) then
+                local ghost = st.player.ghost or world.get("debugImmune", false)
+                    or (combatRam and combatRam.hasGhost(st.player))
+                if ghost then
+                    -- Intangible: el arrollamiento pasa sin efecto ni contador
+                elseif world.get("shop.shieldActive", false) then
+                    shop.shieldActive = false
+                    sound.play("shieldBreak")
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("ESCUDO: ARROLLAMIENTO BLOQUEADO", head.x, head.y) end
+                elseif st.player.armor and st.player.armor > 0 then
+                    st.player.armor = st.player.armor - 1
+                    sound.play("shieldBreak")
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("ARMADURA: ARROLLAMIENTO BLOQUEADO", head.x, head.y) end
+                else
+                    local cut = resolveTrampleCut(st, mb)
+                    local head = st.player.body and st.player.body[1]
+                    if cut > 0 and head then
+                        -- Penalización de racha progresiva: -STEP*hits, piso x1.0
+                        local step = constants.CRUSHER_TRAMPLE_STREAK_STEP or 0.1
+                        st.roomDamaged = true
+                        st.survivalStreak = math.max(1.0,
+                            (st.survivalStreak or 1.0) - step * (mb.trampleHits or 1))
+                        local pen = string.format("%.1f", step * (mb.trampleHits or 1))
+                        uiMod.addPopup("¡COLA SEGADA -" .. cut .. "! RACHA -" .. pen .. "x", head.x, head.y)
+                    elseif head then
+                        uiMod.addPopup("¡AGUANTA!", head.x, head.y)
+                    end
+                end
+            end
+            mb.chargeLane = nil
         end
     end
 
@@ -581,9 +651,53 @@ function playing.update(dt)
 
         if bossResult then
             if bossResult.hit then
-                st.bossHealthDisplay = bossResult
-                sound.play("enemyKill")
-            elseif bossResult.type == "boss" then
+                -- Cabezazo al boss (GDD §5 rework): daño por combo + rebote seguro
+                local comboDisplay = (st.comboCount or 0) + 1
+                local dmg = combatRam.damageFor(comboDisplay)
+                local boss = enemiesMod.boss
+                local avoid = nil
+                if boss and boss.alive then
+                    avoid = {{x0 = boss.x, y0 = boss.y, x1 = boss.x, y1 = boss.y}}
+                end
+                combatRam.ram(st.player, st.anchoGrilla, st.altoGrilla, {body = st.player.body, avoidRects = avoid})
+                -- Display HUD desde el boss real (modelo hp único), nunca el {hit} pelado del mover
+                local function refreshBossDisplay()
+                    local b = enemiesMod.boss
+                    if b and b.alive then
+                        st.bossHealthDisplay = {hp = b.hp, maxHp = b.maxHp}
+                    end
+                end
+                local head = st.player.body and st.player.body[1]
+                if dmg > 0 then
+                    sound.play("enemyKill")
+                    if head then uiMod.addPopup("-" .. dmg .. " CABEZAZO!", head.x, head.y) end
+                    local ramLoot = enemiesMod.hitBossRam(dmg)
+                    if ramLoot and ramLoot.type == "boss" then
+                        bossResult = ramLoot
+                    else
+                        refreshBossDisplay()
+                        -- Enrage al cruzar el umbral de HP (GDD §5 rework)
+                        local boss = enemiesMod.boss
+                        if boss and boss.alive and not boss.enraged
+                            and (boss.hp or 99) <= (constants.BOSS_ENRAGE_THRESHOLD or 3) then
+                            boss.enraged = true
+                            boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
+                            uiMod.addPopup("FURIA DEL JEFE!", boss.x, boss.y)
+                            sound.play("enemyKill")
+                            st.shakeTimer = 0.3
+                            shadersMod.triggerDamage(0.8, 0.6)
+                        end
+                    end
+                else
+                    refreshBossDisplay()
+                    st.lastRamHint = st.lastRamHint or -10
+                    if head and (st.time or 0) - st.lastRamHint > 3 then
+                        st.lastRamHint = st.time or 0
+                        uiMod.addPopup("SUBE EL COMBO (x2+)!", head.x, head.y)
+                    end
+                end
+            end
+            if bossResult and bossResult.type == "boss" then
                 local earnedCoins = math.floor((bossResult.coins or 5) * (st.survivalStreak or 1.0))
                 st.monedas = st.monedas + earnedCoins
                 uiMod.addPopup("+" .. earnedCoins .. "$", bossResult.gx, bossResult.gy)
@@ -782,67 +896,15 @@ function playing.update(dt)
                 end
             end
 
-            if enemiesMod.boss and enemiesMod.boss.alive and foodMod.tipo ~= constants.FOOD_COIN then
-                local wasEnraged = enemiesMod.boss.enraged
-                enemiesMod.boss.foodCollected = enemiesMod.boss.foodCollected + 1
-                local ratio = enemiesMod.boss.foodCollected / enemiesMod.boss.foodTarget
-                enemiesMod.boss._uiBarTarget = math.max(0, 1 - ratio)
-                sound.play("boss_food_tick")
-                -- Fase de Furia (GDD): al quedar BOSS_ENRAGE_THRESHOLD comidas, pulso carmesi + aviso
-                local enrageAt = enemiesMod.boss.foodTarget - (constants.BOSS_ENRAGE_THRESHOLD or 3)
-                if not wasEnraged and enemiesMod.boss.foodCollected >= enrageAt then
-                    enemiesMod.boss.enraged = true
-                    enemiesMod.boss.enrageFlash = constants.BOSS_ENRAGE_FLASH or 1.2
-                    uiMod.addPopup("FURIA DEL JEFE!", enemiesMod.boss.x, enemiesMod.boss.y)
-                    sound.play("enemyKill")
-                    st.shakeTimer = 0.3
-                    shadersMod.triggerDamage(0.8, 0.6)
-                    local tamE = constants.TAMANIO_BLOQUE
-                    table.insert(st.activePS, {
-                        ps = particles.bossFoodTick(enemiesMod.boss.x * tamE + tamE / 2, enemiesMod.boss.y * tamE + tamE / 2)
-                    })
-                end
+            if enemiesMod.boss and enemiesMod.boss.alive then
                 local tam2 = constants.TAMANIO_BLOQUE
                 table.insert(st.activePS, {
                     ps = particles.bossFoodTick(foodMod.pos.x * tam2 + tam2 / 2, foodMod.pos.y * tam2 + tam2 / 2)
                 })
-                if enemiesMod.boss.foodCollected >= enemiesMod.boss.foodTarget then
-                    local bossResult2 = enemiesMod.onBossDefeatedByFood()
-                    if bossResult2 then
-                        st.monedas = st.monedas + math.floor(bossResult2.coins * (st.survivalStreak or 1.0))
-                        uiMod.addPopup("+" .. bossResult2.coins .. "$", bossResult2.gx, bossResult2.gy)
-                        table.insert(st.activePS, {
-                            ps = particles.bossDeath(bossResult2.px, bossResult2.py)
-                        })
-                        sound.play("boss_defeated")
-                        sound.play("enemyKill")
-                        if Events then
-                            Events.emit("bossDefeated")
-                            Events.emit("coinsChanged", {totalCoins = st.monedas})
-                        else
-                            achievementsMod.check("bossDefeated")
-                            achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
-                        end
-                        if worldMod.isLastRoom() then
-                            st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
-                            st.transitionPhase = 1
-                            st.fadeDir = 1
-                            st.gameState = constants.GAME_STATE_TRANSITION
-                            sound:playSegment("intro")
-                            return true
-                        end
-                    end
-                end
             end
 
-            -- Mini-jefe sala 3: las comidas no-moneda también lo debilitan (GDD §5)
-            do
-                local mb = enemiesMod.getMiniBoss()
-                if mb and mb.alive and foodMod.tipo ~= constants.FOOD_COIN then
-                    local fed = enemiesMod.addMiniBossFood()
-                    if fed then awardMiniBoss(st, fed) end
-                end
-            end
+            -- Mini-jefe sala 3 (GDD §5 rework): la comida ya no lo debilita,
+            -- solo da puntos/monedas; el daño es solo por cabezazos.
 
             if tipo ~= "twin" or not foodMod.twinPos then
                 local avoid = {}
@@ -871,7 +933,19 @@ function playing.update(dt)
                 enemiesMod.generar(st.player.body, foodMod.pos, obstaclesMod.pos, st.anchoGrilla, st.altoGrilla, mod)
             end
 
-            if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not st.transitionTarget then
+            -- Gating elite (GDD §5 rework): con mini vivo no hay salida por puntos
+            local mbGate = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+            local miniAlive = mbGate and mbGate.alive
+            if miniAlive and st.puntuacion >= worldMod.objetivoSala and not st.transitionTarget then
+                st.lastMiniGateHint = st.lastMiniGateHint or -10
+                if (st.time or 0) - st.lastMiniGateHint > 4 then
+                    st.lastMiniGateHint = st.time or 0
+                    local head = st.player.body and st.player.body[1]
+                    if head then uiMod.addPopup("DERROTA AL MINI-JEFE PARA AVANZAR", head.x, head.y) end
+                end
+            end
+
+            if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not miniAlive and not st.transitionTarget then
                 -- Contrarreloj (GDD §19.66): premio si el objetivo se cumple a tiempo
                 if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
                     mutatorsMod.data().rewarded = true

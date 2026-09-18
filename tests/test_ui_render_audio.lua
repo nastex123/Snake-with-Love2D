@@ -145,7 +145,7 @@ harness.describe("Menu UI, Logo & Card (ui/menuUI.lua, menuLogo.lua, menuCard.lu
         menuUI.draw(uiMod, 3.5, 3.5, 500)
         menuUI.drawGlow(uiMod, 3.5, 3.5)
 
-        harness.assert_gte(#uiMod.menuButtons, 4, "Must register menu buttons (play, profiles, settings, exit, etc.)")
+        harness.assert_gte(#uiMod.menuButtons, 4, "Must register menu buttons (3 arcade buttons + card_profile)")
 
         -- Test hit testing
         local firstBtn = uiMod.menuButtons[1]
@@ -458,8 +458,8 @@ harness.describe("Enemies Rendering & Boss Visuals (render/enemiesDraw.lua)", fu
         local boss = {
             x = 15, y = 15,
             alive = true,
-            vida = 50,
-            vidaMax = 100,
+            hp = 50,
+            maxHp = 100,
             state = "telegraph",
             _uiBarFill = 0.5,
             foodCollected = 5,
