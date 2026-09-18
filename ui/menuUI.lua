@@ -75,7 +75,6 @@ function menu.draw(ui, menuTime, globalTime, highScore)
     local gap = 14
     local labels = {
         {id = 'play', text = 'JUGAR'},
-        {id = 'profiles', text = 'PERFILES'},
         {id = 'settings', text = 'CONFIGURACIÓN'},
         {id = 'exit', text = 'SALIR'}
     }

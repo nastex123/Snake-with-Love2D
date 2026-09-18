@@ -42,6 +42,7 @@ if pcall(require, "tests.test_scope_27_display_settings") then end
 if pcall(require, "tests.test_scope_28_shop_economy") then end
 if pcall(require, "tests.test_scope_29_status_fx") then end
 if pcall(require, "tests.test_scope_30_combat_ram") then end
+if pcall(require, "tests.test_scope_31_livecoding") then end
 
 -- Source files for full coverage reporting
 local source_files = {
@@ -56,6 +57,7 @@ local source_files = {
     "core/events.lua",
     "core/input.lua",
     "core/assets.lua",
+    "core/livecoding.lua",
     "entities/bossAttacks.lua",
     "entities/chaserAI.lua",
     "entities/patrollerAI.lua",
