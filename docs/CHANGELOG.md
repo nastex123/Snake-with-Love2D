@@ -8,6 +8,12 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-18 (100 proposals master review document)
+
+- **docs** (completed - 2026-09-18 12:25 America/Bogota):
+  1. **QUE**: Creación del documento exhaustivo [`docs/las-100-propuestas-para-revision.md`](docs/las-100-propuestas-para-revision.md) (y enlace canónico en raíz `las 100 propuestas para revision.md`) con una tabla maestra de 100 propuestas concretas categorizadas en 11 dimensiones: Gameplay & Combate (1-12), Enemigos & Bosses (13-22), Mazmorra & Biomas (23-32), Economía & Ítems (33-42), Meta-Progresión & Modos (43-52), UI/UX & Feedback Sensorial (53-64), Renderizado & Shaders (65-74), Audio & Música (75-82), Arquitectura & Deuda Técnica (83-90), Accesibilidad & Controles (91-95) y Rendimiento / Testing / Tooling (96-100). Incluye mapa de distribución, módulos clave afectados y plan de acción recomendado en 3 fases.
+  2. **POR QUE**: Brindar una visión estratégica integral y granular para la evolución y pulido del proyecto conforme a los lineamientos del GDD, TDD y planes de resiliencia del motor Love2D.
+
 ## 2026-09-17 (livecoding system & responsive menu polish)
 
 - **feat** (completed - 2026-09-17 23:07 America/Bogota, rama `feat/boss-headbutt-combat`):
