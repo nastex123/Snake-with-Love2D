@@ -119,30 +119,23 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
     if not isBoss then
         local mutMods = package.loaded["systems.roomMutators"]
         local mutDef = mutMods and mutMods.getDef and mutMods.getDef()
-        if mutDef then
-            love.graphics.setColor(mutDef.color[1], mutDef.color[2], mutDef.color[3])
-            love.graphics.print(mutDef.tag, x, cy)
-            x = x + font:getWidth(mutDef.tag) + 10 * s
+        local function printTag(tag, col)
+            love.graphics.setColor(col[1], col[2], col[3])
+            love.graphics.print(tag, x, cy)
+            x = x + font:getWidth(tag) + 10 * s
         end
+        if mutDef then printTag(mutDef.tag, mutDef.color) end
         if mutMods and mutMods.stageShadowActive and mutMods.stageShadowActive()
             and (not mutDef or mutDef.id ~= "stalking_shadow") then
-            love.graphics.setColor(0.6, 0.3, 0.9)
-            love.graphics.print("SOMBRA", x, cy)
-            x = x + font:getWidth("SOMBRA") + 10 * s
+            printTag("SOMBRA", {0.6, 0.3, 0.9})
         end
         if mutMods and mutMods.phoenixAvailable and mutMods.phoenixAvailable()
             and (not mutDef or mutDef.id ~= "phoenix_blessing") then
-            love.graphics.setColor(1.0, 0.4, 0.2)
-            love.graphics.print("FENIX", x, cy)
-            x = x + font:getWidth("FENIX") + 10 * s
+            printTag("FENIX", {1.0, 0.4, 0.2})
         end
         local mysMods = package.loaded["systems.mystery"]
         local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(worldMod)
-        if mysDef then
-            love.graphics.setColor(mysDef.color[1], mysDef.color[2], mysDef.color[3])
-            love.graphics.print(mysDef.tag, x, cy)
-            x = x + font:getWidth(mysDef.tag) + 10 * s
-        end
+        if mysDef then printTag(mysDef.tag, mysDef.color) end
     end
 
     -- Monedas y puntuacion
@@ -166,82 +159,19 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         x = x + font:getWidth(streakText) + 12 * s
     end
 
-    -- BARRA HEROICA HADES 8.1 PARA BOSS ROOM
-    if isBoss then
-        local bMaxHp = boss and (boss.maxHp or constants.BOSS_HEADBUTT_HP) or 12
-        local bHp = boss and (boss.hp or bMaxHp) or 12
-        local hpFrac = math.max(0, math.min(1, bHp / bMaxHp))
-        local fillLerp = boss and boss._uiBarFill or hpFrac
-        local ghostFrac = math.max(hpFrac, math.min(1, fillLerp))
-
-        local barW = math.floor(math.min(w * 0.40, 240 * s))
-        local barH = math.floor(8 * s)
-        local barX = math.floor((w - barW) / 2)
-        local barY = math.floor((hh - barH) / 2) + math.floor(4 * s)
-
-        -- Titulo del jefe encima de la barra
-        local isEnraged = boss and boss.enraged or (bHp <= 3)
-        if isEnraged then
-            local pulse = math.sin(love.timer.getTime() * 10) * 0.2 + 0.8
-            love.graphics.setColor(1.0, 0.25, 0.20, pulse)
-            love.graphics.print("FURIA: CABEZAZO x2+ [" .. bHp .. "/" .. bMaxHp .. "]", barX, barY - fontH - 1 * s)
-        else
-            love.graphics.setColor(0.98, 0.85, 0.25, 0.9)
-            love.graphics.print("GOLEM DE CRIPTA [" .. bHp .. "/" .. bMaxHp .. "]", barX, barY - fontH - 1 * s)
-        end
-
-        -- Fondo del marco
-        love.graphics.setColor(0.10, 0.10, 0.16, 0.95)
-        love.graphics.rectangle("fill", barX, barY, barW, barH, 2 * s, 2 * s)
-
-        -- Ghost HP (amarillo palido residual)
-        if ghostFrac > hpFrac then
-            love.graphics.setColor(0.98, 0.90, 0.40, 0.40)
-            love.graphics.rectangle("fill", barX, barY, math.floor(barW * ghostFrac), barH, 2 * s, 2 * s)
-        end
-
-        -- Barra de vida real (rojo carmesi / fuego si enrage)
-        if isEnraged then
-            love.graphics.setColor(0.95, 0.35, 0.10, 0.95)
-        else
-            love.graphics.setColor(0.85, 0.15, 0.25, 0.95)
-        end
-        love.graphics.rectangle("fill", barX, barY, math.floor(barW * hpFrac), barH, 2 * s, 2 * s)
-
-        -- Borde de bronce
-        love.graphics.setColor(0.85, 0.65, 0.15, 0.95)
-        love.graphics.rectangle("line", barX - 1, barY - 1, barW + 2, barH + 2, 2 * s, 2 * s)
-
-        -- Gemas de fase de rubi a 33% y 66%
-        local gs = 2.5 * s
-        local function drawRuby(rx, ry, active)
-            if active then
-                love.graphics.setColor(0.95, 0.20, 0.30)
-            else
-                love.graphics.setColor(0.30, 0.30, 0.35)
-            end
-            love.graphics.polygon("fill", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
-            love.graphics.setColor(0.98, 0.85, 0.25)
-            love.graphics.polygon("line", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
-        end
-        drawRuby(barX + math.floor(barW * 0.33), barY, bHp >= 4)
-        drawRuby(barX + math.floor(barW * 0.66), barY, bHp >= 8)
-
-    else
-        -- Barra de progreso hacia el objetivo de sala (salas normales)
-        if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
-            local barW = 50 * s
-            local barH = 6 * s
-            local barY2 = math.floor(hh / 2) - 3 * s
-            local frac = math.min(1, puntuacion / objetivoSala)
-            love.graphics.setColor(0.20, 0.20, 0.25)
-            love.graphics.rectangle("fill", x, barY2, barW, barH, 2 * s, 2 * s)
-            love.graphics.setColor(frac, 1 - frac, 0)
-            love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2 * s, 2 * s)
-            love.graphics.setColor(0.85, 0.65, 0.15, 0.8)
-            love.graphics.rectangle("line", x - 1, barY2 - 1, barW + 2, barH + 2, 2 * s, 2 * s)
-            x = x + barW + 8 * s
-        end
+    -- Barra de progreso hacia el objetivo de sala (salas normales)
+    if not isBoss and objetivoSala and objetivoSala > 0 and sala and sala < 5 then
+        local barW = 50 * s
+        local barH = 6 * s
+        local barY2 = math.floor(hh / 2) - 3 * s
+        local frac = math.min(1, puntuacion / objetivoSala)
+        love.graphics.setColor(0.20, 0.20, 0.25)
+        love.graphics.rectangle("fill", x, barY2, barW, barH, 2 * s, 2 * s)
+        love.graphics.setColor(frac, 1 - frac, 0)
+        love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2 * s, 2 * s)
+        love.graphics.setColor(0.85, 0.65, 0.15, 0.8)
+        love.graphics.rectangle("line", x - 1, barY2 - 1, barW + 2, barH + 2, 2 * s, 2 * s)
+        x = x + barW + 8 * s
     end
 
     local barY = math.floor(hh / 2) - 3 * s
@@ -313,6 +243,96 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 x = x + 26 * s
             end
         end
+    end
+
+    -- ESTANDARTE HEROICO FLOTANTE HADES 8.1 (OPCION 1)
+    if isBoss then
+        local bMaxHp = boss and (boss.maxHp or constants.BOSS_HEADBUTT_HP) or 12
+        local bHp = boss and (boss.hp or bMaxHp) or 12
+        local hpFrac = math.max(0, math.min(1, bHp / bMaxHp))
+        local fillLerp = boss and boss._uiBarFill or hpFrac
+        local ghostFrac = math.max(hpFrac, math.min(1, fillLerp))
+
+        local bannerW = math.floor(math.min(w * 0.45, 260 * s))
+        local bannerH = math.floor(26 * s)
+        local bannerX = math.floor((w - bannerW) / 2)
+        local bannerY = math.floor(hh + 6 * s)
+
+        -- Placa de fondo de obsidiana con marco de bronce
+        love.graphics.setColor(0.06, 0.08, 0.14, 0.92)
+        love.graphics.rectangle("fill", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
+
+        love.graphics.setColor(0.85, 0.65, 0.15, 0.95)
+        love.graphics.setLineWidth(1.5)
+        love.graphics.rectangle("line", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
+
+        -- Remaches dorados en las 4 esquinas del estandarte
+        love.graphics.setColor(0.98, 0.85, 0.25, 0.9)
+        love.graphics.rectangle("fill", bannerX - 1, bannerY - 1, 3 * s, 3 * s)
+        love.graphics.rectangle("fill", bannerX + bannerW - 2 * s, bannerY - 1, 3 * s, 3 * s)
+        love.graphics.rectangle("fill", bannerX - 1, bannerY + bannerH - 2 * s, 3 * s, 3 * s)
+        love.graphics.rectangle("fill", bannerX + bannerW - 2 * s, bannerY + bannerH - 2 * s, 3 * s, 3 * s)
+
+        -- Titulo del jefe centrado en la placa con fuente ajustada
+        local bFont = getCachedFont(math.max(6, math.floor(constants.FONT_SMALL * s)))
+        love.graphics.setFont(bFont)
+
+        local isEnraged = boss and boss.enraged or (bHp <= 3)
+        local titleText = isEnraged
+            and ("FURIA: CABEZAZO x2+ [" .. bHp .. "/" .. bMaxHp .. "]")
+            or ("GOLEM DE CRIPTA [" .. bHp .. "/" .. bMaxHp .. "]")
+
+        if isEnraged then
+            local pulse = math.sin(love.timer.getTime() * 10) * 0.2 + 0.8
+            love.graphics.setColor(1.0, 0.25, 0.20, pulse)
+        else
+            love.graphics.setColor(0.98, 0.85, 0.25, 0.95)
+        end
+        love.graphics.printf(titleText, bannerX, bannerY + math.floor(3 * s), bannerW, "center")
+
+        -- Barra de salud interna
+        local barW = bannerW - math.floor(20 * s)
+        local barH = math.floor(7 * s)
+        local barX = bannerX + math.floor(10 * s)
+        local barY = bannerY + math.floor(15 * s)
+
+        -- Marco oscuro de la barra
+        love.graphics.setColor(0.12, 0.12, 0.18, 0.95)
+        love.graphics.rectangle("fill", barX, barY, barW, barH, 2 * s, 2 * s)
+
+        -- Ghost HP (amarillo residual tras golpes de cabezazo)
+        if ghostFrac > hpFrac then
+            love.graphics.setColor(0.98, 0.90, 0.40, 0.45)
+            love.graphics.rectangle("fill", barX, barY, math.floor(barW * ghostFrac), barH, 2 * s, 2 * s)
+        end
+
+        -- Barra de vida real (rojo carmesi noble / fuego si enrage)
+        if isEnraged then
+            love.graphics.setColor(0.95, 0.35, 0.10, 0.95)
+        else
+            love.graphics.setColor(0.85, 0.15, 0.25, 0.95)
+        end
+        love.graphics.rectangle("fill", barX, barY, math.floor(barW * hpFrac), barH, 2 * s, 2 * s)
+
+        -- Borde de bronce fino de la barra
+        love.graphics.setColor(0.85, 0.65, 0.15, 0.85)
+        love.graphics.setLineWidth(1)
+        love.graphics.rectangle("line", barX - 1, barY - 1, barW + 2, barH + 2, 2 * s, 2 * s)
+
+        -- Gemas de fase de rubi a 33% y 66%
+        local gs = 2.5 * s
+        local function drawRuby(rx, ry, active)
+            if active then
+                love.graphics.setColor(0.95, 0.20, 0.30)
+            else
+                love.graphics.setColor(0.30, 0.30, 0.35)
+            end
+            love.graphics.polygon("fill", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+            love.graphics.setColor(0.98, 0.85, 0.25)
+            love.graphics.polygon("line", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+        end
+        drawRuby(barX + math.floor(barW * 0.33), barY + math.floor(barH / 2), bHp >= 4)
+        drawRuby(barX + math.floor(barW * 0.66), barY + math.floor(barH / 2), bHp >= 8)
     end
 
     love.graphics.setFont(ui.fontNormal)

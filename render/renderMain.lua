@@ -146,25 +146,7 @@ function renderMain.drawGame(dt)
     love.graphics.setLineWidth(1)
     love.graphics.line(ox, constants.GRID_OFFSET_Y - 1, ox + gridW, constants.GRID_OFFSET_Y - 1)
 
-    -- Boss health bar (encima de la grilla, dentro del bloque de juego)
-    if st.bossHealthDisplay and st.gameState == constants.GAME_STATE_PLAYING then
-        local barW = 160
-        local barH = 8
-        local bx = (w - barW) / 2
-        local by = 32
-        local dMax = st.bossHealthDisplay.maxHp or 1
-        local frac = 0
-        if dMax > 0 then
-            frac = math.max(0, math.min(1, (st.bossHealthDisplay.hp or dMax) / dMax))
-        end
-        love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
-        love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
-        love.graphics.setColor(1, 0.2 * frac + 0.6, 0.2 * frac + 0.2, 0.9)
-        love.graphics.rectangle("fill", bx, by, barW * frac, barH, 4, 4)
-        love.graphics.setColor(1, 1, 1, 0.4)
-        love.graphics.setLineWidth(2)
-        love.graphics.rectangle("line", bx, by, barW, barH, 4, 4)
-    end
+    -- Nota: La barra de salud del Boss se renderiza en el estandarte heroico 8.1 Hades (ui/hudUI.lua)
 
     -- offset de grilla (centrado horizontal)
     love.graphics.push()

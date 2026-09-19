@@ -10,6 +10,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 2026-09-19 (test suite sanitization, playing.lua desmonolithization, sequential death flow & HUD redesign)
 
+- **fix** (completed - 2026-09-19 18:32 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Reposicionamiento del Estandarte Heroico del Boss (Opción 1: Estandarte Flotante Superior Dedicado)**:
+     - `ui/hudUI.lua` (`hud.drawHUD`): Desacoplada la barra de jefe de la franja superior del HUD (28px). La cabecera superior permanece $100\%$ reservada para las estadísticas del jugador (`1-5 CATACUMBAS DE PIEDRA`, `$0`, `STREAK 1.0x` y minimapa) sin colisiones horizontales de coordenadas.
+     - El estandarte heroico del Boss flota centrado inmediatamente debajo del HUD ($Y = hh + 6\text{px}$) como una placa dedicada de obsidiana translúcida con marco y esquinas de bronce de $260\times 26\text{px}$, título centrado con fuente adaptada a 8px (`FONT_SMALL`) y barra de vida con gemas de rubí incrustadas.
+     - `render/renderMain.lua`: Eliminado el renderizado redundante y obsoleto de `st.bossHealthDisplay` que se dibujaba a $Y=32\text{px}$.
+     - Archivos mantenidos estrictamente por debajo de 500 líneas (`hudUI.lua` en 497L, `renderMain.lua` en 470L).
+  2. **POR QUE**: Resolver la superposición visual reportada por el usuario en la que los textos del HUD (`STREAK 1.0x` y monedas) se renderizaban exactamente debajo del título y barra del Boss por colisión en el eje X dentro de los 28px de la cabecera.
+  3. **Verificación**: 753/753 tests aprobados con 0 fallos en `love tests`, smoke test `love . --test` en código 0 y `error.log` en 0 bytes.
+
 - **feat** (completed - 2026-09-19 18:15 America/Bogota, rama `refactor/test-suite-and-playing-split`):
   1. **QUE — Rediseño del HUD: Cabecera 8.1 (Hades Olympian Wrath) y Dock Inferior B08 (Split Wings)**:
      - `ui/hudUI.lua` (`hud.drawHUD`): Implementada la estética de Hades con fondo de obsidiana oscura y borde de bronce bruñido. En sala de Boss (`sala == 5`), proyecta el estandarte heroico centrado superior con el título del jefe (`LORD OF THE VAULT / GOLEM DE CRIPTA`), barra con estela de daño residual *Ghost HP* (`ghostFrac`), barra de vida real con conmutación a color de fuego en *Enrage*, y dos gemas de rubí en los umbrales de fase (HP 8 y 4).
