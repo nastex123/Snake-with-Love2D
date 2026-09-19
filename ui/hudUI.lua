@@ -71,79 +71,90 @@ end
 
 function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
     local s = scale or (ui and ui.scale) or 1
+    local w = love.graphics.getWidth()
 
-    -- Fuente escalada para que el texto crezca con la barra (obtenida del cache)
     local fontSize = math.max(6, math.floor(constants.FONT_NORMAL * s))
     local font = getCachedFont(fontSize)
     love.graphics.setFont(font)
 
-    local hh = constants.HUD_HEIGHT * s          -- alto total de la barra
+    local hh = constants.HUD_HEIGHT * s
     local fontH = font:getHeight()
-    local cy = math.floor((hh - fontH) / 2)       -- centrado vertical del texto
+    local cy = math.floor((hh - fontH) / 2)
 
-    love.graphics.setColor(0, 0, 0, 0.75)
-    love.graphics.rectangle("fill", 0, 0, love.graphics.getWidth(), hh)
+    local worldMod = package.loaded["world.world"]
+    local isBoss = (sala == 5)
+    local enemiesMod = package.loaded["entities.enemies"]
+    local boss = enemiesMod and enemiesMod.boss
 
-    local x = 8 * s                               -- margen izquierdo
+    -- Fondo Hades: obsidiana oscura con borde inferior de bronce
+    love.graphics.setColor(0.06, 0.08, 0.14, 0.90)
+    love.graphics.rectangle("fill", 0, 0, w, hh)
+    love.graphics.setColor(0.85, 0.65, 0.15, 0.85)
+    love.graphics.setLineWidth(1.5)
+    love.graphics.line(0, hh, w, hh)
+    love.graphics.setLineWidth(1)
+
+    local x = 8 * s
 
     -- Indicador de sala y bioma
     if etapa and sala then
-        local worldMod = package.loaded["world.world"]
         local bData = worldMod and worldMod.getBiomeData and worldMod.getBiomeData()
         local bName = bData and bData.name and string.upper(bData.name) or "CATACUMBAS"
-        local isBoss = sala == 5
         local roomText = etapa .. "-" .. sala
         if isBoss then
-            love.graphics.setColor(1, 0.3, 0.5)
+            love.graphics.setColor(0.98, 0.75, 0.14)
         else
             local acc = bData and bData.gridAccent or constants.COLOR_ACCENT
             love.graphics.setColor(acc[1], acc[2], acc[3])
         end
         love.graphics.print(roomText, x, cy)
-        x = x + font:getWidth(roomText) + 8 * s
+        x = x + font:getWidth(roomText) + 6 * s
 
-        love.graphics.setColor(0.5, 0.6, 0.7, 0.85)
+        love.graphics.setColor(0.65, 0.70, 0.80, 0.85)
         love.graphics.print(bName, x, cy)
-        x = x + font:getWidth(bName) + 14 * s
+        x = x + font:getWidth(bName) + 12 * s
     end
 
-    -- Badge del mutador activo de la sala (GDD §19)
-    local mutMods = package.loaded["systems.roomMutators"]
-    local mutDef = mutMods and mutMods.getDef and mutMods.getDef()
-    if mutDef then
-        love.graphics.setColor(mutDef.color[1], mutDef.color[2], mutDef.color[3])
-        love.graphics.print(mutDef.tag, x, cy)
-        x = x + font:getWidth(mutDef.tag) + 14 * s
-    end
-    -- Banderas de etapa aunque la sala tenga otro mutador (Sombra/Fenix)
-    if mutMods and mutMods.stageShadowActive and mutMods.stageShadowActive()
-        and (not mutDef or mutDef.id ~= "stalking_shadow") then
-        love.graphics.setColor(0.6, 0.3, 0.9)
-        love.graphics.print("SOMBRA", x, cy)
-        x = x + font:getWidth("SOMBRA") + 14 * s
-    end
-    if mutMods and mutMods.phoenixAvailable and mutMods.phoenixAvailable()
-        and (not mutDef or mutDef.id ~= "phoenix_blessing") then
-        love.graphics.setColor(1.0, 0.4, 0.2)
-        love.graphics.print("FENIX", x, cy)
-        x = x + font:getWidth("FENIX") + 14 * s
-    end
-    -- Badge de sala especial (GDD §15)
-    local mysMods = package.loaded["systems.mystery"]
-    local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(package.loaded["world.world"])
-    if mysDef then
-        love.graphics.setColor(mysDef.color[1], mysDef.color[2], mysDef.color[3])
-        love.graphics.print(mysDef.tag, x, cy)
-        x = x + font:getWidth(mysDef.tag) + 14 * s
+    -- Badges de mutadores y eventos (solo si no es boss)
+    if not isBoss then
+        local mutMods = package.loaded["systems.roomMutators"]
+        local mutDef = mutMods and mutMods.getDef and mutMods.getDef()
+        if mutDef then
+            love.graphics.setColor(mutDef.color[1], mutDef.color[2], mutDef.color[3])
+            love.graphics.print(mutDef.tag, x, cy)
+            x = x + font:getWidth(mutDef.tag) + 10 * s
+        end
+        if mutMods and mutMods.stageShadowActive and mutMods.stageShadowActive()
+            and (not mutDef or mutDef.id ~= "stalking_shadow") then
+            love.graphics.setColor(0.6, 0.3, 0.9)
+            love.graphics.print("SOMBRA", x, cy)
+            x = x + font:getWidth("SOMBRA") + 10 * s
+        end
+        if mutMods and mutMods.phoenixAvailable and mutMods.phoenixAvailable()
+            and (not mutDef or mutDef.id ~= "phoenix_blessing") then
+            love.graphics.setColor(1.0, 0.4, 0.2)
+            love.graphics.print("FENIX", x, cy)
+            x = x + font:getWidth("FENIX") + 10 * s
+        end
+        local mysMods = package.loaded["systems.mystery"]
+        local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(worldMod)
+        if mysDef then
+            love.graphics.setColor(mysDef.color[1], mysDef.color[2], mysDef.color[3])
+            love.graphics.print(mysDef.tag, x, cy)
+            x = x + font:getWidth(mysDef.tag) + 10 * s
+        end
     end
 
+    -- Monedas y puntuacion
     love.graphics.setColor(1, 0.84, 0.0)
     love.graphics.print("$" .. monedas, x, cy)
-    x = x + font:getWidth("$" .. monedas) + 14 * s
+    x = x + font:getWidth("$" .. monedas) + 12 * s
 
-    love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
-    love.graphics.print("" .. puntuacion, x, cy)
-    x = x + font:getWidth("" .. puntuacion) + 14 * s
+    if not isBoss then
+        love.graphics.setColor(constants.COLOR_GOLD[1], constants.COLOR_GOLD[2], constants.COLOR_GOLD[3])
+        love.graphics.print("" .. puntuacion, x, cy)
+        x = x + font:getWidth("" .. puntuacion) + 12 * s
+    end
 
     local world = require("core.world")
     local streak = world.state and world.state.survivalStreak or 1.0
@@ -152,20 +163,85 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         local sPulse = math.sin(love.timer.getTime() * 8) * 0.2 + 0.8
         love.graphics.setColor(0.0, 0.94, 1.0, sPulse)
         love.graphics.print(streakText, x, cy)
-        x = x + font:getWidth(streakText) + 14 * s
+        x = x + font:getWidth(streakText) + 12 * s
     end
 
-    -- Barra de progreso hacia el objetivo de la sala
-    if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
-        local barW = 50 * s
-        local barH = 6 * s
-        local barY2 = math.floor(hh / 2) - 3 * s
-        local frac = math.min(1, puntuacion / objetivoSala)
-        love.graphics.setColor(0.25, 0.25, 0.25)
-        love.graphics.rectangle("fill", x, barY2, barW, barH, 2 * s, 2 * s)
-        love.graphics.setColor(frac, 1 - frac, 0)
-        love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2 * s, 2 * s)
-        x = x + barW + 8 * s
+    -- BARRA HEROICA HADES 8.1 PARA BOSS ROOM
+    if isBoss then
+        local bMaxHp = boss and (boss.maxHp or constants.BOSS_HEADBUTT_HP) or 12
+        local bHp = boss and (boss.hp or bMaxHp) or 12
+        local hpFrac = math.max(0, math.min(1, bHp / bMaxHp))
+        local fillLerp = boss and boss._uiBarFill or hpFrac
+        local ghostFrac = math.max(hpFrac, math.min(1, fillLerp))
+
+        local barW = math.floor(math.min(w * 0.40, 240 * s))
+        local barH = math.floor(8 * s)
+        local barX = math.floor((w - barW) / 2)
+        local barY = math.floor((hh - barH) / 2) + math.floor(4 * s)
+
+        -- Titulo del jefe encima de la barra
+        local isEnraged = boss and boss.enraged or (bHp <= 3)
+        if isEnraged then
+            local pulse = math.sin(love.timer.getTime() * 10) * 0.2 + 0.8
+            love.graphics.setColor(1.0, 0.25, 0.20, pulse)
+            love.graphics.print("FURIA: CABEZAZO x2+ [" .. bHp .. "/" .. bMaxHp .. "]", barX, barY - fontH - 1 * s)
+        else
+            love.graphics.setColor(0.98, 0.85, 0.25, 0.9)
+            love.graphics.print("GOLEM DE CRIPTA [" .. bHp .. "/" .. bMaxHp .. "]", barX, barY - fontH - 1 * s)
+        end
+
+        -- Fondo del marco
+        love.graphics.setColor(0.10, 0.10, 0.16, 0.95)
+        love.graphics.rectangle("fill", barX, barY, barW, barH, 2 * s, 2 * s)
+
+        -- Ghost HP (amarillo palido residual)
+        if ghostFrac > hpFrac then
+            love.graphics.setColor(0.98, 0.90, 0.40, 0.40)
+            love.graphics.rectangle("fill", barX, barY, math.floor(barW * ghostFrac), barH, 2 * s, 2 * s)
+        end
+
+        -- Barra de vida real (rojo carmesi / fuego si enrage)
+        if isEnraged then
+            love.graphics.setColor(0.95, 0.35, 0.10, 0.95)
+        else
+            love.graphics.setColor(0.85, 0.15, 0.25, 0.95)
+        end
+        love.graphics.rectangle("fill", barX, barY, math.floor(barW * hpFrac), barH, 2 * s, 2 * s)
+
+        -- Borde de bronce
+        love.graphics.setColor(0.85, 0.65, 0.15, 0.95)
+        love.graphics.rectangle("line", barX - 1, barY - 1, barW + 2, barH + 2, 2 * s, 2 * s)
+
+        -- Gemas de fase de rubi a 33% y 66%
+        local gs = 2.5 * s
+        local function drawRuby(rx, ry, active)
+            if active then
+                love.graphics.setColor(0.95, 0.20, 0.30)
+            else
+                love.graphics.setColor(0.30, 0.30, 0.35)
+            end
+            love.graphics.polygon("fill", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+            love.graphics.setColor(0.98, 0.85, 0.25)
+            love.graphics.polygon("line", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+        end
+        drawRuby(barX + math.floor(barW * 0.33), barY, bHp >= 4)
+        drawRuby(barX + math.floor(barW * 0.66), barY, bHp >= 8)
+
+    else
+        -- Barra de progreso hacia el objetivo de sala (salas normales)
+        if objetivoSala and objetivoSala > 0 and sala and sala < 5 then
+            local barW = 50 * s
+            local barH = 6 * s
+            local barY2 = math.floor(hh / 2) - 3 * s
+            local frac = math.min(1, puntuacion / objetivoSala)
+            love.graphics.setColor(0.20, 0.20, 0.25)
+            love.graphics.rectangle("fill", x, barY2, barW, barH, 2 * s, 2 * s)
+            love.graphics.setColor(frac, 1 - frac, 0)
+            love.graphics.rectangle("fill", x, barY2, barW * frac, barH, 2 * s, 2 * s)
+            love.graphics.setColor(0.85, 0.65, 0.15, 0.8)
+            love.graphics.rectangle("line", x - 1, barY2 - 1, barW + 2, barH + 2, 2 * s, 2 * s)
+            x = x + barW + 8 * s
+        end
     end
 
     local barY = math.floor(hh / 2) - 3 * s
@@ -189,13 +265,13 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         x = x + 36 * s
     end
 
-    if baseSpeed then
+    if baseSpeed and not isBoss then
         local frac = (baseSpeed - constants.MIN_BASE_SPEED) / (constants.MAX_BASE_SPEED - constants.MIN_BASE_SPEED)
         love.graphics.setColor(0.25, 0.25, 0.25)
-        love.graphics.rectangle("fill", x, barY, 40 * s, 6 * s, 2 * s, 2 * s)
+        love.graphics.rectangle("fill", x, barY, 36 * s, 6 * s, 2 * s, 2 * s)
         love.graphics.setColor(frac, 1 - frac, 0)
-        love.graphics.rectangle("fill", x, barY, 40 * s * (1 - frac), 6 * s, 2 * s, 2 * s)
-        x = x + 46 * s
+        love.graphics.rectangle("fill", x, barY, 36 * s * (1 - frac), 6 * s, 2 * s, 2 * s)
+        x = x + 42 * s
     end
 
     if comboCount and comboCount > 0 then
@@ -228,7 +304,6 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
                 love.graphics.setColor(0.25, 0.25, 0.25)
                 love.graphics.rectangle("fill", x, barY, 20 * s, 6 * s, 2 * s, 2 * s)
                 love.graphics.setColor(c[1], c[2], c[3])
-                -- P05: remaining desde handle pooled si existe, fallback a t.remaining (tests)
                 local dur = t.duration or constants.TURBO_DURATION or 10
                 local rem = t.remaining or dur
                 if t._handle and t._handle.delay then
@@ -240,7 +315,6 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         end
     end
 
-    -- Restaurar fuente por defecto para el resto de la UI
     love.graphics.setFont(ui.fontNormal)
 end
 
@@ -248,12 +322,12 @@ function hud.drawSlots(ui, slotDisplay)
     local w = love.graphics.getWidth()
     local h = love.graphics.getHeight()
     local s = math.min(ui and ui.scale or 1.0, w / 520)
-    local slotW = math.floor(88 * s)
+
+    local btnW = math.floor(76 * s)
     local slotH = math.floor(24 * s)
-    local gap = math.floor(5 * s)
-    local totalW = slotW * 5 + gap * 4
-    local startX = math.floor((w - totalW) / 2)
-    local y = h - slotH - math.floor(6 * s)
+    local gap = math.floor(4 * s)
+    local margin = math.floor(6 * s)
+    local y = h - slotH - margin
 
     local fontSize = math.max(6, math.floor(constants.FONT_SMALL * s))
     local font = getCachedFont(fontSize)
@@ -263,9 +337,21 @@ function hud.drawSlots(ui, slotDisplay)
     local world = require("core.world")
     local player = world.state and world.state.player
 
-    -- Slot [Q] Autotomia
+    -- ==========================================
+    -- ALA IZQUIERDA: HABILIDADES DE EVASIÓN [Q] Y [R]
+    -- ==========================================
+    local leftW = btnW * 2 + gap + 8 * s
+    local leftX = margin
+
+    -- Panel contenedor ala izquierda (bronce + mármol)
+    love.graphics.setColor(0.06, 0.08, 0.14, 0.90)
+    love.graphics.rectangle("fill", leftX, y - 2 * s, leftW, slotH + 4 * s, 4 * s, 4 * s)
+    love.graphics.setColor(0.85, 0.65, 0.18, 0.85)
+    love.graphics.rectangle("line", leftX, y - 2 * s, leftW, slotH + 4 * s, 4 * s, 4 * s)
+
     if player then
-        local qX = startX
+        -- Slot [Q] Autotomia
+        local qX = leftX + 4 * s
         local cd = player.autotomyCooldown or 0
         local maxCd = constants.AUTOTOMY_COOLDOWN or 8.0
         local canUse = (cd <= 0 and player.body and #player.body >= 4)
@@ -273,9 +359,9 @@ function hud.drawSlots(ui, slotDisplay)
         if canUse then
             local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
             love.graphics.setColor(0.18, 0.10, 0.30, 0.85)
-            love.graphics.rectangle("fill", qX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("fill", qX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.8, 0.3, 1.0, pulse)
-            love.graphics.rectangle("line", qX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("line", qX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.8, 0.4, 1.0)
             love.graphics.print("[Q]", qX + 3 * s, y + (slotH - fontH) / 2)
             love.graphics.setColor(1, 1, 1)
@@ -283,20 +369,20 @@ function hud.drawSlots(ui, slotDisplay)
         else
             local cdFrac = cd > 0 and (cd / maxCd) or 0
             love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
-            love.graphics.rectangle("fill", qX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("fill", qX, y, btnW, slotH, 3 * s)
             if cd > 0 then
                 love.graphics.setColor(0.5, 0.2, 0.7, 0.45)
-                love.graphics.rectangle("fill", qX, y, slotW * (1 - cdFrac), slotH, 3 * s)
+                love.graphics.rectangle("fill", qX, y, btnW * (1 - cdFrac), slotH, 3 * s)
             end
             love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
-            love.graphics.rectangle("line", qX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("line", qX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             local txt = cd > 0 and string.format("[Q] %.0fs", cd) or "[Q] COLA"
             love.graphics.print(txt, qX + 3 * s, y + (slotH - fontH) / 2)
         end
 
         -- Slot [R] Inversion
-        local rX = startX + (slotW + gap)
+        local rX = qX + btnW + gap
         local rCd = player.reverseSlitherCooldown or 0
         local rMaxCd = constants.REVERSE_SLITHER_COOLDOWN or 10.0
         local rCanUse = (rCd <= 0 and player.body and #player.body >= 2)
@@ -304,9 +390,9 @@ function hud.drawSlots(ui, slotDisplay)
         if rCanUse then
             local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
             love.graphics.setColor(0.08, 0.18, 0.25, 0.85)
-            love.graphics.rectangle("fill", rX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("fill", rX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.0, 0.94, 0.8, pulse)
-            love.graphics.rectangle("line", rX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("line", rX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.0, 0.94, 0.8)
             love.graphics.print("[R]", rX + 3 * s, y + (slotH - fontH) / 2)
             love.graphics.setColor(1, 1, 1)
@@ -314,42 +400,60 @@ function hud.drawSlots(ui, slotDisplay)
         else
             local rFrac = rCd > 0 and (rCd / rMaxCd) or 0
             love.graphics.setColor(0.1, 0.15, 0.15, 0.5)
-            love.graphics.rectangle("fill", rX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("fill", rX, y, btnW, slotH, 3 * s)
             if rCd > 0 then
                 love.graphics.setColor(0.1, 0.6, 0.6, 0.45)
-                love.graphics.rectangle("fill", rX, y, slotW * (1 - rFrac), slotH, 3 * s)
+                love.graphics.rectangle("fill", rX, y, btnW * (1 - rFrac), slotH, 3 * s)
             end
             love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
-            love.graphics.rectangle("line", rX, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("line", rX, y, btnW, slotH, 3 * s)
             love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
             local txt = rCd > 0 and string.format("[R] %.0fs", rCd) or "[R] INVERT"
             love.graphics.print(txt, rX + 3 * s, y + (slotH - fontH) / 2)
         end
     end
 
-    -- 3 Slots de items (indices 1..3)
+    -- ==========================================
+    -- ALA DERECHA: ARSENAL (SLOTS 1-3)
+    -- ==========================================
+    local itemSlotW = math.floor(52 * s)
+    local rightW = itemSlotW * 3 + gap * 2 + 8 * s
+    local touchOffset = math.floor(64 * s)
+    local rightX = w - rightW - touchOffset
+
+    -- Panel contenedor ala derecha
+    love.graphics.setColor(0.06, 0.08, 0.14, 0.90)
+    love.graphics.rectangle("fill", rightX, y - 2 * s, rightW, slotH + 4 * s, 4 * s, 4 * s)
+    love.graphics.setColor(0.85, 0.65, 0.18, 0.85)
+    love.graphics.rectangle("line", rightX, y - 2 * s, rightW, slotH + 4 * s, 4 * s, 4 * s)
+
     for i = 1, 3 do
-        local x = startX + (i + 1) * (slotW + gap)
-        local slot = slotDisplay[i]
+        local x = rightX + 4 * s + (i - 1) * (itemSlotW + gap)
+        local slot = slotDisplay and slotDisplay[i]
 
         if slot then
             love.graphics.setColor(0.12, 0.12, 0.22, 0.85)
-            love.graphics.rectangle("fill", x, y, slotW, slotH, 3 * s)
-            love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.6)
-            love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
-            love.graphics.setColor(1, 1, 1, 0.4)
-            love.graphics.print(i .. ".", x + 3 * s, y + (slotH - fontH) / 2)
+            love.graphics.rectangle("fill", x, y, itemSlotW, slotH, 3 * s)
+            love.graphics.setColor(0.85, 0.65, 0.18, 0.6)
+            love.graphics.rectangle("line", x, y, itemSlotW, slotH, 3 * s)
+            love.graphics.setColor(0.98, 0.85, 0.25, 0.8)
+            love.graphics.print(i .. ".", x + 2 * s, y + (slotH - fontH) / 2)
             love.graphics.setColor(1, 1, 1)
-            love.graphics.print(slot.name, x + 15 * s, y + (slotH - fontH) / 2)
+            local itemName = slot.name or ""
+            if font:getWidth(itemName) > itemSlotW - 14 * s then
+                itemName = string.sub(itemName, 1, 4) .. "."
+            end
+            love.graphics.print(itemName, x + 12 * s, y + (slotH - fontH) / 2)
         else
             love.graphics.setColor(0.12, 0.12, 0.22, 0.4)
-            love.graphics.rectangle("fill", x, y, slotW, slotH, 3 * s)
+            love.graphics.rectangle("fill", x, y, itemSlotW, slotH, 3 * s)
             love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
-            love.graphics.rectangle("line", x, y, slotW, slotH, 3 * s)
-            love.graphics.setColor(0.3, 0.3, 0.3, 0.3)
-            love.graphics.print(i .. ".", x + 3 * s, y + (slotH - fontH) / 2)
+            love.graphics.rectangle("line", x, y, itemSlotW, slotH, 3 * s)
+            love.graphics.setColor(0.4, 0.4, 0.4, 0.5)
+            love.graphics.print(i .. ".", x + 2 * s, y + (slotH - fontH) / 2)
         end
     end
+
     love.graphics.setFont(ui.fontNormal)
 end
 

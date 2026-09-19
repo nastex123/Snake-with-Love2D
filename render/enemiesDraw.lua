@@ -441,27 +441,7 @@ function draw.draw(list, boss, telegraphs, attackObjects, snakeHead)
         love.graphics.circle("fill", cx, cy, 3)
         love.graphics.setColor(0, 0, 0)
         love.graphics.circle("fill", cx, cy, 1.5)
-
-        -- Health bar (mapped to food collected)
-        local cfg = constants.BOSS_HEALTH_BAR
-        local bx = cx - cfg.width / 2
-        local by = cy + cfg.yOffset
-        -- Background
-        love.graphics.setColor(cfg.bgColor)
-        love.graphics.rectangle("fill", bx, by, cfg.width, cfg.height)
-        -- Border
-        love.graphics.setColor(cfg.borderColor)
-        love.graphics.setLineWidth(1)
-        love.graphics.rectangle("line", bx - 1, by - 1, cfg.width + 2, cfg.height + 2)
-        -- Foreground fill
-        local fillW = math.floor(math.max(0, math.min(1, boss._uiBarFill or 1)) * cfg.width)
-        love.graphics.setColor(cfg.fgColor)
-        love.graphics.rectangle("fill", bx, by, fillW, cfg.height)
-        -- Counter text
-        local txt = string.format("%d / %d", boss.foodCollected or 0, boss.foodTarget or constants.BOSS_FOOD_TARGET)
-        local txtW = love.graphics.getFont():getWidth(txt)
-        love.graphics.setColor(1, 1, 1)
-        love.graphics.print(txt, cx - txtW / 2, by - 14)
+        -- Nota: La barra de salud del Boss se renderiza en la cabecera superior (Propuesta 8.1 Hades)
     end
 end
 

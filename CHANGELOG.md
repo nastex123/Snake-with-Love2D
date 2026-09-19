@@ -8,7 +8,18 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
-## 2026-09-19 (test suite sanitization, playing.lua desmonolithization & sequential death flow)
+## 2026-09-19 (test suite sanitization, playing.lua desmonolithization, sequential death flow & HUD redesign)
+
+- **feat** (completed - 2026-09-19 18:15 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Rediseño del HUD: Cabecera 8.1 (Hades Olympian Wrath) y Dock Inferior B08 (Split Wings)**:
+     - `ui/hudUI.lua` (`hud.drawHUD`): Implementada la estética de Hades con fondo de obsidiana oscura y borde de bronce bruñido. En sala de Boss (`sala == 5`), proyecta el estandarte heroico centrado superior con el título del jefe (`LORD OF THE VAULT / GOLEM DE CRIPTA`), barra con estela de daño residual *Ghost HP* (`ghostFrac`), barra de vida real con conmutación a color de fuego en *Enrage*, y dos gemas de rubí en los umbrales de fase (HP 8 y 4).
+     - `render/enemiesDraw.lua`: Retirada la barra de vida rectangular y texto plano `0 / 15` que flotaba sobre la celda del Boss en el mundo de juego, liberando el $100\%$ del centro de la arena para combate libre de distracciones.
+     - `ui/hudUI.lua` (`hud.drawSlots`): Implementada la arquitectura **B08 Split Wings** dividiendo los controles inferiores en dos alas angulares en esquinas:
+       - **Ala Izquierda (Evasión)**: `[Q] AUTOTOMÍA` y `[R] INVERSIÓN` con reborde de bronce, fondo oscuro de mármol, keycaps claros y temporizador de cooldown en segundos.
+       - **Ala Derecha (Arsenal)**: Tres slots de ítems pasivos con reborde de bronce y números dorados, con margen adaptativo respecto al botón de pausa táctil.
+       - **Centro Inferior**: Completamente libre y transparente para permitir maniobras verticales y esquivas de la serpiente sin obstrucciones visuales.
+  2. **POR QUE**: Solucionar la sobrecarga visual y el apiñamiento de elementos señalado por el usuario en la captura de juego, elevando la calidad gráfica al estándar de roguelikes de acción (Hades) y mejorando la legibilidad táctica del combate contra jefes por cabezazos.
+  3. **Verificación**: 753/753 tests aprobados con 0 fallos en `love tests`, smoke test `love . --test` en código 0 y `error.log` en 0 bytes.
 
 - **feat** (completed - 2026-09-19 17:28 America/Bogota, rama `refactor/test-suite-and-playing-split`):
   1. **QUE — Flujo Secuencial de Animación de Muerte y Revivir**:

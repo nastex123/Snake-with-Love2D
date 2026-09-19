@@ -23,6 +23,12 @@
   - [x] Al revivir por 30$: `gameflow.revivePlayer()` reaparece la serpiente con 3 segmentos en una celda segura, limpia enemigos a 3 casillas, otorga 3 segundos de invulnerabilidad y regresa a `PLAYING`.
   - [x] Al aceptar la muerte: `gameflow.acceptDeath()` computa récords y transiciona a `HIGH_SCORE` o `SHOP`.
   - [x] Verificado con 753/753 tests unitarios pasando al 100%.
+- [x] **Rediseño del HUD: Cabecera 8.1 (Hades Olympian Wrath) y Dock Inferior B08 (Split Wings)**:
+  - [x] Retirada la barra de vida rectangular y texto plano `0 / 15` sobre el Boss en `render/enemiesDraw.lua`, liberando el 100% de la arena.
+  - [x] Implementada la cabecera épica 8.1 en `ui/hudUI.lua` con fondo de obsidiana, bordes de bronce, estela de daño residual *Ghost HP*, gemas de fase de rubí y alerta de *Enrage*.
+  - [x] Implementado el dock inferior **B08 Split Wings** dividiendo los controles en dos alas en esquinas (Ala Izquierda para `[Q]` y `[R]`; Ala Derecha para ítems 1-3 y pausa táctil), despejando el centro inferior de la pantalla.
+  - [x] Preservada la política Zero-GC y las firmas públicas de la API de UI.
+  - [x] Verificado con 753/753 tests unitarios PASS y smoke test exitoso.
 
 ## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
 - [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:
