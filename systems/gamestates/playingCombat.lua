@@ -19,6 +19,7 @@ local achievementsMod = require("systems.achievements")
 local tarotMod = require("systems.tarot")
 local combatRam = require("systems.combatRam")
 local playingEvents = require("systems.gamestates.playingEvents")
+local gameflow = require("systems.gameflow")
 
 local hasEvents, Events = pcall(require, "core.events")
 if not hasEvents or type(Events) ~= "table" then Events = nil end
@@ -264,8 +265,7 @@ function playingCombat.handleMiniBossInteractions(st)
                 shadersMod.triggerDamage(0.4, 0.4)
             else
                 if playingCombat.triggerBattery(st) then return true end
-                st.roomDamaged = true
-                st.deathModalOpen = true
+                gameflow.triggerDeathAnimation()
                 return true
             end
         end

@@ -13,6 +13,8 @@ local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
+local shadersMod = require("render.shaders")
+local achievements = require("systems.achievements")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -201,6 +203,58 @@ function gameflow.iniciarSala(keepInventory)
     end
 end
 
+function gameflow.flushPendingAchievements()
+    local st = world.state
+    if not st.pendingAchievements or #st.pendingAchievements == 0 then return end
+    for _, aid in ipairs(st.pendingAchievements) do
+        local reg = achievements and achievements.registry and achievements.registry[aid]
+        if reg then
+            uiMod.showToast({id=aid, title=reg.title, subtitle=reg.desc, reward=reg.reward})
+        end
+    end
+    st.pendingAchievements = {}
+end
+
+function gameflow.triggerDeathAnimation()
+    local st = world.state
+    st.deathModalOpen = false
+    st.roomDamaged = true
+    st.shakeTimer = constants.SHAKE_DURATION or 0.3
+    st.hitPause = 0.08
+    shadersMod.triggerDamage(1.0, 0.9)
+    st.fadeDir = 1
+    st.deathAnimTimer = 0
+    local head = st.player and st.player.body and st.player.body[1]
+    if head then
+        st.lastDeathHead = {x = head.x, y = head.y}
+    end
+    st.gameState = constants.GAME_STATE_DEATH_ANIMATION
+end
+
+function gameflow.acceptDeath()
+    local st = world.state
+    st.deathModalOpen = false
+    st.survivalStreak = 1.0
+    st.fadeDir = -1
+    local oldHighScore = st.highScore or 0
+    st.highScore = persistence.guardar(st.puntuacion, st.highScore)
+    persistence.syncActiveProfile()
+    achievements.check("scoreReached", {score = st.highScore})
+    st.nuevoHighScore = st.highScore > oldHighScore
+    worldMod.init()
+
+    if st.nuevoHighScore then
+        st.celebrationTimer = constants.HIGH_SCORE_CELEBRATION_DURATION
+        st.gameState = constants.GAME_STATE_HIGH_SCORE
+    else
+        gameflow.flushPendingAchievements()
+        gameflow.applyActiveProfile()
+        st.gameState = constants.GAME_STATE_SHOP
+        sound:playSegment("intro")
+        shop.abrir(st.monedas, true)
+    end
+end
+
 function gameflow.revivePlayer()
     local st = world.state
     local cost = constants.REVIVE_COIN_COST or 30
@@ -210,7 +264,29 @@ function gameflow.revivePlayer()
     persistence.syncActiveProfile()
 
     st.deathModalOpen = false
-    st.player = st.player or snakeMod.reset()
+    if not st.player or not st.player.body or #st.player.body == 0 then
+        st.player = snakeMod.reset()
+    end
+
+    if st.lastDeathHead then
+        local w = st.anchoGrilla or 40
+        local h = st.altoGrilla or 28
+        local dx = math.max(3, math.min(w - 4, st.lastDeathHead.x))
+        local dy = math.max(3, math.min(h - 4, st.lastDeathHead.y))
+        st.player.body = {
+            {x = dx, y = dy},
+            {x = dx - 1, y = dy},
+            {x = dx - 2, y = dy}
+        }
+        st.player.prevBody = {
+            {x = dx, y = dy},
+            {x = dx - 1, y = dy},
+            {x = dx - 2, y = dy}
+        }
+        st.player.dirX = 1
+        st.player.dirY = 0
+    end
+
     st.player.ghost = true
     st.player.ghostTimer = constants.REVIVE_GHOST_DURATION or 3.0
     st.player.flashTimer = constants.REVIVE_GHOST_DURATION or 3.0

@@ -160,7 +160,7 @@ harness.describe("Systems: Gamestates Update & Transitions", function()
         harness.assert_almost_equal(0.5, world.state.introTimer, 0.001)
     end)
 
-    harness.it("states.updateDeath should disassemble snake body and switch to SHOP or HIGH_SCORE", function()
+    harness.it("states.updateDeath should disassemble snake body, open death modal, and switch to SHOP on accept", function()
         local st = world.state
         st.player.body = {{x=5,y=5}, {x=4,y=5}, {x=3,y=5}}
         st.deathAnimTimer = 0
@@ -177,8 +177,13 @@ harness.describe("Systems: Gamestates Update & Transitions", function()
         gamestates.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY)
         harness.assert_equal(0, #st.player.body)
 
-        -- Final step triggers transition
+        -- Final step opens death modal at end of death animation
         gamestates.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY)
+        harness.assert_true(st.deathModalOpen, "Modal opens after all segments explode")
+
+        -- Accepting death transitions to SHOP
+        gameflow.acceptDeath()
+        harness.assert_false(st.deathModalOpen, "Modal closes upon accept")
         harness.assert_equal(constants.GAME_STATE_SHOP, st.gameState)
     end)
 
@@ -326,5 +331,38 @@ harness.describe("Systems: Debug Tools & Logo Calibration", function()
         debugLogo.mousereleased()
         debugLogo.toggle()
     end)
-end)
 
+    harness.it("full death lifecycle: lethal damage -> death animation -> modal -> revive or accept death", function()
+        local st = world.state
+        st.gameState = constants.GAME_STATE_PLAYING
+        st.player.body = {{x = 5, y = 5}, {x = 4, y = 5}}
+        st.monedas = 50
+        st.deathModalOpen = false
+
+        -- 1. Trigger death animation on lethal event
+        gameflow.triggerDeathAnimation()
+        harness.assert_equal(constants.GAME_STATE_DEATH_ANIMATION, st.gameState, "Enters DEATH_ANIMATION state immediately")
+        harness.assert_false(st.deathModalOpen, "Death modal must NOT be open during animation")
+
+        -- 2. Disassemble segments
+        gamestates.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY)
+        harness.assert_equal(1, #st.player.body, "First segment removed")
+        harness.assert_false(st.deathModalOpen, "Modal remains closed while segments explode")
+
+        gamestates.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY)
+        harness.assert_equal(0, #st.player.body, "Snake body fully disassembled")
+
+        -- 3. Animation ends: death modal opens
+        gamestates.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY)
+        harness.assert_true(st.deathModalOpen, "Death modal opens once all segments have exploded")
+
+        -- 4. Revive player
+        local revived = gameflow.revivePlayer()
+        harness.assert_true(revived, "Player with 50 coins successfully revives for 30 coins")
+        harness.assert_equal(20, st.monedas, "30 coins deducted")
+        harness.assert_false(st.deathModalOpen, "Modal closes upon revive")
+        harness.assert_equal(constants.GAME_STATE_PLAYING, st.gameState, "Game returns to PLAYING state")
+        harness.assert_equal(3, #st.player.body, "Snake revived with fresh 3-segment body")
+        harness.assert_true(st.player.ghost, "Player gains ghost invulnerability upon revive")
+    end)
+end)

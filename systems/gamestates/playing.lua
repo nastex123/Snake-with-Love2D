@@ -26,6 +26,7 @@ local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local statusFx = require("systems.statusFx")
 local mysteryMod = require("systems.mystery")
+local gameflow = require("systems.gameflow")
 
 local playingCombat = require("systems.gamestates.playingCombat")
 local playingPickups = require("systems.gamestates.playingPickups")
@@ -44,8 +45,7 @@ function playing.update(dt)
         if st.pendingDeathTimer <= 0 then
             st.pendingDeathTimer = nil
             st.timeScale = 1
-            st.roomDamaged = true
-            st.deathModalOpen = true
+            gameflow.triggerDeathAnimation()
             return true
         end
         return
@@ -164,8 +164,7 @@ function playing.update(dt)
             if col.type == "death" then
                 if playingCombat.triggerBattery(st) then return end
                 if playingEvents.phoenixRevive(st) then return true end
-                st.roomDamaged = true
-                st.deathModalOpen = true
+                gameflow.triggerDeathAnimation()
                 return true
             elseif col.type == "kill" or col.type == "iron_spine_block" or col.type == "shatter_kill" then
                 local res = enemiesMod.killEnemy(col.index)
@@ -311,8 +310,7 @@ function playing.update(dt)
         if not vivo then
             if playingCombat.triggerBattery(st) then return end
             if playingEvents.phoenixRevive(st) then return true end
-            st.roomDamaged = true
-            st.deathModalOpen = true
+            gameflow.triggerDeathAnimation()
             return true
         end
 

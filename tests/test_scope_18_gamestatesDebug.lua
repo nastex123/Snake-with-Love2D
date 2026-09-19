@@ -177,7 +177,7 @@ harness.describe("Game States Dispatcher & Logic (systems/gamestates.lua)", func
         harness.assert_equal(1, st.frutasContador, "Fruit counter should increment")
     end)
 
-    harness.it("states.updatePlaying handles death modal and death return value", function()
+    harness.it("states.updatePlaying transitions to death animation and delays death modal", function()
         local st = world.state
         st.player.body = {{x = 0, y = 5}, {x = 1, y = 5}}
         st.player.dir = {x = -1, y = 0} -- Move left outside grid boundary (x = -1)
@@ -185,7 +185,8 @@ harness.describe("Game States Dispatcher & Logic (systems/gamestates.lua)", func
 
         local died = states.updatePlaying(0.02)
         harness.assert_true(died, "Snake leaving grid should die")
-        harness.assert_true(st.deathModalOpen, "Death modal should be opened")
+        harness.assert_equal(constants.GAME_STATE_DEATH_ANIMATION, st.gameState, "Should transition to DEATH_ANIMATION first")
+        harness.assert_false(st.deathModalOpen, "Death modal should wait until animation completes")
         harness.assert_true(st.roomDamaged, "roomDamaged should be flagged")
     end)
 
@@ -233,7 +234,7 @@ harness.describe("Game States Dispatcher & Logic (systems/gamestates.lua)", func
         harness.assert_equal(constants.GAME_STATE_TRANSITION, st.gameState, "Boss defeat should transition stage")
     end)
 
-    harness.it("states.updateDeath removes snake segments and transitions to shop/highScore", function()
+    harness.it("states.updateDeath removes snake segments and opens modal then transitions on accept", function()
         local st = world.state
         st.gameState = constants.GAME_STATE_DEATH_ANIMATION
         st.player.body = {{x = 5, y = 5}, {x = 4, y = 5}}
@@ -248,8 +249,13 @@ harness.describe("Game States Dispatcher & Logic (systems/gamestates.lua)", func
         states.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY + 0.01)
         harness.assert_equal(0, #st.player.body, "Snake body should be empty")
 
-        -- Next tick triggers state transition to SHOP
+        -- Next tick triggers death modal after animation completes
         states.updateDeath(constants.DEATH_ANIMATION_SEGMENT_DELAY + 0.01)
+        harness.assert_true(st.deathModalOpen, "Death modal opens at end of death animation")
+
+        -- Accepting death transitions to SHOP
+        gameflow.acceptDeath()
+        harness.assert_false(st.deathModalOpen, "Death modal closes upon accepting death")
         harness.assert_equal(constants.GAME_STATE_SHOP, st.gameState, "State should become SHOP")
     end)
 

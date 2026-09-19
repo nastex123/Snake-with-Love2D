@@ -44,34 +44,7 @@ local function recalcularGrilla()
 end
 
 local function triggerDeathAnimation()
-    local st = world.state
-    st.deathModalOpen = false
-    st.shakeTimer = constants.SHAKE_DURATION
-    st.hitPause = 0.08
-    shadersMod.triggerDamage(1.0, 0.9)
-    st.fadeDir = 1
-    st.gameState = constants.GAME_STATE_DEATH_ANIMATION
-    local oldHighScore = st.highScore
-    st.highScore = persistenceMod.guardar(st.puntuacion, st.highScore)
-    persistenceMod.syncActiveProfile()
-    achievementsMod.check("scoreReached", {score = st.highScore})
-    st.nuevoHighScore = st.highScore > oldHighScore
-    if st.nuevoHighScore then
-        local cx = love.graphics.getWidth() / 2
-        local cy = love.graphics.getHeight() / 2
-        table.insert(st.activePS, {
-            ps = particles.highScore(cx, cy)
-        })
-        sound.play("highScore")
-    end
-    st.deathAnimTimer = 0
-    local tam = constants.TAMANIO_BLOQUE
-    for _, seg in ipairs(st.player.body) do
-        table.insert(st.activePS, {
-            ps = particles.muerte(seg.x * tam + tam / 2, seg.y * tam + tam / 2)
-        })
-    end
-    sound.play("death")
+    gameflow.triggerDeathAnimation()
 end
 
 function love.load()
@@ -214,8 +187,7 @@ function love.mousepressed(x, y, button)
             gameflow.revivePlayer()
             return
         elseif action == "accept" then
-            world.state.survivalStreak = 1.0
-            triggerDeathAnimation()
+            gameflow.acceptDeath()
             return
         end
         return
@@ -401,8 +373,7 @@ function love.keypressed(tecla)
                 return
             end
         elseif tecla == "2" or tecla == "escape" then
-            world.state.survivalStreak = 1.0
-            triggerDeathAnimation()
+            gameflow.acceptDeath()
             return
         end
         return

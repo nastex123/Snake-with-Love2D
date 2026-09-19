@@ -15,6 +15,7 @@ local mysteryMod = require("systems.mystery")
 local enemiesMod = require("entities.enemies")
 local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
+local gameflow = require("systems.gameflow")
 
 -- Item aleatorio no poseido via tienda costo 0 (premios Contrarreloj/Espejo/Altar)
 function playingEvents.grantRandomItem(st, onlyPassive)
@@ -85,8 +86,7 @@ function playingEvents.updateRoomEvents(st, dt)
     -- Sombra Acechante (GDD §19.65): muerte al contacto (Fenix puede salvar)
     if mutatorsMod.shadowTick(dt, st.player.body and st.player.body[1]) == "kill" then
         if playingEvents.phoenixRevive(st) then return false end
-        st.roomDamaged = true
-        st.deathModalOpen = true
+        gameflow.triggerDeathAnimation()
         return true
     end
 
@@ -146,8 +146,7 @@ function playingEvents.updateRoomEvents(st, dt)
             mysteryMod.doppelTick(dt, dd, {x = p.dirX or 0, y = p.dirY or 0}, st.time or 0, st.velocidadActual or 0.13)
             if head0 and mysteryMod.doppelTouchesHead(dd, head0) then
                 if playingEvents.phoenixRevive(st) then return false end
-                st.roomDamaged = true
-                st.deathModalOpen = true
+                gameflow.triggerDeathAnimation()
                 return true
             end
         end
