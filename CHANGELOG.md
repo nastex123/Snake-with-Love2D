@@ -8,6 +8,26 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-19 (test suite sanitization & playing.lua desmonolithization)
+
+- **refactor** (completed - 2026-09-19 17:20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Saneamiento Completo de la Suite de Tests (`love tests`)**:
+     - Resueltos 20 fallos históricos y preexistentes en suites unitarias, alcanzando **752/752 tests pasando al 100% con 0 fallos**:
+     - `core/timers.lua`: Diferenciación precisa mediante inspección de aridad (`debug.getinfo(easing, "u").nparams`) para distinguir funciones de easing personalizadas (aridad $\ge 1$) de callbacks de finalización `onComplete` (aridad 0) cuando se pasan como 4to argumento.
+     - `systems/persistence.lua`: Corrección en `atomicWrite` evaluando el valor de retorno real de `os.rename` dentro de `pcall` (`ok and res == true`), previniendo fallos silenciados de renombrado en VFS de testing y asegurando persistencia fiel de perfiles dispersos.
+     - `tests/test_scope_01_config.lua`: Sincronización de `ENEMY_PATROLLER_SPEED = 0.35` acorde a `core/config.lua`.
+     - `tests/test_scope_09_enemies.lua`: Delimitación de paredes de pasillo lateral para verificar el rebote de 180 grados del Interceptor Delta.
+     - `tests/test_scope_16_profiles.lua`: Sincronización de aserciones de inventario en `false` (en vez de `nil`) y truncado de nombre a $\le 14$ caracteres.
+     - `tests/test_scope_18_gamestatesDebug.lua`: Activación de `controlMode = "classic"` para avance en ticks sin teclas sostenidas, modelo de cabezazo al jefe con combo $\ge 2$ y ciclo de vida de degradación de segmentos en `death.updateDeath`.
+     - `tests/test_shop.lua`, `tests/test_settings.lua`, `tests/test_gamestates.lua`: Corrección de aserciones de perfiles, límites de longitud y aislamiento de modales en `setupCleanWorld()`.
+  2. **QUE — Desmonolitización Modular de `systems/gamestates/playing.lua` (1082L -> 4 módulos $<400\text{L}$)**:
+     - `systems/gamestates/playing.lua` (363L): Fachada orquestadora del bucle principal del estado `PLAYING`.
+     - `systems/gamestates/playingCombat.lua` (396L): Combate contra jefes y mini-jefes, armas pasivas (púa, rayo orbital, fuego), parry, singularidad y triturador.
+     - `systems/gamestates/playingPickups.lua` (241L): Frutas normales y especiales, combos, overdrive, economía, shockwaves pooled y objetivos de sala.
+     - `systems/gamestates/playingEvents.lua` (183L): Mutadores de sala ambientales (GDD §19), salas de misterio (GDD §15) y revivir del Fénix.
+  3. **POR QUE**: Cumplir estrictamente con los estándares arquitectónicos del proyecto de mantener todos los archivos por debajo de 400-500 líneas, garantizar cero regresiones y dejar una base de código 100% testeada con cobertura verde.
+  4. **Verificación**: `love tests` ejecutando 752/752 PASS (0 FAIL), `love . --test` exitoso (código 0, 74 módulos rastreados) y `error.log` en 0 bytes.
+
 ## 2026-09-18 (100 proposals master review document)
 
 - **docs** (completed - 2026-09-18 12:25 America/Bogota):

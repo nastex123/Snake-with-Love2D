@@ -1,5 +1,23 @@
 # TODO — Snake Dungeon Crawler
 
+## Completed (Saneamiento de Tests Unitarios & Desmonolitización de playing.lua — 19:09:2026 17:20 America/Bogota)
+- [x] **Saneamiento al 100% de la Suite de Pruebas Unitarias (`love tests`)**:
+  - [x] Resueltos 20 fallos preexistentes en tests unitarios, alcanzando **752/752 tests pasando con 0 fallos**.
+  - [x] Corregida la calibración de velocidad `ENEMY_PATROLLER_SPEED = 0.35` en `tests/test_scope_01_config.lua`.
+  - [x] Detección inteligente de custom easing vs callbacks en `core/timers.lua` (`debug.getinfo` inspeccionando aridad de parámetros).
+  - [x] Aislamiento de colisiones y rebotes ortogonales de patrulleros en pasillos cerrados en `tests/test_scope_09_enemies.lua`.
+  - [x] Corrección de inspección del valor de retorno de `os.rename` dentro de `pcall` en `systems/persistence.lua` (`atomicWrite`), garantizando fallback a VFS en pruebas automatizadas.
+  - [x] Sincronización de aserciones de inventario pasivo en perfiles (`test_scope_16_profiles.lua`) y longitudes máximas de nombre (14 caracteres).
+  - [x] Sincronización del ciclo de vida de cabezazos al jefe y degradación de segmentos en `tests/test_scope_18_gamestatesDebug.lua`.
+- [x] **Desmonolitización Modular de `systems/gamestates/playing.lua`**:
+  - [x] Descompuesto el archivo monolítico (1082L) en 4 módulos limpios estrictamente $<400\text{L}$ cada uno:
+    - [x] `systems/gamestates/playing.lua` (363L): Fachada orquestadora del frame loop de juego.
+    - [x] `systems/gamestates/playingCombat.lua` (396L): Combate contra jefes y mini-jefes, armas pasivas, parry, singularidad y triturador.
+    - [x] `systems/gamestates/playingPickups.lua` (241L): Frutas normales y especiales, combos, overdrive, economía, shockwaves pooled y objetivos de sala.
+    - [x] `systems/gamestates/playingEvents.lua` (183L): Mutadores de sala ambientales (GDD §19), salas de misterio (GDD §15) y revivir del Fénix.
+  - [x] Preservada la política Zero-GC en todos los submódulos durante los ticks de actualización a 60 FPS.
+  - [x] Verificado el smoke headless `love . --test` y `love tests` con 752/752 PASS y `error.log` en 0 bytes.
+
 ## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
 - [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:
   - [x] Monitoreo automático por sondeo (rate-limited a 250ms) en `core/`, `entities/`, `world/`, `systems/`, `ui/`, `render/`, `audio/`, `main.lua` y `constants.lua`.
