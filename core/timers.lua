@@ -332,8 +332,14 @@ function timers.tween(duration, subject, target, easing, onComplete)
             easingFn = easing
             completeCb = onComplete
         else
-            easingFn = easings.linear
-            completeCb = easing
+            local info = debug.getinfo(easing, "u")
+            if info and info.nparams and info.nparams >= 1 then
+                easingFn = easing
+                completeCb = nil
+            else
+                easingFn = easings.linear
+                completeCb = easing
+            end
         end
     else
         easingFn = resolveEasing(easing)

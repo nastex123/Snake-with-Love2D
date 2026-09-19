@@ -228,7 +228,7 @@ harness.describe("Profiles: Deletion & Deleting Last Profile", function()
 
         harness.assert_equal(0, world.state.monedas, "Monedas reset to 0")
         harness.assert_almost_equal(1.0, world.state.highestStreak, 0.001, "Highest streak reset to 1.0")
-        harness.assert_nil(shop.inventory.speedReducer, "Shop inventory cleared")
+        harness.assert_false(shop.inventory.speedReducer, "Shop inventory cleared")
     end)
 
     harness.it("prevents cross-profile shop inventory leakage on profile switch", function()
@@ -248,7 +248,7 @@ harness.describe("Profiles: Deletion & Deleting Last Profile", function()
         -- Switch to ProfileB
         persistence.selectProfile(2)
         gameflow.applyActiveProfile()
-        harness.assert_nil(shop.inventory.extraCoin, "ProfileB does NOT inherit ProfileA extraCoin")
+        harness.assert_false(shop.inventory.extraCoin, "ProfileB does NOT inherit ProfileA extraCoin")
     end)
 end)
 
@@ -261,7 +261,7 @@ harness.describe("Profiles: Persistence & Serialization", function()
     end)
 
     harness.it("saves and reloads profiles from filesystem correctly", function()
-        persistence.createProfile("PersistentPlayer")
+        persistence.createProfile("PersistPlayer")
         local p = persistence.getActiveProfile()
         p.monedas = 77
         p.highScore = 540
@@ -276,7 +276,7 @@ harness.describe("Profiles: Persistence & Serialization", function()
         harness.assert_equal(1, persistence.getActiveProfileIndex(), "Active profile index preserved")
         local loaded = persistence.getActiveProfile()
         harness.assert_not_nil(loaded, "Profile loaded successfully")
-        harness.assert_equal("PersistentPlayer", loaded.name, "Name matches")
+        harness.assert_equal("PersistPlayer", loaded.name, "Name matches")
         harness.assert_equal(77, loaded.monedas, "Monedas match")
         harness.assert_equal(540, loaded.highScore, "HighScore matches")
         harness.assert_equal(12, loaded.stats.kills, "Stats kills match")

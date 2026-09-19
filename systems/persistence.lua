@@ -154,14 +154,14 @@ local function atomicWrite(path, data)
         local fullPath = saveDir .. "/" .. path
         local fullBak = saveDir .. "/" .. bakPath
         if love.filesystem.getInfo(path) then
-            local bakOk = pcall(os.rename, fullPath, fullBak)
-            if not bakOk then
+            local bakOk, bakSuccess = pcall(os.rename, fullPath, fullBak)
+            if not (bakOk and bakSuccess) then
                 local content = love.filesystem.read(path)
                 if content then pcall(love.filesystem.write, bakPath, content) end
             end
         end
-        local okRename = pcall(os.rename, fullTmp, fullPath)
-        if okRename and love.filesystem.getInfo(path) then
+        local okRename, renameSuccess = pcall(os.rename, fullTmp, fullPath)
+        if okRename and renameSuccess and love.filesystem.getInfo(path) then
             pcall(love.filesystem.remove, tmpPath)
             return true
         end

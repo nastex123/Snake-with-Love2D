@@ -16,6 +16,10 @@ local debugTools = helper.debugTools
 local debugLogo = helper.debugLogo
 local constants = helper.constants
 local world = helper.world
+local worldMod = helper.worldMod
+local enemiesMod = helper.enemiesMod
+local foodMod = helper.foodMod
+local obstaclesMod = helper.obstaclesMod
 
 harness.describe("Systems: Gameflow Lifecycle & Room Transitions", function()
     harness.before_each(function()

@@ -73,6 +73,8 @@ function helper.setupCleanWorld()
         player = snakeMod.reset()
     })
     shop.reset()
+    settings.visible = false
+    profilesMod.visible = false
     obstaclesMod.init()
     enemiesMod.init()
     worldMod.init()
