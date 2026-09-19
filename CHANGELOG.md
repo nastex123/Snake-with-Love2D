@@ -8,7 +8,18 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
-## 2026-09-19 (test suite sanitization & playing.lua desmonolithization)
+## 2026-09-19 (test suite sanitization, playing.lua desmonolithization & sequential death flow)
+
+- **feat** (completed - 2026-09-19 17:28 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Flujo Secuencial de Animación de Muerte y Revivir**:
+     - `systems/gameflow.lua`: Modificado `triggerDeathAnimation()` para cambiar inmediatamente el estado a `GAME_STATE_DEATH_ANIMATION` con `deathModalOpen = false`, activando de inmediato el efecto de cámara lenta, sacudida de pantalla, shader de daño y partículas de despiece.
+     - `systems/gamestates/death.lua`: Al destruirse secuencialmente todos los segmentos de la serpiente (`#body == 0`), se activa `st.deathModalOpen = true` desplegando el modal interactivo "¿Revivir o Aceptar Muerte?".
+     - `gameflow.revivePlayer()`: Si el jugador revive (30 monedas), restablece 3 segmentos a salvo en `lastDeathHead`, otorga 3 segundos de invulnerabilidad (fantasma), limpia enemigos hostiles en un radio de 3 casillas y devuelve el juego fluidamente a `PLAYING`.
+     - `gameflow.acceptDeath()`: Si el jugador acepta la muerte, procesa los récords, resetea la racha y transiciona a `HIGH_SCORE` o `SHOP`.
+     - `main.lua`: Enrutamiento unificado de botones y teclado a `gameflow.acceptDeath()` y `gameflow.revivePlayer()`.
+     - `tests/test_scope_18_gamestatesDebug.lua`: Añadido test automatizado de verificación de la secuencia completa (`triggerDeathAnimation -> death.updateDeath -> deathModalOpen -> revivePlayer`).
+  2. **POR QUE**: Responder al requerimiento de feedback visual donde el impacto letal debe desintegrar la serpiente de forma dramática antes de consultar al jugador si desea revivir o dar por terminada la partida.
+  3. **Verificación**: 753/753 tests pasando al 100% en `love tests`, `love . --test` completado en código 0 y `error.log` en 0 bytes.
 
 - **refactor** (completed - 2026-09-19 17:20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
   1. **QUE — Saneamiento Completo de la Suite de Tests (`love tests`)**:

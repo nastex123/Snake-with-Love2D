@@ -17,6 +17,12 @@
     - [x] `systems/gamestates/playingEvents.lua` (183L): Mutadores de sala ambientales (GDD §19), salas de misterio (GDD §15) y revivir del Fénix.
   - [x] Preservada la política Zero-GC en todos los submódulos durante los ticks de actualización a 60 FPS.
   - [x] Verificado el smoke headless `love . --test` y `love tests` con 752/752 PASS y `error.log` en 0 bytes.
+- [x] **Flujo Secuencial de Muerte y Revivir (Animación Previa al Menú)**:
+  - [x] Al ocurrir daño letal, la serpiente activa de inmediato la animación de despiece (`DEATH_ANIMATION`) con efectos de sacudida y partículas, manteniendo el modal cerrado.
+  - [x] Al completarse la destrucción de todos los segmentos, se despliega el modal interactivo "¿Revivir o Aceptar Muerte?".
+  - [x] Al revivir por 30$: `gameflow.revivePlayer()` reaparece la serpiente con 3 segmentos en una celda segura, limpia enemigos a 3 casillas, otorga 3 segundos de invulnerabilidad y regresa a `PLAYING`.
+  - [x] Al aceptar la muerte: `gameflow.acceptDeath()` computa récords y transiciona a `HIGH_SCORE` o `SHOP`.
+  - [x] Verificado con 753/753 tests unitarios pasando al 100%.
 
 ## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
 - [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:

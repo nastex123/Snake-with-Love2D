@@ -28,8 +28,9 @@ Alias: `snakeMod`, `foodMod`, `uiMod`, `enemiesMod`, `worldMod`, `shadersMod`, `
 ## Flujo
 `MENU`(4.5s intro) → `PLAYING` → `TRANSITION`(fade-out→hold2s→fade-in) → `SHOP` → `PLAYING`
 `PLAYING` ↔ `PAUSED`(ESPACIO/ESC)
-`PLAYING` → `DEATH_ANIMATION` → `HIGH_SCORE`(1.3s si record) o `SHOP` → `MENU`
-Muerte: reinicia 1-1, conserva monedas e items. `worldMod.init()` en death anim.
+`PLAYING` → (daño letal) → `DEATH_ANIMATION` (despiece de segmentos) → `deathModalOpen` (¿Revivir por 30$ o Aceptar?)
+- Si revive: `PLAYING` (regenera 3 segmentos, despeja enemigos a 3 casillas, fantasma/invulnerable 3s).
+- Si acepta: `HIGH_SCORE`(1.3s si récord) o `SHOP` → `MENU` (reinicia 1-1, conserva monedas e items; `worldMod.init()` en `acceptDeath()`).
 
 ## Boss (derrota por cabezazos, rework 2026-09-10)
 - Boss con HP 12 (`BOSS_HEADBUTT_HP`), `invulnerable = false`. Daño solo por cabezazos: `display - 1` con combo x2+ (cap `HEADBUTT_MAX_DMG=5`); rebote + fantasma 0.8s.
