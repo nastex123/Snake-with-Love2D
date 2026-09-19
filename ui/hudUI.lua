@@ -69,6 +69,91 @@ local function getCachedFont(fontSize)
     return Assets.getFont(constants.FONT_FILE, fontSize) or Assets.getFont(fontSize)
 end
 
+local MINIBOSS_THEMES = {
+    wall_crusher = {name = "TRITURADOR", color = {0.98, 0.42, 0.12}, accent = {1.00, 0.70, 0.20}},
+    frost_golem  = {name = "GOLEM ESCARCHA", color = {0.20, 0.85, 1.00}, accent = {0.60, 0.95, 1.00}},
+    magma_wyrm   = {name = "SIERPE MAGMA", color = {1.00, 0.28, 0.08}, accent = {1.00, 0.60, 0.20}},
+    brood_queen  = {name = "REINA LARVA", color = {0.80, 0.18, 0.90}, accent = {0.95, 0.45, 1.00}},
+    void_phantom = {name = "ESPECTRO VACIO", color = {0.65, 0.30, 0.98}, accent = {0.85, 0.60, 1.00}},
+}
+
+local function drawFloatingBanner(w, hh, s, fontSmall, title, hp, maxHp, mainCol, accCol, isTelegraph, ghostFrac, isEnraged)
+    local bannerW = math.floor(math.min(w * 0.45, 260 * s))
+    local bannerH = math.floor(26 * s)
+    local bannerX = math.floor((w - bannerW) / 2)
+    local bannerY = math.floor(hh + 6 * s)
+
+    love.graphics.setColor(0.06, 0.08, 0.14, 0.92)
+    love.graphics.rectangle("fill", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
+
+    love.graphics.setColor(mainCol[1], mainCol[2], mainCol[3], 0.95)
+    love.graphics.setLineWidth(1.5)
+    love.graphics.rectangle("line", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
+
+    love.graphics.setColor(accCol[1], accCol[2], accCol[3], 0.9)
+    local rw, rh = 3 * s, 3 * s
+    love.graphics.rectangle("fill", bannerX - 1, bannerY - 1, rw, rh)
+    love.graphics.rectangle("fill", bannerX + bannerW - rw, bannerY - 1, rw, rh)
+    love.graphics.rectangle("fill", bannerX - 1, bannerY + bannerH - rh, rw, rh)
+    love.graphics.rectangle("fill", bannerX + bannerW - rw, bannerY + bannerH - rh, rw, rh)
+
+    love.graphics.setFont(fontSmall)
+    if isEnraged then
+        local pulse = math.sin(love.timer.getTime() * 10) * 0.2 + 0.8
+        love.graphics.setColor(1.0, 0.25, 0.20, pulse)
+    elseif isTelegraph then
+        local pulse = math.sin(love.timer.getTime() * 12) * 0.2 + 0.8
+        love.graphics.setColor(1.0, 0.84, 0.0, pulse)
+    else
+        love.graphics.setColor(accCol[1], accCol[2], accCol[3], 0.95)
+    end
+    love.graphics.printf(title, bannerX, bannerY + math.floor(3 * s), bannerW, "center")
+
+    local barW = bannerW - math.floor(20 * s)
+    local barH = math.floor(7 * s)
+    local barX = bannerX + math.floor(10 * s)
+    local barY = bannerY + math.floor(15 * s)
+    local hpFrac = math.max(0, math.min(1, hp / maxHp))
+
+    love.graphics.setColor(0.12, 0.12, 0.18, 0.95)
+    love.graphics.rectangle("fill", barX, barY, barW, barH, 2 * s, 2 * s)
+
+    if ghostFrac and ghostFrac > hpFrac then
+        love.graphics.setColor(0.98, 0.90, 0.40, 0.45)
+        love.graphics.rectangle("fill", barX, barY, math.floor(barW * ghostFrac), barH, 2 * s, 2 * s)
+    end
+
+    if isEnraged then
+        love.graphics.setColor(0.95, 0.35, 0.10, 0.95)
+    else
+        love.graphics.setColor(mainCol[1], mainCol[2], mainCol[3], 0.95)
+    end
+    love.graphics.rectangle("fill", barX, barY, math.floor(barW * hpFrac), barH, 2 * s, 2 * s)
+
+    love.graphics.setColor(mainCol[1], mainCol[2], mainCol[3], 0.85)
+    love.graphics.setLineWidth(1)
+    love.graphics.rectangle("line", barX - 1, barY - 1, barW + 2, barH + 2, 2 * s, 2 * s)
+
+    local gs = 2.5 * s
+    local function drawDiamond(rx, ry, active, color)
+        if active then love.graphics.setColor(color[1], color[2], color[3])
+        else love.graphics.setColor(0.25, 0.25, 0.30) end
+        love.graphics.polygon("fill", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+        love.graphics.setColor(accCol[1], accCol[2], accCol[3])
+        love.graphics.polygon("line", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
+    end
+
+    if maxHp > 1 and maxHp <= 6 then
+        for step = 1, maxHp - 1 do
+            local dx = barX + math.floor(barW * (step / maxHp))
+            drawDiamond(dx, barY + math.floor(barH / 2), hp > step, accCol)
+        end
+    else
+        drawDiamond(barX + math.floor(barW * 0.33), barY + math.floor(barH / 2), hp >= 4, {0.95, 0.20, 0.30})
+        drawDiamond(barX + math.floor(barW * 0.66), barY + math.floor(barH / 2), hp >= 8, {0.95, 0.20, 0.30})
+    end
+end
+
 function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTimer, magnetDuration, baseSpeed, velocidadActual, comboCount, activeTimers, etapa, sala, objetivoSala, scale)
     local s = scale or (ui and ui.scale) or 1
     local w = love.graphics.getWidth()
@@ -245,94 +330,36 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         end
     end
 
-    -- ESTANDARTE HEROICO FLOTANTE HADES 8.1 (OPCION 1)
-    if isBoss then
-        local bMaxHp = boss and (boss.maxHp or constants.BOSS_HEADBUTT_HP) or 12
-        local bHp = boss and (boss.hp or bMaxHp) or 12
+    -- ESTANDARTE HEROICO FLOTANTE (BOSS O MINI-BOSS)
+    local bFont = getCachedFont(math.max(6, math.floor(constants.FONT_SMALL * s)))
+    if isBoss and boss and boss.alive then
+        local bMaxHp = boss.maxHp or constants.BOSS_HEADBUTT_HP or 12
+        local bHp = boss.hp or bMaxHp
         local hpFrac = math.max(0, math.min(1, bHp / bMaxHp))
-        local fillLerp = boss and boss._uiBarFill or hpFrac
+        local fillLerp = boss._uiBarFill or hpFrac
         local ghostFrac = math.max(hpFrac, math.min(1, fillLerp))
-
-        local bannerW = math.floor(math.min(w * 0.45, 260 * s))
-        local bannerH = math.floor(26 * s)
-        local bannerX = math.floor((w - bannerW) / 2)
-        local bannerY = math.floor(hh + 6 * s)
-
-        -- Placa de fondo de obsidiana con marco de bronce
-        love.graphics.setColor(0.06, 0.08, 0.14, 0.92)
-        love.graphics.rectangle("fill", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
-
-        love.graphics.setColor(0.85, 0.65, 0.15, 0.95)
-        love.graphics.setLineWidth(1.5)
-        love.graphics.rectangle("line", bannerX, bannerY, bannerW, bannerH, 3 * s, 3 * s)
-
-        -- Remaches dorados en las 4 esquinas del estandarte
-        love.graphics.setColor(0.98, 0.85, 0.25, 0.9)
-        love.graphics.rectangle("fill", bannerX - 1, bannerY - 1, 3 * s, 3 * s)
-        love.graphics.rectangle("fill", bannerX + bannerW - 2 * s, bannerY - 1, 3 * s, 3 * s)
-        love.graphics.rectangle("fill", bannerX - 1, bannerY + bannerH - 2 * s, 3 * s, 3 * s)
-        love.graphics.rectangle("fill", bannerX + bannerW - 2 * s, bannerY + bannerH - 2 * s, 3 * s, 3 * s)
-
-        -- Titulo del jefe centrado en la placa con fuente ajustada
-        local bFont = getCachedFont(math.max(6, math.floor(constants.FONT_SMALL * s)))
-        love.graphics.setFont(bFont)
-
-        local isEnraged = boss and boss.enraged or (bHp <= 3)
-        local titleText = isEnraged
+        local isEnraged = boss.enraged or (bHp <= 3)
+        local title = isEnraged
             and ("FURIA: CABEZAZO x2+ [" .. bHp .. "/" .. bMaxHp .. "]")
             or ("GOLEM DE CRIPTA [" .. bHp .. "/" .. bMaxHp .. "]")
-
-        if isEnraged then
-            local pulse = math.sin(love.timer.getTime() * 10) * 0.2 + 0.8
-            love.graphics.setColor(1.0, 0.25, 0.20, pulse)
-        else
-            love.graphics.setColor(0.98, 0.85, 0.25, 0.95)
+        drawFloatingBanner(w, hh, s, bFont, title, bHp, bMaxHp,
+            {0.85, 0.65, 0.15}, {0.98, 0.85, 0.25}, false, ghostFrac, isEnraged)
+    else
+        local mb = enemiesMod and enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+        if mb and mb.alive then
+            local defId = mb.defId or "wall_crusher"
+            local theme = MINIBOSS_THEMES[defId] or {
+                name = mb.name or "ELITE",
+                color = mb.color or {0.98, 0.42, 0.12},
+                accent = {1.00, 0.70, 0.20}
+            }
+            local isTelegraph = (mb.state == "telegraph")
+            local title = isTelegraph
+                and ("¡VULNERABLE: CABEZAZO! [" .. (mb.hp or 1) .. "/" .. (mb.maxHp or 1) .. "]")
+                or (theme.name .. " [" .. (mb.hp or 1) .. "/" .. (mb.maxHp or 1) .. "]")
+            drawFloatingBanner(w, hh, s, bFont, title, mb.hp or 1, mb.maxHp or 1,
+                theme.color, theme.accent, isTelegraph, nil, false)
         end
-        love.graphics.printf(titleText, bannerX, bannerY + math.floor(3 * s), bannerW, "center")
-
-        -- Barra de salud interna
-        local barW = bannerW - math.floor(20 * s)
-        local barH = math.floor(7 * s)
-        local barX = bannerX + math.floor(10 * s)
-        local barY = bannerY + math.floor(15 * s)
-
-        -- Marco oscuro de la barra
-        love.graphics.setColor(0.12, 0.12, 0.18, 0.95)
-        love.graphics.rectangle("fill", barX, barY, barW, barH, 2 * s, 2 * s)
-
-        -- Ghost HP (amarillo residual tras golpes de cabezazo)
-        if ghostFrac > hpFrac then
-            love.graphics.setColor(0.98, 0.90, 0.40, 0.45)
-            love.graphics.rectangle("fill", barX, barY, math.floor(barW * ghostFrac), barH, 2 * s, 2 * s)
-        end
-
-        -- Barra de vida real (rojo carmesi noble / fuego si enrage)
-        if isEnraged then
-            love.graphics.setColor(0.95, 0.35, 0.10, 0.95)
-        else
-            love.graphics.setColor(0.85, 0.15, 0.25, 0.95)
-        end
-        love.graphics.rectangle("fill", barX, barY, math.floor(barW * hpFrac), barH, 2 * s, 2 * s)
-
-        -- Borde de bronce fino de la barra
-        love.graphics.setColor(0.85, 0.65, 0.15, 0.85)
-        love.graphics.setLineWidth(1)
-        love.graphics.rectangle("line", barX - 1, barY - 1, barW + 2, barH + 2, 2 * s, 2 * s)
-
-        -- Gemas de fase de rubi a 33% y 66%
-        local gs = 2.5 * s
-        local function drawRuby(rx, ry, active)
-            if active then
-                love.graphics.setColor(0.95, 0.20, 0.30)
-            else
-                love.graphics.setColor(0.30, 0.30, 0.35)
-            end
-            love.graphics.polygon("fill", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
-            love.graphics.setColor(0.98, 0.85, 0.25)
-            love.graphics.polygon("line", rx, ry - gs, rx + gs, ry, rx, ry + gs, rx - gs, ry)
-        end
-        drawRuby(barX + math.floor(barW * 0.33), barY + math.floor(barH / 2), bHp >= 4)
-        drawRuby(barX + math.floor(barW * 0.66), barY + math.floor(barH / 2), bHp >= 8)
     end
 
     love.graphics.setFont(ui.fontNormal)
@@ -370,67 +397,40 @@ function hud.drawSlots(ui, slotDisplay)
     love.graphics.rectangle("line", leftX, y - 2 * s, leftW, slotH + 4 * s, 4 * s, 4 * s)
 
     if player then
-        -- Slot [Q] Autotomia
-        local qX = leftX + 4 * s
-        local cd = player.autotomyCooldown or 0
-        local maxCd = constants.AUTOTOMY_COOLDOWN or 8.0
-        local canUse = (cd <= 0 and player.body and #player.body >= 4)
-
-        if canUse then
-            local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
-            love.graphics.setColor(0.18, 0.10, 0.30, 0.85)
-            love.graphics.rectangle("fill", qX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.8, 0.3, 1.0, pulse)
-            love.graphics.rectangle("line", qX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.8, 0.4, 1.0)
-            love.graphics.print("[Q]", qX + 3 * s, y + (slotH - fontH) / 2)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.print("COLA", qX + 22 * s, y + (slotH - fontH) / 2)
-        else
-            local cdFrac = cd > 0 and (cd / maxCd) or 0
-            love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
-            love.graphics.rectangle("fill", qX, y, btnW, slotH, 3 * s)
-            if cd > 0 then
-                love.graphics.setColor(0.5, 0.2, 0.7, 0.45)
-                love.graphics.rectangle("fill", qX, y, btnW * (1 - cdFrac), slotH, 3 * s)
+        local function drawAbilityBtn(bx, key, name, cd, maxCd, canUse, col)
+            if canUse then
+                local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
+                love.graphics.setColor(col[1] * 0.25, col[2] * 0.25, col[3] * 0.25, 0.85)
+                love.graphics.rectangle("fill", bx, y, btnW, slotH, 3 * s)
+                love.graphics.setColor(col[1], col[2], col[3], pulse)
+                love.graphics.rectangle("line", bx, y, btnW, slotH, 3 * s)
+                love.graphics.setColor(col[1], col[2], col[3])
+                love.graphics.print("[" .. key .. "]", bx + 3 * s, y + (slotH - fontH) / 2)
+                love.graphics.setColor(1, 1, 1)
+                love.graphics.print(name, bx + 22 * s, y + (slotH - fontH) / 2)
+            else
+                local frac = cd > 0 and (cd / maxCd) or 0
+                love.graphics.setColor(0.1, 0.1, 0.15, 0.5)
+                love.graphics.rectangle("fill", bx, y, btnW, slotH, 3 * s)
+                if cd > 0 then
+                    love.graphics.setColor(col[1] * 0.6, col[2] * 0.6, col[3] * 0.6, 0.45)
+                    love.graphics.rectangle("fill", bx, y, btnW * (1 - frac), slotH, 3 * s)
+                end
+                love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
+                love.graphics.rectangle("line", bx, y, btnW, slotH, 3 * s)
+                love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
+                local txt = cd > 0 and string.format("[%s] %.0fs", key, cd) or ("[" .. key .. "] " .. name)
+                love.graphics.print(txt, bx + 3 * s, y + (slotH - fontH) / 2)
             end
-            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
-            love.graphics.rectangle("line", qX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
-            local txt = cd > 0 and string.format("[Q] %.0fs", cd) or "[Q] COLA"
-            love.graphics.print(txt, qX + 3 * s, y + (slotH - fontH) / 2)
         end
 
-        -- Slot [R] Inversion
-        local rX = qX + btnW + gap
+        local qCd = player.autotomyCooldown or 0
+        local qCan = (qCd <= 0 and player.body and #player.body >= 4)
+        drawAbilityBtn(leftX + 4 * s, "Q", "COLA", qCd, constants.AUTOTOMY_COOLDOWN or 8.0, qCan, {0.8, 0.3, 1.0})
+
         local rCd = player.reverseSlitherCooldown or 0
-        local rMaxCd = constants.REVERSE_SLITHER_COOLDOWN or 10.0
-        local rCanUse = (rCd <= 0 and player.body and #player.body >= 2)
-
-        if rCanUse then
-            local pulse = math.sin(love.timer.getTime() * 6) * 0.2 + 0.8
-            love.graphics.setColor(0.08, 0.18, 0.25, 0.85)
-            love.graphics.rectangle("fill", rX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.0, 0.94, 0.8, pulse)
-            love.graphics.rectangle("line", rX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.0, 0.94, 0.8)
-            love.graphics.print("[R]", rX + 3 * s, y + (slotH - fontH) / 2)
-            love.graphics.setColor(1, 1, 1)
-            love.graphics.print("INVERT", rX + 22 * s, y + (slotH - fontH) / 2)
-        else
-            local rFrac = rCd > 0 and (rCd / rMaxCd) or 0
-            love.graphics.setColor(0.1, 0.15, 0.15, 0.5)
-            love.graphics.rectangle("fill", rX, y, btnW, slotH, 3 * s)
-            if rCd > 0 then
-                love.graphics.setColor(0.1, 0.6, 0.6, 0.45)
-                love.graphics.rectangle("fill", rX, y, btnW * (1 - rFrac), slotH, 3 * s)
-            end
-            love.graphics.setColor(0.3, 0.3, 0.3, 0.4)
-            love.graphics.rectangle("line", rX, y, btnW, slotH, 3 * s)
-            love.graphics.setColor(0.5, 0.5, 0.5, 0.7)
-            local txt = rCd > 0 and string.format("[R] %.0fs", rCd) or "[R] INVERT"
-            love.graphics.print(txt, rX + 3 * s, y + (slotH - fontH) / 2)
-        end
+        local rCan = (rCd <= 0 and player.body and #player.body >= 2)
+        drawAbilityBtn(leftX + 4 * s + btnW + gap, "R", "INVERT", rCd, constants.REVERSE_SLITHER_COOLDOWN or 10.0, rCan, {0.0, 0.94, 0.8})
     end
 
     -- ==========================================

@@ -10,6 +10,20 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ## 2026-09-19 (test suite sanitization, playing.lua desmonolithization, sequential death flow & HUD redesign)
 
+- **feat** (completed - 2026-09-19 18:49 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Estandarte Heroico Flotante Temático para los 5 Mini-Bosses de Sala 3**:
+     - `ui/hudUI.lua` (`drawFloatingBanner` y `MINIBOSS_THEMES`): Generalizado el estandarte heroico superior flotante ($Y = hh + 6\text{px}$) para los 5 encuentros élite con su paleta de color representativa y acentos luminosos:
+       - **Triturador (`wall_crusher`)**: Naranja volcánico (`{0.98, 0.42, 0.12}`) con acento ámbar de plasma.
+       - **Gólem de Escarcha (`frost_golem`)**: Cian criogénico (`{0.20, 0.85, 1.00}`) con acento gélido.
+       - **Sierpe de Magma (`magma_wyrm`)**: Rojo lava ardiente (`{1.00, 0.28, 0.08}`) con acento ígneo.
+       - **Reina Larva (`brood_queen`)**: Púrpura ponzoñoso (`{0.80, 0.18, 0.90}`) con acento orquídea abisal.
+       - **Espectro del Vacío (`void_phantom`)**: Violeta cósmico luminoso (`{0.65, 0.30, 0.98}`) con acento estelar.
+     - Indicador dinámico de estado: muestra `"¡VULNERABLE: CABEZAZO! [X/Y]"` con pulso dorado durante telegraphs, y marcadores de diamante en la barra acordes al HP máximo del mini-jefe.
+     - `render/enemiesDraw.lua` (`drawMiniBoss`): Retirada la barra de vida flotante sobre el sprite del mini-boss en el mundo de juego (`y0 - 10`), despejando completamente la arena para combate y esquivas.
+     - Estricto cumplimiento del límite de longitud arquitectónica: `hudUI.lua` (497L < 500L), `enemiesDraw.lua` (498L < 500L), `renderMain.lua` (470L < 500L).
+  2. **POR QUE**: Homogeneizar la experiencia visual y táctica entre Jefes y Mini-Jefes, permitiendo al jugador reconocer de inmediato al rival élite por su color heráldico y estado de vulnerabilidad sin saturación visual en la arena.
+  3. **Verificación**: 753/753 tests aprobados en `love tests`, `love . --test` en código 0 y `error.log` en 0 bytes.
+
 - **fix** (completed - 2026-09-19 18:32 America/Bogota, rama `refactor/test-suite-and-playing-split`):
   1. **QUE — Reposicionamiento del Estandarte Heroico del Boss (Opción 1: Estandarte Flotante Superior Dedicado)**:
      - `ui/hudUI.lua` (`hud.drawHUD`): Desacoplada la barra de jefe de la franja superior del HUD (28px). La cabecera superior permanece $100\%$ reservada para las estadísticas del jugador (`1-5 CATACUMBAS DE PIEDRA`, `$0`, `STREAK 1.0x` y minimapa) sin colisiones horizontales de coordenadas.
