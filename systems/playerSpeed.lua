@@ -5,10 +5,12 @@ local timers = require("core.timers")
 function Speed.calcSpeed(base, fruits, opts)
     opts = opts or {}
     local st = world.state
-    base = base or (st and st.baseSpeed) or constants.VELOCIDAD_INICIAL
+    base = base or (st and st.baseSpeed) or (constants and constants.VELOCIDAD_INICIAL) or 0.13
     fruits = fruits or (st and st.frutasContador) or 0
-    local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
-    local current = math.max(constants.VELOCIDAD_MINIMA, base - speedReduction)
+    local inc = (constants and constants.SPEED_ADJUST_INCREMENT) or 0.01
+    local vMin = (constants and constants.VELOCIDAD_MINIMA) or 0.05
+    local speedReduction = math.floor(fruits / 5) * inc
+    local current = math.max(vMin, (base or 0.13) - speedReduction)
     local hasTurbo = opts.turbo
     if hasTurbo == nil and st and st.activeTimers then
         for _, t in ipairs(st.activeTimers) do
@@ -31,7 +33,9 @@ function Speed.calcSpeed(base, fruits, opts)
         end
         current = current * factor
     end
-    return math.max(constants.VELOCIDAD_MINIMA, math.min(constants.MAX_BASE_SPEED, current))
+    local maxBase = (constants and constants.MAX_BASE_SPEED) or 0.30
+    local minBase = (constants and constants.VELOCIDAD_MINIMA) or 0.05
+    return math.max(minBase, math.min(maxBase, current or minBase))
 end
 function Speed.itemColor(itemId)
     local colors = {

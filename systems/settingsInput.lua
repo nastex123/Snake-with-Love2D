@@ -166,16 +166,6 @@ function Input.attach(settings, deps)
                 }
                 return true
             end
-            if settings.g.controlModeDrop and settingsDraw.hitTest(settings, x, y, unpack(settings.g.controlModeDrop)) then
-                local bx, by, bw, bh = unpack(settings.g.controlModeDrop)
-                local items = {{label = 'Clásico (Auto)', value = 'classic'}, {label = 'Táctico (Sostener)', value = 'tactical'}}
-                settings.openDropdown = {
-                    key = settings.g.controlModeDrop.key,
-                    items = items, current = (settings.editing.gameplay and settings.editing.gameplay.controlMode) or 'classic',
-                    x = bx, y = by + bh + 2, w = bw, h = #items * 28, itemH = 28, scrollY = 0
-                }
-                return true
-            end
         end
         if settings.g.resetBtn and settingsDraw.hitTest(settings, x, y, unpack(settings.g.resetBtn)) then
             local def = persistence.defaults()

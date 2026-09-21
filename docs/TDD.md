@@ -130,7 +130,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | snake/core.lua | entities/snake/ | 99 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
 | snake/abilities.lua | entities/snake/ | 94 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
 | snake/collisions.lua | entities/snake/ | 162 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
-| snake/movement.lua | entities/snake/ | 411 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
+| snake/movement.lua | entities/snake/ | 411 | — | P02: mover clásico continuo (wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
 | enemies.lua | entities/ | 391 | enemiesMod | Fachada P01 (delega a 3 submódulos, API idéntica) |
 | enemyAttackRegistry.lua | entities/ | 219 | — | P01+P11: pools 32/64/32 `active` sin GC |
 | enemyBossLogic.lua | entities/ | 176 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
@@ -760,33 +760,19 @@ config.SKIN_REGISTRY = {
 * **Mapeo de Teclas en `core/config.lua`**:
   - Tabla de asignación dinámica `config.KEYBINDS = { up = {"w", "up"}, down = {"s", "down"}, item1 = {"1", "kp1"}, autotomy = {"q", "triggerleft"} }`.
 
-### 10.22 Held-Key Tactical Slither Engine (Pipeline de Movimiento Sostenido)
+### 10.22 Classic Continuous Slither Engine (Pipeline de Movimiento Continuo Clásico)
 
-* **Estructura en `entities/snake.lua` y `systems/gamestates.lua`**:
-```lua
-function snake.isDirectionHeld()
-    if settings.get("movementMode") == "classic" then
-        return true -- Avance automático continuo
-    end
-    for _, key in ipairs(config.KEYBINDS.up)    do if love.keyboard.isDown(key) then return true,  0, -1 end end
-    for _, key in ipairs(config.KEYBINDS.down)  do if love.keyboard.isDown(key) then return true,  0,  1 end end
-    for _, key in ipairs(config.KEYBINDS.left)  do if love.keyboard.isDown(key) then return true, -1,  0 end end
-    for _, key in ipairs(config.KEYBINDS.right) do if love.keyboard.isDown(key) then return true,  1,  0 end end
-    return touch.isDragging()
-end
-```
-* **Integración en `snake.update(dt)`**:
-  - El temporizador de avance de cuadrícula `stepTimer` acumula `dt` **únicamente si `isDirectionHeld()` retorna `true`**.
-  - Si no hay dirección sostenida:
-    - La serpiente no ejecuta `snake.mover()`.
-    - Las entidades enemigas (`enemies.update(dt)`), proyectiles (`bossAttacks.update(dt)`), partículas y shaders continúan su ciclo de actualización en tiempo real con normalidad.
+* **Paradigma Único Fijo**: La serpiente avanza ininterrumpidamente paso a paso según el intervalo `velocidadActual`. No existen estados de detención estática en juego normal; la dirección se actualiza mediante eventos de entrada o la cola de giros (`inputQueue`).
+* **Integración en `snake.mover()` y `systems/gamestates/playing.lua`**:
+  - En cada tick de movimiento, la serpiente toma el comando frontal de `s.inputQueue` (si existe) y se traslada en la cuadrícula.
+  - El temporizador de cuadrícula (`st.cronometro`) avanza con `dt` de forma continua.
+  - Al recibir una entrada que cumple con el umbral de esquina (`st.cronometro >= st.velocidadActual * 0.75`), se ejecuta *Corner Buffering*, acelerando el paso inmediato para eliminar latencia visual.
 
 ### 10.23 Core Engine & Optimization Pipeline (Input, AABB Pre-Filter & Determinism)
 
 #### 1. Input Intelligent Buffer & Corner Buffering (`entities/snake.lua` & `systems/gamestates.lua`)
 * **Cola de Entrada con Reemplazo Dinámico**: `snake.encolarDireccion(s, tx, ty)` valida giros ortogonales contra la dirección real de avance (`lastMovedDirX/Y`) en vez de comandos encolados intermedios. Si el jugador rectifica una curva antes del tick, la cola sobrescribe el comando pendiente (`qLen == 1 → inputQueue[1] = nuevo`, `qLen == 2 → inputQueue[2] = nuevo`), eliminando falsos descartes anti-180° y descartes rígidos por cola llena.
 * **Corner Buffering Acelerado**: `gamestates.lua` evalúa si `cronometro >= velocidadActual * 0.75` al encolar un nuevo input durante movimiento continuo. Si se cumple, completa el paso inmediatamente (`cronometro = velocidadActual`), reduciendo la latencia de giro en esquinas a 0 ms.
-* **Respuesta desde Reposo (Tactical Slither)**: En modo táctico con `standstill = true`, cualquier tecla direccional o toque táctil dispara instantáneamente `cronometro = velocidadActual` sin retraso de arranque.
 
 #### 2. Ray Casting AABB Pre-Filter (`entities/snake.lua`)
 ```lua

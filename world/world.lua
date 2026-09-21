@@ -49,7 +49,12 @@ function world.getStageMod(stage)
 end
 
 function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
-    dungeonGen.generar(world, anchoVirtual, altoVirtual, targetRooms)
+    local seed = nil
+    if coreWorld and coreWorld.state and coreWorld.state.dailySeed then
+        local stage = world.etapa or 1
+        seed = (coreWorld.state.dailySeed + stage * 10007) % 2147483647
+    end
+    dungeonGen.generar(world, anchoVirtual, altoVirtual, targetRooms, seed)
 end
 
 function world.getCurrentRoom()

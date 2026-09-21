@@ -21,6 +21,8 @@ local touch = require('core.touch')
 local achievementsMod = require('systems.achievements')
 local mutatorsMod = require('systems.roomMutators')
 local livecoding = require('core.livecoding')
+local playModalUI = require('ui.playModalUI')
+local dailyResultUI = require('ui.dailyResultUI')
 
 local FIXED_DT = 1 / 60
 local accumulator = 0
@@ -103,7 +105,7 @@ function love.load()
     world.state.debugImmune = false
     world.state.debugAchievementsOpen = false
     world.state.debugDungeonOverlay = false
-    world.state.controlMode = world.state.controlMode or "tactical"
+    world.state.controlMode = "classic"
     world.state.scheduledToasts = world.state.scheduledToasts or {}
     world.state.scheduledIndex = world.state.scheduledIndex or {}
 
@@ -128,6 +130,7 @@ end
 function love.update(dt)
     livecoding.update(dt)
     if shrineUI and shrineUI.update then shrineUI.update(dt) end
+    if playModalUI and playModalUI.update then playModalUI.update(dt) end
     local scaled = dt * (world.state.timeScale or 1)
     accumulator = accumulator + scaled
     if accumulator > MAX_ACCUMULATOR then accumulator = MAX_ACCUMULATOR end
@@ -174,6 +177,16 @@ function love.draw()
     end
     if shrineUI and shrineUI.visible then
         shrineUI.draw()
+    end
+    if playModalUI and playModalUI.visible then
+        playModalUI.draw(uiMod)
+    end
+    if world.state and world.state.dailyModalOpen then
+        dailyResultUI.openResult(world.state.lastDailyResult)
+        world.state.dailyModalOpen = false
+    end
+    if dailyResultUI and dailyResultUI.visible then
+        dailyResultUI.draw(uiMod)
     end
     livecoding.draw()
 end
@@ -228,13 +241,25 @@ function love.mousepressed(x, y, button)
         return
     end
 
+    -- If play modal selector is open, route clicks there first
+    if playModalUI and playModalUI.visible then
+        if playModalUI.mousepressed then playModalUI.mousepressed(x,y,button) end
+        return
+    end
+
+    -- If daily result / history is open, route clicks there first
+    if dailyResultUI and dailyResultUI.visible then
+        if dailyResultUI.mousepressed then dailyResultUI.mousepressed(x,y,button) end
+        return
+    end
+
     -- Menu main buttons
     if button == 1 and world.state.gameState == constants.GAME_STATE_MENU then
         local hit = uiMod.menuMousePressed(x, y)
         if hit then
             sound.play("buttonClick")
             if hit == 'play' then
-                gameflow.startRun()
+                playModalUI.open()
                 return
             elseif hit == 'profiles' or hit == 'card_profile' then
                 profilesMod.open()
@@ -323,6 +348,9 @@ function love.mousemoved(x,y,dx,dy)
     end
     if settingsMod and settingsMod.mousemoved and settingsMod.visible then
         settingsMod.mousemoved(x,y,dx,dy)
+    end
+    if playModalUI and playModalUI.visible and playModalUI.mousemoved then
+        playModalUI.mousemoved(x, y)
     end
     if world.state.gameState == constants.GAME_STATE_MENU then uiMod.updateMenuHover(x,y) end
 end

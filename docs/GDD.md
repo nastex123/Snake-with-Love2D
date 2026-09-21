@@ -12,19 +12,13 @@
 
 ## 2. Core Mechanics
 
-### Movement Paradigm: Held-Key Tactical Slither (Movimiento Táctico Sostenido)
-- **Nuevo Paradigma por Tecla Sostenida**: A diferencia de la serpiente retro tradicional que avanza automáticamente de forma continua, **la serpiente solo avanza mientras el jugador mantenga presionada una tecla de dirección** (`WASD`, Flechas o Stick/D-pad).
-- **Detención Inmediata**: Al soltar las teclas direccionales, la serpiente se detiene en su celda actual, manteniendo su orientación y postura de guardia.
-- **Entorno en Tiempo Real**: Mientras la serpiente está detenida, el mundo (enemigos, proyectiles, trampas y temporizadores) **sigue corriendo en tiempo real**. Esto transforma el juego en una experiencia de precisión y cálculo táctico donde el jugador puede:
-  - Sincronizar el paso sobre *Pinchos de Presión* (esperar a que se retraigan).
-  - Esperar el momento exacto para cruzar entre los rayos de la *Jaula Láser* del Boss.
-  - Resolver salas de puzle y mystery rooms (*La Prueba de los Tres Sellos*) sin ser forzado a chocar contra paredes.
-  - Coordinar la emboscada perfecta para ejecutar el *Constrictor Loop*.
-- **Opción de Conmutación en Ajustes**: Los puristas del género pueden alternar en Ajustes entre `Modo Táctico Sostenido (Por defecto)` y `Modo Clásico Automático (Auto-Slither)`.
+### Movement Paradigm: Classic Slither (Movimiento Clásico Continuo)
+- **Avance Automático Continuo**: La serpiente se desplaza continuamente hacia adelante a la velocidad establecida, siguiendo la tradición del arcade clásico. El jugador utiliza `WASD` o las teclas de dirección para orientar el rumbo ortogonal de la serpiente en la cuadrícula.
+- **Entorno Dinámico en Tiempo Real**: El mundo, enemigos, proyectiles, trampas y temporizadores se ejecutan en tiempo real a 60 FPS coordinados con el avance constante de la serpiente.
 - **Input Buffer Inteligente (2-step queue con reemplazo dinámico)**: Permite registrar giros de esquinas rápidas (giros en "L") y rectificar intenciones al instante. Si el jugador presiona una nueva tecla ortogonal antes de ejecutarse el paso, se sobrescribe el comando previo en lugar de descartarlo rígidamente.
 - **Corner Buffering Acelerado (`CORNER_BUFFER_RATIO = 0.75`)**: Si se registra un giro cuando el paso actual ha superado el 75% del intervalo, el paso se completa de inmediato, eliminando la latencia perceptual en esquinas.
 - **Protección Anti-180° Contextual**: Descarta giros opuestos directos hacia el propio cuello basados en el avance real, sin bloquear secuencias ortogonales rápidas ni giros en "U" de dos tiempos (necesarios para el *Tail Snap*).
-- **Touch / Mobile**: En dispositivos táctiles, mantener el dedo arrastrado en la dirección deseada mantiene el avance continuo; levantar el dedo detiene a la serpiente.
+- **Touch / Mobile**: En dispositivos táctiles, los deslizamientos (*swipes*) o toques direccionales reorientan inmediatamente el rumbo de avance continuo.
 
 ### Input & Controls
 

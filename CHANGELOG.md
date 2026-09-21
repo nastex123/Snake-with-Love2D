@@ -8,6 +8,30 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-21 (control mode fixed to classic)
+
+- **refactor** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Modo de control fijo en clásico continuo**:
+     - Retirada la bifurcación táctica de `entities/snake/movement.lua`: la serpiente avanza ininterrumpidamente paso a paso (`standstill = false`).
+     - Simplificada la actualización en `systems/gamestates/playing.lua` removiendo comprobaciones de reposo táctico y manteniendo el acelerador *corner buffering* (ratio 0.75).
+     - Eliminado el selector/dropdown de Modo de Control de la interfaz de Ajustes (`systems/settingsDraw.lua` y `systems/settingsInput.lua`), y desacoplado de `isLiveKey` en `systems/settings.lua`.
+     - Fijado `controlMode = 'classic'` de forma permanente en `systems/persistenceSettings.lua`, `systems/persistence.lua` y `main.lua`.
+     - Purgadas las referencias al modo táctico de la documentación (`docs/GDD.md`, `docs/TDD.md`, `docs/TODO.md`, `docs/ROADMAP.md`).
+     - Sincronizada la suite de pruebas unitarias (`tests/test_scope_06_snake.lua` y `tests/test_scope_15_shopPersistence.lua`).
+  2. **POR QUE**: Solicitud explícita de unificar el paradigma de control permanentemente en la experiencia arcade clásica continua, eliminando la complejidad y opciones alternas de control.
+  3. **Verificación**: 806/806 tests unitarios PASS al 100%, 0 errores, `error.log` en 0 bytes.
+
+## 2026-09-21 (daily challenges MVP & test suite green)
+
+- **fix** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE**: Saneamiento de `tests/test_scope_13_worldFacade.lua` adaptando aserciones de plantillas reconocidas (`cruz`, `espiral`, `laberinto`) y agregado de fallback seguro para `constants.TAMANIO_BLOQUE` en `ui/popupsUI.lua`.
+  2. **POR QUE**: Desbloquear suite completa en verde (806/806 tests pasando al 100%).
+
+- **feat** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Daily Challenges MVP (Fase 8)**: Módulo `systems/daily.lua` (generación de semilla determinista por fecha YYYY-MM-DD, verificación de 1 intento estricto diario por perfil, registro y ordenamiento de récords en `profile.dailyHistory`); Sub-menú modal `ui/playModalUI.lua` activado al presionar "JUGAR" (Expedición Estándar, Desafío Diario, Historial de Desafíos, Volver); Modal `ui/dailyResultUI.lua` con resumen de partida diaria y tabla top histórica de intentos locales; Sincronización en `systems/persistenceProfiles.lua` (`syncDailyHistory`) y evento `dailyDirty`; Semilla de mazmorra determinista acoplada a `dailySeed` en `world/world.lua`; Suite dedicada `tests/test_scope_39_daily.lua` (6 tests unitarios).
+  2. **POR QUE**: Cumplir con el pilar de rejugabilidad competitiva diaria asíncrona de Fase 8 (GDD §14) con determinismo absoluto y persistencia local sin alterar la expedición estándar.
+  3. **Verificación**: 806/806 tests unitarios PASS, cobertura general de 62.1% (subiendo daily al 98.0%), `error.log` en 0 bytes.
+
 ## 2026-09-20 (fase 8 pendiente audit)
 
 - **docs** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):

@@ -31,7 +31,6 @@ local world = require('core.world')
 local function isLiveKey(k)
     return k == 'audio.master' or k == 'audio.music' or k == 'audio.sfx'
         or k == 'accessibility.uiScale' or k == 'accessibility.highContrast' or k == 'accessibility.colorblind'
-        or k == 'gameplay.controlMode' or k == 'controls.controlMode'
         or k == 'graphics.filter'
 end
 

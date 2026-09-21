@@ -1,5 +1,15 @@
 # TODO — Snake Dungeon Crawler
 
+## Completed (Daily Challenges MVP & Fase 8 Replayability — 21:09:2026 America/Bogota, rama `refactor/test-suite-and-playing-split`)
+- [x] **Saneamiento Suite de Pruebas Unitarias (`tests/test_scope_13_worldFacade.lua`)**: compatibilidad con plantillas `cruz`, `espiral` y `laberinto` y fallback seguro en `ui/popupsUI.lua` (806/806 tests PASS con 0 fallos).
+- [x] **Daily Challenges MVP (`systems/daily.lua`, `ui/playModalUI.lua`, `ui/dailyResultUI.lua`)**:
+  - Semilla determinista calculada a partir de fecha calendario `YYYY-MM-DD` (`coreWorld.state.dailySeed`).
+  - Regla de 1 intento estricto por día por perfil (`hasAttemptedToday`), persistido en `profile.dailyHistory`.
+  - Sub-menú modal interactivo al pulsar JUGAR (Expedición Estándar, Desafío Diario, Historial de Desafíos, Volver).
+  - Modal post-partida de resumen y visualización de top histórico de desafíos diarios.
+  - Sincronización persistente en `systems/persistenceProfiles.lua` vía evento `dailyDirty`.
+  - Suite de 6 tests unitarios en `tests/test_scope_39_daily.lua`.
+
 ## Completed (Auditoria Fase 8 Pendiente — 20:09:2026 America/Bogota, rama `refactor/test-suite-and-playing-split`)
 - [x] **Auditoria Fase 8 pendiente (`docs/AUDIT-FASE8-PENDIENTE.md`)**: diagnostico 0% codigo en Shrine, Daily/Codex/Bounty, Endgame y Skins; deuda bloqueante persistence 874L, shaders 681L, settingsDraw 647L, player 632L, dungeonGen 530L; 9 recomendaciones CRITICO-1 a FUTURO-9 con tablas Big-O y roadmap 6.1-6.8.
 - [x] **AUD-1 schema 3**: `systems/profileSchema.lua` + `persistence.syncTalents/syncModeSkin` + eventos talentsDirty/modeSkinDirty + `World.SCHEMA` modo/skin/dailySeed/bounties + `config.SHRINE_TALENTS/BOUNTY_POOL/MODES/SKINS` + `gameflow.getDailySeed/startDailyRun` base.
@@ -86,7 +96,7 @@
 
 ## Completed (Phase 8: Paquete 1 - Combate y Supervivencia - 26:08:2026)
 - [x] **Combat & Survival Package (100% Completado)**:
-  - [x] **Held-Key Tactical Slither Movement Engine**: Respuesta instantánea sin latencia al presionar teclas direccionales desde reposo, mundo y enemigos en tiempo real a 60 FPS, postura de guardia con ojos alertas en la cabeza, y conmutador en panel de Ajustes.
+  - [x] **Classic Slither Movement Engine**: Avance continuo tradicional de alta precisión, cola inteligente de 2 pasos con reemplazo ortogonal dinámico y aceleración por esquina (*corner buffering* a ratio 0.75).
   - [x] **Inversión de Avance (*Reverse Slither* `[R]`)**: Inversión instantánea de roles de cabeza y cola con 1.2s de intangibilidad contra el cuello, 10s de recarga y visualizador en el HUD.
   - [x] **Onda de Expulsión (*Tail Snap*)**: Detección de giros en "U" de 180° en dos ticks consecutivos en $\le 0.8\text{s}$, emitiendo una micro-onda que empuja a los enemigos adyacentes 1 celda y los aturde 0.8s con estrellas giratorias.
   - [x] **Habilidad de Autotomía `[Q]`**: Sacrificio de 2 segmentos de cola, señuelo holográfico con temporizador que atrae a los Chasers e intangibilidad fantasma de 1.5s.

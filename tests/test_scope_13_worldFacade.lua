@@ -187,6 +187,9 @@ describe("Scope 13 - World Facade: Room Objectives System", function()
             treasure = "collect_food",
             spawner = "clear_enemies",
             boss = "defeat_boss",
+            cruz = "clear_enemies",
+            espiral = "collect_food",
+            laberinto = "clear_enemies",
         }
 
         for i = 1, world.getRoomCount() do

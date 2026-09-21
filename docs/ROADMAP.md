@@ -75,7 +75,7 @@
 **Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
 - [x] Asymmetric Main Menu UI Redesign & Procedural Cyan Isometric Title 2.5D (Left vertical panel 40% with Dot Matrix #14 procedural background and rotating novice pixel art Alchemy Sigil #17, 4 centered Cyber-Step #03 buttons, central diamond emblem at w/2,h/2, right procedural cyan neon logo 2.5D #00F0FF via ui/menuLogo.lua with real-time F2 calibrator systems/debugLogo.lua, and Chunky Profile & High Score #11 card via ui/menuCard.lua).
-- [x] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
+- [x] Combat & Survival Package (Classic continuous slither movement, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [x] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
 - [x] Enemy Pixel-Art Sprite Identity (Patroller 5x5 Delta Interceptor, Chaser 7x7 Plasma Hyper Shuriken with decoupled gyroscopic eye tracking)
 - [x] Patroller Tactical AI Evolution (Modular patrollerAI.lua, 4 contextual patrol modes, 90-degree corner turns, Line-of-Sight Dash, and Guillotine Slice tail-cutting mechanic)
@@ -90,7 +90,7 @@
 - [x] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis — `systems/statusFx.lua`, scope_29 18 tests, 2026-09-10)
 - [x] Combate por cabezazos mini/boss (daño display-1 min x2 cap 5 + rebote/fantasma 0.8s, boss HP 12, gating elite — `systems/combatRam.lua`, scope_30, 2026-09-10)
 - [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
-- [ ] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts)
+- [x] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts, 1-attempt daily history)
 - [ ] Master Snake Skin Catalog (200+ variants, 5 primitive render engines, Zero-GC vertex buffers)
 - [ ] 10 Unlockable Game Modes (Endless, Rush, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Draft, Sudden Death, Maze Runner)
 - [ ] 80 Engineering & Gameplay Improvements Suite (Input ramp-up, corner buffering, AABB ray-cast pre-filter, half-res FBO reflections, Voronoi fracture, fixed timestep)

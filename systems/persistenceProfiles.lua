@@ -252,5 +252,15 @@ function Profiles.attach(P, deps)
         P.saveProfiles()
         return true
     end
+    function P.syncDailyHistory(entry)
+        local profile = P.getActiveProfile()
+        if not profile then return false end
+        profile.dailyHistory = profile.dailyHistory or {}
+        if type(entry) == "table" and entry.date then
+            profile.dailyHistory[entry.date] = helpers.deep_copy(entry)
+        end
+        P.saveProfiles()
+        return true
+    end
 end
 return Profiles

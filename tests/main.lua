@@ -50,6 +50,7 @@ if pcall(require, "tests.test_scope_35_bounty") then end
 if pcall(require, "tests.test_scope_36_modes") then end
 if pcall(require, "tests.test_scope_37_codex") then end
 if pcall(require, "tests.test_scope_38_templates") then end
+if pcall(require, "tests.test_scope_39_daily") then end
 
 -- Source files for full coverage reporting
 local source_files = {
@@ -113,6 +114,7 @@ local source_files = {
     "systems/modes.lua",
     "systems/codex.lua",
     "systems/codexUI.lua",
+    "systems/daily.lua",
     "systems/persistence.lua",
     "systems/persistenceCodec.lua",
     "systems/persistenceProfiles.lua",
@@ -133,6 +135,8 @@ local source_files = {
     "ui/menuUI.lua",
     "ui/menuLogo.lua",
     "ui/menuCard.lua",
+    "ui/playModalUI.lua",
+    "ui/dailyResultUI.lua",
     "ui/hudUI.lua",
     "ui/toastsUI.lua",
     "ui/popupsUI.lua",

@@ -247,9 +247,21 @@ function gameflow.acceptDeath()
     local okBoA, bountyArc = pcall(require, "systems.bounty")
     if okBoA and bountyArc then pcall(function() bountyArc.archive() end) end
     if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
+    local isDaily = (st.modo == "daily" or st.dailySeed ~= nil)
+    if isDaily then
+        local okDaily, dailyMod = pcall(require, "systems.daily")
+        local activeProf = persistence.getActiveProfile and persistence.getActiveProfile()
+        if okDaily and dailyMod and activeProf then
+            local entry = dailyMod.recordRun(activeProf, st.puntuacion or 0, worldMod.etapa or 1, (worldMod.sala or 1) - 1)
+            persistence.syncDailyHistory(entry)
+            st.lastDailyResult = entry
+            st.dailyModalOpen = true
+        end
+    end
     persistence.syncActiveProfile()
     achievements.check("scoreReached", {score = st.highScore})
     st.nuevoHighScore = st.highScore > oldHighScore
+    st.dailySeed = nil
     worldMod.init()
 
     if st.nuevoHighScore then
@@ -332,16 +344,20 @@ function gameflow.recalcularGrilla()
         local ww, wh = love.window.getMode()
         if ww and wh then w, h = ww, wh end
     end
-    local rawCols = math.floor(w / constants.TAMANIO_BLOQUE)
-    local rawRows = math.floor((h - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
-    st.anchoGrilla = math.max(10, math.min(rawCols, constants.MAX_GRID_COLS))
-    st.altoGrilla  = math.max(10, math.min(rawRows, constants.MAX_GRID_ROWS))
-    local gridW = st.anchoGrilla * constants.TAMANIO_BLOQUE
-    local gridH = st.altoGrilla * constants.TAMANIO_BLOQUE
-    local gameH = constants.GRID_OFFSET_Y + gridH
+    local blockSize = (constants and constants.TAMANIO_BLOQUE) or 20
+    local gridOffsetY = (constants and constants.GRID_OFFSET_Y) or 30
+    local maxCols = (constants and constants.MAX_GRID_COLS) or 40
+    local maxRows = (constants and constants.MAX_GRID_ROWS) or 28
+    local rawCols = math.floor(w / blockSize)
+    local rawRows = math.floor((h - gridOffsetY) / blockSize)
+    st.anchoGrilla = math.max(10, math.min(rawCols, maxCols))
+    st.altoGrilla  = math.max(10, math.min(rawRows, maxRows))
+    local gridW = st.anchoGrilla * blockSize
+    local gridH = st.altoGrilla * blockSize
+    local gameH = gridOffsetY + gridH
     -- Centrado horizontal perfecto (floor para pixel-perfect)
     st.gridOffsetX = math.floor((w - gridW) / 2)
-    st.gridOffsetY = constants.GRID_OFFSET_Y
+    st.gridOffsetY = gridOffsetY
     -- Centrado vertical del bloque completo (HUD+grid) en ventana
     st.gameOffsetY = math.floor(math.max(0, h - gameH) / 2)
     -- Clamp para evitar offsets negativos si ventana muy pequeña
@@ -411,6 +427,7 @@ function gameflow.returnToMenu()
     if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
     persistence.syncActiveProfile()
     shop.reset()
+    st.dailySeed = nil
     st.fadeDir = -1
     st.gameState = constants.GAME_STATE_MENU
     st.introTimer = st.introPlayed and (constants.INTRO_READY or 4.5) or 0

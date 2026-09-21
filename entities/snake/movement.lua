@@ -52,23 +52,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     -- Medusa (GDD §16.2): direccion bloqueada, la serpiente sigue recto
     if statusFx.has("medusa") then s.inputQueue = {} end
 
-    local controlMode = world.get("controlMode") or "tactical"
-    if controlMode == "tactical" then
-        local isHeld = Input.isAnyHeld() or Input.hasActiveTouch()
-        if #s.inputQueue > 0 then isHeld = true end
-        -- Gravedad Cero (GDD §19.61): deriva con inercia, sin reposo tactico
-        if mutatorsMod.zeroGDrift() then isHeld = true end
-
-        if not isHeld then
-            s.standstill = true
-            s.prevBody = {}
-            for i, segment in ipairs(s.body) do
-                s.prevBody[i] = {x = segment.x, y = segment.y}
-            end
-            return true, false
-        end
-        s.standstill = false
-    end
+    s.standstill = false
 
     if #s.inputQueue == 0 and (Input.isHeld("up") or Input.isHeld("down") or Input.isHeld("left") or Input.isHeld("right")) then
         local refY = s.lastMovedDirY or s.dirY

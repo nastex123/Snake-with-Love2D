@@ -146,13 +146,7 @@ local function _applyUI(tbl)
             pcall(function() ui.applyColorblind(a.colorblind) end)
         end
     end
-    if type(tbl.gameplay) == 'table' and tbl.gameplay.controlMode then
-        world.state.controlMode = tbl.gameplay.controlMode
-    elseif type(tbl.controls) == 'table' and tbl.controls.controlMode then
-        world.state.controlMode = tbl.controls.controlMode
-    else
-        world.state.controlMode = 'tactical'
-    end
+    world.state.controlMode = 'classic'
 end
 
 local function _recalcGrid()
@@ -242,9 +236,6 @@ function persistence.diffSettings(a, b)
     local aAcc = a.accessibility or {}
     local bAcc = b.accessibility or {}
     if aAcc.uiScale ~= bAcc.uiScale or aAcc.highContrast ~= bAcc.highContrast or aAcc.colorblind ~= bAcc.colorblind then d.ui = true end
-    local aCM = (a.gameplay and a.gameplay.controlMode) or (a.controls and a.controls.controlMode)
-    local bCM = (b.gameplay and b.gameplay.controlMode) or (b.controls and b.controls.controlMode)
-    if aCM ~= bCM then d.ui = true end
     local aG = a.graphics or {}
     local bG = b.graphics or {}
     if aG.filter ~= bG.filter then d.filter = true end
@@ -482,6 +473,7 @@ if okEvents and Events and Events.on then
     Events.on("modeSkinDirty", function(payload) pcall(function() persistence.syncModeSkin(payload and payload.modo, payload and payload.skin) end) end)
     Events.on("bountiesDirty", function(payload) pcall(function() persistence.syncBounties(payload and payload.history) end) end)
     Events.on("codexDirty", function() pcall(function() persistence.syncCodex() end) end)
+    Events.on("dailyDirty", function(payload) pcall(function() persistence.syncDailyHistory(payload and payload.entry) end) end)
 end
 
 return persistence

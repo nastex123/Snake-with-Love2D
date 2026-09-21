@@ -2,9 +2,9 @@ local Settings = {}
 local helpers = require("core.helpers")
 Settings.defaultsTable = {
     audio = {master = 1.0, music = true, sfx = true},
-    controls = {inputType = 'autodetect', sensitivity = 1.0, controlMode = 'tactical'},
+    controls = {inputType = 'autodetect', sensitivity = 1.0, controlMode = 'classic'},
     graphics = {pixelScale = 1, filter = 'linear', fullscreen = false, vsync = true, resolution = {width = 800, height = 600}},
-    gameplay = {difficulty = 'normal', tutorials = true, tradeKill = true, controlMode = 'tactical'},
+    gameplay = {difficulty = 'normal', tutorials = true, tradeKill = true, controlMode = 'classic'},
     accessibility = {uiScale = 1.0, highContrast = false, colorblind = 'off'},
     logo = {offsetX = 0, offsetY = 0, scale = 6, spacing = 10, depth = 5},
 }

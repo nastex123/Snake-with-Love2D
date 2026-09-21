@@ -238,14 +238,8 @@ function playing.update(dt)
         end
     end
 
-    local controlMode = world.get("controlMode") or "tactical"
     local isInputActive = (#st.player.inputQueue > 0) or Input.isAnyHeld() or Input.hasActiveTouch()
-
-    if controlMode == "tactical" and st.player.standstill then
-        if isInputActive then
-            st.cronometro = st.velocidadActual
-        end
-    elseif isInputActive and st.player.hasNewInput then
+    if isInputActive and st.player.hasNewInput then
         st.player.hasNewInput = false
         local bufferRatio = constants.CORNER_BUFFER_RATIO or 0.75
         if st.cronometro >= st.velocidadActual * bufferRatio then
