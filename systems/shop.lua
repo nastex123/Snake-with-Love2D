@@ -322,18 +322,23 @@ function shop.procesarCompra(monedas, itemId, costo)
     if monedas < costo then return nil end
     if shop.isOwned(canon) then return nil end
 
+    local bought
     if def.itemType == "passive" then
         shop.inventory[canon] = true
-        return {item = canon, costo = costo}
+        bought = {item = canon, costo = costo}
     else
         for i = 1, 3 do
             if shop.slots[i] == nil then
                 shop.slots[i] = canon
-                return {item = canon, costo = costo, slot = i}
+                bought = {item = canon, costo = costo, slot = i}
+                break
             end
         end
-        return nil
+        if not bought then return nil end
     end
+    local okCx, codexMod = pcall(require, "systems.codex")
+    if okCx and codexMod then pcall(function() codexMod.checkSynergies(shop) end) end
+    return bought
 end
 
 function shop.mousepressed(x, y, monedas)

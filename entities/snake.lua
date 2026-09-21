@@ -20,6 +20,10 @@ if not hasStatus or type(statusFx) ~= "table" then statusFx = nil end
 -- ---------------------------------------------------------------------------
 -- Helpers de render (solo usado en draw)
 -- ---------------------------------------------------------------------------
+local MAX_BUF = 512
+local posBuf = {}
+local colBuf = {}
+for i = 1, MAX_BUF do posBuf[i] = {x = 0, y = 0}; colBuf[i] = {0, 0, 0, 1} end
 local function hsv2rgb(h, s, v)
     local i = math.floor(h * 6)
     local f = h * 6 - i
@@ -86,10 +90,11 @@ function snake.draw(s, alpha)
     end
 
     local easedAlpha = alpha * alpha * (3 - 2 * alpha)
-
-    local positions = {}
-    local colors = {}
+    local now = time
+    local positions = posBuf
+    local colors = colBuf
     for i, segmento in ipairs(s.body) do
+        if i > MAX_BUF then break end
         local dx, dy
         if s.prevBody[i] then
             local rawDx = segmento.x - s.prevBody[i].x
@@ -105,9 +110,11 @@ function snake.draw(s, alpha)
             dx = segmento.x
             dy = segmento.y
         end
-        positions[i] = {x = dx, y = dy}
+        local pp = positions[i]
+        pp.x = dx
+        pp.y = dy
         local t = numSegments > 1 and (i - 1) / (numSegments - 1) or 0
-        local hue = ((love.timer.getTime() * 30 + i * 20) % 360) / 360
+        local hue = ((now * 30 + i * 20) % 360) / 360
         local sat = 0.7 + t * 0.3
         local val = 0.5 + (1 - t) * 0.4
         local r, g, b = hsv2rgb(hue, sat, val)
@@ -126,7 +133,11 @@ function snake.draw(s, alpha)
         elseif s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
             r, g, b = 0.0, 0.94, 0.8 + t * 0.2
         end
-        colors[i] = {r, g, b, 1.0 - t * 0.4}
+        local cc = colors[i]
+        cc[1] = r
+        cc[2] = g
+        cc[3] = b
+        cc[4] = 1.0 - t * 0.4
     end
 
     for i = 1, numSegments - 1 do
@@ -226,8 +237,7 @@ function snake.draw(s, alpha)
                     local ey = py + eyeOff.y + e * eyeGap.y
                     love.graphics.setColor(1, 1, 1)
                     love.graphics.rectangle("fill", ex, ey, 3, 3)
-                    local pupilCol = s.standstill and {0.0, 0.94, 1.0} or {0, 0, 0}
-                    love.graphics.setColor(pupilCol[1], pupilCol[2], pupilCol[3])
+                    if s.standstill then love.graphics.setColor(0.0, 0.94, 1.0) else love.graphics.setColor(0, 0, 0) end
                     love.graphics.rectangle("fill", ex + 1, ey + 1, 1, 1)
                 end
 

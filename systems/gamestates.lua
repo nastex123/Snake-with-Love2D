@@ -181,6 +181,9 @@ end
 
 function states.updateMenu(dt)
     world.state.introTimer = world.state.introTimer + dt
+    if world.state.introTimer >= (constants.INTRO_READY or 4.5) then
+        world.state.introPlayed = true
+    end
 end
 
 -- Delegaciones — mantienen API idéntica para tests y main.lua

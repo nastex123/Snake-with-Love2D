@@ -110,16 +110,6 @@ function renderMain.drawGame(dt)
         uiMod.drawSlots(slotDisplay)
     end
 
-    -- Botón de pausa táctil (esquina inferior derecha)
-    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
-        touchMod.draw()
-    end
-
-    -- Dungeon minimap (top-right, fijo)
-    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
-        uiMod.drawDungeonMap(worldMod.getDungeonMapData())
-    end
-
     -- Debug dungeon overlay (fijo)
     if st.debugDungeonOverlay and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
         uiMod.drawDebugDungeonOverlay(worldMod.getDungeonMapData())

@@ -6,6 +6,7 @@
 local playingPickups = {}
 
 local constants = require("constants")
+local world = require("core.world")
 local sound = require("audio.sound")
 local shop = require("systems.shop")
 local uiMod = require("ui.ui")
@@ -67,10 +68,12 @@ function playingPickups.handleFoodPickup(st, comioTwin)
         -- Pacto del Titan (GDD §19.70): +50 puntos base por fruta
         puntosBase = puntosBase + mutatorsMod.titanFruitBonus()
 
-        if st.time - st.lastEatTime <= tarotMod.comboWindow() then
+        local okShrinePk, shrinePk = pcall(require, "systems.shrine")
+        local comboWin = (okShrinePk and shrinePk.comboWindow()) or tarotMod.comboWindow()
+        if st.time - st.lastEatTime <= comboWin then
             st.comboCount = st.comboCount + 1
             st.comboFlashTimer = 0.3
-            if st.comboCount >= 4 then
+            if st.comboCount >= 2 then
                 if Events then
                     Events.emit("comboAchieved", {count = st.comboCount + 1})
                 else
@@ -216,6 +219,22 @@ function playingPickups.checkRoomObjective(st)
     end
 
     if st.puntuacion >= worldMod.objetivoSala and not worldMod.esJefe() and not miniAlive and not st.transitionTarget then
+        local okBo2, bountyEval = pcall(require, "systems.bounty")
+        if okBo2 and bountyEval then
+            local peak = (st.comboCount or 0) + 1
+            local b = world.get("bounties")
+            if type(b) == "table" then
+                b.furiosoStreak = (peak >= 3) and ((b.furiosoStreak or 0) + 1) or 0
+                if (b.furiosoStreak or 0) >= 3 then bountyEval.progress("rapido_furioso", 3) end
+            end
+            local okWm, worldModRoom = pcall(require, "world.world")
+            if okWm and worldModRoom and worldModRoom.getCurrentRoom then
+                local room = worldModRoom.getCurrentRoom()
+                if room and room.template == "arena" and not st.roomUsedBomb and not st.roomUsedShield then
+                    bountyEval.progress("pacifista_tactico", 1)
+                end
+            end
+        end
         -- Contrarreloj (GDD §19.66): premio si el objetivo se cumple a tiempo
         if mutatorsMod.has("time_trial") and not mutatorsMod.data().rewarded then
             mutatorsMod.data().rewarded = true

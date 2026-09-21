@@ -24,6 +24,9 @@ local templateObjectiveMap = {
     treasure = "collect_food",
     spawner = "clear_enemies",
     boss = "defeat_boss",
+    cruz = "clear_enemies",
+    espiral = "collect_food",
+    laberinto = "clear_enemies",
 }
 
 function world.calcularObjetivo()
@@ -36,6 +39,12 @@ end
 
 function world.getStageMod(stage)
     local s = stage or world.etapa or 1
+    if s > 5 then
+        local okM, modesMod = pcall(require, "systems.modes")
+        if okM and modesMod and modesMod.current and modesMod.current() == "endless" then
+            return modesMod.scaleStage(s)
+        end
+    end
     return dungeonGen.stageMod[s] or dungeonGen.stageMod[5]
 end
 
@@ -73,6 +82,12 @@ end
 
 function world.getModifier(stage)
     local s = stage or world.etapa or 1
+    if s > 5 then
+        local okM, modesMod = pcall(require, "systems.modes")
+        if okM and modesMod and modesMod.current and modesMod.current() == "endless" then
+            return modesMod.scaleStage(s)
+        end
+    end
     return dungeonGen.stageModifiers[s] or dungeonGen.stageModifiers[5]
 end
 
@@ -214,6 +229,7 @@ function world.avanzarEtapa()
     world.generarMazmorra()
     tarotMod.reset()
     mutatorsMod.resetStage()
+    coreWorld.state.ironBodyUsed = false
     mysteryMod.assign(world.dungeon)
     world.puntajeSala = 0
     world.objetivoSala = world.calcularObjetivo()

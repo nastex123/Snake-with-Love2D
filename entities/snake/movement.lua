@@ -156,6 +156,18 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         end
         if hit then
             if s.ghost or immune() then
+            else
+                local okIron, shrineIron = pcall(require, "systems.shrine")
+                if okIron and shrineIron.consumeIronBody(world.state) then
+                    local okUi, uiIron = pcall(require, "ui.ui")
+                    if okUi and uiIron and uiIron.addPopup then
+                        pcall(function() uiIron.addPopup("CUERPO TEMPLE!", nuevaCabezaX, nuevaCabezaY) end)
+                    end
+                    s.sliceGraceTimer = 1.0
+                    return true, false
+                end
+            end
+            if s.ghost or immune() then
             elseif world.get("shop.shieldActive", false) then
                 shop.shieldActive = false
                 return true, false

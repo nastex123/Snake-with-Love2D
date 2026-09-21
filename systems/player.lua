@@ -19,215 +19,24 @@ local achievementsMod = require("systems.achievements")
 local itemsMod = require("systems.items")
 local tarotMod = require("systems.tarot")
 
---- Cálculo exhaustivo de velocidad del jugador considerando base, frutas y modificadores.
--- @param base number: velocidad base (segundos por paso, default VELOCIDAD_INICIAL)
--- @param fruits number: frutas comidas
--- @param opts table|nil: modificadores opcionales ({turbo, speedReducer, slowdown, isSlime})
--- @return number: velocidad resultante en segundos por casilla (clamped a [VELOCIDAD_MINIMA, MAX_BASE_SPEED])
-function player.calcSpeed(base, fruits, opts)
-    opts = opts or {}
-    local st = world.state
-    base = base or (st and st.baseSpeed) or constants.VELOCIDAD_INICIAL
-    fruits = fruits or (st and st.frutasContador) or 0
+local speedSub = require("systems.playerSpeed")
+player.calcSpeed = speedSub.calcSpeed
+player.calculateCurrentSpeed = speedSub.calcSpeed
+player.itemColor = speedSub.itemColor
+local timerSub = require("systems.playerTimers")
 
-    local speedReduction = math.floor(fruits / 5) * constants.SPEED_ADJUST_INCREMENT
-    local current = math.max(constants.VELOCIDAD_MINIMA, base - speedReduction)
-
-    -- Evaluar Turbo activo (vía parámetro explícito o timers pool)
-    local hasTurbo = opts.turbo
-    if hasTurbo == nil and st and st.activeTimers then
-        for _, t in ipairs(st.activeTimers) do
-            if t.id == "turbo" then
-                if t._handle and timers.isActive(t._handle) then
-                    hasTurbo = true
-                    break
-                elseif not t._handle and t.remaining and t.remaining > 0 then
-                    -- compatibilidad con inserts manuales de tests (sin _handle)
-                    hasTurbo = true
-                    break
-                end
-            end
-        end
-    end
-    if hasTurbo then
-        current = current * (constants.TURBO_MULTIPLIER or 0.7)
-    end
-
-    -- Tarot I. El Mercurio: +15% velocidad (menos segundos por paso)
-    if tarotMod and tarotMod.speedFactor then
-        current = current * tarotMod.speedFactor()
-    end
-
-    -- Status Effects (GDD §16): overdrive acelera, cryo ralentiza
-    local okStatus, statusFx = pcall(require, "systems.statusFx")
-    if okStatus and statusFx and statusFx.speedMult then
-        current = current * statusFx.speedMult()
-    end
-
-    -- Evaluar ralentizaciones de terreno o debuffs (e.g. Baba Slime 1.25x)
-    if opts.isSlime or opts.slowdown then
-        local factor = type(opts.slowdown) == "number" and opts.slowdown or 1.25
-        -- Botas Ligeras (GDD item 55): reducen la penalizacion a la mitad
-        if opts.isSlime and shop.inventory and shop.inventory.lightBoots then
-            factor = 1 + (factor - 1) * 0.5
-        end
-        current = current * factor
-    end
-
-    return math.max(constants.VELOCIDAD_MINIMA, math.min(constants.MAX_BASE_SPEED, current))
-end
-
---- Wrapper retrocompatible para calculateCurrentSpeed
-function player.calculateCurrentSpeed(base, fruits, opts)
-    return player.calcSpeed(base, fruits, opts)
-end
-
-function player.itemColor(itemId)
-    local colors = {
-        shield = {0, 0.85, 1}, armor = {0.3, 0.7, 1}, ghost = {0.6, 0.4, 1},
-        magnet = {0, 0.85, 1}, bomb = {1, 0.4, 0.2}, hunger = {1, 0.6, 0.2},
-        speedReducer = {0.2, 0.9, 0.3}, speed_reducer = {0.2, 0.9, 0.3},
-        turbo = {0, 1, 0.5}, slow = {0.5, 0.5, 1},
-        doubler = {1, 0.84, 0}, extraCoin = {1, 0.84, 0}, extra_coin = {1, 0.84, 0},
-        star = {1, 0.84, 0},
-        tailSpike = {1, 0.3, 0.3}, hourglass = {0.5, 0.8, 1},
-        orbitalBeam = {0.4, 0.9, 1}, holoDecoy = {0.7, 0.2, 0.9},
-        lightBoots = {0.4, 1, 0.6}, goldenTooth = {1, 0.75, 0.1},
-        emergencyBattery = {1, 0.2, 0.2}, doubleHarvest = {0.3, 1, 0.3},
-        lottery = {1, 0.9, 0.3}, refractorPrism = {0.8, 0.5, 1}
-    }
-    local c = colors[itemId]
-    if not c and itemsMod and itemsMod.get then
-        local def = itemsMod.get(itemId)
-        if def and colors[def.id] then
-            c = colors[def.id]
-        end
-    end
-    return c and c[1] or 1, c and c[2] or 1, c and c[3] or 1
-end
-
---- Helper interno para refrescar o añadir un temporizador vía core/timers pool (HUD visible en activeTimers)
 local function addOrRefreshTimer(st, timerId, duration, onEndFn)
-    duration = math.max(0, duration or 0)
-    -- Buscar existente
-    for _, t in ipairs(st.activeTimers) do
-        if t.id == timerId then
-            if t._handle then timers.cancel(t._handle) end
-            t.duration = duration
-            t.remaining = duration
-            t.onEnd = onEndFn
-            -- crear nuevo handle pooled
-            local handle = timers.after(duration, function()
-                -- remover entrada HUD y ejecutar callback una sola vez
-                for i = #st.activeTimers, 1, -1 do
-                    if st.activeTimers[i].id == timerId and st.activeTimers[i] == t then
-                        table.remove(st.activeTimers, i)
-                        break
-                    end
-                end
-                if onEndFn then
-                    local ok, err = pcall(onEndFn)
-                    if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
-                end
-            end)
-            t._handle = handle
-            return t
-        end
-    end
-    local entry = {
-        id = timerId,
-        duration = duration,
-        remaining = duration,
-        onEnd = onEndFn,
-        _handle = nil,
-    }
-    local handle = timers.after(duration, function()
-        for i = #st.activeTimers, 1, -1 do
-            if st.activeTimers[i].id == timerId and st.activeTimers[i] == entry then
-                table.remove(st.activeTimers, i)
-                break
-            end
-        end
-        if onEndFn then
-            local ok, err = pcall(onEndFn)
-            if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
-        end
-    end)
-    entry._handle = handle
-    table.insert(st.activeTimers, entry)
-    return entry
+    return timerSub.addOrRefreshTimer(st, timerId, duration, onEndFn)
 end
+player.addOrRefreshTimer = timerSub.addOrRefreshTimer
 
--- Export publico para sistemas/statusFx.lua (mismo patron pooled + HUD)
-player.addOrRefreshTimer = addOrRefreshTimer
+player.getActiveTimer = timerSub.getActiveTimer
 
---- Busca un temporizador activo por ID (usa handle pooled si existe)
-function player.getActiveTimer(timerId)
-    local st = world.state
-    if not st or not st.activeTimers then return nil end
-    for _, t in ipairs(st.activeTimers) do
-        if t.id == timerId then
-            if t._handle then
-                if timers.isActive(t._handle) then return t end
-            elseif t.remaining and t.remaining > 0 then
-                return t -- compat legacy inserts sin handle (tests)
-            end
-        end
-    end
-    return nil
-end
-
---- Cancela un temporizador activo de forma segura (cancela handle pooled)
-function player.clearActiveTimer(timerId, runOnEnd)
-    local st = world.state
-    if not st or not st.activeTimers then return false end
-    for i = #st.activeTimers, 1, -1 do
-        local t = st.activeTimers[i]
-        if t.id == timerId then
-            if t._handle then timers.cancel(t._handle) end
-            local cb = t.onEnd
-            table.remove(st.activeTimers, i)
-            if runOnEnd and cb then
-                local ok, err = pcall(cb)
-                if not ok and Log and Log.error then Log.error("onEnd error ["..timerId.."]:", tostring(err)) end
-            end
-            return true
-        end
-    end
-    return false
-end
-
--- Helper HUD: remaining dinámico desde handle (para ui/hudUI.lua)
-function player.getTimerRemaining(entry)
-    if not entry then return 0 end
-    if entry._handle then
-        -- timers pool: delay - accum
-        local h = entry._handle
-        if h and h.active and h.delay and h.accum then
-            local rem = h.delay - h.accum
-            return rem > 0 and rem or 0
-        end
-        return 0
-    end
-    return entry.remaining or 0
-end
-
-function player.getTimerDuration(entry)
-    if not entry then return 0 end
-    return entry.duration or entry.remaining or 0
-end
-
---- Retorna el multiplicador de puntuación efectivo
-function player.getScoreMultiplier()
-    local st = world.state
-    return (st and st.scoreMultiplier) or 1
-end
-
---- Retorna el bonus de monedas por fruta
-function player.getCoinBonus()
-    local st = world.state
-    return (st and st.coinBonus) or 0
-end
+player.clearActiveTimer = timerSub.clearActiveTimer
+player.getTimerRemaining = timerSub.getTimerRemaining
+player.getTimerDuration = timerSub.getTimerDuration
+player.getScoreMultiplier = timerSub.getScoreMultiplier
+player.getCoinBonus = timerSub.getCoinBonus
 
 function player.aplicarItem(itemId)
     local def = itemsMod.get and itemsMod.get(itemId) or itemsMod.registry[itemId]
@@ -237,8 +46,17 @@ function player.aplicarItem(itemId)
     st.activeTimers = st.activeTimers or {}
     st.player = st.player or snakeMod.reset()
 
+    if st.modo == "pacifista" and (canonicalId == "bomb" or canonicalId == "shield") then
+        local headDeny = st.player.body and st.player.body[1]
+        if headDeny then uiMod.addPopup("PACIFISTA: NO VALE", headDeny.x, headDeny.y) end
+        sound.play("shieldBreak")
+        return
+    end
+
     if canonicalId == "shield" then
         shop.shieldActive = true
+        st.roomUsedShield = true
+        st.runNoShield = false
 
     elseif canonicalId == "armor" then
         st.player.armor = (st.player.armor or 0) + 2
@@ -257,10 +75,13 @@ function player.aplicarItem(itemId)
         st.magnetRange = constants.MAGNET_RANGE
         addOrRefreshTimer(st, "magnet", constants.MAGNET_DURATION, function()
             shop.magnetTimer = 0
-            st.magnetRange = 0
+            local okShrineMg2, shrineMg2 = pcall(require, "systems.shrine")
+            st.magnetRange = (okShrineMg2 and shrineMg2.magnetBase()) or 0
         end)
 
     elseif canonicalId == "bomb" then
+        st.roomUsedBomb = true
+        st.runNoBomb = false
         local p = st.player.body and st.player.body[1]
         local r = constants.BOMB_RADIUS or 3
         if p then
@@ -349,7 +170,9 @@ function player.aplicarItem(itemId)
 
     elseif canonicalId == "slow" then
         st.timeScale = constants.SLOW_TIMESCALE
-        addOrRefreshTimer(st, "slow", constants.SLOW_DURATION, function()
+        local okShrineSl, shrineSl = pcall(require, "systems.shrine")
+        local slowDur = (okShrineSl and shrineSl.buffDuration(constants.SLOW_DURATION, "slow")) or constants.SLOW_DURATION
+        addOrRefreshTimer(st, "slow", slowDur, function()
             st.timeScale = 1
         end)
 
@@ -512,20 +335,22 @@ function player.aplicarComida(tipo)
     local cx = p.x * tam + tam / 2
     local cy = p.y * tam + tam / 2
 
+    local okShrineFd, shrineFd = pcall(require, "systems.shrine")
     if tipo == "fire_pepper" then
-        st.player.firePepperTimer = tarotMod.fireBuffDuration()
+        st.player.firePepperTimer = (okShrineFd and shrineFd.fireDuration()) or tarotMod.fireBuffDuration()
         table.insert(st.activePS, { ps = particles.fireTrail(cx, cy) })
         uiMod.addPopup("FUEGO INCENDIARIO!", p.x, p.y)
         sound.play("eat")
 
     elseif tipo == "frost_berry" then
-        st.enemyFreezeTimer = tarotMod.freezeDuration()
+        st.enemyFreezeTimer = (okShrineFd and shrineFd.freezeDuration()) or tarotMod.freezeDuration()
         table.insert(st.activePS, { ps = particles.frostFreeze(cx, cy) })
         uiMod.addPopup("CONGELACIÓN!", p.x, p.y)
         sound.play("shieldBreak")
 
     elseif tipo == "constrictor_berry" then
-        st.player.constrictorBuffTimer = constants.CONSTRICTOR_BUFF_DURATION or 5.0
+        local constrBase = constants.CONSTRICTOR_BUFF_DURATION or 5.0
+        st.player.constrictorBuffTimer = (okShrineFd and shrineFd.buffDuration(constrBase, "food")) or constrBase
         table.insert(st.activePS, { ps = particles.streakDiamond(cx, cy) })
         uiMod.addPopup("LAZO CONSTRICTOR!", p.x, p.y)
         sound.play("highScore")
@@ -550,6 +375,13 @@ function player.aplicarComida(tipo)
         sound.play("eat")
 
     elseif tipo == "bomb" then
+        if st.modo == "pacifista" then
+            uiMod.addPopup("+15 PTS", p.x, p.y)
+            sound.play("eat")
+            return
+        end
+        st.roomUsedBomb = true
+        st.runNoBomb = false
         local r = 4
         table.insert(st.activePS, { ps = particles.bombExplosion(cx, cy) })
         sound.play("enemyKill")
@@ -602,8 +434,13 @@ function player.aplicarComida(tipo)
             player.aplicarItem("turbo")
             uiMod.addPopup("TURBO PRISMA", p.x, p.y)
         elseif buff == "shield" then
-            player.aplicarItem("shield")
-            uiMod.addPopup("ESCUDO PRISMA", p.x, p.y)
+            if st.modo == "pacifista" then
+                player.aplicarItem("ghost")
+                uiMod.addPopup("FANTASMA PRISMA", p.x, p.y)
+            else
+                player.aplicarItem("shield")
+                uiMod.addPopup("ESCUDO PRISMA", p.x, p.y)
+            end
         elseif buff == "magnet" then
             player.aplicarItem("magnet")
             uiMod.addPopup("IMÁN PRISMA", p.x, p.y)

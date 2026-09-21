@@ -326,6 +326,10 @@ World.SCHEMA = {
     ["enemies.list"] = "table",
     ["enemies.boss"] = "table",
     stageCards = "table",
+    modo = "string",
+    skin = "string",
+    dailySeed = "number",
+    bounties = "table",
 }
 
 function World.enableDebug()

@@ -186,6 +186,22 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
         end, obsCount, anchoGrilla, altoGrilla, avoidList, {avoidRadius = 1, minDist = 1})
     end
 
+    -- 2b. Stamp wall pattern for Cruz/Espiral/Laberinto templates
+    local wallPattern = template.wallPattern
+    if wallPattern and obstaclesMod and obstaclesMod.spawnAt then
+        local okPat, Patterns = pcall(require, "world.wallPatterns")
+        if okPat and Patterns then
+            local pcx = math.floor(anchoGrilla / 2)
+            local pcy = math.floor(altoGrilla / 2)
+            for _, cell in ipairs(Patterns.cellsFor(wallPattern, pcx, pcy, anchoGrilla, altoGrilla)) do
+                if tileFree(avoidList, cell.x, cell.y, anchoGrilla, altoGrilla) then
+                    obstaclesMod.spawnAt(cell.x, cell.y, "wall")
+                    reservePosition(avoidList, cell.x, cell.y, 1)
+                end
+            end
+        end
+    end
+
     -- 3. Place food (one item; type based on room template odds)
     local foodType
     local r = love.math.random()

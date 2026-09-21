@@ -30,6 +30,8 @@ function gameflow.applyActiveProfile()
     end
     st.monedas = profile.monedas or 0
     st.highScore = profile.highScore or 0
+    st.modo = profile.modo or "estandar"
+    st.skin = profile.skin or "classic"
     if profile.stats and profile.stats.highestStreak then
         st.highestStreak = profile.stats.highestStreak
     else
@@ -68,7 +70,8 @@ function gameflow.resetGame(keepShopInventory)
     st.roomDamaged = false
     st.deathAnimTimer = 0
     st.lastObstacleScore = 0
-    st.magnetRange = 0
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    st.magnetRange = (okShrine and shrineMod.magnetBase()) or 0
     -- P05: cancelar handles pooled antes de limpiar (evitar onEnd tardío)
     if st.activeTimers then
         local timers = require("core.timers")
@@ -123,6 +126,8 @@ function gameflow.resetGame(keepShopInventory)
     st.batteryUsed = false
     st.pendingDeathTimer = nil
     st._wasSlimeSlowed = false
+    st.roomUsedBomb = false
+    st.roomUsedShield = false
 end
 
 function gameflow.iniciarSala(keepInventory)
@@ -238,6 +243,10 @@ function gameflow.acceptDeath()
     st.fadeDir = -1
     local oldHighScore = st.highScore or 0
     st.highScore = persistence.guardar(st.puntuacion, st.highScore)
+    if persistence.closeRunToShrine then persistence.closeRunToShrine() end
+    local okBoA, bountyArc = pcall(require, "systems.bounty")
+    if okBoA and bountyArc then pcall(function() bountyArc.archive() end) end
+    if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
     persistence.syncActiveProfile()
     achievements.check("scoreReached", {score = st.highScore})
     st.nuevoHighScore = st.highScore > oldHighScore
@@ -257,7 +266,8 @@ end
 
 function gameflow.revivePlayer()
     local st = world.state
-    local cost = constants.REVIVE_COIN_COST or 30
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    local cost = (okShrine and shrineMod.reviveCost()) or (constants.REVIVE_COIN_COST or 30)
     if (st.monedas or 0) < cost then return false end
 
     st.monedas = st.monedas - cost
@@ -343,10 +353,46 @@ function gameflow.startRun()
     local st = world.state
     worldMod.init()
     st.mundoCompletado = false
+    st.ironBodyUsed = false
     gameflow.iniciarSala(false)
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    if okShrine and shrineMod then st.monedas = (st.monedas or 0) + shrineMod.heritageCoins() end
+    local okBo0, bountyRoll = pcall(require, "systems.bounty")
+    if okBo0 and bountyRoll then pcall(function() bountyRoll.roll() end) end
+    local okModes, modesMod = pcall(require, "systems.modes")
+    if okModes and modesMod then pcall(function() modesMod.applyOnStart(st) end) end
     st.fadeAlpha = 0
     st.fadeDir = 0
     st.gameState = constants.GAME_STATE_PLAYING
+end
+function gameflow.getDailySeed(dateTbl, salt)
+    local okRng, RNG = pcall(require, "core.rng")
+    local okCfg, cfg = pcall(require, "core.config")
+    local s = salt or (okCfg and cfg.DAILY_SEED_SALT) or 7919
+    local d = dateTbl or (os and os.date and os.date("*t")) or {year = 2026, month = 9, day = 20}
+    if okRng and RNG and RNG.dailySeed then
+        return RNG.dailySeed(d.year, d.month, d.day, s)
+    end
+    return (d.year * 10000 + d.month * 100 + d.day) * 31 + (s % 100000)
+end
+function gameflow.startDailyRun(dateTbl)
+    local st = world.state
+    local seed = gameflow.getDailySeed(dateTbl)
+    st.dailySeed = seed
+    worldMod.init()
+    st.mundoCompletado = false
+    st.ironBodyUsed = false
+    gameflow.iniciarSala(false)
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    if okShrine and shrineMod then st.monedas = (st.monedas or 0) + shrineMod.heritageCoins() end
+    local okBo0d, bountyRollD = pcall(require, "systems.bounty")
+    if okBo0d and bountyRollD then pcall(function() bountyRollD.roll() end) end
+    local okModesD, modesModD = pcall(require, "systems.modes")
+    if okModesD and modesModD then pcall(function() modesModD.applyOnStart(st) end) end
+    st.fadeAlpha = 0
+    st.fadeDir = 0
+    st.gameState = constants.GAME_STATE_PLAYING
+    return seed
 end
 
 function gameflow.transitionToShop()
@@ -359,11 +405,15 @@ end
 
 function gameflow.returnToMenu()
     local st = world.state
+    if persistence.closeRunToShrine then persistence.closeRunToShrine() end
+    local okBoR, bountyArcR = pcall(require, "systems.bounty")
+    if okBoR and bountyArcR then pcall(function() bountyArcR.archive() end) end
+    if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
     persistence.syncActiveProfile()
     shop.reset()
     st.fadeDir = -1
     st.gameState = constants.GAME_STATE_MENU
-    st.introTimer = 0
+    st.introTimer = st.introPlayed and (constants.INTRO_READY or 4.5) or 0
     st.pendingAchievements = {}
 end
 

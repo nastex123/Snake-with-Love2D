@@ -95,6 +95,9 @@ function profilesMod.draw()
         profilesDraw.drawConfirmModal(profilesMod)
     elseif profilesMod.state == 'achievements' then
         profilesDraw.drawAchievements(profilesMod)
+    elseif profilesMod.state == 'codex' then
+        local okCx, codexUI = pcall(require, "systems.codexUI")
+        if okCx and codexUI then codexUI.draw(profilesMod) end
     end
 
     -- restore scissor
@@ -172,6 +175,18 @@ function profilesMod.mousepressed(x, y, button)
         return
     end
 
+    if profilesMod.state == 'codex' then
+        for _, btn in ipairs(profilesMod.buttonRects) do
+            if profilesMod.buttonHover(btn.x, btn.y, btn.w, btn.h, x, y) then
+                if btn.action == "close_codex" then
+                    profilesMod.state = 'select'
+                end
+                return
+            end
+        end
+        return
+    end
+
     -- check back button
     if profilesMod.backBtn and profilesMod.buttonHover(profilesMod.backBtn.x, profilesMod.backBtn.y, profilesMod.backBtn.w, profilesMod.backBtn.h, x, y) then
         profilesMod.close()
@@ -209,6 +224,9 @@ function profilesMod.mousepressed(x, y, button)
                 profilesMod.confirmMsg = "¿Restablecer " .. pname .. "?\nSe perderán monedas, puntuación y progreso."
             elseif btn.action == "achievements" then
                 profilesMod.state = 'achievements'
+                profilesMod.confirmIndex = btn.index
+            elseif btn.action == "codex" then
+                profilesMod.state = 'codex'
                 profilesMod.confirmIndex = btn.index
             elseif btn.action == "delete" then
                 profilesMod.state = 'confirm'
@@ -298,6 +316,10 @@ function profilesMod.keypressed(key)
             profilesMod.confirmType = nil
         end
     elseif profilesMod.state == 'achievements' then
+        if key == "escape" or key == "return" or key == "space" then
+            profilesMod.state = 'select'
+        end
+    elseif profilesMod.state == 'codex' then
         if key == "escape" or key == "return" or key == "space" then
             profilesMod.state = 'select'
         end

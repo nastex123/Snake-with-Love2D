@@ -76,6 +76,7 @@ function menu.draw(ui, menuTime, globalTime, highScore)
     local labels = {
         {id = 'play', text = 'JUGAR'},
         {id = 'settings', text = 'CONFIGURACIÓN'},
+        {id = 'shrine', text = 'SANTUARIO'},
         {id = 'exit', text = 'SALIR'}
     }
     local totalMenuHeight = #labels * bh + (#labels - 1) * gap

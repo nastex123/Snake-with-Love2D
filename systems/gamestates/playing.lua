@@ -39,6 +39,16 @@ function playing.update(dt)
     local st = world.state
     if st.deathModalOpen then return end
 
+    local okModes, modesMod = pcall(require, "systems.modes")
+    if okModes and modesMod and not st.timeUp then
+        if modesMod.updateRush(dt) then
+            local head = st.player and st.player.body and st.player.body[1]
+            if head then uiMod.addPopup("TIEMPO AGOTADO", head.x, head.y) end
+            gameflow.acceptDeath()
+            return true
+        end
+    end
+
     -- Batería de Emergencia (GDD item 57): cuenta atrás bullet-time con dt escalado
     if st.pendingDeathTimer and st.pendingDeathTimer > 0 then
         st.pendingDeathTimer = st.pendingDeathTimer - dt
@@ -211,18 +221,20 @@ function playing.update(dt)
         st.velocidadActual = playerMod.calculateCurrentSpeed(st.baseSpeed, st.frutasContador)
     end
 
-    -- P05: magnetTimer sincronizado desde core/timers
+    -- P05: magnetTimer sincronizado desde core/timers + base pasiva del Santuario
+    local okShrineMg, shrineMg = pcall(require, "systems.shrine")
+    local magnetBase = (okShrineMg and shrineMg.magnetBase()) or 0
     local magnetEntry = playerMod.getActiveTimer("magnet")
     if magnetEntry then
         shop.magnetTimer = playerMod.getTimerRemaining(magnetEntry)
-        st.magnetRange = constants.MAGNET_RANGE
+        st.magnetRange = math.max(magnetBase, constants.MAGNET_RANGE)
     else
         if world.get("shop.magnetTimer", 0) > 0 then
             shop.magnetTimer = math.max(0, world.get("shop.magnetTimer", 0) - dt)
-            st.magnetRange = (shop.magnetTimer > 0) and constants.MAGNET_RANGE or 0
+            st.magnetRange = math.max(magnetBase, (shop.magnetTimer > 0) and constants.MAGNET_RANGE or 0)
         else
             shop.magnetTimer = 0
-            st.magnetRange = 0
+            st.magnetRange = magnetBase
         end
     end
 
@@ -270,14 +282,22 @@ function playing.update(dt)
                 })
             end
             sound.play("enemyKill")
-            if Events then
-                Events.emit("enemyKilled")
-                Events.emit("coinsChanged", {totalCoins = st.monedas})
-            else
-                achievementsMod.check("enemyKilled")
-                achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
-            end
-            tarotMod.extendBuffs(0.5)
+                    if Events then
+                        Events.emit("enemyKilled", {source = "constrictor"})
+                        Events.emit("coinsChanged", {totalCoins = st.monedas})
+                    else
+                        achievementsMod.check("enemyKilled")
+                        achievementsMod.check("coinsChanged", {totalCoins = st.monedas})
+                    end
+                    local okBo, bountyMod = pcall(require, "systems.bounty")
+                    if okBo and bountyMod then
+                        local b = world.get("bounties")
+                        if type(b) == "table" then
+                            b.constrictorKills = (b.constrictorKills or 0) + 1
+                            bountyMod.progress("cerco_maestro", 1)
+                        end
+                    end
+                    tarotMod.extendBuffs(0.5)
         end
 
         -- Tarot IV. Ladrón de Sombras: rozar da +1 moneda

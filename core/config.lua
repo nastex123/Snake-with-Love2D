@@ -410,5 +410,30 @@ config.BIOMES = {
 config.ENABLE_VORONOI = false
 config.VORONOI_SCALE = 8.0
 config.REFLECTION_SCALE = 0.5
-
+config.SHRINE_TALENTS = {
+    heritage_pouch = {maxRank = 3, costs = {100, 250, 500}},
+    residual_magnet = {maxRank = 2, costs = {150, 350}},
+    dragon_stomach = {maxRank = 2, costs = {200, 450}},
+    thick_potions = {maxRank = 1, costs = {300}},
+    sixth_sense = {maxRank = 1, costs = {250}},
+    mercy_pact = {maxRank = 2, costs = {180, 400}},
+    iron_body = {maxRank = 1, costs = {500}},
+    hunter_focus = {maxRank = 2, costs = {220, 480}},
+}
+config.BOUNTY_POOL = {
+    {id = "cerco_maestro", name = "Cerco Maestro", desc = "4 kills por lazo constrictor", reward = 30},
+    {id = "rapido_furioso", name = "Rapido y Furioso", desc = "3 salas con combo x3+", reward = 40},
+    {id = "pacifista_tactico", name = "Pacifista Tactico", desc = "Arena sin bomba ni escudo", reward = 50},
+}
+config.DAILY_SEED_SALT = 7919
+config.RUSH_TIME_LIMIT = 180
+config.SHRINE_COIN_RATE = 0.2
+config.MODES = {"estandar", "endless", "rush", "pacifista"}
+config.SKINS = {
+    classic = {name = "Clasica", primitive = "classic"},
+    neon = {name = "Neon", primitive = "shard"},
+    midas = {name = "Midas", primitive = "dot_matrix"},
+    fire = {name = "Fuego", primitive = "wireframe"},
+    ghost = {name = "Fantasma", primitive = "hex"},
+}
 return config

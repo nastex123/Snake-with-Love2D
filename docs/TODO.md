@@ -1,5 +1,20 @@
 # TODO — Snake Dungeon Crawler
 
+## Completed (Auditoria Fase 8 Pendiente — 20:09:2026 America/Bogota, rama `refactor/test-suite-and-playing-split`)
+- [x] **Auditoria Fase 8 pendiente (`docs/AUDIT-FASE8-PENDIENTE.md`)**: diagnostico 0% codigo en Shrine, Daily/Codex/Bounty, Endgame y Skins; deuda bloqueante persistence 874L, shaders 681L, settingsDraw 647L, player 632L, dungeonGen 530L; 9 recomendaciones CRITICO-1 a FUTURO-9 con tablas Big-O y roadmap 6.1-6.8.
+- [x] **AUD-1 schema 3**: `systems/profileSchema.lua` + `persistence.syncTalents/syncModeSkin` + eventos talentsDirty/modeSkinDirty + `World.SCHEMA` modo/skin/dailySeed/bounties + `config.SHRINE_TALENTS/BOUNTY_POOL/MODES/SKINS` + `gameflow.getDailySeed/startDailyRun` base.
+- [x] **AUD-2 RNG aislado**: `core/rng.lua` (Love2D RandomGenerator con fallback LCG) + `tests/test_scope_32_dailySeed.lua` (4 tests determinismo/snapshot).
+- [x] **AUD-3 splits <500L**: persistence 484L (codec+profiles), player 402L (speed+timers), settingsDraw 318L (widgets), shaders 469L (sources), dungeonGen 392L (templates).
+- [x] **AUD-4 Zero-GC**: `entities/snake.lua` buffers preasignados 512 + `tests/test_scope_33_zerogc.lua` (3600 draws, delta <64KB).
+- [x] **RECOMENDADO-5 Shrine MVP (billetera shrineCoins + botón menú)**: `shrineDefs/shrine/shrineShop/shrineDraw/shrineUI` + 4º botón SANTUARIO + 8 hooks (heritage, magnet, hunter, dragon, thick, mercy, iron, sixth) + `closeRunToShrine` 20% + `tests/test_scope_34_shrine.lua`.
+- [x] **RECOMENDADO-6 Bounty MVP (cofre + 40$, solo arena)**: `systems/bounty.lua` (roll 2, progreso, pago 30/40+cofre escudo/50, archive) + `syncBounties/bountiesDirty`; instrumentación (payload constrictor, combo >=x3, flags bomb/shield, racha furioso, pacifista arena) + roll en `startRun/startDailyRun` + archive en `acceptDeath/returnToMenu` + `tests/test_scope_35_bounty.lua` (8 tests).
+- [x] **RECOMENDADO-7 Endgame MVP (desbloqueos GDD, pacifista lite, selector Santuario)**: `systems/modes.lua` + ruta JUGAR unificada por `startRun` + selector de modo en Santuario + rush 180s x3 con timeout + pacifista (niega bomba/escudo, cofre/corazón a monedas, insignia al vencer) + endless sin tope (escalado 6+, unlock E5) + HUD rush + `tests/test_scope_36_modes.lua` (8 tests).
+- [x] **HUD cleanup + intro única**: fuera minimapa (`renderMain`), botón pausa táctil (draw + tap-toggle; helpers/swipes/pausa teclado intactos), ALMAS del navbar (relicario + tesorería; bioma/nivel intactos), `touchOffset=0`; `introPlayed` (intro 4.5s solo al arrancar, skip en retornos a menú) + test scope_05 actualizado. Verificado: 783/783 PASS, boot 45s sin errores, `error.log` 0 bytes.
+- [x] **OPCIONAL-8 Codex MVP (álbum solo lectura en perfiles)**: `systems/codex.lua` (bestiario 9 + 8 sinergias GDD, see/check/count) + `systems/codexUI.lua` (álbum + `cardLinks`) + estado `codex` en perfiles + `syncCodex/codexDirty`; hooks en `killEnemy/spawnMiniBoss` (bestiario), `procesarCompra` (sinergias) y boss derrotado; `tests/test_scope_37_codex.lua` (7 tests). Verificado: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
+- [x] **Higiene TD-5 residual (cero-deuda estructural)**: `settings` 574→336 (`settingsInput` attach), `main` 550→384 (`main_keypressed` attach), `timers` 543→339 (`core/easings`). Verificado: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
+- [x] **TD-2 templates Cruz/Espiral/Laberinto**: `world/wallPatterns.lua` (brazos/anillos/peine con agujero spawn 2 + dedupe) + 3 plantillas con reglas propias + selección ponderada (excluye sala 1/3 y salas pequeñas) + `objectiveMap` + estampado en `populate` paso 2b + `tests/test_scope_38_templates.lua` (10 tests). Verificado: 800/800 PASS, boot 45s sin errores, `error.log` 0 bytes.
+- [ ] Siguiente paso: balance boss/economía y Phase 9.
+
 ## Completed (Saneamiento de Tests Unitarios & Desmonolitización de playing.lua — 19:09:2026 17:20 America/Bogota)
 - [x] **Saneamiento al 100% de la Suite de Pruebas Unitarias (`love tests`)**:
   - [x] Resueltos 20 fallos preexistentes en tests unitarios, alcanzando **752/752 tests pasando con 0 fallos**.

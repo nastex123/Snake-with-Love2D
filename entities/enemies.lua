@@ -139,7 +139,10 @@ end
 -- Mini-Boss (sala 3) — delega a enemyMiniBoss
 -- ============================================================
 function enemies.spawnMiniBoss(etapa, gx, gy)
-    return miniBossLogic.spawn(etapa, gx, gy)
+    local mb = miniBossLogic.spawn(etapa, gx, gy)
+    local okCx, codexMod = pcall(require, "systems.codex")
+    if okCx and codexMod then pcall(function() codexMod.seeMiniBoss(etapa) end) end
+    return mb
 end
 
 function enemies.getMiniBoss()
@@ -428,6 +431,8 @@ function enemies.killEnemy(target)
         coins = e.dropCoins or 0, type = e.type
     }
     e.alive = false
+    local okCx, codexMod = pcall(require, "systems.codex")
+    if okCx and codexMod then pcall(function() codexMod.seeEnemy(result.type) end) end
     return result
 end
 

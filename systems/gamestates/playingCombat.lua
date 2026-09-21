@@ -83,8 +83,14 @@ function playingCombat.awardMiniBoss(st, loot)
     sound.play("boss_defeated")
     local reward = miniBossRewards[loot.id]
     if reward == "shield" then
-        shop.shieldActive = true
-        uiMod.addPopup("COFRE: ESCUDO", loot.gx, loot.gy)
+        if st.modo == "pacifista" then
+            st.monedas = (st.monedas or 0) + 10
+            uiMod.addPopup("COFRE: +10$", loot.gx, loot.gy)
+        else
+            shop.shieldActive = true
+            st.roomUsedShield = true
+            uiMod.addPopup("COFRE: ESCUDO", loot.gx, loot.gy)
+        end
     elseif reward == "freeze" then
         st.enemyFreezeTimer = 2.5
         uiMod.addPopup("COFRE: CONGELACION", loot.gx, loot.gy)
@@ -372,6 +378,8 @@ function playingCombat.handleBossResult(st, bossResult)
             ps = particles.enemyKill(bossResult.px, bossResult.py, 1, 0.4, 0.6)
         })
         sound.play("enemyKill")
+        local okCxB, codexB = pcall(require, "systems.codex")
+        if okCxB and codexB then pcall(function() codexB.seeEnemy("boss") end) end
         if Events then
             Events.emit("bossDefeated")
             Events.emit("coinsChanged", {totalCoins = st.monedas})

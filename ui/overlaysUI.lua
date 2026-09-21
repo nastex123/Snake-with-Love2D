@@ -153,7 +153,9 @@ function overlays.drawDeathModal(ui)
     local coinsText = "Oro: " .. (st.monedas or 0) .. "$"
     love.graphics.printf(ptsText .. "  |  " .. streakText .. "  |  " .. coinsText, px, py + 46, pw, "center")
 
-    local canRevive = (st.monedas or 0) >= (constants.REVIVE_COIN_COST or 30)
+    local okShrineOv, shrineOv = pcall(require, "systems.shrine")
+    local reviveCostOv = (okShrineOv and shrineOv.reviveCost()) or (constants.REVIVE_COIN_COST or 30)
+    local canRevive = (st.monedas or 0) >= reviveCostOv
     local btn1X = px + 24
     local btn1Y = py + 78
     local btn1W = pw - 48
@@ -168,7 +170,7 @@ function overlays.drawDeathModal(ui)
         love.graphics.setColor(0.0, 0.94, 1.0, hover1 and 1.0 or 0.7)
         love.graphics.rectangle("line", btn1X, btn1Y, btn1W, btn1H, 3)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf("[1 / ENTER] CONTINUAR / REVIVIR (-30$)", btn1X, btn1Y + 8, btn1W, "center")
+        love.graphics.printf("[1 / ENTER] CONTINUAR / REVIVIR (-" .. tostring(reviveCostOv) .. "$)", btn1X, btn1Y + 8, btn1W, "center")
         love.graphics.setFont(ui.fontSmall)
         love.graphics.setColor(0.0, 0.94, 1.0, 0.8)
         love.graphics.printf("Otorga 3s de invulnerabilidad y despeja el area", btn1X, btn1Y + 26, btn1W, "center")

@@ -113,11 +113,13 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 504 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) + boot display heavy apply |
+| main.lua | raíz | 384 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) + boot display heavy apply; keypressed en main_keypressed (TD-5.2) |
+| main_keypressed.lua | raíz | 184 | — | Dispatcher love.keypressed via attach(env) (TD-5.2) |
 | constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
 | config.lua | core/ | 349 | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) + gameplay fase 8 |
 | logger.lua | core/ | 240 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 467 | — | Timer manager único pooled (P05) |
+| timers.lua | core/ | 339 | — | Timer manager único pooled (P05); easings en core/easings (TD-5.3) |
+| easings.lua | core/ | 130 | — | Librería 30 easings puros (TD-5.3) |
 | events.lua | core/ | 118 | — | P06 Event Bus `on/off/emit` |
 | input.lua | core/ | 110 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad + `getMousePosition` con proyección virtual |
 | assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache con filtro dinámico |
@@ -140,19 +142,38 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | food.lua | entities/ | 447 | foodMod | Food spawning and types (NORMAL/GOLD/COIN + 9 dinámicas/combate) |
 | obstacles.lua | entities/ | 437 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
 | world.lua | world/ | 230 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
-| dungeonGen.lua | world/ | 514 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
+| dungeonGen.lua | world/ | 418 | — | BSP dungeon generation, delega datos a dungeonTemplates (AUD-3); pondera Cruz/Espiral/Laberinto (TD-2) |
+| dungeonTemplates.lua | world/ | 29 | — | Datos stageModifiers/stageMod/roomTemplates(10)/templateIds(9) (AUD-3, TD-2) |
+| wallPatterns.lua | world/ | 67 | — | Patrones cruz/espiral/laberinto con agujero spawn y dedupe (TD-2) |
 | populate.lua | world/ | 296 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
 | items.lua | systems/ | 197 | itemsMod | Item definitions (registry 22 + 4 categorías) |
 | shop.lua | systems/ | 340 | shopMod | Tienda v2: fachada de tienda, 3 puestos mixtos + reroll |
 | shopDraw.lua | systems/ | 326 | — | Render de la tienda, hornacinas, cálices, y coordenadas virtuales |
 | shopBioScanner.lua | systems/ | 207 | — | Submódulo bioscanner de la tienda |
-| persistence.lua | systems/ | 820 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) + canonical resolution & filter persistence |
+| persistence.lua | systems/ | 484 | persistenceMod | Facade AUD-3: delega codec a persistenceCodec y CRUD a persistenceProfiles; `schema_version=3` con talents/codex/bounties/modo/skin |
+| persistenceCodec.lua | systems/ | 100 | — | Codec lua_encode/decode + atomicWrite tmp/rename/bak (AUD-3) |
+| persistenceProfiles.lua | systems/ | 230 | — | CRUD perfiles via attach(P, deps), max 3, migracion schema 3 (AUD-1/AUD-3) |
+| persistenceSettings.lua | systems/ | 60 | — | Defaults/deep_merge/diffs de ajustes (AUD-3) |
+| profileSchema.lua | systems/ | 70 | — | Defaults talents[8]/stats/codex/bounties/dailyHistory/modo/skin/shrineCoins + sanitize/migrate (AUD-1, Shrine MVP) |
+| shrine.lua | systems/ | 70 | — | Efectos puros: rank/magnetBase/comboWindow/dragon/fire/freeze/buff/revive/heritage/ironBody (Shrine MVP) |
+| shrineDefs.lua | systems/ | 20 | — | Catalogo 8 talentos, ramas, rangos, costes via SHRINE_TALENTS (Shrine MVP) |
+| shrineShop.lua | systems/ | 45 | — | Compra con billetera shrineCoins + talentsDirty (Shrine MVP) |
+| shrineDraw.lua | systems/ | 70 | — | Rejilla 8 talentos + balance + cierre (Shrine MVP) |
+| shrineUI.lua | systems/ | 70 | — | Panel visible/open/close/draw/mousepressed/keypressed (Shrine MVP) |
+| bounty.lua | systems/ | 110 | — | 2 contratos por run, progreso, pago 30/40+cofre/50, archivo a historial (Bounty MVP) |
+| modes.lua | systems/ | 70 | — | 4 modos, desbloqueos GDD, applyOnStart, updateRush, scaleStage 6+ (Endgame MVP) |
+| codex.lua | systems/ | 95 | — | Bestiario 9 + 8 sinergias GDD, see/check/count (Codex MVP) |
+| codexUI.lua | systems/ | 72 | — | Album solo lectura + cardLinks perfiles (Codex MVP) |
 | profiles.lua | systems/ | 301 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
 | profilesDraw.lua | systems/ | 449 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
 | achievements.lua | systems/ | 257 | achievementsMod | Achievement tracking (11 logros) |
 | settings.lua | systems/ | 535 | settingsMod | Facade: audio/graphics/accessibility dat + state, canonical resolution schema `{w,h}`, delega draw a settingsDraw |
-| settingsDraw.lua | systems/ | 610 | — | Settings tabs/controls/toasts rendering |
-| player.lua | systems/ | 573 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
+| settingsDraw.lua | systems/ | 318 | — | Tabs ajustes, delega widgets a settingsWidgets (AUD-3) |
+| settingsWidgets.lua | systems/ | 261 | — | Widgets checkbox/slider/dropdown/button + paleta (AUD-3) |
+| settingsInput.lua | systems/ | 236 | — | Input mousepressed ajustes via attach (TD-5.1) |
+| player.lua | systems/ | 402 | playerMod | Facade items/comida, delega velocidad a playerSpeed y timers a playerTimers (AUD-3) |
+| playerSpeed.lua | systems/ | 60 | — | calcSpeed/itemColor puros (AUD-3) |
+| playerTimers.lua | systems/ | 100 | — | Timers pooled addOrRefresh/get/clear + multipliers (AUD-3) |
 | gameflow.lua | systems/ | 292 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
 | gamestates.lua | systems/ | 203 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
 | gamestates/playing.lua | systems/gamestates/ | 936 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
@@ -173,7 +194,9 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | toastsUI.lua | ui/ | 79 | — | Toasts |
 | popupsUI.lua | ui/ | 45 | — | Popups |
 | overlaysUI.lua | ui/ | 186 | — | Pausa/minimapa/dungeon debug |
-| shaders.lua | render/ | 600 | shadersMod | Bloom/CRT/shadow/heat + dynamic filtering + virtual pixelScale pipeline + backbuffer scaling |
+| shaders.lua | render/ | 469 | shadersMod | Facade pipeline, fuentes en shaderSources (AUD-3) |
+| shaderSources.lua | render/ | 160 | — | Fuentes GLSL colorblind/blur/shadow/heat/voronoi/balatro (AUD-3) |
+| shaderFx.lua | render/ | 20 | — | Estado damage/shake + trigger/update/get (AUD-3) |
 | particles.lua | render/ | 316 | particlesMod | Particle effects (textura 4x4 procedural) |
 | renderMain.lua | render/ | 423 | — | drawScene (juego, mutadores, misterio), dibujo menú/glow/shadow |
 | enemiesDraw.lua | render/ | 461 | — | Draw enemigos + Chaser estrella de espinas + minibosses |
