@@ -6,6 +6,9 @@ config/*.dat
 error.log
 # Opencode
 .opencode/node_modules/
+# Agent-local config (no versionar)
+.agents/
+.opencode/
 # Temp
 tmp_*
 scratch_*.lua

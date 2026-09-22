@@ -16,6 +16,10 @@ local collisions = require("entities.snake.collisions")
 local movement = require("entities.snake.movement")
 local hasStatus, statusFx = pcall(require, "systems.statusFx")
 if not hasStatus or type(statusFx) ~= "table" then statusFx = nil end
+local hasSkins, skinRegistry = pcall(require, "systems.skinRegistry")
+if not hasSkins or type(skinRegistry) ~= "table" then skinRegistry = nil end
+local TENTHS_STR = {}
+for idx = 0, 60 do TENTHS_STR[idx] = string.format("%.1fs", idx / 10) end
 
 -- ---------------------------------------------------------------------------
 -- Helpers de render (solo usado en draw)
@@ -118,6 +122,10 @@ function snake.draw(s, alpha)
         local sat = 0.7 + t * 0.3
         local val = 0.5 + (1 - t) * 0.4
         local r, g, b = hsv2rgb(hue, sat, val)
+        if skinRegistry then
+            local activeSkin = skinRegistry.getActiveSkin()
+            r, g, b = skinRegistry.computeBaseColor(activeSkin, i, numSegments, now, t, r, g, b)
+        end
         if s.firePepperTimer and s.firePepperTimer > 0 then
             r, g, b = 1.0, 0.3 + t * 0.4, 0.1
         elseif statusFx and statusFx.has("overdrive") then
@@ -241,12 +249,36 @@ function snake.draw(s, alpha)
                     love.graphics.rectangle("fill", ex + 1, ey + 1, 1, 1)
                 end
 
-                if s.ghost then
+                local ghostTime = s.ghostTimer or 0
+                if s.ghost or ghostTime > 0 then
                     local ghostPulse = math.sin(time * 6) * 0.3 + 0.7
                     love.graphics.setColor(0.6, 0.4, 1, ghostPulse * 0.3)
                     love.graphics.setLineWidth(2)
                     love.graphics.rectangle("line", px - 2, py - 2, segSize + 4, segSize + 4, 4, 4)
                     love.graphics.setLineWidth(1)
+
+                    if ghostTime > 0 then
+                        local totalGhost = constants.REVIVE_GHOST_DURATION or 3.0
+                        local rem = math.max(0, math.min(totalGhost, ghostTime))
+                        local frac = rem / totalGhost
+                        local barW = 26
+                        local barH = 3
+                        local bx = px + math.floor((segSize - barW) / 2)
+                        local by = py - 7
+                        love.graphics.setColor(0.04, 0.05, 0.08, 0.85)
+                        love.graphics.rectangle("fill", bx, by, barW, barH, 1, 1)
+                        local fillW = math.floor(barW * frac)
+                        if fillW > 0 then
+                            love.graphics.setColor(0.0, 0.94, 1.0, 0.95)
+                            love.graphics.rectangle("fill", bx + 1, by + 1, math.max(1, fillW - 2), barH - 2)
+                        end
+                        love.graphics.setColor(0.0, 0.94, 1.0, 0.6)
+                        love.graphics.rectangle("line", bx, by, barW, barH, 1, 1)
+                        local tenthIdx = math.min(60, math.max(0, math.floor(rem * 10 + 0.5)))
+                        local txt = TENTHS_STR[tenthIdx] or "0.0s"
+                        love.graphics.setColor(1, 1, 1, 0.9)
+                        love.graphics.print(txt, bx + barW + 2, by - 3, 0, 0.55, 0.55)
+                    end
                 end
 
                 if shop.shieldActive then

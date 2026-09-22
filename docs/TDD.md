@@ -940,6 +940,101 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Cryo (GDD §16.4)**: trigger al pisar `ice` (`CRYO_ICE_CHANCE=0.15`) + aura `checkGolemAura` (Chebyshev ≤4 del Golem de Escarcha vivo) en tick `playing`; ×1.43 intervalo; inmune a proyectiles; tinte hielo.
 * **Notas de implementación**: loseta rúnica≈`trap`, esporas≈`slime`, esquirlas≈`ice`+golem (decisión 2026-09-10: reutilizar tiles, cero entidades nuevas); Medusa conserva velocidad (solo bloqueo); proyectiles no se destruyen (seguridad de pools).
 
+### 10.26 Survival Waves Escalation Engine (Arquitectura de Supervivencia por Oleadas)
+
+* **Propósito**: Desacoplar la progresión de salas de la acumulación de puntos (`puntuacion >= objetivoSala`), estableciendo un bucle de supervivencia cronometrada por oleadas consecutivas con dificultad escalada.
+* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
+  - `waveCurrent`: (número) Índice de oleada activa ($1 \dots \text{waveTotal}$).
+  - `waveTotal`: (número) Cantidad total de oleadas en la sala actual ($2$ en Etapa 1, $3$ en Etapa 2–4, $4$ en Etapa 5).
+  - `waveTimer`: (número) Temporizador en segundos restantes de la oleada activa.
+  - `waveMaxTimer`: (número) Duración base de la oleada activa ($12.0\text{s} \dots 15.0\text{s}$).
+* **Pipeline de Actualización en `systems/gamestates/playing.lua`**:
+  ```lua
+  -- Descenso continuo de tiempo en salas ordinarias (excluye sala 3 mini-jefe y sala 5 boss)
+  if not isBossRoom and not isMiniBossRoom then
+      st.waveTimer = math.max(0, st.waveTimer - dt)
+      if st.waveTimer <= 0 then
+          if st.waveCurrent < st.waveTotal then
+              st.waveCurrent = st.waveCurrent + 1
+              st.waveTimer = st.waveMaxTimer
+              populate.spawnWave(st.waveCurrent, worldMod.etapa, currentRoom)
+              uiMod.addPopup("OLEADA " .. st.waveCurrent .. "/" .. st.waveTotal .. ": REFUERZOS!", cx, cy)
+              sound.play("alert")
+          else
+              -- Sala superada con éxito tras agotar todas las oleadas
+              gameflow.triggerRoomVictory(st)
+          end
+      end
+  end
+  ```
+* **Rol de Comida en `systems/gamestates/playingPickups.lua`**:
+  - Al ejecutarse `handleFoodPickup(st, comioTwin)`, se incrementa la puntuación, monedas y combo habituales para economía y récords.
+  - La comida **no** descuenta tiempo del `st.waveTimer`, manteniendo el reto arcade íntegro de supervivencia por oleadas.
+* **Telegrafiado de Refuerzos en `world/populate.lua`**:
+  - `spawnWave(waveIndex, etapa, room)` determina las nuevas coordenadas mediante `sampleFreeTile` con distancia mínima de 4 celdas Manhattan respecto a la serpiente.
+  - Los enemigos se materializan con un estado preliminar de advertencia de $0.8\text{s}$ mediante `addTelegraph`, garantizando que el jugador anticipe el spawn sin colisiones sorpresa.
+* **Componente de Interfaz en `ui/hudSouls.lua`**:
+  - En la cabecera superior, se sustituye el texto de puntos por el contador `OLEADA X/Y` y una micro-barra estática Zero-GC con el porcentaje `waveTimer / waveMaxTimer`.
+
+### 10.27 Motor de Eventos Aleatorios Mixtos por Bioma (`systems/eventsEngine.lua`)
+
+* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
+  - `activeEvent`: (string/nil) Identificador del evento activo (E-01 a E-10 para combate; D-01 a D-10 para dilemas).
+  - `activeEventTimer`: (número) Tiempo restante en segundos del evento dinámico.
+  - `activeEventData`: (tabla) Datos dinámicos de runtime (coordenadas de escombros, baldosas incandescentes, vainas de esporas o singularidades).
+* **Integración en el Frame Loop (`systems/gamestates/playing.lua`)**:
+  - En salas ordinarias no-boss y no-élite, al inicio de una oleada intermedia (`waveCurrent > 1`), se ejecuta un roll (15% base) filtrado por el bioma actual de la etapa (`worldMod.etapa`).
+  - El tick de `eventsEngine.update(dt, worldMod, enemiesMod)` gestiona el telegrafiado de amenazas ambientales, la física de singularidades y el decaimiento del temporizador.
+* **Seguridad y Cero-GC**:
+  - Los marcadores de derrumbes, erupciones y rayos utilizan pools estáticos indexados numéricamente sin creación de tablas volátiles por tick.
+  - Las balizas de peligro utilizan `enemyAttackRegistry.addTelegraph(gx, gy, 1.0, "hazard")` con un aviso previo estricto de $\ge 1.0\text{s}$. Durante el telegrafiado, la celda no es letal.
+* **Micro-Eventos de Decisión Táctica (D-01 a D-10)**:
+  - Generados en pedestales rúnicos o entre-salas mediante popups interactivos de dos opciones en `ui/popupsUI.lua` (opción de sacrificio/riesgo vs conservadora).
+* **Feedback Multisensorial**:
+  - Acorde de alarma grave (`sound.play("event_hazard")`) para amenazas dinámicas y arpegio brillante (`sound.play("event_bonus")`) para bonificaciones, acompañado de banner superior en el HUD.
+
+### 10.31 Eventos Aleatorios de Sala (`systems/roomEvents.lua`, GDD §22)
+
+* **Propósito**: Sucesos intra-sala de 8–15s (E1–E7) complementarios al motor mixto §10.27, ligados al asedio por oleadas (GDD §6). Máximo 1 evento por sala; excluye élite/boss/misterio y asedio con mutador Contrarreloj.
+* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
+  - `roomEvent`: (string/nil) Id del evento activo (`gold_rain`, `big_hunt`, `merchant`, `eclipse`, `duel`, `void_echo`, `blood_offer`).
+  - `roomEventTimer`: (número) Tiempo restante del evento.
+  - `roomEventData`: (tabla reutilizada, sin alloc por tick) Datos de runtime (monedas restantes, eco de inputs).
+* **Tabla Data-Driven `roomEvents.DEFS`** (roll/puedeActivar/iniciar/actualizar/finalizar por evento):
+  - Roll único al iniciar la oleada 1: `love.math.random() < EVENT_CHANCE (0.25)` con veto por tipo de sala y mutador; E2 solo si `waveTotal >= 2`, E5 solo en salas 1–2, E6 solo en etapa ≥4.
+  - E1 reutiliza la física rebotante de Fiebre del Oro con 6 monedas y `tileFree` de `world/populate.lua`; E2 marca un spawn con `eliteDrop × 3`; E3/E7 usan entidades estáticas de 1 celda con radio de interacción 1; E4 aplica overlay de radio 8 + `timeScale`; E5 congela `pendingRespawns` y spawners 12s; E6 mantiene buffer circular de inputs de 72 entradas (1.2s a 60Hz).
+* **Seguridad y Cero-GC**:
+  - Entidades y timers del pool existente (`enemyAttackRegistry` 32/64/32, `core/timers.lua`); el buffer del eco E6 es circular preasignado; chequeo de salida $O(1)$, actualización $O(n)$ sobre listas ya iteradas.
+* **Interfaz en `ui/hudUI.lua` + `ui/toastsUI.lua`**:
+  - Banner `EVENTO: <TAG>` al activar + badge con cuenta atrás (`roomEventTimer`) con el mismo layout que badges de mutador/misterio.
+* **Tests `scope_41`** (compartido con asedio E+B): roll/vetos por sala, ciclo completo de cada evento, expiración sin premio, exclusión élite/boss/misterio, 1 evento máximo por sala, HUD sin tablas por frame.
+
+### 10.32 Segunda tanda E8–E14 y refinamiento (GDD §22.3–§22.5)
+
+* **Nuevos IDs en `roomEvents.DEFS`**: `blood_roulette` (E8), `hunter_fever` (E9), `shadow_pact` (E10), `cursed_chest` (E11), `void_debt` (E12), `split_heart` (E13), `total_eclipse` (E14).
+* **Vetos por fase del asedio**: E4/E9/E14 solo con `getObjectiveType() == "siege"`; E3/E7 solo en `rest`; E2/E5/E13 solo en `waves`; E1/E8/E11/E12 en cualquier fase.
+* **Vetos por mutador/misterio**: E9⊘`midas`, E14⊘`tunnel`, E12⊘`silent_veil`; exclusión mutua con `room.mystery ~= nil` y E6⊘Doppelgänger; E10 vetado sin `shieldActive` ni armadura; E5/E13 vetados en salas ≥3.
+* **Casos técnicos**: E12 admite `st.monedas` negativo (piso inexistente; `shop.abrir` debe rechazar compra con saldo <0 y mostrar "DEUDA"); E14 setea `fenixBypassed = true` en la ventana; E9 aplica `enemySpeedMult × 1.15` + `dropMult × 2` solo a kills con `eventId` marcado; E6 reutiliza el buffer circular de Espejo (§15.2) a 72 entradas.
+* **Refinamiento E1–E7 aplicado**: E1 8 monedas/9s, E2 timer 20s propio, E3 30%/4 segmentos, E4 radio 7 (E1–E2), E5 +sala 4, E6 8s/combo +3, E7 umbral racha ≥1.4x.
+### 10.33 Modo Boss Rush y Magma Wyrm Segmentado
+
+* **Modo Boss Rush (`systems/modes.lua` y `systems/gameflow.lua`)**:
+  - `world.state.modo = "boss_rush"`.
+  - Array estático de secuencia: `BOSS_RUSH_SEQUENCE = {1, 2, 3, 4, 5, "final"}`.
+  - En cada paso, se carga directamente la arena de combate del mini-jefe respectivo, intercalando visitas al estado `SHOP`.
+* **Magma Wyrm Multi-Segmento (`entities/minibossWyrm.lua`)**:
+  - Mini-jefe de etapa 3 desacoplado para mantener `entities/enemyMiniBoss.lua` $\le 500$ líneas.
+  - Array interno prealocado de 6 segmentos con posición `x, y` y `alive = true`.
+  - Detección de colisión individual: cada cabezazo combo x2+ o bomba destruye el segmento posterior, emitiendo partículas de lava y reduciendo su longitud.
+  - Al caer la cabeza (último segmento), emite el drop y activa la victoria de sala.
+
+### 10.34 Gamefeel y Defensa Perceptual (Propuestas #2, #5, #6, #7)
+
+* **Highlight de Lazo Constrictor (#5)**: Pulso aditivo instantáneo con `love.graphics.polygon` en blanco brillante antes de detonar `shockwave`.
+* **Distinción Cromática de Capas (#6)**: Renderizado diferenciado en `render/renderMain.lua`: Escudo en cian (`0, 1, 1`), Armadura en cobalto (`0.16, 0.32, 0.75`) y Ghost en blanco puro (`1, 1, 1`).
+* **Campana de Última Defensa (#7)**: Disparo de SFX procedural grave `sound.play("last_defense")` y flash rojo en bordes cuando `armorCharges == 0` y `shieldActive == false`.
+* **Previsualizador de Autotomía (#2)**: Dibujo de línea discontinua proyectando la celda del señuelo al sostener `Q`.
+
 ## 11. Love2D Gotchas
 
 | Wrong | Correct |

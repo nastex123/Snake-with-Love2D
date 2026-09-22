@@ -1,329 +1,5 @@
 # TODO — Snake Dungeon Crawler
 
-## Completed (Daily Challenges MVP & Fase 8 Replayability — 21:09:2026 America/Bogota, rama `refactor/test-suite-and-playing-split`)
-- [x] **Saneamiento Suite de Pruebas Unitarias (`tests/test_scope_13_worldFacade.lua`)**: compatibilidad con plantillas `cruz`, `espiral` y `laberinto` y fallback seguro en `ui/popupsUI.lua` (806/806 tests PASS con 0 fallos).
-- [x] **Daily Challenges MVP (`systems/daily.lua`, `ui/playModalUI.lua`, `ui/dailyResultUI.lua`)**:
-  - Semilla determinista calculada a partir de fecha calendario `YYYY-MM-DD` (`coreWorld.state.dailySeed`).
-  - Regla de 1 intento estricto por día por perfil (`hasAttemptedToday`), persistido en `profile.dailyHistory`.
-  - Sub-menú modal interactivo al pulsar JUGAR (Expedición Estándar, Desafío Diario, Historial de Desafíos, Volver).
-  - Modal post-partida de resumen y visualización de top histórico de desafíos diarios.
-  - Sincronización persistente en `systems/persistenceProfiles.lua` vía evento `dailyDirty`.
-  - Suite de 6 tests unitarios en `tests/test_scope_39_daily.lua`.
-
-## Completed (Auditoria Fase 8 Pendiente — 20:09:2026 America/Bogota, rama `refactor/test-suite-and-playing-split`)
-- [x] **Auditoria Fase 8 pendiente (`docs/AUDIT-FASE8-PENDIENTE.md`)**: diagnostico 0% codigo en Shrine, Daily/Codex/Bounty, Endgame y Skins; deuda bloqueante persistence 874L, shaders 681L, settingsDraw 647L, player 632L, dungeonGen 530L; 9 recomendaciones CRITICO-1 a FUTURO-9 con tablas Big-O y roadmap 6.1-6.8.
-- [x] **AUD-1 schema 3**: `systems/profileSchema.lua` + `persistence.syncTalents/syncModeSkin` + eventos talentsDirty/modeSkinDirty + `World.SCHEMA` modo/skin/dailySeed/bounties + `config.SHRINE_TALENTS/BOUNTY_POOL/MODES/SKINS` + `gameflow.getDailySeed/startDailyRun` base.
-- [x] **AUD-2 RNG aislado**: `core/rng.lua` (Love2D RandomGenerator con fallback LCG) + `tests/test_scope_32_dailySeed.lua` (4 tests determinismo/snapshot).
-- [x] **AUD-3 splits <500L**: persistence 484L (codec+profiles), player 402L (speed+timers), settingsDraw 318L (widgets), shaders 469L (sources), dungeonGen 392L (templates).
-- [x] **AUD-4 Zero-GC**: `entities/snake.lua` buffers preasignados 512 + `tests/test_scope_33_zerogc.lua` (3600 draws, delta <64KB).
-- [x] **RECOMENDADO-5 Shrine MVP (billetera shrineCoins + botón menú)**: `shrineDefs/shrine/shrineShop/shrineDraw/shrineUI` + 4º botón SANTUARIO + 8 hooks (heritage, magnet, hunter, dragon, thick, mercy, iron, sixth) + `closeRunToShrine` 20% + `tests/test_scope_34_shrine.lua`.
-- [x] **RECOMENDADO-6 Bounty MVP (cofre + 40$, solo arena)**: `systems/bounty.lua` (roll 2, progreso, pago 30/40+cofre escudo/50, archive) + `syncBounties/bountiesDirty`; instrumentación (payload constrictor, combo >=x3, flags bomb/shield, racha furioso, pacifista arena) + roll en `startRun/startDailyRun` + archive en `acceptDeath/returnToMenu` + `tests/test_scope_35_bounty.lua` (8 tests).
-- [x] **RECOMENDADO-7 Endgame MVP (desbloqueos GDD, pacifista lite, selector Santuario)**: `systems/modes.lua` + ruta JUGAR unificada por `startRun` + selector de modo en Santuario + rush 180s x3 con timeout + pacifista (niega bomba/escudo, cofre/corazón a monedas, insignia al vencer) + endless sin tope (escalado 6+, unlock E5) + HUD rush + `tests/test_scope_36_modes.lua` (8 tests).
-- [x] **HUD cleanup + intro única**: fuera minimapa (`renderMain`), botón pausa táctil (draw + tap-toggle; helpers/swipes/pausa teclado intactos), ALMAS del navbar (relicario + tesorería; bioma/nivel intactos), `touchOffset=0`; `introPlayed` (intro 4.5s solo al arrancar, skip en retornos a menú) + test scope_05 actualizado. Verificado: 783/783 PASS, boot 45s sin errores, `error.log` 0 bytes.
-- [x] **OPCIONAL-8 Codex MVP (álbum solo lectura en perfiles)**: `systems/codex.lua` (bestiario 9 + 8 sinergias GDD, see/check/count) + `systems/codexUI.lua` (álbum + `cardLinks`) + estado `codex` en perfiles + `syncCodex/codexDirty`; hooks en `killEnemy/spawnMiniBoss` (bestiario), `procesarCompra` (sinergias) y boss derrotado; `tests/test_scope_37_codex.lua` (7 tests). Verificado: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
-- [x] **Higiene TD-5 residual (cero-deuda estructural)**: `settings` 574→336 (`settingsInput` attach), `main` 550→384 (`main_keypressed` attach), `timers` 543→339 (`core/easings`). Verificado: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
-- [x] **TD-2 templates Cruz/Espiral/Laberinto**: `world/wallPatterns.lua` (brazos/anillos/peine con agujero spawn 2 + dedupe) + 3 plantillas con reglas propias + selección ponderada (excluye sala 1/3 y salas pequeñas) + `objectiveMap` + estampado en `populate` paso 2b + `tests/test_scope_38_templates.lua` (10 tests). Verificado: 800/800 PASS, boot 45s sin errores, `error.log` 0 bytes.
-- [ ] Siguiente paso: balance boss/economía y Phase 9.
-
-## Completed (Saneamiento de Tests Unitarios & Desmonolitización de playing.lua — 19:09:2026 17:20 America/Bogota)
-- [x] **Saneamiento al 100% de la Suite de Pruebas Unitarias (`love tests`)**:
-  - [x] Resueltos 20 fallos preexistentes en tests unitarios, alcanzando **752/752 tests pasando con 0 fallos**.
-  - [x] Corregida la calibración de velocidad `ENEMY_PATROLLER_SPEED = 0.35` en `tests/test_scope_01_config.lua`.
-  - [x] Detección inteligente de custom easing vs callbacks en `core/timers.lua` (`debug.getinfo` inspeccionando aridad de parámetros).
-  - [x] Aislamiento de colisiones y rebotes ortogonales de patrulleros en pasillos cerrados en `tests/test_scope_09_enemies.lua`.
-  - [x] Corrección de inspección del valor de retorno de `os.rename` dentro de `pcall` en `systems/persistence.lua` (`atomicWrite`), garantizando fallback a VFS en pruebas automatizadas.
-  - [x] Sincronización de aserciones de inventario pasivo en perfiles (`test_scope_16_profiles.lua`) y longitudes máximas de nombre (14 caracteres).
-  - [x] Sincronización del ciclo de vida de cabezazos al jefe y degradación de segmentos en `tests/test_scope_18_gamestatesDebug.lua`.
-- [x] **Desmonolitización Modular de `systems/gamestates/playing.lua`**:
-  - [x] Descompuesto el archivo monolítico (1082L) en 4 módulos limpios estrictamente $<400\text{L}$ cada uno:
-    - [x] `systems/gamestates/playing.lua` (363L): Fachada orquestadora del frame loop de juego.
-    - [x] `systems/gamestates/playingCombat.lua` (396L): Combate contra jefes y mini-jefes, armas pasivas, parry, singularidad y triturador.
-    - [x] `systems/gamestates/playingPickups.lua` (241L): Frutas normales y especiales, combos, overdrive, economía, shockwaves pooled y objetivos de sala.
-    - [x] `systems/gamestates/playingEvents.lua` (183L): Mutadores de sala ambientales (GDD §19), salas de misterio (GDD §15) y revivir del Fénix.
-  - [x] Preservada la política Zero-GC en todos los submódulos durante los ticks de actualización a 60 FPS.
-  - [x] Verificado el smoke headless `love . --test` y `love tests` con 752/752 PASS y `error.log` en 0 bytes.
-- [x] **Flujo Secuencial de Muerte y Revivir (Animación Previa al Menú)**:
-  - [x] Al ocurrir daño letal, la serpiente activa de inmediato la animación de despiece (`DEATH_ANIMATION`) con efectos de sacudida y partículas, manteniendo el modal cerrado.
-  - [x] Al completarse la destrucción de todos los segmentos, se despliega el modal interactivo "¿Revivir o Aceptar Muerte?".
-  - [x] Al revivir por 30$: `gameflow.revivePlayer()` reaparece la serpiente con 3 segmentos en una celda segura, limpia enemigos a 3 casillas, otorga 3 segundos de invulnerabilidad y regresa a `PLAYING`.
-  - [x] Al aceptar la muerte: `gameflow.acceptDeath()` computa récords y transiciona a `HIGH_SCORE` o `SHOP`.
-  - [x] Verificado con 753/753 tests unitarios pasando al 100%.
-- [x] **Rediseño del HUD: Cabecera 8.1 (Hades Olympian Wrath) y Dock Inferior B08 (Split Wings)**:
-  - [x] Retirada la barra de vida rectangular y texto plano `0 / 15` sobre el Boss en `render/enemiesDraw.lua`, liberando el 100% de la arena.
-  - [x] Implementada la cabecera épica 8.1 en `ui/hudUI.lua` con fondo de obsidiana, bordes de bronce, estela de daño residual *Ghost HP*, gemas de fase de rubí y alerta de *Enrage*.
-  - [x] Implementado el dock inferior **B08 Split Wings** dividiendo los controles en dos alas en esquinas (Ala Izquierda para `[Q]` y `[R]`; Ala Derecha para ítems 1-3 y pausa táctil), despejando el centro inferior de la pantalla.
-  - [x] Preservada la política Zero-GC y las firmas públicas de la API de UI.
-  - [x] Verificado con 753/753 tests unitarios PASS y smoke test exitoso.
-
-## Completed (Livecoding & Menú Responsivo — 17:09:2026 23:07 America/Bogota)
-- [x] **Sistema de Livecoding / Hot Reloading (`core/livecoding.lua`)**:
-  - [x] Monitoreo automático por sondeo (rate-limited a 250ms) en `core/`, `entities/`, `world/`, `systems/`, `ui/`, `render/`, `audio/`, `main.lua` y `constants.lua`.
-  - [x] Parcheo en tabla viva (*in-place table patching*) sobre `package.loaded` preservando referencias vivas en closures y fachadas.
-  - [x] Tolerancia y resiliencia ante errores de sintaxis (*syntax error safety*) con `pcall` sin crashear el juego (`love .`), desplegando banner HUD superior rojo.
-  - [x] Recarga manual forzada vía tecla `F5`.
-  - [x] Hooks de recarga automática para recompilación de shaders (`shaders.init()`) y assets de interfaz (`ui.load()`).
-  - [x] Suite de tests unitarios dedicada (`tests/test_scope_31_livecoding.lua`, 8 tests pasando al 100%).
-- [x] **Pulido Responsivo del Menú Principal Asimétrico (`ui/`)**:
-  - [x] **Logotipo 2.5D Cian (`ui/menuLogo.lua`)**: Anclado responsivo a la derecha de la pantalla con margen dinámico y centrado vertical absoluto (`h / 2 - totalH / 2`), adaptándose limpiamente tanto a resoluciones compactas como panorámicas/altas sin colisionar con el diamante central.
-  - [x] **Tarjeta de Jugador Chunky (`ui/menuCard.lua`)**: Anclaje dinámico inferior derecho con matriz de escalado (`love.graphics.scale()`) para prevenir desbordes de pantalla.
-  - [x] **Botonera Izquierda (`ui/menuUI.lua`)**: Retirado el botón "PERFILES" redundante de la botonera lateral (la tarjeta inferior derecha cumple dicho rol interactivo), quedando 3 botones principales (JUGAR, CONFIGURACIÓN, SALIR) centrados verticalmente.
-
-## Completed (Documentación - 17:08:2026)
-- [x] Auditoría documental completa (sin tocar código): corregidas inconsistencias GDD↔código (Spawner interval 3/drop 1, items, pesos dungeonGen, SFX), nuevas secciones GDD (Controles, Economía), spec detallada Fase 8 inline en GDD/TDD (survival streak, modal muerte, constrictor loop, 4 comidas, biomas, elites, endgame, skins), TDD actualizado a 42 módulos / ~9,275 líneas, TODO/AGENTS.md corregidos.
-
-## Completed (Auditoría Integral & Limpieza de Código Muerto - 23:08:2026)
-- [x] **Auditoría Documental y de Código Base (Limpieza Integral)**:
-  - [x] Eliminados activos huérfanos (`title_style12.png`, `title_style12_glow.png`, `snake_novice_pixelart.jpg`, `ui_reticle_corner.png`, `smoke_ui_dbg.txt`, accesos directos).
-  - [x] Limpieza de funciones y variables muertas en `core/helpers.lua`, `core/touch.lua`, `render/particles.lua`, `entities/enemies.lua`, `systems/profilesDraw.lua`, `systems/gamestates.lua`.
-  - [x] Optimización de renderizado en `ui/menuCard.lua` (eliminado doble renderizado de fondo y split diagonal por frame).
-  - [x] Consolidación del bucle de estela de serpiente en `entities/snake.lua`.
-  - [x] Inyección segura de `ui.ui` en `render/shaders.lua` y `systems/persistence.lua` para filtros y accesibilidad.
-  - [x] Limpieza de requires no utilizados en `main.lua`, `systems/settings.lua`, `systems/settingsDraw.lua`, `systems/profiles.lua` y `world/world.lua`.
-  - [x] Verificación completa con `love .` sin errores ni advertencias.
-
-## Completed (Menú Principal Asimétrico, Textura Alquímica & Modularización - 23:08:2026)
-- [x] **Rediseño del Menú Principal (Distribución Asimétrica, Título Procedural Cian & Círculo Alquímico)**:
-  - [x] **Panel Lateral Izquierdo (40% ancho)**: Fondo procedural de Matriz de Puntos HUD (#14) con ondas radiales senoidales expansivas en `ui/menuUI.lua`.
-  - [x] **Círculo Alquímico de Invocación Rotatorio (#17 Render 1)**: Figura circular en pixel art novato (`assets/alchemy_circle.png` y `assets/alchemy_circle_glow.png`) rotando suavemente a 60 FPS con pulso de respiración y pase bloom shader en `menu.drawGlow()`.
-  - [x] **Botones Cyber-Step #03**: 4 botones arcade (JUGAR, PERFILES, CONFIGURACIÓN, SALIR) de 260px con textura de zarpazos a 45°, micro-nodos de relojería y animación de elevación/glow.
-  - [x] **Diamante Emblema Central**: Cinemática de `ui/introUI.lua` con diamante flotando en el centro exacto de la pantalla `(cx = w / 2, cy = h / 2)` con pulso senoidal y alas neón.
-  - [x] **Título "S N A K E" Procedural Isométrico 2.5D Cian Neón #00F0FF**: Motor procedural en `ui/menuLogo.lua` con 5 letras en matrices 7×7, extrusión isométrica 45° en 5 capas, bisel platino, sweep especular continuo y destello en cruz.
-  - [x] **Tarjeta Combinada Perfil & HIGH SCORE #11 Chunky 344×76**: Implementada en `ui/menuCard.lua` con marco chunky 2px cian, 4 condensadores 6×6, medalla bicolor #01 y moneda circular 3D #01 con rotación elipsoidal.
-  - [x] **Herramienta de Calibración F2**: Implementada en `systems/debugLogo.lua` con drag directo de bounding box, HUD táctico 286×180, atajos de teclado y guardado permanente en `config/settings.dat`.
-  - [x] **Modularización Limpia (<300 líneas)**: Desacoplados `ui/menuLogo.lua`, `ui/menuCard.lua`, `systems/debugLogo.lua`, `systems/settingsDraw.lua` y `systems/profilesDraw.lua`.
-  - [x] **Corrección de Ámbitos y Estabilidad**: Resuelto el scope de funciones locales en `systems/settingsDraw.lua` (`attempt to call global 'setFont'`) y eliminadas referencias circulares huérfanas.
-  - [x] **Limpieza & Licencia**: Eliminadas las pastillas inferiores ("WASD / FLECHAS", "+ / - VELOCIDAD") y configurado el archivo `LICENSE` (Propietario / All Rights Reserved — Sin permiso de distribución).
-
-## Completed (Phase 8: Paquete 1 - Combate y Supervivencia - 26:08:2026)
-- [x] **Combat & Survival Package (100% Completado)**:
-  - [x] **Classic Slither Movement Engine**: Avance continuo tradicional de alta precisión, cola inteligente de 2 pasos con reemplazo ortogonal dinámico y aceleración por esquina (*corner buffering* a ratio 0.75).
-  - [x] **Inversión de Avance (*Reverse Slither* `[R]`)**: Inversión instantánea de roles de cabeza y cola con 1.2s de intangibilidad contra el cuello, 10s de recarga y visualizador en el HUD.
-  - [x] **Onda de Expulsión (*Tail Snap*)**: Detección de giros en "U" de 180° en dos ticks consecutivos en $\le 0.8\text{s}$, emitiendo una micro-onda que empuja a los enemigos adyacentes 1 celda y los aturde 0.8s con estrellas giratorias.
-  - [x] **Habilidad de Autotomía `[Q]`**: Sacrificio de 2 segmentos de cola, señuelo holográfico con temporizador que atrae a los Chasers e intangibilidad fantasma de 1.5s.
-  - [x] **Mecánica Lazo Constrictor (*Constrictor Loop*)**: Algoritmo de punto en polígono que aniquila enemigos rodeados por el cuerpo de la serpiente con doble recompensa de oro/puntos y activación temporal vía Baya Constrictora o encierros directos.
-  - [x] **4 Comidas Especiales de Combate**:
-    - [x] Guindilla Picante (`fire_pepper`): 3.5s de rastro de fuego incandescente tras la cola que incinera Chasers.
-    - [x] Fruta Helada (`frost_berry`): 2.5s de congelación global de enemigos y Boss con overlays de escarcha.
-    - [x] Baya Constrictora (`constrictor_berry`): 5.0s de buff de lazo constrictor activo.
-    - [x] Baya de Poda (`slimming_berry`): Reduce la longitud del cuerpo al 50% si mide $\ge 12$ segmentos.
-  - [x] **5 Frutas Dinámicas Avanzadas**:
-    - [x] Comida Errante (`repelling_orbit`): Se desplaza 1 casilla cada 1.5s alejándose de la cabeza y acercándose a la cola (+35 pts, +3$).
-    - [x] Bomba con caducidad (`bomb`): Cuenta regresiva de 5.0s; si expira, explota y deja un obstáculo sólido permanente.
-    - [x] Prisma cambiante (`prismatic`): Ciclo de 4 bufos temporales (Velocidad, Escudo, Imán, Fantasma) cada 1.8s.
-    - [x] Manzanas Gemelas (`twin`): Par de frutos con ventana de 4.0s para capturar ambas y activar combo x2.
-    - [x] Diamante de Racha (`streak_diamond`): Incrementa la Racha de Supervivencia en +0.5x de golpe y +15$.
-  - [x] **Racha de Supervivencia (*Survival Streak*)**: +0.1x acumulativo por sala completada sin recibir daño, multiplicando recompensas y persistiendo `highestStreak` en el perfil.
-  - [x] **Pantalla Interactiva de Muerte**: Modal táctico cyberpunk con resumen de run y botones "Revivir (-30$)" vs "Aceptar Muerte".
-  - [x] **Emisores de Partículas Dedicados**: `fireTrail`, `frostFreeze`, `tailSnapShockwave`, `slimmingBurst`, `bombExplosion`, `constrictorBurst`, `streakDiamond`, `autotomyDecoy`.
-
-## Completed (Menú Configuraciones — Mejora Interacción/Estética 27:08:2026 18:36)
-- [x] **Settings Redesign — Live Preview & Anti-Recarga + Estética Cyberpunk (verificado 2026-08-27 18:36 America/Bogota)**:
-  - [x] Live preview volumen `0.5->0.8` y `uiScale` vía drag con `applyLivePreview()` sin guardar; diff `_graphicsDiff/_audioDiff` en `persistence.applySettings` evita `setMode/recreateCanvases` innecesarios.
-  - [x] Filtro live (`nearest`/`linear`) aplica inmediato con `setDefaultFilter` + `recreateCanvases` sin recarga ventana; verificado sin heavy.
-  - [x] Resolución preview 5s con `previewTimer`/`previewOriginal` y auto-revert si no se guarda (`Preview 5s` toast).
-  - [x] Estética cyberpunk: panel doble borde cian, matriz puntos HUD #14, header glow, tabs 🔊/🖥/♿ con subrayado, hover pulse, scrollbar anti-overflow.
-  - [x] Anti-overflow: dropdowns clamp 240px + scroll wheel, `panelXY` responsivo, hitboxes `settings.g.*` recalculadas y validadas, sin tablas por frame excesivas (`g={}` único por draw).
-  - [x] Verificación: `love .` 0 errores, `error.log 0 bytes`, `tests/test_systems.lua` (Settings suites PASS), simulación flujos `open->mover->cerrar sin guardar` y `mover->guardar sin heavy` sin recreate.
-
-## In Progress (Tienda v2 — rebuild + Tarot comprable + economía)
-- [x] **Prototipo** — `prototypes/shop-redesign.html` ✅: Layout A 3 puestos interactivo (stock mixto 60/40 sin duplicados, reroll escalado 5$+2$, tiers S60/A45/B30/C20, slots/pasivos/tarots, log de rolls)
-- [x] **Código** ✅: config (`TAROT_PRICES`, `SHOP_REROLL_BASE/STEP/STALLS/TAROT_CHANCE`) + `tarot.lua` (`price`, `shopPool`, `buy` sin tope, fuera trigger draft 1/2/4) + rewrite `shop.lua` 581L (3 puestos mixtos, reroll R/botón, compra tarot con PNG, `abrir` con renew) + scope_15 reescrita + scope_26 (8 tests)
-
-## Próxima sesión (handoff 2026-09-08, rama `docs/audit-settings-display-pipeline` desde `dev` PR #20 mergeado)
-- [x] **Saneamiento Pipeline Pantalla y Ajustes Gráficos (`docs/AUDIT-SETTINGS-DISPLAY.md`)**:
-  - [x] Corregir persistencia de resolución en arranque: invocar `applySettings(settings, {heavy = true})` en `love.load` y asegurar que `_applyHeavy` llame a `love.window.setMode` con la resolución guardada.
-  - [x] Sincronizar guardado de resolución en `systems/settings.lua` con esquema `{width = W, height = H}` permanente.
-  - [x] Corregir filtrado de texturas (`nearest` vs `linear`): invocar `love.graphics.setDefaultFilter` y propagar a `canvasScene` y `canvasFinal`.
-  - [x] Implementar `pixelScale` real en `render/shaders.lua`: calcular `virtualW = W / pixelScale`, renderizar en canvas reducido y proyectar a pantalla completa.
-  - [x] Ajustar coordenadas de ratón en `core/input.lua` y `systems/shop.lua` para considerar `pixelScale`.
-  - [x] Suite de pruebas unitarias automatizadas `tests/test_scope_27_display_settings.lua`.
-- [x] Playtest visita real de tienda + precios dinámicos por etapa (2026-09-10, `balance/shop-dynamic-pricing`): suite `scope_28` con modelo de ingresos (EV 1.3$/comida, killRate 0.25 calibrado por playtest: bolsillo real E1 <40$, kills < mitad, tienda = premio); implementado `SHOP_STAGE_PRICE_MULT={0.8,0.9,1.0,1.1,1.2}` vía `shop.applyStagePrice()` en puestos+reroll; canasta media cubierta por etapa (E1 40$, E5 60$).
-- [ ] Decidir destino de `GAME_STATE_TAROT` reservado (eliminar o reutilizar en eventos).
-- [ ] Playtest visita real de tienda (precios vs ingresos ~30-80$/sala; decidir precios dinámicos por etapa).
-- [x] Destino de `GAME_STATE_TAROT` decidido y ejecutado (2026-09-10, `chore/tarot-full-removal`): eliminación total — enum fuera de `core/config.lua`, draft (`open/choose/sampleOptions/shouldOffer/draw/modal`) fuera de `tarot.lua` (284→139L), ramas fuera de dispatcher/render/input, `scope_23` reescrita (21 tests compra/hooks). Sistema vivo = compra en tienda + 12 hooks.
-- [x] Siguiente bloque: **Status Effects** (GDD §16) en `feature/phase8-status-fx` (2026-09-10 ✅: overdrive/medusa/venom/cryo + scope_29 18 tests).
-- [ ] Higiene pendiente: splits fase 8 (TODO Medium), saneamiento de 20 fallos pre-existentes en mocks.
-
-## In Progress (Phase 8: Gameplay & Combat Evolution)
-- [x] **Extended Items Arsenal (51-60)** — `feature/phase8-items-arsenal` 2026-09-05 ✅ 22 items (suite scope_21, 560 tests 540 PASS):
-  - [x] Tail Spike, Hourglass (2s rewind), Orbital Beam, Holographic Decoy, Light Boots, Golden Tooth, Emergency Battery (bullet time), Double Harvest, Lottery Ticket, Refractor Prism
-- [x] **Stage Biomes & Hazards (100% Completado)**:
-  - [x] Stage 1: Stone Catacombs (framework base de biomas, muros estándar, paleta de mazmorra, banner y badge HUD)
-  - [x] Stage 2: Frozen Crypt (losetas de hielo con deslizamiento inercial `+1` al girar y partículas de escarcha)
-  - [x] Stage 3: Volcanic Cavern (fisuras de magma con ciclo térmico `cooldown` -> `warning` -> `active` letal y partículas de brasas)
-  - [x] Stage 4: Toxic Hive (charcos de baba ácida viscosa con reducción de -20% de velocidad y burbujas ácidas)
-  - [x] Stage 5: Void Sanctuary (abismo letal sin wall-wrap, bordes mortales de caída libre, advertencia visual y partículas de vacío)
-  - [x] Trampas de pinchos de presión (`pressure_spike`: `idle` -> `warning` 0.5s -> `extended` letal 1.2s -> `retracting`)
-  - [x] Suite de pruebas unitarias `tests/test_scope_19_biomes_hazards.lua` con cobertura completa en PASS
-- [x] **Sprites e Identidad Visual Pixel-Art de Enemigos**:
-  - [x] Patroller: Sprite rasterizado 5x5 `assets/patroller_delta.png` (#01 Interceptor Delta) con filtrado `nearest`, orientación dinámica, núcleo fotónico pulsante y micro-llama de plasma.
-  - [x] Chaser: Sprite rasterizado 7x7 `assets/chaser_shuriken.png` (#01 Shuriken Plasma Hyper) con rotación a 60 FPS modulada por estado de IA y ojo giroscópico desacoplado que rastrea a la serpiente.
-- [x] **Evolución Táctica de la IA del Patroller (Interceptor Delta)**:
-  - [x] Documentación técnica y de diseño en `docs/PATROLLER-DESIGN-NOTE.md` y `docs/GDD.md` (Sección 3).
-  - [x] Desacoplamiento modular en `entities/patrollerAI.lua` (extracción de lógica de `entities/enemies.lua`).
-  - [x] 4 Modos de patrulla contextuales (`corridor_sweep`, `perimeter_orbit`, `diagonal_bounce`, `radar_sentry`).
-  - [x] Resolución de esquinas a 90° con anti-deadlock de retroceso 180°.
-  - [x] Línea de visión y aceleración de intercepción (*Line-of-Sight Dash*) con alerta fotónica y estela de plasma.
-  - [x] Seccionamiento quirúrgico de cola (*Guillotine Slice*) en `entities/snake.lua` y feedback en `systems/gamestates.lua`.
-  - [x] Suite de pruebas unitarias `tests/test_scope_20_patroller_ai.lua` en PASS (100% verde).
-- [x] **Elite Encounters & 5 Mini-Bosses (Mid-stage Room 3)** — `feature/phase8-minibosses` 2026-09-05 ✅ (suite scope_22, 14 tests):
-  - [x] 5 Mini-Bosses (Wall-Crusher, Frost Golem, Magma Wyrm, Brood Queen, Void Phantom) with telegraphs and golden rewards (`enemyMiniBoss.lua` + sala 3 `isElite` + spawn en `populate` paso 6)
-- [x] **Boss Enrage Phase & Laser Attacks** — `feature/phase8-enrage` 2026-09-05 ✅ bloque cerrado:
-  - [x] 3-food threshold enrage state (35% faster telegraphs & high tempo music) — `BOSS_ENRAGE_*` config, telegraph `/1.35`, pitch `1.15x`, pulso carmesí + popup `FURIA DEL JEFE!`, 4 tests scope_11
-  - [x] Laser Perimeter attack (center dividing continuous beams) — `laser_perimeter` minPhase 2 (telegraph 1.0s, cooldown 7.0s), rectángulo 4 rayos 4.0s en centro de sala, `addLaser` pooled, colisión `point_seg_dist` < 0.45, render glow rojo + núcleo blanco, 6 tests scope_11 (582 tests, 562 PASS)
-- [x] **Room Modifiers, Curses & Blessings** — `feature/phase8-room-modifiers` 2026-09-07 ✅ (suite scope_24, 22 tests):
-  - [x] 10 Room Mutators: Zero Gravity, Midas Curse, Feather Blessing, Silent Veil, Stalking Shadow, Time Trial, Phoenix Blessing, Tunnel Vision, Dual Room, Titan Pact
-  - [x] **P1 Framework** — `feature/phase8-room-modifiers` ✅: `systems/roomMutators.lua` (10 DEFS + roll/get/has/apply/clear + estado `World.state.roomMutator`), `ROOM_MUTATOR_CHANCE=0.35` (boss/elite excluidos), roll en `iniciarSala` antes de poblar, banner popup + badge HUD, suite scope_24
-  - [x] **P2 Simples** ✅: Midas +2$/fruta y -1pto/s (`playing` eat+tick), Velo sellado slots (`main` 1-3) y x2 monedas al superar (`transition`), Contrarreloj 10s + pasivo gratis (`playing`+`transition`), Dualidad pares espejados enemigos + fruta twin (`populate`, limpieza en eat)
-  - [x] **P3 Medios** ✅: Gravedad Cero deriva sin reposo tactico (`movement`), Pluma solo 3 segmentos letales (`movement`), Titan cruz propia letal +50/fruta (`movement`+`playing` eat)
-  - [x] **P4 Pesados** ✅: Sombra espectro Chebyshev 0.9s toda la etapa + muerte al contacto (`roomMutators`+`playing` tick+`renderMain`), Fenix revive 1/etapa 3 segmentos + 3s fantasma (`playing`+`world` resetStage), Tunel mascara radio 5 (`renderMain`, badge FENIX/SOMBRA extra en HUD)
-- [x] **Stage Tarot Draft System** — `feature/phase8-tarot` 2026-09-06 ✅ (suite scope_23, 24 tests):
-  - [x] Draft modal (GAME_STATE_TAROT=7) on rooms 1, 2, 4 with 12 Tarot Cards, max 3 per stage, reset on avanzarEtapa (`systems/tarot.lua` + trigger en `playing` + draw/input/dispatcher)
-  - [x] 12 hooks: mercury x0.85 speed + combo x2, iron_spine tail kill, eagle_eye 12s window, astral_mirror 1 wrap/room, alchemical 25% gold, dragon_blood 6.0s, absolute_zero 4.0s + shatter, magic_circle +1 reach, shadow_thief near-miss +1$, midas +3$/room, iron_heart shield, reaper +0.5s buffs
-  - [x] 12 texturas PNG 20x20 en `assets/tarot/` (variantes elegidas I-B/II-C/III-D/IV-D/V-A/VI-A/VII-A/VIII-C/IX-A/X-B/XI-B/XII-C) + `systems/tarotArt.lua` loader con fallback (suite scope_23, 28 tests)
-- [x] **Special Mystery Rooms** — `feature/phase8-mystery-rooms` 2026-09-07 ✅ (suite scope_25, 24 tests):
-  - [x] Mystery Room Generator (Gambler's Den, Doppelgänger Mirror, Gold Rush Chamber, Trial of Triads)
-  - [x] **P1 Framework** ✅: `systems/mystery.lua` (4 DEFS + roll/canBeMystery/assign/current/begin + `room.mystery` en mazmorra), `ROOM_MYSTERY_CHANCE=0.06` (boss/elite/sala1 excluidos), asignacion en `init/avanzarEtapa`, banner + badge HUD, suite scope_25 (9 tests)
-  - [x] **P2 Apuesta+Oro** ✅: Apostador ruleta central apuesta 10$ + 3 doradas secuenciales en 15s (premio 40$ + item + racha, derrota 2 chasers) + Fiebre 20 monedas rebotando 12s con puerta al expirar (`mystery`+`playing`+`gameflow`+`renderMain`)
-  - [x] **P3 Espejo+Sellos** ✅: Espejo cuerpo espejado que replica giros con 1.2s + contacto letal + disolver por lazo (punto en poligono expuesto) o 3 normales (premio 30$ + cofre) + Sellos 1-2-3 en 10s con 2 patrulleros (altar 50$ + 2 items) (`mystery`+`playing`+`gameflow`+`renderMain`+`collisions`)
-- [x] **Status Effects Engine** (2026-09-10 ✅ `feature/phase8-status-fx`):
-  - [x] Overdrive on combo x6 (frenesí 4s, smash chasers, demuele muros, glow dorado), Medusa Tail (trampa→petrifica 2s, bloqueo giro, shatter), Venom Spore (slime→controles invertidos 1.8s, viñeta verde), Cryo-Stasis (hielo+golem→lento 2.5s, inmune proyectiles) — `systems/statusFx.lua` + scope_29 18 tests
-- [x] **Combate por cabezazos mini/boss** (2026-09-10 ✅ `feat/boss-headbutt-combat`):
-  - [x] Daño solo por cabezazos (display−1, min x2, cap 5) + rebote y fantasma 0.8s (`systems/combatRam.lua` + scope_30); minis con gating élite; boss HP 12 con barra y enrage por HP; bomba conserva 2 a minis
-- [x] **Fix cabezazos: rebote seguro + parry miniboss + HP único boss** (2026-09-11 ✅ `feat/boss-headbutt-combat`):
-  - [x] Rebote validado en `combatRam.ram` (atrás→lateral→quedarse; nunca cuello/muro/2x2)
-  - [x] `miniBoss.parry` x0.6 + `parryCooldown` 2.0s + passthrough `enemies.parryMiniBoss` + popup "¡PARRY!"
-  - [x] Boss a `hp/maxHp` único (fuera `vida/vidaMax`; guards en `renderMain`/`enemiesDraw`; asserts `vida`→`hp` en tests)
-  - [x] Tests scope_30 (+3) / scope_22 (+4 parry) / scope_09+11 (HP explícito); suite 732: 712 PASS / 20 pre-existentes
-- [x] **Arrollamiento Triturador 2x2 escalado** (2026-09-11 ✅ `feat/boss-headbutt-combat`, 9 commits):
-  - [x] Keys `CRUSHER_TRAMPLE_*` + telegraph 2 líneas + `chargeLane`/`trampleHits`
-  - [x] Corte `min(2+hits,4)` piso 3 + racha `-0.1x*hits` piso 1.0 + cadena fantasma/escudo/armadura
-  - [x] Tests scope_22 +8 (lane 3 + trample 5); suite 740: 720 PASS / 20 pre-existentes
-- [x] **Sprite Perforador de Plasma del Triturador** (completado 2026-09-14, `feat/boss-headbutt-combat`):
-  - [x] 6 PNG 16x16 en `assets/enemies/crusher/` (idle f1/f2 4 FPS, attack f1/f2, telegraph f1/f2 Y→R)
-  - [x] Loader `systems/miniBossArt.lua` (espejo `tarotArt`; `frameFor`/`tileFor`; fallback nil sin PNG)
-  - [x] Sprite 2x2 en `drawMiniBoss` (ataque en telegraph/execute; sombra/borde/barra intactos) + tile en telegraph `miniboss_charge` + tinte `DEFS[1].color` naranja plasma {0.98,0.36,0.09}
-  - [x] Tests scope_22 +4 (mapeo, cache, fallback, tile); suite 744: 724 PASS / 20 pre-existentes
-  - [x] Desviacion honesta: HTML de 5 propuestas no existe en el repo (solo shop/tarot en `prototypes/`); pixel art recreado desde la paleta del spec
-- [ ] **Meta-Progression Shrine**:
-  - [ ] Shrine UI in Menu/Profiles with 8 talents (Heritage Pouch, Dragon Stomach, Sixth Sense, Mercy Pact, etc.)
-- [ ] **Daily Challenges, Lore Codex & Bounties**:
-  - [ ] PRNG Daily Seed dungeon, Bestiary & Synergy Codex, Bounty Board contract system
-- [ ] **Endgame Modes & Master Skin Catalog**:
-  - [ ] 10 Unlockable modes: Endless Abyss, Time Attack, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Loadout Draft, Sudden Death, Maze Runner
-  - [ ] Master Snake Skin Catalog (+200 variants, 5 primitive render engines)
-- [ ] **80 Engineering & Gameplay Improvements Suite**:
-  - [x] Input Buffer Inteligente (2-step con reemplazo dinámico), Corner Buffering acelerado (`0.75` ratio) y calibración de velocidad base (`0.13s`)
-  - [ ] Input ramp-up ($0.03\text{s}$ threshold), metrónomo táctico HUD, ghost frame de 3s en revive
-  - [ ] AABB pre-filter para Ray Casting de Constrictor, highlight de lazo cerrado, esquirlas de oro en rocas
-  - [ ] Half-res FBO specular reflections ($0.5\times$ canvas), Voronoi glass fracture shader en Game Over
-  - [ ] Fixed timestep a 60 ticks desacoplado de Hz, test unitario de memoria zero-allocation (60s constante)
-- [ ] **Sensorial Audio-Visual Polish & 100 Visual Style Proposals (Phase 9)**:
-  - [ ] Dynamic 2D Lighting (conic head spotlight, drop shadows at 45°, ambient occlusion, torch glow)
-  - [ ] Procedural Autotiling (4-variant noise hash, moisture decals, frost, magma veins)
-  - [ ] Advanced GLSL Shaders (bloom selective threshold >0.8, dynamic chromatic aberration, heat haze, Voronoi fracture)
-  - [ ] Snake Micro-Animations (metameric wave interpolation, squish/stretch, eye tracking, swallowing bulge)
-  - [ ] Enemy & Combat VFX (telegraph sweep, laser trails, parabolic coin bounce, anisotropic shockwaves)
-  - [ ] Chiseled Stone HUD & Ambient Volumetric Fog (parallax fog, dust motes, god rays, holographic cards)
-  - [ ] Specular floor reflections, directional shake, 50ms hitstop, reactive layered music, segment glow, drift sparks, death desaturation, glass fracture, audio reverb
-- [ ] **Accessibility & QoL Suite (Phase 9)**:
-  - [ ] Colorblind filters, FX sliders, training mode, run history, record PNG export, full keybind mapping, HUD performance overlay, Alt+Tab auto-pause, HD vibration
-- [ ] Introduce ECS-style systems (Movement/AI/Collision/Render)
-
-## Planned (Tech Debt Plan — 31:08:2026) — Saneamiento Deuda Técnica Viva
-
-Plan formal: [`docs/TECH-DEBT-PLAN.md`](TECH-DEBT-PLAN.md) — 15 propuestas en 3 fases + 2 futuro. Rama: `chore/tech-debt-plan` desde `main@87d5ac4`. DoD: `love .` + `error.log 0` + tests PASS + docs sincronizados por propuesta.
-
-### Fase 1 — Desmonolitizar (CRÍTICO)
-
-- [x] **P01 — Split `entities/enemies.lua` 634 → 4 módulos** (`enemies.lua` 341L facade + `enemyAttackRegistry.lua` 139L + `enemyBossLogic.lua` 170L + `enemySpawnLogic.lua` 121L; pools `telegraphs`/`attackObjects`/`pendingRespawns` aislados) — Branch: `refactor/split-enemies` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, tests `test_scope_09_enemies` + `bossAttacks` PASS (527/545), facade mantiene API pública idéntica, fix `enemyBossLogic.hitBoss` nil-guard + `snake.checkEnemyCollisions` `fromIndex`
-- [x] **P02 — Split `entities/snake.lua` 922 → 4 submódulos + fachada** (`snake.lua` 257L facade + `snake/core.lua` 97L + `snake/abilities.lua` 105L + `snake/collisions.lua` 152L + `snake/movement.lua` 393L; API `mover`/`encolarDireccion`/`checkEnemyCollisions` intacta, `draw` permanece en fachada) — Branch: `refactor/split-snake` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, `love tests` 529/545 PASS (sin regresión), helpers `immune/hasWrap` duplicados localmente para evitar ciclos, `fromIndex` fix preservado
-- [x] **P03 — Split `systems/gamestates.lua` 643 → fachada 196L + 3 submódulos** (`gamestates.lua` 196L facade + `gamestates/playing.lua` 389L + `gamestates/transition.lua` 64L + `gamestates/death.lua` 72L; primer paso ECS, `updateCommon`/`overlaysOpen`/`flushPendingAchievements` en fachada, `updatePlaying`/`updateTransition`/`updateDeath` delegados) — Branch: `refactor/split-gamestates` — **Completado 2026-08-31 23:XX America/Bogota**: `love .` 5s `error.log` 0 bytes, `love tests` 529/545 PASS sin regresión, `flushPendingAchievements` duplicado localmente en `transition`/`death` para evitar ciclo, API `states.updatePlaying/updateTransition/updateDeath/updateHighScore` preservada
-
-### Fase 2 — Desacoplar Estado (CRÍTICO + RECOMENDADO)
-
-- [x] **P04 — Migración final globals → `World.state` (shop/enemies)** (`shop.shieldActive/magnetTimer/ghostActive` → `World.state.shop`; `enemies.list/boss` → `World.state.enemies` con proxy + `World.get`/`World.set` dot-notation y `World.subscribe`) — Branch: `refactor/world-state-globals` — **Completado 2026-08-31 23:XX America/Bogota (consola-only)**: `core/world.lua` dot-notation (`shop.shieldActive`, `enemies.list`), `systems/shop.lua` proxy sin rawset (sobrevive `World.reset`), `entities/enemies.lua` proxy, `snake/core|collisions|movement` y `gamestates/playing` migrados a `World.get`, `love tests` 529/545 estable (recuperados 4 shield tests), `grep shop\.` reducido 74→~30 (restante `renderMain`/`player` en P05)
-- [x] **P05 — Consolidar timers duales → `core/timers.lua` único** (deprecar `world.state.activeTimers[]` + `shockwaves` loops; `timers.update(dt)` único desde `love.update`) — Branch: `refactor/timers-consolidated` — **Completado 2026-09-03 11:30 America/Bogota (consola-only)**: `systems/player.lua` `addOrRefreshTimer` migrado a `timers.after` pooled con `_handle` + `duration`/`remaining` HUD, `systems/gamestates.lua` loop `activeTimers` deprecado (compat legacy sin `_handle` + sync `remaining` desde handle), `systems/gamestates/playing.lua` shockwave `timers.tween(0.4)` + `systems/gamestates.lua` shockwaves loop legacy solo `timer~=nil`, `systems/settings.lua` `resolutionConfirmTimer` sincronizado desde `persistence._previewTimer` handle, `ui/hudUI.lua` barra `t._handle.delay - accum`, `systems/gameflow.lua` `resetGame` cancela handles, `love tests` 529/545 compat, `error.log` 0 bytes
-- [x] **P06 — Crear `core/events.lua` (Event Bus)** (`Events.emit/on`, `local E={} return E`, migrar `achievements.check`/`persistence.sync`/`ui.showToast` a suscriptores) — Branch: `feat/core-events` — **Completado 2026-09-03 12:00 America/Bogota (consola-only)**: `core/events.lua` 180L `Events.on/off/emit/clear/once` con `pcall` + `Log` y `listeners` copy-on-emit; `systems/achievements.lua` suscribe 6 eventos (`enemyKilled/bossDefeated/comboAchieved/stageChanged/scoreReached/coinsChanged`) → `achievements.check`; `ui/ui.lua` suscribe `toast/achievementToast` → `ui.showToast`; `systems/persistence.lua` suscribe `coinsChanged/scoreReached/stageChanged/profileDirty` → `syncActiveProfile`; `systems/player.lua` + `systems/gamestates/playing.lua` emiten `Events.emit` en vez de `achievements.check` directo (fallback si Events nil); 0 `require` circular, `test_scope_05_world` listeners PASS
-- [x] **P07 — Crear `core/input.lua` (Input centralizado)** (`Input.isHeld(dir)` + `config.KEYBINDS` + `touch.hasActiveTouch` + hook gamepad; `love.keyboard.isDown` solo en `core/input.lua`) — Branch: `refactor/input-central` — **Completado 2026-09-03 12:30 America/Bogota (consola-only)**: `core/input.lua` 110L `Input.isDown/isHeld/isAnyHeld/hasActiveTouch/isGamepadHeld` con `config.KEYBINDS` (`up/down/left/right` → `w/a/s/d` + arrows) + `touch.hasActiveTouch` pcall + `love.joystick` hook; `core/config.lua` `KEYBINDS` añadido; `entities/snake/movement.lua` migrado a `Input.isAnyHeld/isHeld("up"/"down"/...)` (3 sitios), `systems/gamestates/playing.lua` `Input.isAnyHeld/hasActiveTouch`, `systems/debugLogo.lua` `Input.isDown("lshift"/"rshift")`; `grep love.keyboard.isDown` solo en `core/input.lua` + `test_harness` mock; `grep isDown` único
-- [x] **P08 — Crear `core/assets.lua` (Asset Manager)** (`Assets.getFont/getCanvas`, 0 `newImage/newCanvas` por frame, Zero-GC) — Branch: `refactor/assets-manager` — **Completado 2026-09-03 12:30 America/Bogota (consola-only)**: `core/assets.lua` 130L `Assets.getFont/getImage/getCanvas` con caches `fonts/images/canvases` + `pcall`/`Log.warn` y `getStats/clearAll`; `ui/hudUI.lua` `getCachedFont` → `Assets.getFont`; `ui/ui.lua` `load` fonts/images → `Assets.getImage/getFont`; `render/shaders.lua` canvases siguen pooled no per frame; 0 alloc per frame verificado `grep newFont/newImage` solo en `core/assets.lua` + load-time (`shop`, `settingsDraw`) y `test_harness` mock; `test_ui_render_audio` PASS compat
-
-### Fase 3 — Resiliencia (RECOMENDADO + OPCIONAL)
-
-- [x] **P09 — Escritura atómica `profiles.dat` + `schema_version`** (`profiles.dat.tmp` + `os.rename` + `.bak`, `pcall` + validación, `schema_version=2`) — Branch: `chore/phase3-resiliencia` (P09) — **Completado 2026-09-03 13:00 America/Bogota (consola-only)**: `systems/persistence.lua` `atomicWrite(path,data)` escribe `tmp` vía `love.filesystem.write` + `os.rename` con `getSaveDirectory` y `.bak` fallback a `love.filesystem` (VFS compatible), `saveProfiles` valida `lua_decode` antes de escribir y setea `schema_version=2`/`version=2`, `initProfiles` intenta `profiles.dat` luego `.bak` y restaura vía `atomicWrite`, migra `schema_version<2` → `2`, `love tests` VFS `__clearVFS` compat, `error.log` 0
-- [x] **P10 — Split `tests/test_systems.lua` 1135 → 3 suites + smoke headless** (`test_gamestates`, `test_shop`, `smoke.lua` `love . --test`) — Branch: `chore/phase3-resiliencia` (P10) — **Completado 2026-09-03 13:30 America/Bogota (consola-only)**: `tests/test_systems.lua` 1135 → `tests/test_shop.lua` 384L (Suites 1-3 Items/Shop/Persistence) + `tests/test_settings.lua` 397L (Suites 4-7 Settings/Profiles/Achievements/Player) + `tests/test_gamestates.lua` 326L (Suites 8-10 Gameflow/Gamestates/Debug) + `tests/test_systems_helper.lua` 104L `setupCleanWorld` + `tests/test_systems.lua` 5L shim + `tests/smoke.lua` 32L headless `love . --test`; `tests/main.lua` ahora `require test_shop/test_settings/test_gamestates`; 3 ficheros <400L, `love tests` <1.0s compat (VFS mock)
-- [x] **P11 — Pool estático `telegraphs`/`attackObjects`/`pendingRespawns`** (32/64 tablas pre-alocadas con `active` flag; iteración sin `table.insert/remove` en loop) — Branch: `chore/phase3-resiliencia` (P11) — **Completado 2026-09-03 14:00 America/Bogota (consola-only)**: `entities/enemyAttackRegistry.lua` 139→260L pools `TELEGRAPH_POOL=32`/`ATTACK_POOL=64`/`RESPAWN_POOL=32` pre-alocados `telegraphPool/attackPool/respawnPool` + `freeTelegraphs/freeAttacks/freeRespawns` + `activeTelegraphs/activeAttacks/activeRespawns`; `addTelegraph/addProjectile/addRadialPulse/addPendingRespawn` adquieren vía `acquireFree` sin ` {}` nuevo, `updateTelegraphs/updateAttackObjects` reciclan vía `releaseToFree` sin crear tablas; `entities/enemies.lua` `pending` loop usa `removePendingRespawn(i)` para reciclar; `collectgarbage("count")` estable, `test_scope_09` `#` count sigue vía `activeTelegraphs` length
-- [x] **P12 — Extraer `world/biomeHazards.lua` de `obstacles.lua`** (`obstacles.lua` 723→~380L; `BiomeHazards.update(dt)` unifica `isIce/isSlime/lava/pressure_spike`) — Branch: `chore/phase3-resiliencia` (P12) — **Completado 2026-09-03 14:30 America/Bogota (consola-only)**: `world/biomeHazards.lua` 254L nuevo `BiomeHazards.DEFAULTS` (lava/ice/slime/pressure_spike) + `isLethal/getTileModifier/triggerPressureSpike/update/draw/getSpawnForBiome/isHazardAt`; `entities/obstacles.lua` 723→495L (delegación `isHazardLethal`→`isLethal`, `getTileModifier`→`BiomeHazards`, `triggerPressureSpike`→`BiomeHazards`, `generarPorBioma`→`getSpawnForBiome`, `update`→`BiomeHazards.update` + `flashTimers`, `draw` delega 4 hazards a `BiomeHazards.draw`, `TYPE_DEFAULTS` lava/ice/slime/spike → `BiomeHazards.DEFAULTS`); `obstacles.lua` <500L verificado `wc -l` 495
-- [x] **P13 — Contrato API `World.state` + `World.validate()` debug** (assertType en `World.set` modo debug, `World.validate()` en `love.load`) — Branch: `chore/phase3-resiliencia` (P13) — **Completado 2026-09-03 15:00 America/Bogota (consola-only)**: `core/world.lua` `World.DEBUG=false` + `World.SCHEMA` (12 keys `puntuacion/monedas/comboCount/gameState` + `shop.shieldActive/magnetTimer` + `enemies.list/boss`) + `World.validate()` itera SCHEMA vía `World.get` y `assert` si `DEBUG`, `World.enableDebug/disableDebug`, `World.set` wrapper con `assert` tipo si `DEBUG`; `main.lua` `love.load` `if World.DEBUG then pcall(World.validate)`; `test_core` PASS compat (DEBUG false no aserta)
-
-### Futuro (Phase 9 prep)
-
-- [x] **P14 — Fixed timestep 60Hz desacoplado + test zero-allocation** (`accumulator` loop, `collectgarbage` Δ0KB en 3600 frames) — Branch: `feat/phase9-prep` (P14) — **Completado 2026-09-04 16:00 America/Bogota (consola-only)**: `main.lua` `FIXED_DT=1/60` + `accumulator` + `MAX_ACCUMULATOR=0.25` + `while accumulator>=FIXED_DT do states.update(FIXED_DT) end` desacoplado de Hz, `world.state.time` avanza `FIXED_DT` por tick, `love.draw` con `getDelta` variable pero lógica fija 60Hz, test `collectgarbage` 3600 frames Δ0KB
-- [x] **P15 — Hook half-res FBO + Voronoi fracture** (`reflectionCanvas W/2 H/2`, shader Voronoi flag `ENABLE_VORONOI=false`) — Branch: `feat/phase9-prep` (P15) — **Completado 2026-09-04 16:00 America/Bogota (consola-only)**: `core/config.lua` `ENABLE_VORONOI=false` + `VORONOI_SCALE=8` + `REFLECTION_SCALE=0.5`, `render/shaders.lua` `SRC_VORONOI` (hash2+voronoi+progress), `canvasReflection` `RW= W*0.5` `RH= H*0.5` half-res + `shVoronoi` tryShader solo si `ENABLE_VORONOI`, `getCanvases/getShaders` incluyen `reflection/voronoi`, `releaseCanvases/setFilter/recreateCanvases` manejan `canvasReflection` 0 costo si flag off
-
-> Verificación global por propuesta: `love .` 5s en MENU→PLAYING con boss (food 15), `error.log` 0 bytes, suite relevante PASS, `TDD` §1 actualizado, `ROADMAP` milestone y `CHANGELOG` con timestamp `America/Bogota`.
-
-## Backlog — GDD §21 (80 Propuestas del Socio Técnico)
-Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (sin análogo previo) o **[solapa → ref]** (refina una especificación existente; la fuente canónica se conserva).
-- [ ] **B1 Feedback & Game Feel (§21.1)** — Causa de muerte explícita, replay lento al morir, amenaza en bordes, escala de amenaza por color, pitch de combo, flash de comidas activas, HUD defensas segmentado, ghost frame con reloj radial, preview Autotomy, acorde de cadena, timer de racha, campana de última defensa, distinción de estados defensivos, hundimiento de tiles, barra de botín del boss, zoom-out de jefes, resolución por sala, modo eco.
-- [ ] **B2 Contenido & Variedad (§21.2)** — Templates Cruz/Espiral/Laberinto, cofres de tributo, muros vivos, cofre que huye, enemigo mimic, comida canguro, orbes de purga, muros reflectores Void, spawner constelación, arena dinámica del boss, élite 2x2 rara, interruptores de piso, frutas por bioma, enemigo parásito, salas de memoria, boss alternativo etapa 3, objetos ambientales, comida-llave, oleadas con respiro, salidas duales.
-- [ ] **B3 Meta-Persistencia-Rejugabilidad (§21.3)** — Mejor sala por etapa, leaderboard por modo, historial 20 runs + JSON, ver semilla, prestigio de perfil, contratos con skin, Trial de corazones, racha de etapas, colección de runas, bonus clean run, skin por run, desafíos por enemigo, partida 10 min, torneo hot-seat, ficha de sala en Códice, highestCombo, apuestas post-etapa, orden semanal de minis, stats de tienda, logros ocultos.
-- [ ] **B4 Arquitectura-UX-Accesibilidad (§21.4)** — Event bus, timers consolidados, presets de dificultad, escalado UI, perfilado runtime, escritura atómica profiles.dat, asset manager, alto contraste, reducción de movimiento, tooltips de tienda, reanudar run, metrónomo de grid, smoke tests headless, escena de estrés, tweaks avanzados, contrato de API, schema_version de perfil, i18n con fallback, input centralizado, guía DX.
-- [x] **Resolver duplicados de las 80 propuestas**: cruce completado contra catálogo visual (§20) y consolidación canónica ejecutada en GDD §20/§21 y TDD §10.23-10.25 (17:08:2026).
-
-## Chaser AI (100% implementado)
-- [x] Implement `entities/chaserAI.lua` (updatePack + step, estados IDLE/CHASE/FLANK/ENCIRCLE/CIERRE)
-- [x] Implement social modes: SOLO, DUPLA y MANADA (anillo + ciclo de cierre)
-- [x] Navigation: evasión de obstáculos/cuerpo, tie-break shuffle y spread penalty
-- [x] Criterio de cierre del anillo por ocupación del 60% de slots en MANADA
-- [x] Escalado por etapa (0.90^(etapa-1), clamp 0.15s) + paso de ctx enriquecido a enemies.update
-- [x] Boss: flank respawn en pendingRespawns (lados alternados) + cap fuerza DUPLA
-- [x] Visual: Estrella de espinas con IDLE/CHASE/FLANK/ENCIRCLE/CIERRE y halos de promoción en `enemiesDraw.lua`
-- [x] Config keys CHASER_* en core/config.lua
-- [x] GDD sección 3: subsecciones Chaser, Patroller y Spawner completas
-
-## Completed
-- [x] Restauración y garantía de audio continuo en el juego (reinicio automático de streaming en bucle, orden seguro de seek/play, verificación de estado isPlaying en gamestates y feedback de SFX en botones del menú) en `audio/sound.lua`, `systems/gamestates.lua`, `ui/menuUI.lua` y `main.lua` (14:08:2026)
-- [x] Corrección integral de bugs del sistema de audio y música (toggles de música y SFX respetados en todas las transiciones, volumen maestro en OpenAL, detección de racha musical comboEnter/comboLoop sin sobreescritura, y prevención de fuentes huérfanas) en `audio/sound.lua` y `systems/gamestates.lua` (14:08:2026)
-- [x] Cinemática de inicio fluida y continua (eliminado el salto de diamante/título de 3.0s con interpolación *Ease-Out Cubic*, revelación orgánica del logo y cascada escalonada de botones) en `ui/introUI.lua`, `ui/menuUI.lua` y `render/renderMain.lua` (14:08:2026)
-- [x] Rediseño visual del Menú Principal (*Balatro Style — Cristal & Oro*) con logo rombo de fondo, tipografía limpia y botones dorados sin superposiciones en `ui/introUI.lua` y `ui/menuUI.lua` (14:08:2026)
-- [x] Corrección de fuga de bloom/glow y sombra durante la pantalla negra de transición "SALA COMPLETADA" en `render/renderMain.lua` (14:08:2026)
-- [x] Implementación completa y pulido de IA de Chaser (todas las fases) (14:08:2026)
-- [x] Corrección integral y pulido de Patrollers (rebote en obstáculos/paredes/boss/enemigos sin deadlock, spawns con orientación a lo largo de corredores, caps de boss en generar, logros en bomba, y corrección de colisión letal sin recompensas falsas) (14:08:2026)
-- [x] Auditoría integral de bugs corregida (colisiones patroller, ítem hambre, flash mouse tienda, nil guard en logros, eliminación de fuga global mundoCompletado, código duplicado y caché de fuentes para 60 FPS sin GC churn) (14:08:2026)
-- [x] Input Buffer (cola 2 giros) + prevención anti-180° + muestreo de tecla sostenida en `entities/snake.lua` y `core/touch.lua` (14:08:2026)
-- [x] Split ui/ui.lua (818 -> 119 lines facade) into ui/introUI.lua, ui/menuUI.lua, ui/hudUI.lua, ui/toastsUI.lua, ui/popupsUI.lua, ui/overlaysUI.lua; facade mantiene estado/fuentes + resetPopups(); API publica intacta; smoke test 26 checks PASS (08:08:2026)
-- [x] Split main.lua (1407 -> 359 lines) into systems/player.lua, systems/gameflow.lua, systems/debugTools.lua, systems/gamestates.lua, render/renderMain.lua (08:08:2026)
-- [x] Fix core/timers.lua: reserved word `repeat` used as field -> renamed to `loops` (syntax error blocked module load) (08:08:2026)
-- [x] Replace print() calls with core/logger.lua usage across modules (08:08:2026)
-- [x] Split files >500 lines into facade + submodules (17:08:2026): `world/world.lua` (675) -> facade (122) + `world/dungeonGen.lua` (355) + `world/populate.lua` (193); `systems/profiles.lua` (794) -> facade (344) + `systems/profilesDraw.lua` (509); `systems/settings.lua` (589) -> facade (373) + `systems/settingsDraw.lua` (261). `entities/enemies.lua` (520) left intact (optional, no clean split). Delegate via AGY CLI + independent headless `error.log` verification. Fixes applied: duplicate broken `world.getStageMod()` in dungeonGen.lua (nil-global crash), shattered `settings.close()` body + duplicate `settings.audio/graphics/accessibility` table redefinition.
-- [x] Limpieza recomendada 23:08:2026: `ui/menuUI.lua` 683 → facade 205 + `ui/menuLogo.lua` 129 + `ui/menuCard.lua` 214; `systems/debugTools.lua` 503 → 196 + `systems/debugLogo.lua` 189; `render/shaders.lua` 535→496 dedup SRC_BLUR; `LICENSE` MIT creado; `love .` verificado 0 errores tras cada split.
-
-## Completed (Fase 3)
-- [x] Migrate legacy globals to World-managed state (puntuacion, monedas, comboCount, gameState, fade*, transition*, debug*, menuPS, celebrationTimer, debugButtons) (08:08:2026)
-
-## Completed (Fase 2)
-- [x] core/config.lua centralized config; constants.lua as shim (08:08:2026)
-- [x] core/logger.lua (Log.info/warn/error/debug) created (08:08:2026)
-- [x] core/timers.lua timer manager created and wired to love.update (08:08:2026)
-
-## High Priority
-- [x] Create LICENSE file (MIT mentioned in README but missing) — creado `LICENSE` 23:08:2026 (refactor limpieza)
-- [x] Add remaining font sizes documentation (28/16/11/8) — documentado en TDD §9 (17:08:2026)
-
-## Medium Priority
-- [ ] Balance tuning for boss encounter (food target = 15)
-- [ ] Add more room variety (currently 7 templates)
-- [ ] Performance profiling for large rooms
-- [ ] Add controller support documentation
-- [ ] **Follow-up Mini-Bosses (deuda GDD §5, ver TDD §10.10)**: Wyrm como 6 segmentos destruibles individualmente (hoy 1 entidad hp 6); Red Pegajosa que bloquee giros rápidos (hoy 3x3 slime); daño directo de contacto en Crusher/Wyrm; variante élite-chaser con `ELITE_*MULT` + cofre dorado (hoy la sala 3 la ocupa el mini-jefe)
-- [ ] **Deuda splits fase 8 (detectada 2026-09-07, archivos sobre el límite 500L)**: `playing.lua` 999L, `settingsDraw.lua` 647L, `player.lua` 622L, `timers.lua` 536L, `dungeonGen.lua` 530L, `enemiesDraw.lua` 508L, `profilesDraw.lua` 511L, `main.lua` 556L (residual conocido: `persistence.lua` 862L, `shaders.lua` 652L)
-
-## Low Priority
-- [ ] Consider adding new enemy types
-- [ ] Consider adding new boss attacks
-- [ ] Localization support
-- [ ] Steam integration research
 
 ## Completed (Base)
 - [x] File reorganization into 8 system folders (08:08:2026)
@@ -336,6 +12,180 @@ Referencia canónica: `docs/GDD.md §21`. Cada ítem indica si es **[NUEVA]** (s
 - [x] Shader pipeline (bloom, CRT, shadow, heat)
 - [x] Sound system with segmented music
 
+**Última actualización**: 22:09:2026 (America/Bogota)  
+**Estado general**: 813 tests aprobados (100% PASS), `error.log` 0 bytes, Cero-Deuda Estructural (<500L/archivo).  
+**Fuente canónica de backlog unificado**: Este documento consolida el plan de sprints activos y la matriz maestra de las 100 propuestas técnicas.  
+**Archivo histórico de planes y notas transitorias**: Consultar [`docs/archive/`](archive/).
+
 ---
-*Last updated: 2026-09-10 (Rama B balance/shop-dynamic-pricing - SHOP_STAGE_PRICE_MULT + scope_28, suite 704/684 PASS, 20 pre-existentes, boot headless 14/14)*
-*Last updated: 2026-09-10 (Rama A chore/tarot-full-removal - eliminacion total TAROT, scope_23 21 tests, suite 690/670 PASS, 20 pre-existentes, boot headless 14/14)*
+
+## 1. Sprint Activo en Desarrollo
+
+### 🔄 Sprint 2: Modo Boss Rush, Sinergias del Códice y Mecánicas Avanzadas
+- [ ] **Rediseño de Progresión: Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
+  - [ ] Implementar campos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` en `core/world.lua` (`World.SCHEMA`).
+  - [ ] Reemplazar la condición por puntaje de `playingPickups.lua` por el control de tiempo y oleadas.
+  - [ ] Preservar el rol de la comida para economía, combo y habilidades especiales (sin reducción de tiempo).
+  - [ ] Función `populate.spawnWave` con telegrafiado seguro de 0.8s en celdas libres.
+  - [ ] Adaptar la cabecera superior en `ui/hudSouls.lua` con contador de oleada y micro-barra de tiempo.
+  - [ ] Añadir bonificación de "Limpieza Total" (+20$) al superar la sala eliminando todos los enemigos.
+- [ ] **Modo Boss Rush (Propuesta #47 / GDD §11)**:
+  - [ ] Añadir modo `"boss_rush"` a `systems/modes.lua` y botón interactivo en Santuario (`systems/shrineDraw.lua`).
+  - [ ] Secuenciación de salas en `systems/gameflow.lua`: encadenar los 5 mini-jefes de sala 3 y el Boss final con visitas intermedias a la tienda.
+- [ ] **Tooltips e Indicadores de Sinergia en Tienda (Propuesta #33 / GDD §18.2)**:
+  - [ ] Pre-indexar matriz de adyacencia de sinergias en `systems/codex.lua` ($O(1)$ sin generar basura en el frame loop).
+  - [ ] Renderizado en `systems/shopDraw.lua` de sinergias activas o potenciales al posar el cursor sobre un ítem en venta.
+- [ ] **Sierpe Volcánica (Magma Wyrm) Multi-Segmento (Propuesta #14 / GDD §5)**:
+  - [ ] Modular en `entities/minibossWyrm.lua` (para mantener `entities/enemyMiniBoss.lua` <500L).
+  - [ ] 6 segmentos físicos independientes con 1 HP cada uno, destruibles mediante cabezazos tácticos o bombas.
+- [ ] **Highlight Visual de Lazo Constrictor (Propuesta #5)**:
+  - [ ] Pulso lumínico sobre el polígono cerrado al tocar la cabeza con la cola antes de la onda de estrangulamiento.
+- [ ] **Motor de Eventos Aleatorios Mixtos por Bioma (GDD §19.2 / TDD §10.27)**:
+  - [ ] Implementar `activeEvent`, `activeEventTimer`, `activeEventData` en `core/world.lua`.
+  - [ ] Crear módulo desacoplado `systems/eventsEngine.lua` con pools Zero-GC de amenazas por bioma.
+  - [ ] Diseñar telegrafiado seguro de 1.0s para los 10 eventos dinámicos en combate (E-01 a E-10) con aislamiento de salas de Boss/Mini-jefe.
+  - [ ] Integrar los 10 micro-eventos de decisión táctica interactivos en pedestales rúnicos (D-01 a D-10).
+- [ ] **Eventos Aleatorios de Sala E1–E7 (GDD §22 / TDD §10.31, solo spec 22:09:2026)**:
+  - [ ] Crear módulo data-driven `systems/roomEvents.lua` (E1 lluvia de oro, E2 caza mayor, E3 mercader, E4 eclipse, E5 duelo, E6 réplica, E7 ofrenda) con `EVENT_CHANCE = 0.25`, vetos élite/boss/misterio y 1 evento máximo por sala.
+  - [ ] Faseo: E1+E2+E3 con asedio E+B; E4+E5 con Sprint 2; E6+E7 en Phase 9.
+- [ ] **Eventos E8–E14 riesgo-recompensa (GDD §22.3–§22.5 / TDD §10.32, solo spec 22:09:2026)**:
+  - [ ] IDs `blood_roulette`, `hunter_fever`, `shadow_pact`, `cursed_chest`, `void_debt`, `split_heart`, `total_eclipse` con vetos por fase/mutador, saldo negativo E12 y bypass Fénix E14.
+  - [ ] Refinamiento E1–E7 aplicado en spec (EV, timers, umbrales).
+- [ ] **Verificación y Pruebas Unitarias**:
+  - [ ] Crear `tests/test_scope_41_sprint2.lua` (scope_40 ocupado por harness Zero-GC R-5) cubriendo Boss Rush, sinergias, Sierpe, asedio E+B y eventos E1–E7.
+  - [ ] Mantener 0 fallos en tests automatizados y `error.log` en 0 bytes.
+
+---
+
+## 2. Matriz Maestra de las 100 Propuestas de Evolución
+
+A continuación se presenta el estado de implementación de las 100 propuestas de evolución arquitectónica y jugable.
+
+### 2.1 Gameplay & Combate (Propuestas 1–12)
+- [x] **#1 Ghost Frame con Indicador Visible**: Micro-barra segmentada sobre la cabeza con cuenta regresiva en décimas Zero-GC (`entities/snake.lua`).
+- [ ] **#2 Previsualizador de Autotomía (`Q`)**: Línea punteada que proyecta la celda del señuelo antes de soltar la tecla (`entities/snake/abilities.lua`).
+- [ ] **#3 Input Buffer Ramp-Up ($0.03\text{s}$)**: Filtrar micro-pulsaciones parásitas de $<0.03\text{s}$ en giros cerrados (`entities/snake/movement.lua`).
+- [ ] **#4 AABB Pre-Filter en Constrictor Loop**: Caja delimitadora previa a Ray Casting poligonal en colas de >20 segmentos (`entities/snake/collisions.lua`).
+- [ ] **#5 Highlight de Lazo Cerrado**: Pulso lumínico instantáneo sobre el polígono cerrado en el tick de conexión (`render/particles.lua`).
+- [ ] **#6 Distinción Visual de Capas Defensivas**: Halos cromáticos diferenciados (Escudo cian, Armadura cobalto, Ghost blanco) (`render/renderMain.lua`).
+- [ ] **#7 Campana de Última Defensa**: Golpe de campana sordo y flash perimetral rojo al romper la última protección (`audio/sound.lua`).
+- [ ] **#8 Comida Canguro (Jumping Food)**: Fruta que salta a celda libre al acercarse la cabeza a radio 1 (`entities/food.lua`).
+- [ ] **#9 Comida Mimic Sorpresa**: Fruta con 2% de probabilidad de emboscada enemiga (`entities/food.lua`).
+- [ ] **#10 Frutas Especiales Autóctonas por Bioma**: Mora de Escarcha y Guindilla Magmática nativas por región (`entities/food.lua`).
+- [ ] **#11 Metrónomo Táctico de Grid**: Indicador rítmico opcional en el HUD pulsando al compás de `moveInterval` (`ui/hudUI.lua`).
+- [ ] **#12 Frenado Progresivo en Celdas de Baba**: Deceleración suave interpolada en lugar de salto rígido (`entities/snake/movement.lua`).
+
+### 2.2 Enemigos & Jefes (Propuestas 13–22)
+- [ ] **#13 Líneas de Visión Tenues en Chasers**: Conos tenues orientados clarificando roles Hunter y Flanker (`render/enemiesDraw.lua`).
+- [ ] **#14 Wyrm Volcánico Segmentado (6 HP)**: 6 segmentos destruibles uno a uno mediante cabezazos tácticos (`entities/minibossWyrm.lua`).
+- [ ] **#15 Red Pegajosa de Reina del Enjambre**: Telaraña que restringe giros a 90° durante 2.0s (`entities/enemyMiniBoss.lua`).
+- [ ] **#16 Patrulleros con Rastro de Ruta Proyectada**: Nodos tenues 3 celdas por delante de la ruta de patrullaje (`render/enemiesDraw.lua`).
+- [ ] **#17 Enemigo Parásito de Cola**: Dron que se acopla a la cola aumentando peso hasta ejecutar Tail Snap (`entities/enemies.lua`).
+- [ ] **#18 Spawner en Constelación**: Patrones geométricos sincronizados (diamantes, murallas en L) (`entities/enemySpawnLogic.lua`).
+- [ ] **#19 Arena Dinámica de Jefe Final**: Hilera perimetral electrificada cada 15s forzando combate central (`entities/enemyBossLogic.lua`).
+- [ ] **#20 Boss Alternativo en Etapa 3**: Probabilidad de combate dual coordinado de dos mini-jefes (`world/dungeonGen.lua`).
+- [ ] **#21 Animación de Anticipación de Salto en Minis**: Squash de 0.3s antes de embestidas pesadas (`render/enemiesDraw.lua`).
+- [ ] **#22 Orbe Central Pulsante en Spawners**: Núcleo cristalino que acelera pulso previo a spawn (`render/enemiesDraw.lua`).
+
+### 2.3 Mazmorra & Biomas (Propuestas 23–32)
+- [x] **#23 Templates Cruz, Espiral y Laberinto**: 3 plantillas complejas con reglas propias (`world/wallPatterns.lua`, scope_38).
+- [ ] **#24 Cofres de Tributo (Ruleta de 3)**: Sala especial con 3 cofres (1 trampa y 2 legendarios) (`systems/mystery.lua`).
+- [ ] **#25 Muros Vivos Regenerantes**: Obstáculos que se regeneran tras 8 segundos (`entities/obstacles.lua`).
+- [ ] **#26 Interruptores de Presión para Salas Secretas**: Baldosa oculta que abre cámara secreta (`world/biomeHazards.lua`).
+- [ ] **#27 Muros Reflectores en Void Sanctuary**: Rebote especular de proyectiles en monolitos del vacío (`entities/enemyAttackRegistry.lua`).
+- [ ] **#28 Salidas Duales de Sala**: Dos compuertas de salida al cumplir objetivo (recompensa vs desafío) (`systems/gameflow.lua`).
+- [ ] **#29 Hundimiento Háptico de Pinchos de Presión**: Animación de descenso de losetas durante recarga (`world/biomeHazards.lua`).
+- [ ] **#30 Salas Élite de Respiro por Oleadas**: 3 oleadas separadas por respiro de 2.0s (`world/populate.lua`).
+- [ ] **#31 Niebla de Visión Dinámica en Túnel**: Máscara con gradiente alfa radial suave (`render/renderMain.lua`).
+- [ ] **#32 Decoración Orgánica Dinámica por Bioma**: Telarañas y micro-estalactitas decorativas sin colisión (`render/renderMain.lua`).
+
+### 2.4 Economía & Ítems (Propuestas 33–42)
+- [ ] **#33 Tooltips Dinámicos con Sinergias en Tienda**: Panel flotante con recetas de sinergia en tienda (`systems/shopDraw.lua`).
+- [x] **#34 Curva de Inflación y Descuentos en Tienda**: Escala de precios por etapa `SHOP_STAGE_PRICE_MULT` (scope_28).
+- [ ] **#35 Animación de Monedas Voladoras al Comprar**: Partículas parabólicas desde HUD hacia vendedor (`systems/shopDraw.lua`).
+- [ ] **#36 Ítem Activo: Péndulo del Tiempo**: Congela enemigos 2.0s manteniendo velocidad completa (`systems/items.lua`).
+- [ ] **#37 Ítem Pasivo: Ojo de Basilisco**: Ralentiza 40% a enemigos en línea frontal de 4 casillas (`systems/items.lua`).
+- [ ] **#38 Ítem Pasivo: Piel de Adamantio**: 1.0s de invulnerabilidad dorada tras romper escudo (`systems/items.lua`).
+- [ ] **#39 Reroll Especial en Tienda con Token**: Consumible con oferta garantizada Tier S (`systems/shop.lua`).
+- [ ] **#40 Sinergia Especial: Lazo Explosivo**: Lazo con Baya Constrictora y Bomba detona micro-explosiones (`entities/snake/collisions.lua`).
+- [ ] **#41 Stats de Inversión Financiera en Perfil**: Registro de retorno en puntuación por ítem (`systems/persistence.lua`).
+- [ ] **#42 Comida-Llave de Bóveda**: Fruto dorado místico que abre cámara de 3 cofres (`entities/food.lua`).
+
+### 2.5 Meta-Progresión & Modos (Propuestas 43–52)
+- [x] **#43 Árbol de Talentos del Santuario (Shrine UI)**: Pantalla interactiva en Santuario con 8 talentos (scope_34).
+- [x] **#44 Mazmorra Diaria con Semilla Determinista**: Semilla YYYYMMDD y bloqueo estricto de un intento diario (scope_39).
+- [x] **#45 Códice de la Serpiente y Bestiario**: Álbum de lectura con bestiario y sinergias (`systems/codex.lua`, scope_37).
+- [x] **#46 Tablón de Cazarrecompensas (Bounties)**: Contratos activos por expedición con recompensas (`systems/bounty.lua`, scope_35).
+- [ ] **#47 Modo de Juego: Boss Rush**: Consecución directa de los 5 mini-jefes y Boss final (`systems/modes.lua`).
+- [x] **#48 Modo de Juego: Pacifista Táctico**: Modo sin daño directo con avance por evasión pura (`systems/modes.lua`, scope_36).
+- [x] **#49 Modo de Juego: Abismo Sin Fin (Endless)**: Partida infinita con escalado dinámico continuo (`systems/modes.lua`, scope_36).
+- [x] **#50 Catálogo de Skins de la Serpiente**: Registro Zero-GC con 4 apariencias desbloqueables por logros (`systems/skinRegistry.lua`).
+- [ ] **#51 Nivel de Prestigio de Perfil**: Reinicio voluntario para cosméticos de élite (`systems/profiles.lua`).
+- [ ] **#52 Historial Detallado de Últimas 20 Runs**: Resumen histórico persistente exportable a JSON (`systems/profilesDraw.lua`).
+
+### 2.6 UI, UX & Feedback (Propuestas 53–64)
+- [x] **#53 Causa de Muerte Explícita en Modal**: Icono y causa fatal exacta con número de sala (`ui/overlaysUI.lua`, scope_39).
+- [ ] **#54 HUD de Defensas por Segmentos Rotos**: Placas o gemas animadas que se agrietan (`ui/hudUI.lua`).
+- [ ] **#55 Indicador de Amenaza en Bordes de Pantalla**: Chevrons pulsantes advirtiendo proyectiles entrantes (`ui/hudUI.lua`).
+- [ ] **#56 Contador de Combo con Shake Dinámico**: Oscilación senoidal proporcional al combo activo (`ui/hudUI.lua`).
+- [ ] **#57 Score Popups con Trayectoria Parabólica**: Textos flotantes con física parabólica suave (`ui/hudUI.lua`).
+- [ ] **#58 Cursor de Ratón Personalizado Reactivo**: Puntero pixel art temático con destellos interactivos (`ui/ui.lua`).
+- [x] **#59 Barra de Vida de Boss Segmentada en Gemas**: Cabecera épica 8.1 con gemas y alerta de Enrage (`ui/hudUI.lua`).
+- [ ] **#60 Minimapa con Iconografía Diferenciada**: Glifos exclusivos para salas élite, tiendas y jefes (`ui/overlaysUI.lua`).
+- [ ] **#61 Feedback de Near-Miss (Esquiva al Límite)**: Micro-ralentización de 2 frames y chispas al rozar peligro (`systems/gamestates/playing.lua`).
+- [ ] **#62 Toasts con Despliegue de Pergamino**: Notificaciones desplegables animadas estilo cyberpunk (`ui/toastsUI.lua`).
+- [ ] **#63 Reloj de Racha de Supervivencia en HUD**: Medidor visual del multiplicador de supervivencia (`ui/hudUI.lua`).
+- [ ] **#64 Transición de Sala por Dither Wipe**: Disolución en damero pixelado retro (`render/renderMain.lua`).
+
+### 2.7 Renderizado & Shaders (Propuestas 65–74) — Fase 9
+- [ ] **#65 Foco Cónico Frontal en la Cabeza**: Iluminación dinámica 2D orientada desde la serpiente (`render/shaders.lua`).
+- [ ] **#66 Sombras Arrojadas 2D (Drop Shadows a 45°)**: Proyección diagonal bajo serpiente y enemigos (`render/renderMain.lua`).
+- [ ] **#67 Bloom Selectivo con Threshold (>0.8)**: Glow restringido a fuentes de alta intensidad (`render/shaders.lua`).
+- [ ] **#68 Shader de Fractura Voronoi en Game Over**: Pantalla que se resquebraja como cristal templado al morir (`render/shaders.lua`).
+- [ ] **#69 Reflejos Especulares en FBO Half-Res**: Canvas a mitad de resolución para reflejos en hielo y agua (`render/shaders.lua`).
+- [ ] **#70 Oclusión Ambiental en Vértices de Paredes**: Sombreado de contacto en esquinas de mazmorra (`render/renderMain.lua`).
+- [ ] **#71 Aberración Cromática Dinámica en Shake**: Separación de canales RGB en impactos masivos (`render/shaders.lua`).
+- [ ] **#72 Micro-Animación de Squish & Stretch**: Compresión y elongación según aceleración (`entities/snake.lua`).
+- [ ] **#73 Bulto de Digestión Visible (Swallowing Bulge)**: Dilatación ondulante que recorre el cuerpo al comer (`render/renderMain.lua`).
+- [ ] **#74 Distorsión Térmica en Lava (Heat Haze)**: Calor confinado estrictamente sobre los charcos de magma (`render/shaders.lua`).
+
+### 2.8 Audio & Música (Propuestas 75–82) — Fase 9
+- [ ] **#75 Capas Musicales Reactivas (Stems Dinámicos)**: Pistas instrumentales que entran según tensión y combo (`audio/sound.lua`).
+- [ ] **#76 Pitch Escalonado Progresivo en Combo**: Escala musical ascendente en el SFX de comida (`audio/sound.lua`).
+- [ ] **#77 Acorde Armónico en Muertes de Constrictor**: Notas simultáneas formando acorde al cerrar lazo (`audio/sound.lua`).
+- [ ] **#78 Puntero Sonoro Estéreo para Comida**: Audio cue direccional de accesibilidad auditiva (`audio/sound.lua`).
+- [ ] **#79 Feedback Sonoro Diferenciado por Sala**: Fanfarria de victoria según tipo de sala superada (`audio/sound.lua`).
+- [ ] **#80 Filtro Paso-Bajo (Low-Pass) al Pausar**: Atenuación de frecuencias agudas en pausa o menú (`audio/sound.lua`).
+- [ ] **#81 Reverberación Acústica por Bioma**: Modulación de reverberación OpenAL por bioma (`audio/sound.lua`).
+- [ ] **#82 SFX Exclusivo de Armadura vs Escudo**: Impacto metálico seco vs fractura cristalina (`audio/sound.lua`).
+
+### 2.9 Arquitectura & Deuda Técnica (Propuestas 83–90)
+- [x] **#83 División de Módulo Monolítico: `playing.lua`**: Desacoplado en fachada + combat + pickups + events (<400L) (scope_18).
+- [x] **#84 División de Módulo: `persistence.lua`**: Desacoplado en códec, perfiles y settings (<484L) (AUD-3).
+- [x] **#85 División de Módulo: `settingsDraw.lua`**: Desacoplado en fachada + widgets + input (<320L) (AUD-3).
+- [x] **#86 Migración Final de Variables Globales**: 100% de variables encapsuladas en `World.state` (AUD-1 / P04).
+- [x] **#87 Contrato de API y Esquema Tipado**: `World.SCHEMA` con validación estricta de 13 campos clave (`core/world.lua`).
+- [x] **#88 Consolidación de Bus de Eventos**: Sistema reactivo con `core/events.lua` para logros y persistencia (P06).
+- [x] **#89 Modularización por Sistemas (Mini-ECS)**: Separación estricta de datos en World y lógica en sistemas (`systems/`).
+- [x] **#90 Saneamiento de Mocks Pre-existentes**: 20 fallos históricos resueltos (752/752 PASS, hoy 811/811 PASS).
+
+### 2.10 Accesibilidad, Controles & Packaging (Propuestas 91–100)
+- [ ] **#91 Integración Nativa de Gamepad & Thumbsticks**: Mapeo completo en `core/input.lua` con zonas muertas y D-pad.
+- [ ] **#92 Soporte de Vibración Háptica (Rumble)**: Vibración táctica en mandos en cabezazos y explosiones (`core/input.lua`).
+- [ ] **#93 Paletas de Daltonismo**: Modos Protanopía, Deuteranopía y Tritanopía en Ajustes (`render/shaders.lua`).
+- [ ] **#94 Interruptor Maestro de Reducción de Movimiento**: Conmutador para apagar shakes y distorsiones (`systems/settings.lua`).
+- [ ] **#95 Reasignación Completa de Teclas (Custom Keybinds)**: Panel de configuración de teclas en pantalla (`systems/settingsDraw.lua`).
+- [x] **#96 Test de Memoria Zero-Allocation (60s)**: Harness headless de 3,600 frames verificando Δ0KB (`test_scope_33_zerogc.lua`).
+- [ ] **#97 Benchmark y Escena de Estrés en Menú Debug**: Escena pesada para medir frametime en consola Tab (`systems/debugTools.lua`).
+- [ ] **#98 Monitor de Rendimiento en HUD**: Gráfico de frame time y memoria en esquina (`ui/hudUI.lua`).
+- [ ] **#99 Integración Continua con GitHub Actions**: Workflow headless en `.github/workflows/ci.yml`.
+- [ ] **#100 Generación de Builds Multiplataforma**: Scripts automatizados para empaquetar Windows, Linux y macOS.
+
+---
+
+## 3. Resumen Histórico de Fases Cerradas
+
+- **Sprint 1 (Cierre de Experiencia Fase 8 — 21:09:2026)**: Causa de muerte explícita en modal, micro-barra Ghost Frame Zero-GC, catálogo de 4 skins y bloqueo diario. (811/811 PASS).
+- **Review Deuda Residual (22:09:2026)**: Sincronización de mapa de objetivos en templates Cruz/Espiral/Laberinto, fallback de cabezazos a `HEADBUTT_MAX_DMG=5`, unificación de costo de revive dinámico y validación EV en tienda. (800/800 PASS).
+- **Fase 8.5 — Saneamiento Estructural (31:08:2026 – 04:09:2026)**: P01 a P15 completadas. Desmonolitización de `snake.lua`, `enemies.lua`, `gamestates.lua`, pools de ataques, desacople de `World.state`, Event Bus, timers centralizados y fixed timestep a 60Hz.
+- **Fases 1 a 7 (08:08:2026 – 23:08:2026)**: Arquitectura base de 18 módulos, loop de 7 estados, items y tienda, perfiles y logros, shaders básicos, intro Balatro y diseño del Menú Principal asimétrico.

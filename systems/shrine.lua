@@ -45,7 +45,7 @@ function shrine.buffDuration(dur, kind)
     return d
 end
 function shrine.reviveCost()
-    local base = constants.REVIVE_COIN_COST or 30
+    local base = constants.REVIVE_COIN_COST or constants.REVIVE_COST or 30
     local r = shrine.rank("mercy_pact")
     if r >= 2 then return math.max(0, base - 10) end
     if r >= 1 then return math.max(0, base - 5) end

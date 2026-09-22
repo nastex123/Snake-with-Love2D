@@ -50,7 +50,8 @@ if pcall(require, "tests.test_scope_35_bounty") then end
 if pcall(require, "tests.test_scope_36_modes") then end
 if pcall(require, "tests.test_scope_37_codex") then end
 if pcall(require, "tests.test_scope_38_templates") then end
-if pcall(require, "tests.test_scope_39_daily") then end
+if pcall(require, "tests.test_scope_39_sprint1") then end
+if pcall(require, "tests.test_scope_40_zerogc_stress") then end
 
 -- Source files for full coverage reporting
 local source_files = {
@@ -112,6 +113,7 @@ local source_files = {
     "systems/shrineUI.lua",
     "systems/bounty.lua",
     "systems/modes.lua",
+    "systems/skinRegistry.lua",
     "systems/codex.lua",
     "systems/codexUI.lua",
     "systems/daily.lua",

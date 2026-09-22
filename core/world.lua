@@ -330,6 +330,7 @@ World.SCHEMA = {
     skin = "string",
     dailySeed = "number",
     bounties = "table",
+    deathCause = "string",
 }
 
 function World.enableDebug()

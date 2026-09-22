@@ -26,7 +26,25 @@ function shrineUI.draw()
             modeInfo.list[#modeInfo.list + 1] = {id = id, unlocked = modesMod.isUnlocked(id, p)}
         end
     end
-    shrineUI._rects = draw.draw(shop.balance(), p and p.talents, modeInfo)
+    local skinInfo = nil
+    local okSkins, skinRegistry = pcall(require, "systems.skinRegistry")
+    if okSkins and skinRegistry then
+        local okW, worldm = pcall(require, "core.world")
+        local curSkin = (okW and worldm.get("skin")) or (p and p.skin) or "neon"
+        if curSkin == "classic" then curSkin = "neon" end
+        skinInfo = {current = curSkin, list = {}}
+        for _, id in ipairs(skinRegistry.LIST) do
+            local def = skinRegistry.getDef(id)
+            skinInfo.list[#skinInfo.list + 1] = {
+                id = id,
+                name = def.name,
+                unlocked = skinRegistry.isUnlocked(id, p),
+                colorHead = def.colorHead,
+                colorBody = def.colorBody
+            }
+        end
+    end
+    shrineUI._rects = draw.draw(shop.balance(), p and p.talents, modeInfo, skinInfo)
     if shrineUI._msg and shrineUI._msgTimer > 0 then
         love.graphics.setColor(1, 0.4, 0.4)
         love.graphics.printf(shrineUI._msg, 0, love.graphics.getHeight() - 60, love.graphics.getWidth(), "center")
@@ -75,6 +93,26 @@ function shrineUI.mousepressed(x, y, button)
                     if okW and worldm then worldm.set("modo", m.id) end
                     if persistence.syncModeSkin then
                         pcall(function() persistence.syncModeSkin(m.id, prof.skin) end)
+                    end
+                    local okS, sound = pcall(require, "audio.sound")
+                    if okS and sound and sound.play then pcall(function() sound.play("buttonClick") end) end
+                end
+            end
+            return true
+        end
+    end
+    for _, sk in ipairs(r.skins or {}) do
+        if inside(x, y, sk) then
+            local okP, persistence = pcall(require, "systems.persistence")
+            if okP and persistence then
+                local prof = persistence.getActiveProfile()
+                if prof then
+                    prof.skin = sk.id
+                    persistence.saveProfiles()
+                    local okW, worldm = pcall(require, "core.world")
+                    if okW and worldm then worldm.set("skin", sk.id) end
+                    if persistence.syncModeSkin then
+                        pcall(function() persistence.syncModeSkin(prof.modo, sk.id) end)
                     end
                     local okS, sound = pcall(require, "audio.sound")
                     if okS and sound and sound.play then pcall(function() sound.play("buttonClick") end) end

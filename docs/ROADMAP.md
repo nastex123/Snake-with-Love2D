@@ -89,6 +89,7 @@
 - [x] Display Pipeline & Settings Overhaul (Boot heavy resolution apply, canonical resolution schema `{w,h}`, global texture filtering via setDefaultFilter, virtual canvas downsampling with `pixelScale > 1`, backbuffer upscale in composite, physical screen resolution to CRT shader, and mouse input projection — scope_27 5 tests)
 - [x] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis — `systems/statusFx.lua`, scope_29 18 tests, 2026-09-10)
 - [x] Combate por cabezazos mini/boss (daño display-1 min x2 cap 5 + rebote/fantasma 0.8s, boss HP 12, gating elite — `systems/combatRam.lua`, scope_30, 2026-09-10)
+- [ ] Survival Waves Escalation Engine (Rediseño de salas: sustitución del fin por puntos por oleadas cronometradas escaladas por etapa + aceleración de tiempo por comida -2.5s)
 - [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
 - [x] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts, 1-attempt daily history)
 - [ ] Master Snake Skin Catalog (200+ variants, 5 primitive render engines, Zero-GC vertex buffers)

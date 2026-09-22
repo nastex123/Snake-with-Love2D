@@ -8,6 +8,15 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-22 (Rediseño y Refinamiento: Survival Waves Escalation Engine, Eventos Aleatorios & Gamefeel)
+
+- **docs** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — Especificación en `docs/GDD.md` y `docs/TDD.md`**: Actualizadas las secciones 1, 2 y 6 del GDD para plasmar el nuevo paradigma de Arena de Supervivencia por Oleadas Escalonadas (2 a 4 oleadas por sala según la etapa con duraciones fijas de $10\text{s} \dots 13\text{s}$). Se desacopla la superación de la sala respecto a la puntuación acumulada y se preserva el rol clásico de los pickups (economía, récords, combo y poderes especiales). En el TDD se redactó la sección 10.26 definiendo el esquema de datos en `World.SCHEMA` (`waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer`), el pipeline del bucle de frame en `playing.lua`, el telegrafiado de refuerzos seguros de $0.8\text{s}$ con distancia Manhattan $\ge 4$ celdas en `populate.lua` y el componente visual del HUD.
+  2. **QUE — Sistema de Eventos Aleatorios Mixtos por Bioma (`GDD §19.2` y `TDD §10.27`)**: Ampliado el catálogo a 20 eventos temáticos clasificados por los 5 biomas de etapa: 10 eventos dinámicos en combate (E-01 a E-10: Derrumbe Sísmico, Frenesí de Cosecha, Ventisca Ártica, Fragmentación de Cristal, Erupción de Géiseres, Sobrecarga Térmica, Niebla Miasmática, Eclosión de Esporas, Singularidad Gravitatoria, Tormenta de Antimateria) con telegrafiado inviolable de $1.0\text{s}$ y bonos de maestría ($+5\$$ a $+10\$$); y 10 micro-eventos de decisión táctica y riesgo (D-01 a D-10: Altar de Sangre, Sarcófago Sellado, Ídolo de Hielo Negro, Viajero Congelado, Yunque del Herrero, Pacto Ígneo, Cofre de Pandora Corrupto, Larva Reina Huérfana, Pacto de las Sombras, Fruta del Vacío Infinito). Se definió el módulo `systems/eventsEngine.lua` con pools Zero-GC y aislamiento estricto de salas de jefes.
+  3. **QUE — Boss Rush, Magma Wyrm Segmentado y Gamefeel (`GDD §2, §5, §11` / `TDD §10.33, §10.34`)**: Especificado el modo Boss Rush con secuencia cerrada de los 5 mini-jefes + boss y tienda intermedia; el mini-jefe Magma Wyrm modular de 6 vértebras destructibles de 1 HP en `entities/minibossWyrm.lua`; y el paquete de gamefeel y defensa (highlight de lazo constrictor #5, diferenciación cromática de defensas #6, campana de última defensa #7 y previsualizador de autotomía #2).
+  4. **QUE — Sincronización en `docs/ROADMAP.md` y `docs/TODO.md`**: Incorporado el hito en la Fase 8 del Roadmap y desglosado en el Sprint Activo 2 del Backlog Unificado junto con la bonificación de "Limpieza Total" (+20$) y el motor de 20 eventos por bioma.
+  5. **Verificación**: Sin cambios de código Lua; validación estática de integridad con 813/813 tests PASS y `error.log` en 0 bytes.
+
 ## 2026-09-21 (control mode fixed to classic)
 
 - **refactor** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):

@@ -246,9 +246,7 @@ function gameflow.acceptDeath()
     if persistence.closeRunToShrine then persistence.closeRunToShrine() end
     local okBoA, bountyArc = pcall(require, "systems.bounty")
     if okBoA and bountyArc then pcall(function() bountyArc.archive() end) end
-    if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
-    local isDaily = (st.modo == "daily" or st.dailySeed ~= nil)
-    if isDaily then
+    if st.modo == "daily" or st.modo == "diario" or st.dailySeed ~= nil then
         local okDaily, dailyMod = pcall(require, "systems.daily")
         local activeProf = persistence.getActiveProfile and persistence.getActiveProfile()
         if okDaily and dailyMod and activeProf then
@@ -256,6 +254,9 @@ function gameflow.acceptDeath()
             persistence.syncDailyHistory(entry)
             st.lastDailyResult = entry
             st.dailyModalOpen = true
+        end
+        if gameflow.recordDailyAttempt then
+            gameflow.recordDailyAttempt(st.puntuacion or 0)
         end
     end
     persistence.syncActiveProfile()
@@ -279,7 +280,7 @@ end
 function gameflow.revivePlayer()
     local st = world.state
     local okShrine, shrineMod = pcall(require, "systems.shrine")
-    local cost = (okShrine and shrineMod.reviveCost()) or (constants.REVIVE_COIN_COST or 30)
+    local cost = (okShrine and shrineMod.reviveCost()) or constants.REVIVE_COIN_COST or constants.REVIVE_COST or 30
     if (st.monedas or 0) < cost then return false end
 
     st.monedas = st.monedas - cost
@@ -365,6 +366,21 @@ function gameflow.recalcularGrilla()
     if st.gameOffsetY < 0 then st.gameOffsetY = 0 end
 end
 
+function gameflow.recordDailyAttempt(score)
+    local okP, persistence = pcall(require, "systems.persistence")
+    if not okP or not persistence then return end
+    local prof = persistence.getActiveProfile()
+    if not prof then return end
+    prof.dailyHistory = prof.dailyHistory or {}
+    local key = tostring(os.date("%Y%m%d"))
+    local entry = prof.dailyHistory[key] or {date = key, score = 0, timestamp = os.time()}
+    if score and type(score) == "number" then
+        entry.score = math.max(entry.score or 0, score)
+    end
+    prof.dailyHistory[key] = entry
+    persistence.saveProfiles()
+end
+
 function gameflow.startRun()
     local st = world.state
     worldMod.init()
@@ -377,6 +393,9 @@ function gameflow.startRun()
     if okBo0 and bountyRoll then pcall(function() bountyRoll.roll() end) end
     local okModes, modesMod = pcall(require, "systems.modes")
     if okModes and modesMod then pcall(function() modesMod.applyOnStart(st) end) end
+    if st.modo == "diario" then
+        gameflow.recordDailyAttempt(0)
+    end
     st.fadeAlpha = 0
     st.fadeDir = 0
     st.gameState = constants.GAME_STATE_PLAYING
@@ -393,6 +412,7 @@ function gameflow.getDailySeed(dateTbl, salt)
 end
 function gameflow.startDailyRun(dateTbl)
     local st = world.state
+    st.modo = "diario"
     local seed = gameflow.getDailySeed(dateTbl)
     st.dailySeed = seed
     worldMod.init()
@@ -405,6 +425,7 @@ function gameflow.startDailyRun(dateTbl)
     if okBo0d and bountyRollD then pcall(function() bountyRollD.roll() end) end
     local okModesD, modesModD = pcall(require, "systems.modes")
     if okModesD and modesModD then pcall(function() modesModD.applyOnStart(st) end) end
+    gameflow.recordDailyAttempt(0)
     st.fadeAlpha = 0
     st.fadeDir = 0
     st.gameState = constants.GAME_STATE_PLAYING

@@ -14,6 +14,7 @@ local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
 local statusFx = require("systems.statusFx")
+local snakeCore = require("entities.snake.core")
 local hasRam, combatRam = pcall(require, "systems.combatRam")
 if not hasRam or type(combatRam) ~= "table" then combatRam = nil end
 
@@ -119,6 +120,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     s.armor = s.armor - 1
                     return true, false
                 else
+                    snakeCore.setDeathCause("Caída al abismo del Santuario del Vacío")
                     return false, false
                 end
             else
@@ -159,6 +161,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 s.armor = s.armor - 1
                 return true, false
             else
+                snakeCore.setDeathCause("Autocolisión letal contra el propio cuerpo")
                 return false, false
             end
         end
@@ -181,6 +184,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 s.armor = s.armor - 1
                 return true, false
             else
+                snakeCore.setHazardDeath(hazardObs)
                 return false, false
             end
         end
@@ -225,6 +229,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         s.armor = s.armor - 1
                         return true, false
                     else
+                        snakeCore.setDeathCause("Colisión frontal contra monolito de piedra")
                         return false, false
                     end
                 end
@@ -279,6 +284,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         s.prismRefract = true
                     end
                 else
+                    snakeCore.setAttackDeath(ao)
                     return false, false, nil, nil, {hit = true, damage = ao.damage or 1}
                 end
             end
@@ -300,6 +306,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         local result = enemies.killEnemy(i)
                         return true, false, result
                     else
+                        snakeCore.setEnemyDeath(e)
                         return false, false, nil
                     end
                 end

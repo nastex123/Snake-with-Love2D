@@ -102,4 +102,42 @@ function core.update(s, dt)
     end
 end
 
+function core.setDeathCause(reason)
+    local okW, worldMod = pcall(require, "world.world")
+    local roomNum = 1
+    if okW and worldMod then
+        roomNum = worldMod.sala or (type(worldMod.getCurrentRoom) == "function" and worldMod.getCurrentRoom() and worldMod.getCurrentRoom().id) or 1
+    end
+    if type(roomNum) ~= "number" then roomNum = tonumber(roomNum) or 1 end
+    local causeStr = string.format("CAUSA: %s en Sala %d", reason or "Desconocida", roomNum)
+    world.set("deathCause", causeStr)
+end
+
+function core.setHazardDeath(hazardObs)
+    local hazardName = (hazardObs and hazardObs.type == "lava" and "Fisura de Magma ardiente")
+        or (hazardObs and hazardObs.type == "pressure_spike" and "Trampa de Pinchos de Presión")
+        or "Peligro ambiental letal"
+    core.setDeathCause(hazardName)
+end
+
+function core.setAttackDeath(ao)
+    local atkName = (ao and ao.type == "laser" and "Rayo Láser Perimetral del Boss")
+        or (ao and ao.type == "radial_pulse" and "Onda Expansiva del Boss")
+        or (ao and ao.type == "projectile" and "Proyectil Balístico del Boss")
+        or "Ataque letal del Boss"
+    core.setDeathCause(atkName)
+end
+
+function core.setEnemyDeath(e)
+    local enemyName = "Emboscada letal de Cazador"
+    if e and e.type == "patroller" then
+        enemyName = "Impacto frontal letal contra Dron Patrullero"
+    elseif e and e.type == "spawner" then
+        enemyName = "Impacto contra Generador de Espinas"
+    elseif e and (e.type == "miniboss" or e.name) then
+        enemyName = "Impacto letal contra " .. tostring(e.name or "Mini-Jefe")
+    end
+    core.setDeathCause(enemyName)
+end
+
 return core

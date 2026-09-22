@@ -217,7 +217,7 @@ config.CHASER_IDLE_SPIN = 0.7
 config.CHASER_CLOSE_SPIN = 10
 config.CHASER_ROT_LERP = 7
 
--- Patroller AI tactico (GDD seccion 3 & PATROLLER-DESIGN-NOTE.md)
+-- Patroller AI tactico (GDD seccion 3 & docs/archive/PATROLLER-DESIGN-NOTE.md)
 config.PATROLLER_LOS_RANGE       = 6      -- Rango maximo de linea de vision para intercepcion
 config.PATROLLER_ALERT_TIME      = 0.25   -- Tiempo de telegrafiado alert antes de dash (s)
 config.PATROLLER_DASH_TILES      = 3      -- Celdas recorridas a velocidad turbo
@@ -277,6 +277,8 @@ config.AUTOTOMY_GHOST_DURATION = 1.5
 config.AUTOTOMY_DECOY_DURATION = 4.0
 config.CONSTRICTOR_BUFF_DURATION = 5.0
 config.REVIVE_COIN_COST = 30
+config.REVIVE_COST = 30
+config.DEATH_COIN_PENALTY = 0.3
 config.REVIVE_GHOST_DURATION = 3.0
 config.SURVIVAL_STREAK_INCREMENT = 0.1
 

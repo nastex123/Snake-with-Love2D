@@ -1,8 +1,21 @@
 local modes = {}
 local world = require("core.world")
-modes.LIST = {"estandar", "endless", "rush", "pacifista"}
+modes.LIST = {"estandar", "endless", "rush", "pacifista", "diario"}
+
+function modes.isDailyPlayedToday(profile)
+    if not profile or not profile.dailyHistory then return false end
+    local todayKey = tostring(os.date("%Y%m%d"))
+    return profile.dailyHistory[todayKey] ~= nil
+end
+
 function modes.isUnlocked(id, profile)
     if id == "estandar" then return true end
+    if id == "diario" then
+        if modes.isDailyPlayedToday(profile) then
+            return false, "Ya intentado hoy (Bloqueado hasta 00:00)"
+        end
+        return true
+    end
     if not profile then return false end
     if id == "endless" then
         return (profile.stats and (profile.stats.endlessUnlocked or (profile.stats.highestStage or 1) > 5)) == true
@@ -30,6 +43,11 @@ function modes.applyOnStart(st)
         local okCfg, cfg = pcall(require, "core.config")
         st.timeLimit = (okCfg and cfg.RUSH_TIME_LIMIT) or 180
         st.scoreMultiplier = 3
+    elseif m == "diario" then
+        local okGf, gameflow = pcall(require, "systems.gameflow")
+        local seed = (okGf and gameflow.getDailySeed and gameflow.getDailySeed()) or tonumber(os.date("%Y%m%d")) or 20260922
+        world.set("dailySeed", seed)
+        st.dailySeed = seed
     end
     return m
 end
@@ -61,6 +79,7 @@ function modes.updateRush(dt)
     if st.timeLimit <= 0 then
         st.timeLimit = 0
         st.timeUp = true
+        world.set("deathCause", "CAUSA: Tiempo agotado en Modo Carrera")
         return true
     end
     return false
