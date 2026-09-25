@@ -8,6 +8,27 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-24 (Sprint 2: Survival Waves, Boss Rush, Eventos de Sala E1-E7 y Gamefeel)
+
+- **feat** (completed - 2026-09-24 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
+     - Añadidos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` a `core/world.lua` (`World.SCHEMA`).
+     - Transición de sala por temporizador de supervivencia escalonada (2 a 4 oleadas por etapa, 10s-13s por oleada) en `systems/gamestates/playing.lua`.
+     - Despliegue de oleadas con telegrafiado seguro de 0.8s en celdas libres a distancia Manhattan >= 4 vía `world/populate.lua` (`spawnWave`).
+     - Bonificación de Limpieza Total (+20$) al superar la sala eliminando todos los enemigos.
+     - Indicador en HUD (`ui/hudUI.lua`) con contador de oleada y micro-barra de tiempo.
+  2. **QUE — Modo Boss Rush (Propuesta #47 / GDD §11)**:
+     - Añadido modo `"boss_rush"` a `systems/modes.lua` con desbloqueo por mérito (1 boss derrotado, logro `boss_kill` o etapa >= 3).
+     - Secuenciación de 6 salas en `world/world.lua` y `world/populate.lua` (5 mini-jefes de etapa 3 seguidos del Boss final con tiendas intermedias).
+  3. **QUE — Motor de Eventos de Sala E1-E7 (GDD §22 / TDD §10.31)**:
+     - Nuevo módulo `systems/roomEvents.lua` con catálogo data-driven de 7 eventos (E1 Lluvia de Oro, E2 Caza Mayor, E3 Mercader Ambulante, E4 Eclipse, E5 Duelo Táctico, E6 Réplica del Vacío, E7 Ofrenda de Sangre) con 25% de probabilidad y vetos en jefes/élites/misterios.
+     - Integración con el HUD y lógica de combate en `playing.lua`.
+  4. **QUE — Gamefeel y Defensa Perceptual (Propuestas #5, #6, #7)**:
+     - Propuesta #5: Pulso lumínico en polígono de lazo constrictor cerrado en `render/renderMain.lua`.
+     - Propuesta #6: Capas cromáticas diferenciadas para Ghost (blanco), Armadura (azul cobalto) y Escudo (cian) en `entities/snake.lua`.
+     - Propuesta #7: SFX sintetizado procedural `last_defense` en `audio/sound.lua` y destello de advertencia al perder la última capa defensiva.
+  5. **Verificación**: 825/825 tests unitarios PASS en `tests/test_scope_41_sprint2.lua` y suite completa; cero fugas en test de estrés Zero-GC; todos los archivos estrictamente <500L; `error.log` en 0 bytes.
+
 ## 2026-09-22 (Rediseño y Refinamiento: Survival Waves Escalation Engine, Eventos Aleatorios & Gamefeel)
 
 - **docs** (completed - 2026-09-22 America/Bogota):

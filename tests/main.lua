@@ -52,6 +52,7 @@ if pcall(require, "tests.test_scope_37_codex") then end
 if pcall(require, "tests.test_scope_38_templates") then end
 if pcall(require, "tests.test_scope_39_sprint1") then end
 if pcall(require, "tests.test_scope_40_zerogc_stress") then end
+require("tests.test_scope_41_sprint2")
 
 -- Source files for full coverage reporting
 local source_files = {
@@ -105,6 +106,7 @@ local source_files = {
     "systems/tarotArt.lua",
     "systems/miniBossArt.lua",
     "systems/roomMutators.lua",
+    "systems/roomEvents.lua",
     "systems/mystery.lua",
     "systems/shrine.lua",
     "systems/shrineDefs.lua",

@@ -303,22 +303,108 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
     end
 
     -- 5. Boss room spawn (GDD §5 rework: HP de cabezazos, no comidas)
-    if isBossRoom and enemiesMod and enemiesMod.spawnBoss then
-        local hp = math.floor((constants.BOSS_HEADBUTT_HP or 12) * (stageMod.hpMult or 1))
-        local coins = ((bossRule and bossRule.dropCoins) or 5) + (world.etapa or 1) * 2
-        enemiesMod.spawnBoss(world.etapa or 1, anchoGrilla, altoGrilla, hp, coins)
-    end
+    local okCore, coreWorld = pcall(require, "core.world")
+    local isBossRush = okCore and coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush"
+    if isBossRush then
+        if (world.sala or 1) >= 6 and enemiesMod and enemiesMod.spawnBoss then
+            enemiesMod.spawnBoss(5, anchoGrilla, altoGrilla, 12, 15)
+        elseif (world.sala or 1) <= 5 and enemiesMod and enemiesMod.spawnMiniBoss then
+            local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 4)
+            if gx then
+                gx = math.max(0, math.min(anchoGrilla - 2, gx))
+                gy = math.max(0, math.min(altoGrilla - 2, gy))
+                enemiesMod.spawnMiniBoss(world.sala or 1, gx, gy)
+                reservePosition(avoidList, gx, gy, 2)
+            end
+        end
+    else
+        if isBossRoom and enemiesMod and enemiesMod.spawnBoss then
+            local hp = math.floor((constants.BOSS_HEADBUTT_HP or 12) * (stageMod.hpMult or 1))
+            local coins = ((bossRule and bossRule.dropCoins) or 5) + (world.etapa or 1) * 2
+            enemiesMod.spawnBoss(world.etapa or 1, anchoGrilla, altoGrilla, hp, coins)
+        end
 
-    -- 6. Sala 3 élite: mini-jefe temático de la etapa (GDD §5)
-    if not isBossRoom and (world.sala or 0) == 3 and enemiesMod and enemiesMod.spawnMiniBoss then
-        local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 4)
-        if gx then
-            gx = math.max(0, math.min(anchoGrilla - 2, gx))
-            gy = math.max(0, math.min(altoGrilla - 2, gy))
-            enemiesMod.spawnMiniBoss(world.etapa or 1, gx, gy)
-            reservePosition(avoidList, gx, gy, 2)
+        -- 6. Sala 3 élite: mini-jefe temático de la etapa (GDD §5)
+        if not isBossRoom and (world.sala or 0) == 3 and enemiesMod and enemiesMod.spawnMiniBoss then
+            local gx, gy = samplePosition(anchoGrilla, altoGrilla, avoidList, 60, 4)
+            if gx then
+                gx = math.max(0, math.min(anchoGrilla - 2, gx))
+                gy = math.max(0, math.min(altoGrilla - 2, gy))
+                enemiesMod.spawnMiniBoss(world.etapa or 1, gx, gy)
+                reservePosition(avoidList, gx, gy, 2)
+            end
         end
     end
+end
+
+function populate.spawnWave(waveIndex, etapa, room, snakeBody, anchoGrilla, altoGrilla, obstaclesMod, enemiesMod)
+    if not enemiesMod or not enemiesMod.spawnAt then return 0 end
+    anchoGrilla = anchoGrilla or 20
+    altoGrilla = altoGrilla or 14
+    local head = snakeBody and snakeBody[1]
+    local avoids = {}
+    if snakeBody then
+        for _, s in ipairs(snakeBody) do
+            avoids[#avoids + 1] = {x = s.x, y = s.y, radius = 0}
+        end
+    end
+    if obstaclesMod and obstaclesMod.pos then
+        for _, o in ipairs(obstaclesMod.pos) do
+            avoids[#avoids + 1] = {x = o.x, y = o.y, radius = 0}
+        end
+    end
+    if enemiesMod and enemiesMod.list then
+        for _, e in ipairs(enemiesMod.list) do
+            if e.alive then
+                avoids[#avoids + 1] = {x = e.x, y = e.y, radius = 1}
+            end
+        end
+    end
+
+    local spawnsCount = 1
+    if etapa and etapa >= 3 and waveIndex and waveIndex >= 2 then
+        spawnsCount = 2
+    end
+    local placed = 0
+    for _ = 1, spawnsCount do
+        local gx, gy
+        for attempt = 1, 40 do
+            local tx = love.math.random(1, anchoGrilla - 2)
+            local ty = love.math.random(1, altoGrilla - 2)
+            local ok = true
+            if head then
+                local manhattan = math.abs(tx - head.x) + math.abs(ty - head.y)
+                if manhattan < 4 then ok = false end
+            end
+            if ok then
+                for _, a in ipairs(avoids) do
+                    if math.abs(tx - a.x) + math.abs(ty - a.y) < math.max(a.radius or 0, 1) then
+                        ok = false
+                        break
+                    end
+                end
+            end
+            if ok then
+                gx, gy = tx, ty
+                break
+            end
+        end
+        if gx and gy then
+            avoids[#avoids + 1] = {x = gx, y = gy, radius = 2}
+            local enemyType = (love.math.random() < 0.6) and "chaser" or "patroller"
+            if enemiesMod.addTelegraph then
+                enemiesMod.addTelegraph(gx, gy, 0.8, "spawn", function(t)
+                    if enemiesMod and enemiesMod.spawnAt then
+                        enemiesMod.spawnAt(enemyType, t.gx, t.gy)
+                    end
+                end)
+            else
+                enemiesMod.spawnAt(enemyType, gx, gy)
+            end
+            placed = placed + 1
+        end
+    end
+    return placed
 end
 
 -- Export helpers for testing

@@ -1,6 +1,6 @@
 local modes = {}
 local world = require("core.world")
-modes.LIST = {"estandar", "endless", "rush", "pacifista", "diario"}
+modes.LIST = {"estandar", "endless", "rush", "pacifista", "diario", "boss_rush"}
 
 function modes.isDailyPlayedToday(profile)
     if not profile or not profile.dailyHistory then return false end
@@ -27,6 +27,11 @@ function modes.isUnlocked(id, profile)
         if profile.achievements and profile.achievements.stage_3 then return true end
         return (profile.stats and (profile.stats.highestStage or 1) >= 3)
     end
+    if id == "boss_rush" then
+        return (profile.stats and (profile.stats.bossesKilled or 0) >= 1)
+            or (profile.achievements and profile.achievements.boss_kill == true)
+            or ((profile.stats and (profile.stats.highestStage or 1)) >= 3)
+    end
     return false
 end
 function modes.current()
@@ -48,6 +53,8 @@ function modes.applyOnStart(st)
         local seed = (okGf and gameflow.getDailySeed and gameflow.getDailySeed()) or tonumber(os.date("%Y%m%d")) or 20260922
         world.set("dailySeed", seed)
         st.dailySeed = seed
+    elseif m == "boss_rush" then
+        st.scoreMultiplier = 1.5
     end
     return m
 end

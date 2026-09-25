@@ -152,6 +152,25 @@ function renderMain.drawGame(dt)
             and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         snakeMod.draw(st.player, alpha)
 
+        -- Highlight visual de lazo constrictor cerrado (Propuesta #5)
+        if st.constrictorPulse and st.constrictorPulse > 0 and st.player and st.player.body and #st.player.body >= 4 then
+            local tam = constants.TAMANIO_BLOQUE
+            local pts = {}
+            for _, seg in ipairs(st.player.body) do
+                pts[#pts + 1] = seg.x * tam + tam / 2
+                pts[#pts + 1] = seg.y * tam + tam / 2
+            end
+            local frac = math.min(1, st.constrictorPulse / 0.35)
+            love.graphics.setColor(0.3, 0.9, 1.0, 0.45 * frac)
+            if #pts >= 6 then
+                pcall(love.graphics.polygon, "fill", pts)
+                love.graphics.setColor(1.0, 1.0, 1.0, 0.85 * frac)
+                love.graphics.setLineWidth(2)
+                pcall(love.graphics.polygon, "line", pts)
+                love.graphics.setLineWidth(1)
+            end
+        end
+
         if st.magnetRange > 0 and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
             local tam = constants.TAMANIO_BLOQUE
             local hx = st.player.body[1].x * tam + tam / 2

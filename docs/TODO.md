@@ -12,8 +12,8 @@
 - [x] Shader pipeline (bloom, CRT, shadow, heat)
 - [x] Sound system with segmented music
 
-**Última actualización**: 22:09:2026 (America/Bogota)  
-**Estado general**: 813 tests aprobados (100% PASS), `error.log` 0 bytes, Cero-Deuda Estructural (<500L/archivo).  
+**Última actualización**: 24:09:2026 (America/Bogota)  
+**Estado general**: 825 tests aprobados (100% PASS), `error.log` 0 bytes, Cero-Deuda Estructural (<500L/archivo).  
 **Fuente canónica de backlog unificado**: Este documento consolida el plan de sprints activos y la matriz maestra de las 100 propuestas técnicas.  
 **Archivo histórico de planes y notas transitorias**: Consultar [`docs/archive/`](archive/).
 
@@ -21,39 +21,40 @@
 
 ## 1. Sprint Activo en Desarrollo
 
-### 🔄 Sprint 2: Modo Boss Rush, Sinergias del Códice y Mecánicas Avanzadas
-- [ ] **Rediseño de Progresión: Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
-  - [ ] Implementar campos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` en `core/world.lua` (`World.SCHEMA`).
-  - [ ] Reemplazar la condición por puntaje de `playingPickups.lua` por el control de tiempo y oleadas.
-  - [ ] Preservar el rol de la comida para economía, combo y habilidades especiales (sin reducción de tiempo).
-  - [ ] Función `populate.spawnWave` con telegrafiado seguro de 0.8s en celdas libres.
-  - [ ] Adaptar la cabecera superior en `ui/hudSouls.lua` con contador de oleada y micro-barra de tiempo.
-  - [ ] Añadir bonificación de "Limpieza Total" (+20$) al superar la sala eliminando todos los enemigos.
-- [ ] **Modo Boss Rush (Propuesta #47 / GDD §11)**:
-  - [ ] Añadir modo `"boss_rush"` a `systems/modes.lua` y botón interactivo en Santuario (`systems/shrineDraw.lua`).
-  - [ ] Secuenciación de salas en `systems/gameflow.lua`: encadenar los 5 mini-jefes de sala 3 y el Boss final con visitas intermedias a la tienda.
+### 🔄 Sprint 2: Modo Boss Rush, Survival Waves, Eventos de Sala y Gamefeel
+- [x] **Rediseño de Progresión: Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
+  - [x] Implementar campos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` en `core/world.lua` (`World.SCHEMA`).
+  - [x] Reemplazar la condición por puntaje por el control de tiempo y oleadas en `systems/gamestates/playing.lua`.
+  - [x] Preservar el rol de la comida para economía, combo y habilidades especiales (sin reducción de tiempo).
+  - [x] Función `populate.spawnWave` con telegrafiado seguro de 0.8s en celdas libres a distancia Manhattan >= 4.
+  - [x] Adaptar la cabecera superior en `ui/hudUI.lua` con indicador de oleada (`OLEADA X/Y`) y micro-barra de tiempo.
+  - [x] Añadir bonificación de "Limpieza Total" (+20$) al superar la sala eliminando todos los enemigos activos.
+- [x] **Modo Boss Rush (Propuesta #47 / GDD §11)**:
+  - [x] Añadir modo `"boss_rush"` a `systems/modes.lua`, soporte de desbloqueo condicional por progreso/logros y multiplicadores.
+  - [x] Secuenciación de salas en `world/world.lua` y `world/populate.lua`: secuencia de 6 salas (5 mini-jefes + Boss final con tiendas intermedias).
+- [x] **Motor de Eventos Aleatorios de Sala E1–E7 (GDD §22 / TDD §10.31)**:
+  - [x] Crear módulo data-driven `systems/roomEvents.lua` (E1 gold_rain, E2 big_hunt, E3 merchant, E4 eclipse, E5 duel, E6 void_echo, E7 blood_offer) con probabilidad 25%, vetos en boss/élite/misterio y 1 evento por sala.
+  - [x] Integración de actualización de temporizadores, badge HUD e impactos gameplay en combate.
+- [x] **Gamefeel y Defensa Perceptual (Propuestas #5, #6, #7)**:
+  - [x] Propuesta #5: Pulso lumínico sobre el polígono cerrado del lazo constrictor (`constrictorPulse`) en `render/renderMain.lua`.
+  - [x] Propuesta #6: Capas cromáticas diferenciadas para Ghost (blanco), Armadura (azul cobalto) y Escudo (cian) en `entities/snake.lua`.
+  - [x] Propuesta #7: SFX sintetizado procedural `last_defense` en `audio/sound.lua` y destello carmesí al romper la última defensa.
 - [ ] **Tooltips e Indicadores de Sinergia en Tienda (Propuesta #33 / GDD §18.2)**:
   - [ ] Pre-indexar matriz de adyacencia de sinergias en `systems/codex.lua` ($O(1)$ sin generar basura en el frame loop).
   - [ ] Renderizado en `systems/shopDraw.lua` de sinergias activas o potenciales al posar el cursor sobre un ítem en venta.
 - [ ] **Sierpe Volcánica (Magma Wyrm) Multi-Segmento (Propuesta #14 / GDD §5)**:
   - [ ] Modular en `entities/minibossWyrm.lua` (para mantener `entities/enemyMiniBoss.lua` <500L).
   - [ ] 6 segmentos físicos independientes con 1 HP cada uno, destruibles mediante cabezazos tácticos o bombas.
-- [ ] **Highlight Visual de Lazo Constrictor (Propuesta #5)**:
-  - [ ] Pulso lumínico sobre el polígono cerrado al tocar la cabeza con la cola antes de la onda de estrangulamiento.
 - [ ] **Motor de Eventos Aleatorios Mixtos por Bioma (GDD §19.2 / TDD §10.27)**:
   - [ ] Implementar `activeEvent`, `activeEventTimer`, `activeEventData` en `core/world.lua`.
   - [ ] Crear módulo desacoplado `systems/eventsEngine.lua` con pools Zero-GC de amenazas por bioma.
   - [ ] Diseñar telegrafiado seguro de 1.0s para los 10 eventos dinámicos en combate (E-01 a E-10) con aislamiento de salas de Boss/Mini-jefe.
   - [ ] Integrar los 10 micro-eventos de decisión táctica interactivos en pedestales rúnicos (D-01 a D-10).
-- [ ] **Eventos Aleatorios de Sala E1–E7 (GDD §22 / TDD §10.31, solo spec 22:09:2026)**:
-  - [ ] Crear módulo data-driven `systems/roomEvents.lua` (E1 lluvia de oro, E2 caza mayor, E3 mercader, E4 eclipse, E5 duelo, E6 réplica, E7 ofrenda) con `EVENT_CHANCE = 0.25`, vetos élite/boss/misterio y 1 evento máximo por sala.
-  - [ ] Faseo: E1+E2+E3 con asedio E+B; E4+E5 con Sprint 2; E6+E7 en Phase 9.
-- [ ] **Eventos E8–E14 riesgo-recompensa (GDD §22.3–§22.5 / TDD §10.32, solo spec 22:09:2026)**:
+- [ ] **Eventos E8–E14 riesgo-recompensa (GDD §22.3–§22.5 / TDD §10.32)**:
   - [ ] IDs `blood_roulette`, `hunter_fever`, `shadow_pact`, `cursed_chest`, `void_debt`, `split_heart`, `total_eclipse` con vetos por fase/mutador, saldo negativo E12 y bypass Fénix E14.
-  - [ ] Refinamiento E1–E7 aplicado en spec (EV, timers, umbrales).
-- [ ] **Verificación y Pruebas Unitarias**:
-  - [ ] Crear `tests/test_scope_41_sprint2.lua` (scope_40 ocupado por harness Zero-GC R-5) cubriendo Boss Rush, sinergias, Sierpe, asedio E+B y eventos E1–E7.
-  - [ ] Mantener 0 fallos en tests automatizados y `error.log` en 0 bytes.
+- [x] **Verificación y Pruebas Unitarias**:
+  - [x] Crear `tests/test_scope_41_sprint2.lua` cubriendo Survival Waves, Boss Rush, Eventos E1-E7 y Gamefeel/Audio.
+  - [x] 825/825 tests PASS (100%), `error.log` 0 bytes, Cero-Deuda Estructural (<500L/archivo).
 
 ---
 

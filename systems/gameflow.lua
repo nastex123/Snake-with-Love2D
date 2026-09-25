@@ -138,11 +138,17 @@ function gameflow.iniciarSala(keepInventory)
     gameflow.resetGame(keepInventory)
     worldMod.puntajeSala = 0
     st.puntuacion = 0
+    st.waveTotal = (worldMod.etapa == 1 and 2) or (worldMod.etapa == 5 and 4) or 3
+    st.waveMaxTimer = 12.0
+    st.waveCurrent = 1
+    st.waveTimer = 12.0
     -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
     mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
     -- Velo Silencioso: registra monedas al entrar para duplicar al superar
     mutatorsMod.silentMarkCoins(st.monedas or 0)
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
+    local okRev, roomEvents = pcall(require, "systems.roomEvents")
+    if okRev and roomEvents then roomEvents.roll(worldMod, st, enemiesMod) end
     if worldMod.sala == 1 then
         local bName = worldMod.getBiomeName()
         uiMod.addPopup("ETAPA " .. worldMod.etapa .. ": " .. string.upper(bName), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 3)

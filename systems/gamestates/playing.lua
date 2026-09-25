@@ -130,6 +130,7 @@ function playing.update(dt)
     if snakeMod.checkConstrictorLoop then
         local loopKills = snakeMod.checkConstrictorLoop(st.player, enemiesMod.list)
         if loopKills and #loopKills > 0 then
+            st.constrictorPulse = 0.35
             sound.play("highScore")
             local streak = st.survivalStreak or 1.0
             for _, lk in ipairs(loopKills) do
@@ -332,6 +333,10 @@ function playing.update(dt)
             st.roomDamaged = true
             sound.play("shieldBreak")
             shadersMod.triggerDamage(0.5, 0.5)
+            if (st.player.armor or 0) == 0 then
+                sound.play("last_defense")
+                shadersMod.triggerDamage(0.7, 0.8)
+            end
         end
 
         -- Prisma Refractor (GDD item 60): el proyectil absorbido vale 3 monedas
@@ -366,6 +371,57 @@ function playing.update(dt)
     -- Eventos de sala (mutadores de sala y misterios)
     if playingEvents.updateRoomEvents(st, dt) then
         return true
+    end
+
+    local okRev, roomEvents = pcall(require, "systems.roomEvents")
+    if okRev and roomEvents then
+        roomEvents.update(dt, st, enemiesMod, uiMod, sound)
+    end
+
+    if st.constrictorPulse and st.constrictorPulse > 0 then
+        st.constrictorPulse = math.max(0, st.constrictorPulse - dt)
+    end
+
+    -- Survival Waves Escalation Engine (GDD §6 / TDD §10.26)
+    local isBoss = worldMod.esJefe and worldMod.esJefe()
+    local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+    local isMini = (worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mb and mb.alive)
+    if not isBoss and not isMini and st.gameState == constants.GAME_STATE_PLAYING and not st.transitionTarget and st.waveTimer then
+        st.waveTimer = math.max(0, st.waveTimer - dt)
+        if st.waveTimer <= 0 then
+            if (st.waveCurrent or 1) < (st.waveTotal or 3) then
+                st.waveCurrent = (st.waveCurrent or 1) + 1
+                st.waveTimer = st.waveMaxTimer or 12.0
+                local okPop, populate = pcall(require, "world.populate")
+                if okPop and populate and populate.spawnWave then
+                    populate.spawnWave(st.waveCurrent, worldMod.etapa, worldMod.getCurrentRoom(), st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod, enemiesMod)
+                end
+                local cx = math.floor((st.anchoGrilla or 20) / 2)
+                local cy = math.floor((st.altoGrilla or 14) / 2)
+                uiMod.addPopup("OLEADA " .. st.waveCurrent .. "/" .. st.waveTotal .. ": REFUERZOS!", cx, cy)
+                sound.play("highScore")
+            else
+                local cx = math.floor((st.anchoGrilla or 20) / 2)
+                local cy = math.floor((st.altoGrilla or 14) / 2)
+                local enemiesAlive = 0
+                if enemiesMod and enemiesMod.list then
+                    for _, e in ipairs(enemiesMod.list) do
+                        if e.alive then enemiesAlive = enemiesAlive + 1 end
+                    end
+                end
+                if enemiesAlive == 0 then
+                    st.monedas = (st.monedas or 0) + 20
+                    uiMod.addPopup("LIMPIEZA TOTAL +20$", cx, cy)
+                    sound.play("highScore")
+                end
+                st.transitionTarget = "siguienteSala"
+                st.transitionPhase = 1
+                st.fadeDir = 1
+                st.gameState = constants.GAME_STATE_TRANSITION
+                sound:playSegment("intro")
+                return true
+            end
+        end
     end
 
     if st.comboFlashTimer > 0 then

@@ -252,7 +252,7 @@ function snake.draw(s, alpha)
                 local ghostTime = s.ghostTimer or 0
                 if s.ghost or ghostTime > 0 then
                     local ghostPulse = math.sin(time * 6) * 0.3 + 0.7
-                    love.graphics.setColor(0.6, 0.4, 1, ghostPulse * 0.3)
+                    love.graphics.setColor(1.0, 1.0, 1.0, ghostPulse * 0.45)
                     love.graphics.setLineWidth(2)
                     love.graphics.rectangle("line", px - 2, py - 2, segSize + 4, segSize + 4, 4, 4)
                     love.graphics.setLineWidth(1)
@@ -281,9 +281,17 @@ function snake.draw(s, alpha)
                     end
                 end
 
+                if s.armor and s.armor > 0 then
+                    local aPulse = math.sin(time * 4) * 0.25 + 0.75
+                    love.graphics.setColor(0.16, 0.32, 0.75, aPulse * 0.75)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.rectangle("line", px - 3, py - 3, segSize + 6, segSize + 6, 5, 5)
+                    love.graphics.setLineWidth(1)
+                end
+
                 if shop.shieldActive then
                     local pulse = math.sin(time * 5) * 0.3 + 0.7
-                    love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pulse * 0.6)
+                    love.graphics.setColor(0.0, 0.94, 1.0, pulse * 0.65)
                     love.graphics.setLineWidth(2)
                     love.graphics.rectangle("line", px - 1, py - 1, segSize + 2, segSize + 2, 4, 4)
                     love.graphics.setLineWidth(1)

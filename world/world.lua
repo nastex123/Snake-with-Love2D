@@ -68,6 +68,9 @@ function world.getRoom(index)
 end
 
 function world.getRoomCount()
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return 6
+    end
     if not world.dungeon or not world.dungeon.rooms then return 5 end
     return #world.dungeon.rooms
 end
@@ -118,8 +121,19 @@ function world.hasWallWrap(stage)
 end
 
 function world.esJefe()
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) >= 6
+    end
     local room = world.getCurrentRoom()
     return (room and room.template == "boss") or false
+end
+
+function world.isMiniBossRoom()
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) <= 5
+    end
+    local room = world.getCurrentRoom()
+    return (world.sala == 3) or (room and room.isElite == true) or false
 end
 
 function world.getObjectiveType()
@@ -245,6 +259,9 @@ function world.etapaCompletada()
 end
 
 function world.isLastRoom()
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) >= 6
+    end
     if not world.dungeon or not world.dungeon.rooms then return world.sala >= 5 end
     return world.sala >= #world.dungeon.rooms
 end

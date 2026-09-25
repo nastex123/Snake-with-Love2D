@@ -58,8 +58,8 @@ end
 -- ============================================================
 -- Telegraph / attack object API — delega a attackRegistry
 -- ============================================================
-function enemies.addTelegraph(gx, gy, timer, attackType)
-    return attackRegistry.addTelegraph(gx, gy, timer, attackType)
+function enemies.addTelegraph(gx, gy, timer, attackType, onExpire)
+    return attackRegistry.addTelegraph(gx, gy, timer, attackType, onExpire)
 end
 
 function enemies.addProjectile(gx, gy, dx, dy, lifetime, damage)

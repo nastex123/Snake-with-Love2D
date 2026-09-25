@@ -331,6 +331,13 @@ World.SCHEMA = {
     dailySeed = "number",
     bounties = "table",
     deathCause = "string",
+    waveCurrent = "number",
+    waveTotal = "number",
+    waveTimer = "number",
+    waveMaxTimer = "number",
+    roomEvent = "string",
+    roomEventTimer = "number",
+    constrictorPulse = "number",
 }
 
 function World.enableDebug()

@@ -210,6 +210,44 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         local mysMods = package.loaded["systems.mystery"]
         local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(worldMod)
         if mysDef then printTag(mysDef.tag, mysDef.color) end
+
+        -- Indicador de Supervivencia por Oleadas (GDD §6 / TDD §10.26)
+        local mbGate = enemiesMod and enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+        local isMini = (worldMod and worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mbGate and mbGate.alive)
+        local wc = okWm and worldState and worldState.get("waveCurrent")
+        if not isMini and wc then
+            local wt = worldState.get("waveTotal") or 3
+            local wTimer = worldState.get("waveTimer") or 0
+            local wMax = worldState.get("waveMaxTimer") or 12.0
+            local wFrac = math.max(0, math.min(1, wTimer / (wMax > 0 and wMax or 12.0)))
+            local waveTag = "OLEADA " .. wc .. "/" .. wt
+            love.graphics.setColor(1.0, 0.84, 0.0, 0.95)
+            love.graphics.print(waveTag, x, cy)
+            x = x + font:getWidth(waveTag) + 5 * s
+            local mbW = math.floor(30 * s)
+            local mbH = math.floor(5 * s)
+            love.graphics.setColor(0.12, 0.12, 0.18, 0.9)
+            love.graphics.rectangle("fill", x, barY, mbW, mbH, 1, 1)
+            love.graphics.setColor(0.0, 0.94, 1.0, 0.9)
+            love.graphics.rectangle("fill", x, barY, math.floor(mbW * wFrac), mbH, 1, 1)
+            love.graphics.setColor(0.0, 0.94, 1.0, 0.4)
+            love.graphics.rectangle("line", x, barY, mbW, mbH, 1, 1)
+            x = x + mbW + 8 * s
+        end
+
+        -- Badge de Evento de Sala (GDD §22 / TDD §10.31)
+        local revId = okWm and worldState and worldState.get("roomEvent")
+        if revId then
+            local okRev, roomEvents = pcall(require, "systems.roomEvents")
+            local def = okRev and roomEvents and roomEvents.getDef(revId)
+            if def then
+                local rTimer = math.ceil(worldState.get("roomEventTimer") or 0)
+                local tag = (def.tag or "EVENTO") .. " " .. rTimer .. "s"
+                love.graphics.setColor(def.color[1], def.color[2], def.color[3], 0.95)
+                love.graphics.print(tag, x, cy)
+                x = x + font:getWidth(tag) + 8 * s
+            end
+        end
     end
 
     local barY = math.floor(hh / 2) - 3 * s
