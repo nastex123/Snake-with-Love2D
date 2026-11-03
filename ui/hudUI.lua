@@ -166,7 +166,7 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
     local hh = constants.HUD_HEIGHT * s
     local fontH = font:getHeight()
     local cy = math.floor((hh - fontH) / 2)
-
+    local barY = math.floor(hh / 2) - 3 * s
     local worldMod = package.loaded["world.world"]
     local isBoss = (sala == 5)
     local enemiesMod = package.loaded["entities.enemies"]
@@ -211,29 +211,8 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
         local mysDef = mysMods and mysMods.currentDef and mysMods.currentDef(worldMod)
         if mysDef then printTag(mysDef.tag, mysDef.color) end
 
-        -- Indicador de Supervivencia por Oleadas (GDD §6 / TDD §10.26)
-        local mbGate = enemiesMod and enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
-        local isMini = (worldMod and worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mbGate and mbGate.alive)
-        local wc = okWm and worldState and worldState.get("waveCurrent")
-        if not isMini and wc then
-            local wt = worldState.get("waveTotal") or 3
-            local wTimer = worldState.get("waveTimer") or 0
-            local wMax = worldState.get("waveMaxTimer") or 12.0
-            local wFrac = math.max(0, math.min(1, wTimer / (wMax > 0 and wMax or 12.0)))
-            local waveTag = "OLEADA " .. wc .. "/" .. wt
-            love.graphics.setColor(1.0, 0.84, 0.0, 0.95)
-            love.graphics.print(waveTag, x, cy)
-            x = x + font:getWidth(waveTag) + 5 * s
-            local mbW = math.floor(30 * s)
-            local mbH = math.floor(5 * s)
-            love.graphics.setColor(0.12, 0.12, 0.18, 0.9)
-            love.graphics.rectangle("fill", x, barY, mbW, mbH, 1, 1)
-            love.graphics.setColor(0.0, 0.94, 1.0, 0.9)
-            love.graphics.rectangle("fill", x, barY, math.floor(mbW * wFrac), mbH, 1, 1)
-            love.graphics.setColor(0.0, 0.94, 1.0, 0.4)
-            love.graphics.rectangle("line", x, barY, mbW, mbH, 1, 1)
-            x = x + mbW + 8 * s
-        end
+        -- El contador de oleadas ahora es el engranaje (gear) en el HUD inferior.
+        -- (bloque antiguo eliminado)
 
         -- Badge de Evento de Sala (GDD §22 / TDD §10.31)
         local revId = okWm and worldState and worldState.get("roomEvent")
@@ -249,8 +228,6 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
             end
         end
     end
-
-    local barY = math.floor(hh / 2) - 3 * s
 
     if shieldActive then
         local pulse = math.sin(love.timer.getTime() * 6) * 0.3 + 0.7
@@ -370,6 +347,25 @@ function hud.drawSlots(ui, slotDisplay)
 
     -- Renderizar Dock Soulsborne 1:1 de la Propuesta 13 con combo creciente
     hudSouls.drawBottomDock(w, h, s, font, player, slotDisplay, comboCount, isHollow, time)
+
+    -- Indicador de oleada con estetica de engranaje (a la derecha del Darksign)
+    local okWm2, worldState2 = pcall(require, "core.world")
+    local mbGate2 = enemiesMod and enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
+    local isMini2 = (worldMod and worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mbGate2 and mbGate2.alive)
+    local wc2 = okWm2 and worldState2 and worldState2.get("waveCurrent")
+    if not isMini2 and wc2 then
+        local wt2 = worldState2.get("waveTotal") or 3
+        local wTimer2 = worldState2.get("waveTimer") or 0
+        local wMax2 = worldState2.get("waveMaxTimer") or 12.0
+        local progress2 = math.max(0, math.min(1, wTimer2 / (wMax2 > 0 and wMax2 or 12.0)))
+        local gearHud = require("ui.gearWaveHud")
+        local cx = math.floor(w / 2) + math.floor(46 * s)
+        local cy = h - math.floor(23 * s)
+        local radius = math.floor(18 * s)
+        local fSmall = getCachedFont(math.max(6, math.floor(constants.FONT_SMALL * s)))
+        local fBig = getCachedFont(math.max(8, math.floor(constants.FONT_NORMAL * s)))
+        gearHud.draw(cx, cy, radius, wc2, wt2, s, fSmall, fBig, false, love.timer.getDelta(), progress2)
+    end
 
     love.graphics.setFont(ui.fontNormal)
 end
