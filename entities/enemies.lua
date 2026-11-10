@@ -58,8 +58,8 @@ end
 -- ============================================================
 -- Telegraph / attack object API — delega a attackRegistry
 -- ============================================================
-function enemies.addTelegraph(gx, gy, timer, attackType)
-    return attackRegistry.addTelegraph(gx, gy, timer, attackType)
+function enemies.addTelegraph(gx, gy, timer, attackType, onExpire)
+    return attackRegistry.addTelegraph(gx, gy, timer, attackType, onExpire)
 end
 
 function enemies.addProjectile(gx, gy, dx, dy, lifetime, damage)
@@ -139,7 +139,10 @@ end
 -- Mini-Boss (sala 3) — delega a enemyMiniBoss
 -- ============================================================
 function enemies.spawnMiniBoss(etapa, gx, gy)
-    return miniBossLogic.spawn(etapa, gx, gy)
+    local mb = miniBossLogic.spawn(etapa, gx, gy)
+    local okCx, codexMod = pcall(require, "systems.codex")
+    if okCx and codexMod then pcall(function() codexMod.seeMiniBoss(etapa) end) end
+    return mb
 end
 
 function enemies.getMiniBoss()
@@ -428,6 +431,8 @@ function enemies.killEnemy(target)
         coins = e.dropCoins or 0, type = e.type
     }
     e.alive = false
+    local okCx, codexMod = pcall(require, "systems.codex")
+    if okCx and codexMod then pcall(function() codexMod.seeEnemy(result.type) end) end
     return result
 end
 

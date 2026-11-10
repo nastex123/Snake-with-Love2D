@@ -67,6 +67,16 @@ function renderMain.drawMenu(dt)
     love.graphics.setCanvas()
 
     shadersMod.composite(st.time, 0.85, st.introTimer >= 3.0)
+    if st.stageVictorySummary then
+        local summary = st.stageVictorySummary
+        local w, h = love.graphics.getDimensions()
+        love.graphics.push("all")
+        love.graphics.setColor(0, 0, 0, 0.8)
+        love.graphics.rectangle("fill", 0, h - 52, w, 52)
+        love.graphics.setColor(1, 0.85, 0.35, 1)
+        love.graphics.printf("EXPEDICION COMPLETADA  |  PUNTOS: " .. summary.score .. "  |  MONEDAS: " .. summary.coins, 0, h - 33, w, "center")
+        love.graphics.pop()
+    end
 end
 
 function renderMain.drawGame(dt)
@@ -110,16 +120,6 @@ function renderMain.drawGame(dt)
         uiMod.drawSlots(slotDisplay)
     end
 
-    -- Botón de pausa táctil (esquina inferior derecha)
-    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
-        touchMod.draw()
-    end
-
-    -- Dungeon minimap (top-right, fijo)
-    if st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED then
-        uiMod.drawDungeonMap(worldMod.getDungeonMapData())
-    end
-
     -- Debug dungeon overlay (fijo)
     if st.debugDungeonOverlay and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
         uiMod.drawDebugDungeonOverlay(worldMod.getDungeonMapData())
@@ -146,25 +146,7 @@ function renderMain.drawGame(dt)
     love.graphics.setLineWidth(1)
     love.graphics.line(ox, constants.GRID_OFFSET_Y - 1, ox + gridW, constants.GRID_OFFSET_Y - 1)
 
-    -- Boss health bar (encima de la grilla, dentro del bloque de juego)
-    if st.bossHealthDisplay and st.gameState == constants.GAME_STATE_PLAYING then
-        local barW = 160
-        local barH = 8
-        local bx = (w - barW) / 2
-        local by = 32
-        local dMax = st.bossHealthDisplay.maxHp or 1
-        local frac = 0
-        if dMax > 0 then
-            frac = math.max(0, math.min(1, (st.bossHealthDisplay.hp or dMax) / dMax))
-        end
-        love.graphics.setColor(0.2, 0.2, 0.2, 0.8)
-        love.graphics.rectangle("fill", bx, by, barW, barH, 4, 4)
-        love.graphics.setColor(1, 0.2 * frac + 0.6, 0.2 * frac + 0.2, 0.9)
-        love.graphics.rectangle("fill", bx, by, barW * frac, barH, 4, 4)
-        love.graphics.setColor(1, 1, 1, 0.4)
-        love.graphics.setLineWidth(2)
-        love.graphics.rectangle("line", bx, by, barW, barH, 4, 4)
-    end
+    -- Nota: La barra de salud del Boss se renderiza en el estandarte heroico 8.1 Hades (ui/hudUI.lua)
 
     -- offset de grilla (centrado horizontal)
     love.graphics.push()
@@ -179,6 +161,25 @@ function renderMain.drawGame(dt)
         local alpha = (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_DEATH_ANIMATION)
             and (st.velocidadActual and st.velocidadActual > 0 and (st.cronometro / st.velocidadActual) or 1) or 1
         snakeMod.draw(st.player, alpha)
+
+        -- Highlight visual de lazo constrictor cerrado (Propuesta #5)
+        if st.constrictorPulse and st.constrictorPulse > 0 and st.player and st.player.body and #st.player.body >= 4 then
+            local tam = constants.TAMANIO_BLOQUE
+            local pts = {}
+            for _, seg in ipairs(st.player.body) do
+                pts[#pts + 1] = seg.x * tam + tam / 2
+                pts[#pts + 1] = seg.y * tam + tam / 2
+            end
+            local frac = math.min(1, st.constrictorPulse / 0.35)
+            love.graphics.setColor(0.3, 0.9, 1.0, 0.45 * frac)
+            if #pts >= 6 then
+                pcall(love.graphics.polygon, "fill", pts)
+                love.graphics.setColor(1.0, 1.0, 1.0, 0.85 * frac)
+                love.graphics.setLineWidth(2)
+                pcall(love.graphics.polygon, "line", pts)
+                love.graphics.setLineWidth(1)
+            end
+        end
 
         if st.magnetRange > 0 and (st.gameState == constants.GAME_STATE_PLAYING or st.gameState == constants.GAME_STATE_PAUSED) then
             local tam = constants.TAMANIO_BLOQUE

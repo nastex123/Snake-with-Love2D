@@ -29,6 +29,8 @@ end
 
 function death.updateDeath(dt)
     local st = world.state
+    if st.deathModalOpen then return end
+
     st.deathAnimTimer = st.deathAnimTimer + dt
     if st.deathAnimTimer >= constants.DEATH_ANIMATION_SEGMENT_DELAY then
         st.deathAnimTimer = 0
@@ -40,18 +42,8 @@ function death.updateDeath(dt)
             })
             table.remove(st.player.body, #st.player.body)
         else
-            st.fadeDir = -1
-            worldMod.init()
-            if st.nuevoHighScore then
-                st.celebrationTimer = constants.HIGH_SCORE_CELEBRATION_DURATION
-                st.gameState = constants.GAME_STATE_HIGH_SCORE
-            else
-                flushPendingAchievements()
-                gameflow.applyActiveProfile()
-                st.gameState = constants.GAME_STATE_SHOP
-                sound:playSegment("intro")
-                shop.abrir(st.monedas, true)
-            end
+            -- Fin de animación de despiece: abrir modal de aceptar muerte o revivir
+            st.deathModalOpen = true
         end
     end
 end

@@ -8,6 +8,160 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-09-24 (Sprint 2: Survival Waves, Boss Rush, Eventos de Sala E1-E7 y Gamefeel)
+
+- **feat** (completed - 2026-09-24 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
+     - Añadidos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` a `core/world.lua` (`World.SCHEMA`).
+     - Transición de sala por temporizador de supervivencia escalonada (2 a 4 oleadas por etapa, 10s-13s por oleada) en `systems/gamestates/playing.lua`.
+     - Despliegue de oleadas con telegrafiado seguro de 0.8s en celdas libres a distancia Manhattan >= 4 vía `world/populate.lua` (`spawnWave`).
+     - Bonificación de Limpieza Total (+20$) al superar la sala eliminando todos los enemigos.
+     - Indicador en HUD (`ui/hudUI.lua`) con contador de oleada y micro-barra de tiempo.
+  2. **QUE — Modo Boss Rush (Propuesta #47 / GDD §11)**:
+     - Añadido modo `"boss_rush"` a `systems/modes.lua` con desbloqueo por mérito (1 boss derrotado, logro `boss_kill` o etapa >= 3).
+     - Secuenciación de 6 salas en `world/world.lua` y `world/populate.lua` (5 mini-jefes de etapa 3 seguidos del Boss final con tiendas intermedias).
+  3. **QUE — Motor de Eventos de Sala E1-E7 (GDD §22 / TDD §10.31)**:
+     - Nuevo módulo `systems/roomEvents.lua` con catálogo data-driven de 7 eventos (E1 Lluvia de Oro, E2 Caza Mayor, E3 Mercader Ambulante, E4 Eclipse, E5 Duelo Táctico, E6 Réplica del Vacío, E7 Ofrenda de Sangre) con 25% de probabilidad y vetos en jefes/élites/misterios.
+     - Integración con el HUD y lógica de combate en `playing.lua`.
+  4. **QUE — Gamefeel y Defensa Perceptual (Propuestas #5, #6, #7)**:
+     - Propuesta #5: Pulso lumínico en polígono de lazo constrictor cerrado en `render/renderMain.lua`.
+     - Propuesta #6: Capas cromáticas diferenciadas para Ghost (blanco), Armadura (azul cobalto) y Escudo (cian) en `entities/snake.lua`.
+     - Propuesta #7: SFX sintetizado procedural `last_defense` en `audio/sound.lua` y destello de advertencia al perder la última capa defensiva.
+  5. **Verificación**: 825/825 tests unitarios PASS en `tests/test_scope_41_sprint2.lua` y suite completa; cero fugas en test de estrés Zero-GC; todos los archivos estrictamente <500L; `error.log` en 0 bytes.
+
+## 2026-09-22 (Rediseño y Refinamiento: Survival Waves Escalation Engine, Eventos Aleatorios & Gamefeel)
+
+- **docs** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — Especificación en `docs/GDD.md` y `docs/TDD.md`**: Actualizadas las secciones 1, 2 y 6 del GDD para plasmar el nuevo paradigma de Arena de Supervivencia por Oleadas Escalonadas (2 a 4 oleadas por sala según la etapa con duraciones fijas de $10\text{s} \dots 13\text{s}$). Se desacopla la superación de la sala respecto a la puntuación acumulada y se preserva el rol clásico de los pickups (economía, récords, combo y poderes especiales). En el TDD se redactó la sección 10.26 definiendo el esquema de datos en `World.SCHEMA` (`waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer`), el pipeline del bucle de frame en `playing.lua`, el telegrafiado de refuerzos seguros de $0.8\text{s}$ con distancia Manhattan $\ge 4$ celdas en `populate.lua` y el componente visual del HUD.
+  2. **QUE — Sistema de Eventos Aleatorios Mixtos por Bioma (`GDD §19.2` y `TDD §10.27`)**: Ampliado el catálogo a 20 eventos temáticos clasificados por los 5 biomas de etapa: 10 eventos dinámicos en combate (E-01 a E-10: Derrumbe Sísmico, Frenesí de Cosecha, Ventisca Ártica, Fragmentación de Cristal, Erupción de Géiseres, Sobrecarga Térmica, Niebla Miasmática, Eclosión de Esporas, Singularidad Gravitatoria, Tormenta de Antimateria) con telegrafiado inviolable de $1.0\text{s}$ y bonos de maestría ($+5\$$ a $+10\$$); y 10 micro-eventos de decisión táctica y riesgo (D-01 a D-10: Altar de Sangre, Sarcófago Sellado, Ídolo de Hielo Negro, Viajero Congelado, Yunque del Herrero, Pacto Ígneo, Cofre de Pandora Corrupto, Larva Reina Huérfana, Pacto de las Sombras, Fruta del Vacío Infinito). Se definió el módulo `systems/eventsEngine.lua` con pools Zero-GC y aislamiento estricto de salas de jefes.
+  3. **QUE — Boss Rush, Magma Wyrm Segmentado y Gamefeel (`GDD §2, §5, §11` / `TDD §10.33, §10.34`)**: Especificado el modo Boss Rush con secuencia cerrada de los 5 mini-jefes + boss y tienda intermedia; el mini-jefe Magma Wyrm modular de 6 vértebras destructibles de 1 HP en `entities/minibossWyrm.lua`; y el paquete de gamefeel y defensa (highlight de lazo constrictor #5, diferenciación cromática de defensas #6, campana de última defensa #7 y previsualizador de autotomía #2).
+  4. **QUE — Sincronización en `docs/ROADMAP.md` y `docs/TODO.md`**: Incorporado el hito en la Fase 8 del Roadmap y desglosado en el Sprint Activo 2 del Backlog Unificado junto con la bonificación de "Limpieza Total" (+20$) y el motor de 20 eventos por bioma.
+  5. **Verificación**: Sin cambios de código Lua; validación estática de integridad con 813/813 tests PASS y `error.log` en 0 bytes.
+
+## 2026-09-21 (control mode fixed to classic)
+
+- **refactor** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Modo de control fijo en clásico continuo**:
+     - Retirada la bifurcación táctica de `entities/snake/movement.lua`: la serpiente avanza ininterrumpidamente paso a paso (`standstill = false`).
+     - Simplificada la actualización en `systems/gamestates/playing.lua` removiendo comprobaciones de reposo táctico y manteniendo el acelerador *corner buffering* (ratio 0.75).
+     - Eliminado el selector/dropdown de Modo de Control de la interfaz de Ajustes (`systems/settingsDraw.lua` y `systems/settingsInput.lua`), y desacoplado de `isLiveKey` en `systems/settings.lua`.
+     - Fijado `controlMode = 'classic'` de forma permanente en `systems/persistenceSettings.lua`, `systems/persistence.lua` y `main.lua`.
+     - Purgadas las referencias al modo táctico de la documentación (`docs/GDD.md`, `docs/TDD.md`, `docs/TODO.md`, `docs/ROADMAP.md`).
+     - Sincronizada la suite de pruebas unitarias (`tests/test_scope_06_snake.lua` y `tests/test_scope_15_shopPersistence.lua`).
+  2. **POR QUE**: Solicitud explícita de unificar el paradigma de control permanentemente en la experiencia arcade clásica continua, eliminando la complejidad y opciones alternas de control.
+  3. **Verificación**: 806/806 tests unitarios PASS al 100%, 0 errores, `error.log` en 0 bytes.
+
+## 2026-09-21 (daily challenges MVP & test suite green)
+
+- **fix** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE**: Saneamiento de `tests/test_scope_13_worldFacade.lua` adaptando aserciones de plantillas reconocidas (`cruz`, `espiral`, `laberinto`) y agregado de fallback seguro para `constants.TAMANIO_BLOQUE` en `ui/popupsUI.lua`.
+  2. **POR QUE**: Desbloquear suite completa en verde (806/806 tests pasando al 100%).
+
+- **feat** (completed - 2026-09-21 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Daily Challenges MVP (Fase 8)**: Módulo `systems/daily.lua` (generación de semilla determinista por fecha YYYY-MM-DD, verificación de 1 intento estricto diario por perfil, registro y ordenamiento de récords en `profile.dailyHistory`); Sub-menú modal `ui/playModalUI.lua` activado al presionar "JUGAR" (Expedición Estándar, Desafío Diario, Historial de Desafíos, Volver); Modal `ui/dailyResultUI.lua` con resumen de partida diaria y tabla top histórica de intentos locales; Sincronización en `systems/persistenceProfiles.lua` (`syncDailyHistory`) y evento `dailyDirty`; Semilla de mazmorra determinista acoplada a `dailySeed` en `world/world.lua`; Suite dedicada `tests/test_scope_39_daily.lua` (6 tests unitarios).
+  2. **POR QUE**: Cumplir con el pilar de rejugabilidad competitiva diaria asíncrona de Fase 8 (GDD §14) con determinismo absoluto y persistencia local sin alterar la expedición estándar.
+  3. **Verificación**: 806/806 tests unitarios PASS, cobertura general de 62.1% (subiendo daily al 98.0%), `error.log` en 0 bytes.
+
+## 2026-09-20 (fase 8 pendiente audit)
+
+- **docs** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE**: Creacion de `docs/AUDIT-FASE8-PENDIENTE.md` con diagnostico 0% codigo en Shrine, Daily/Codex/Bounty, Endgame y Skins; deuda bloqueante medida (persistence 874L, shaders 681L, settingsDraw 647L, player 632L, dungeonGen 530L); 9 recomendaciones CRITICO/RECOMENDADO/OPCIONAL/FUTURO con tablas Big-O y roadmap 6.1-6.8; sincronizacion de `docs/TODO.md` y `docs/CHANGELOG.md`.
+  2. **POR QUE**: Fijar decisiones vinculantes previas a codificar (billetera Shrine, MVP 4 modos y 5 skins, RNG determinista aislado) y secuenciar Fase 8 sin friccion estructural.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — AUD-1 a AUD-4**: schema 3 (`profileSchema` + `syncTalents/syncModeSkin`); RNG aislado (`core/rng.lua` + scope_32); splits <500L (`persistenceCodec/Profiles/Settings`, `playerSpeed/Timers`, `settingsWidgets`, `shaderSources/Fx`, `dungeonTemplates`); Zero-GC en `snake.draw` + scope_33.
+  2. **QUE — Shrine MVP (billetera shrineCoins + botón SANTUARIO)**: `shrineDefs/shrine/shrineShop/shrineDraw/shrineUI` + 8 hooks de efectos + `closeRunToShrine` 20% + scope_34 (9 tests).
+  3. **POR QUE**: Desbloquear Fase 8 sobre base sin deuda estructural, con meta-progresion sin farmeo y sin suplantar Tarot/tienda.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Bounty MVP (cofre + 40$, solo arena)**: `systems/bounty.lua` + `syncBounties/bountiesDirty` + instrumentación de 3 contratos + `tests/test_scope_35_bounty.lua` (8 tests).
+  2. **POR QUE**: Contratos por run con telemetría reutilizable por Endgame sin romper logros existentes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Endgame MVP (desbloqueos GDD, pacifista lite, selector Santuario)**: `systems/modes.lua` + ruta JUGAR unificada + selector en Santuario + rush/pacifista/endless + `tests/test_scope_36_modes.lua` (8 tests).
+  2. **POR QUE**: 4 modos jugables con progresión persistente y escalado sin tope.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Codex MVP**: `systems/codex.lua` + `systems/codexUI.lua` + álbum en perfiles + hooks bestiario/sinergias + `tests/test_scope_37_codex.lua` (7 tests).
+  2. **Verificación**: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
+- **refactor** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Higiene TD-5**: `settings` 336, `main` 384, `timers` 339 (todos <500L).
+  2. **Verificación**: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — HUD cleanup + intro única**: fuera minimapa, botón pausa táctil y ALMAS del navbar; `introPlayed` (intro solo al arrancar).
+  2. **Verificación**: 783/783 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Templates Cruz/Espiral/Laberinto**: `world/wallPatterns.lua` + 3 plantillas + `tests/test_scope_38_templates.lua` (10 tests).
+  2. **Verificación**: 800/800 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
+## 2026-09-19 (test suite sanitization, playing.lua desmonolithization, sequential death flow & HUD redesign)
+
+- **feat** (completed - 2026-09-19 18:49 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Estandarte Heroico Flotante Temático para los 5 Mini-Bosses de Sala 3**:
+     - `ui/hudUI.lua` (`drawFloatingBanner` y `MINIBOSS_THEMES`): Generalizado el estandarte heroico superior flotante ($Y = hh + 6\text{px}$) para los 5 encuentros élite con su paleta de color representativa y acentos luminosos:
+       - **Triturador (`wall_crusher`)**: Naranja volcánico (`{0.98, 0.42, 0.12}`) con acento ámbar de plasma.
+       - **Gólem de Escarcha (`frost_golem`)**: Cian criogénico (`{0.20, 0.85, 1.00}`) con acento gélido.
+       - **Sierpe de Magma (`magma_wyrm`)**: Rojo lava ardiente (`{1.00, 0.28, 0.08}`) con acento ígneo.
+       - **Reina Larva (`brood_queen`)**: Púrpura ponzoñoso (`{0.80, 0.18, 0.90}`) con acento orquídea abisal.
+       - **Espectro del Vacío (`void_phantom`)**: Violeta cósmico luminoso (`{0.65, 0.30, 0.98}`) con acento estelar.
+     - Indicador dinámico de estado: muestra `"¡VULNERABLE: CABEZAZO! [X/Y]"` con pulso dorado durante telegraphs, y marcadores de diamante en la barra acordes al HP máximo del mini-jefe.
+     - `render/enemiesDraw.lua` (`drawMiniBoss`): Retirada la barra de vida flotante sobre el sprite del mini-boss en el mundo de juego (`y0 - 10`), despejando completamente la arena para combate y esquivas.
+     - Estricto cumplimiento del límite de longitud arquitectónica: `hudUI.lua` (497L < 500L), `enemiesDraw.lua` (498L < 500L), `renderMain.lua` (470L < 500L).
+  2. **POR QUE**: Homogeneizar la experiencia visual y táctica entre Jefes y Mini-Jefes, permitiendo al jugador reconocer de inmediato al rival élite por su color heráldico y estado de vulnerabilidad sin saturación visual en la arena.
+  3. **Verificación**: 753/753 tests aprobados en `love tests`, `love . --test` en código 0 y `error.log` en 0 bytes.
+
+- **fix** (completed - 2026-09-19 18:32 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Reposicionamiento del Estandarte Heroico del Boss (Opción 1: Estandarte Flotante Superior Dedicado)**:
+     - `ui/hudUI.lua` (`hud.drawHUD`): Desacoplada la barra de jefe de la franja superior del HUD (28px). La cabecera superior permanece $100\%$ reservada para las estadísticas del jugador (`1-5 CATACUMBAS DE PIEDRA`, `$0`, `STREAK 1.0x` y minimapa) sin colisiones horizontales de coordenadas.
+     - El estandarte heroico del Boss flota centrado inmediatamente debajo del HUD ($Y = hh + 6\text{px}$) como una placa dedicada de obsidiana translúcida con marco y esquinas de bronce de $260\times 26\text{px}$, título centrado con fuente adaptada a 8px (`FONT_SMALL`) y barra de vida con gemas de rubí incrustadas.
+     - `render/renderMain.lua`: Eliminado el renderizado redundante y obsoleto de `st.bossHealthDisplay` que se dibujaba a $Y=32\text{px}$.
+     - Archivos mantenidos estrictamente por debajo de 500 líneas (`hudUI.lua` en 497L, `renderMain.lua` en 470L).
+  2. **POR QUE**: Resolver la superposición visual reportada por el usuario en la que los textos del HUD (`STREAK 1.0x` y monedas) se renderizaban exactamente debajo del título y barra del Boss por colisión en el eje X dentro de los 28px de la cabecera.
+  3. **Verificación**: 753/753 tests aprobados con 0 fallos en `love tests`, smoke test `love . --test` en código 0 y `error.log` en 0 bytes.
+
+- **feat** (completed - 2026-09-19 18:15 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Rediseño del HUD: Cabecera 8.1 (Hades Olympian Wrath) y Dock Inferior B08 (Split Wings)**:
+     - `ui/hudUI.lua` (`hud.drawHUD`): Implementada la estética de Hades con fondo de obsidiana oscura y borde de bronce bruñido. En sala de Boss (`sala == 5`), proyecta el estandarte heroico centrado superior con el título del jefe (`LORD OF THE VAULT / GOLEM DE CRIPTA`), barra con estela de daño residual *Ghost HP* (`ghostFrac`), barra de vida real con conmutación a color de fuego en *Enrage*, y dos gemas de rubí en los umbrales de fase (HP 8 y 4).
+     - `render/enemiesDraw.lua`: Retirada la barra de vida rectangular y texto plano `0 / 15` que flotaba sobre la celda del Boss en el mundo de juego, liberando el $100\%$ del centro de la arena para combate libre de distracciones.
+     - `ui/hudUI.lua` (`hud.drawSlots`): Implementada la arquitectura **B08 Split Wings** dividiendo los controles inferiores en dos alas angulares en esquinas:
+       - **Ala Izquierda (Evasión)**: `[Q] AUTOTOMÍA` y `[R] INVERSIÓN` con reborde de bronce, fondo oscuro de mármol, keycaps claros y temporizador de cooldown en segundos.
+       - **Ala Derecha (Arsenal)**: Tres slots de ítems pasivos con reborde de bronce y números dorados, con margen adaptativo respecto al botón de pausa táctil.
+       - **Centro Inferior**: Completamente libre y transparente para permitir maniobras verticales y esquivas de la serpiente sin obstrucciones visuales.
+  2. **POR QUE**: Solucionar la sobrecarga visual y el apiñamiento de elementos señalado por el usuario en la captura de juego, elevando la calidad gráfica al estándar de roguelikes de acción (Hades) y mejorando la legibilidad táctica del combate contra jefes por cabezazos.
+  3. **Verificación**: 753/753 tests aprobados con 0 fallos en `love tests`, smoke test `love . --test` en código 0 y `error.log` en 0 bytes.
+
+- **feat** (completed - 2026-09-19 17:28 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Flujo Secuencial de Animación de Muerte y Revivir**:
+     - `systems/gameflow.lua`: Modificado `triggerDeathAnimation()` para cambiar inmediatamente el estado a `GAME_STATE_DEATH_ANIMATION` con `deathModalOpen = false`, activando de inmediato el efecto de cámara lenta, sacudida de pantalla, shader de daño y partículas de despiece.
+     - `systems/gamestates/death.lua`: Al destruirse secuencialmente todos los segmentos de la serpiente (`#body == 0`), se activa `st.deathModalOpen = true` desplegando el modal interactivo "¿Revivir o Aceptar Muerte?".
+     - `gameflow.revivePlayer()`: Si el jugador revive (30 monedas), restablece 3 segmentos a salvo en `lastDeathHead`, otorga 3 segundos de invulnerabilidad (fantasma), limpia enemigos hostiles en un radio de 3 casillas y devuelve el juego fluidamente a `PLAYING`.
+     - `gameflow.acceptDeath()`: Si el jugador acepta la muerte, procesa los récords, resetea la racha y transiciona a `HIGH_SCORE` o `SHOP`.
+     - `main.lua`: Enrutamiento unificado de botones y teclado a `gameflow.acceptDeath()` y `gameflow.revivePlayer()`.
+     - `tests/test_scope_18_gamestatesDebug.lua`: Añadido test automatizado de verificación de la secuencia completa (`triggerDeathAnimation -> death.updateDeath -> deathModalOpen -> revivePlayer`).
+  2. **POR QUE**: Responder al requerimiento de feedback visual donde el impacto letal debe desintegrar la serpiente de forma dramática antes de consultar al jugador si desea revivir o dar por terminada la partida.
+  3. **Verificación**: 753/753 tests pasando al 100% en `love tests`, `love . --test` completado en código 0 y `error.log` en 0 bytes.
+
+- **refactor** (completed - 2026-09-19 17:20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Saneamiento Completo de la Suite de Tests (`love tests`)**:
+     - Resueltos 20 fallos históricos y preexistentes en suites unitarias, alcanzando **752/752 tests pasando al 100% con 0 fallos**:
+     - `core/timers.lua`: Diferenciación precisa mediante inspección de aridad (`debug.getinfo(easing, "u").nparams`) para distinguir funciones de easing personalizadas (aridad $\ge 1$) de callbacks de finalización `onComplete` (aridad 0) cuando se pasan como 4to argumento.
+     - `systems/persistence.lua`: Corrección en `atomicWrite` evaluando el valor de retorno real de `os.rename` dentro de `pcall` (`ok and res == true`), previniendo fallos silenciados de renombrado en VFS de testing y asegurando persistencia fiel de perfiles dispersos.
+     - `tests/test_scope_01_config.lua`: Sincronización de `ENEMY_PATROLLER_SPEED = 0.35` acorde a `core/config.lua`.
+     - `tests/test_scope_09_enemies.lua`: Delimitación de paredes de pasillo lateral para verificar el rebote de 180 grados del Interceptor Delta.
+     - `tests/test_scope_16_profiles.lua`: Sincronización de aserciones de inventario en `false` (en vez de `nil`) y truncado de nombre a $\le 14$ caracteres.
+     - `tests/test_scope_18_gamestatesDebug.lua`: Activación de `controlMode = "classic"` para avance en ticks sin teclas sostenidas, modelo de cabezazo al jefe con combo $\ge 2$ y ciclo de vida de degradación de segmentos en `death.updateDeath`.
+     - `tests/test_shop.lua`, `tests/test_settings.lua`, `tests/test_gamestates.lua`: Corrección de aserciones de perfiles, límites de longitud y aislamiento de modales en `setupCleanWorld()`.
+  2. **QUE — Desmonolitización Modular de `systems/gamestates/playing.lua` (1082L -> 4 módulos $<400\text{L}$)**:
+     - `systems/gamestates/playing.lua` (363L): Fachada orquestadora del bucle principal del estado `PLAYING`.
+     - `systems/gamestates/playingCombat.lua` (396L): Combate contra jefes y mini-jefes, armas pasivas (púa, rayo orbital, fuego), parry, singularidad y triturador.
+     - `systems/gamestates/playingPickups.lua` (241L): Frutas normales y especiales, combos, overdrive, economía, shockwaves pooled y objetivos de sala.
+     - `systems/gamestates/playingEvents.lua` (183L): Mutadores de sala ambientales (GDD §19), salas de misterio (GDD §15) y revivir del Fénix.
+  3. **POR QUE**: Cumplir estrictamente con los estándares arquitectónicos del proyecto de mantener todos los archivos por debajo de 400-500 líneas, garantizar cero regresiones y dejar una base de código 100% testeada con cobertura verde.
+  4. **Verificación**: `love tests` ejecutando 752/752 PASS (0 FAIL), `love . --test` exitoso (código 0, 74 módulos rastreados) y `error.log` en 0 bytes.
+
 ## 2026-09-18 (100 proposals master review document)
 
 - **docs** (completed - 2026-09-18 12:25 America/Bogota):

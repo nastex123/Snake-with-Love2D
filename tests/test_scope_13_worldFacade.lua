@@ -23,21 +23,30 @@ local dungeonGen = require("world.dungeonGen")
 local constants = require("constants")
 local coreWorld = require("core.world")
 
+-- Las pruebas de compatibilidad de plantillas usan el generador historico
+-- directamente; la partida normal inicializa una sola arena.
+local function initLegacyDungeon()
+    coreWorld.state.modo = "estandar"
+    world.init()
+    dungeonGen.generar(world, 800, 600, 5, 12345)
+end
+
 -- =========================================================================
 -- SUITE 1: World Initialization, State Management & Lifecycle
 -- =========================================================================
 describe("Scope 13 - World Facade: State Lifecycle & Setters", function()
     before_each(function()
-        world.init()
+        initLegacyDungeon()
     end)
 
     it("initializes state to stage 1, room 1, score 0, and generates dungeon", function()
+        world.init()
         assert_equal(1, world.etapa, "world.etapa must start at 1")
         assert_equal(1, world.sala, "world.sala must start at 1")
         assert_equal(0, world.puntajeSala, "world.puntajeSala must start at 0")
         assert_not_nil(world.dungeon, "world.dungeon must not be nil")
         assert_type(world.dungeon.rooms, "table", "world.dungeon.rooms must be a table")
-        assert_gte(#world.dungeon.rooms, 3, "dungeon should have at least 3 rooms")
+        assert_equal(1, #world.dungeon.rooms, "normal game should have one arena")
         assert_false(coreWorld.get("mundoCompletado"), "mundoCompletado should be false on init")
     end)
 
@@ -83,7 +92,7 @@ end)
 -- =========================================================================
 describe("Scope 13 - World Facade: Room & Stage Progression", function()
     before_each(function()
-        world.init()
+        initLegacyDungeon()
     end)
 
     it("advances room, marks previous as cleared, and new room as visited", function()
@@ -175,7 +184,7 @@ end)
 -- =========================================================================
 describe("Scope 13 - World Facade: Room Objectives System", function()
     before_each(function()
-        world.init()
+        initLegacyDungeon()
     end)
 
     it("maps room templates to correct objective types", function()
@@ -187,6 +196,9 @@ describe("Scope 13 - World Facade: Room Objectives System", function()
             treasure = "collect_food",
             spawner = "clear_enemies",
             boss = "defeat_boss",
+            cruz = "clear_enemies",
+            espiral = "collect_food",
+            laberinto = "clear_enemies",
         }
 
         for i = 1, world.getRoomCount() do
@@ -256,7 +268,7 @@ end)
 -- =========================================================================
 describe("Scope 13 - World Facade: Dungeon Generation & Map Data", function()
     before_each(function()
-        world.init()
+        initLegacyDungeon()
     end)
 
     it("returns structured dungeon map data for minimap", function()
@@ -358,7 +370,7 @@ end)
 -- =========================================================================
 describe("Scope 13 - Populate: Boss Room 3x3 Reservation & Room Rules", function()
     before_each(function()
-        world.init()
+        initLegacyDungeon()
     end)
 
     it("reserves center + 8 adjacent cells (3x3) in boss room", function()

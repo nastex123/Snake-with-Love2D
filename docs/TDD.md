@@ -2,6 +2,8 @@
 
 ## 1. Architecture Overview
 
+**Estado de esta especificación (2026-11-09)**: el flujo principal utiliza una arena por etapa y fases de supervivencia, mini-jefe y jefe. Persisten interfaces y componentes heredados de salas para compatibilidad; su migración y el balance final siguen pendientes.
+
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (504L fixed timestep `FIXED_DT=1/60`)
 **Total Modules**: 66 juego (69 con `conf.lua`+`constants.lua`+`scratch_test_debug.lua`, 106 con 39 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), livecoding +1 (`core/livecoding.lua`), tests 34→39 (scope_24/25/26/27/31)
@@ -113,11 +115,13 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 
 | Module | Folder | Lines | Alias | Responsibility |
 |--------|--------|-------|-------|----------------|
-| main.lua | raíz | 504 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) + boot display heavy apply |
+| main.lua | raíz | 384 | — | Game loop fixed timestep `FIXED_DT=1/60` + accumulator (P14) + boot display heavy apply; keypressed en main_keypressed (TD-5.2) |
+| main_keypressed.lua | raíz | 184 | — | Dispatcher love.keypressed via attach(env) (TD-5.2) |
 | constants.lua | raíz | 3 | — | Shim → core/config.lua (legacy compatibility) |
 | config.lua | core/ | 349 | — | Centralized configuration + `KEYBINDS` + `ENABLE_VORONOI=false` (P07/P15) + gameplay fase 8 |
 | logger.lua | core/ | 240 | Log | Logging (info/warn/error/debug) |
-| timers.lua | core/ | 467 | — | Timer manager único pooled (P05) |
+| timers.lua | core/ | 339 | — | Timer manager único pooled (P05); easings en core/easings (TD-5.3) |
+| easings.lua | core/ | 130 | — | Librería 30 easings puros (TD-5.3) |
 | events.lua | core/ | 118 | — | P06 Event Bus `on/off/emit` |
 | input.lua | core/ | 110 | — | P07 `isDown/isHeld/isAnyHeld` + gamepad + `getMousePosition` con proyección virtual |
 | assets.lua | core/ | 144 | — | P08 `getFont/getImage/getCanvas` cache con filtro dinámico |
@@ -128,7 +132,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | snake/core.lua | entities/snake/ | 99 | — | P02: reset + update timers (flash/sliceGrace/ghost/autotomy/reverse/constrictor/fire/decoys) |
 | snake/abilities.lua | entities/snake/ | 94 | — | P02: triggerReverseSlither/applySlimming/triggerAutotomy |
 | snake/collisions.lua | entities/snake/ | 162 | — | P02: checkEnemyCollisions (+fromIndex fix) / checkPatrollerSlice / checkConstrictorLoop + pointInPolygon |
-| snake/movement.lua | entities/snake/ | 411 | — | P02: mover (tactical hold, wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
+| snake/movement.lua | entities/snake/ | 411 | — | P02: mover clásico continuo (wrap, body/obstacle/boss/projectile/enemy + magnet/twin + fireTrail + mutadores Zero-G/Pluma/Titan) + encolarDireccion/cambiarDireccion/checkTailSnap |
 | enemies.lua | entities/ | 391 | enemiesMod | Fachada P01 (delega a 3 submódulos, API idéntica) |
 | enemyAttackRegistry.lua | entities/ | 219 | — | P01+P11: pools 32/64/32 `active` sin GC |
 | enemyBossLogic.lua | entities/ | 176 | — | P01: spawnBoss/hitBoss/onBossDefeated + updateBoss + updateBarLerp |
@@ -140,19 +144,38 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | food.lua | entities/ | 447 | foodMod | Food spawning and types (NORMAL/GOLD/COIN + 9 dinámicas/combate) |
 | obstacles.lua | entities/ | 437 | obstaclesMod | Fachada hazards P12 (delega a `world/biomeHazards.lua`) |
 | world.lua | world/ | 230 | worldMod | Facade: estado (etapa/sala/objetivoSala), getters, delega a dungeonGen/populate |
-| dungeonGen.lua | world/ | 514 | — | BSP dungeon generation, room templates, stage modifiers (split 17:08:2026) |
+| dungeonGen.lua | world/ | 418 | — | BSP dungeon generation, delega datos a dungeonTemplates (AUD-3); pondera Cruz/Espiral/Laberinto (TD-2) |
+| dungeonTemplates.lua | world/ | 29 | — | Datos stageModifiers/stageMod/roomTemplates(10)/templateIds(9) (AUD-3, TD-2) |
+| wallPatterns.lua | world/ | 67 | — | Patrones cruz/espiral/laberinto con agujero spawn y dedupe (TD-2) |
 | populate.lua | world/ | 296 | — | Room population (enemies/food/obstacles + par dual) (split 17:08:2026) |
 | items.lua | systems/ | 197 | itemsMod | Item definitions (registry 22 + 4 categorías) |
 | shop.lua | systems/ | 340 | shopMod | Tienda v2: fachada de tienda, 3 puestos mixtos + reroll |
 | shopDraw.lua | systems/ | 326 | — | Render de la tienda, hornacinas, cálices, y coordenadas virtuales |
 | shopBioScanner.lua | systems/ | 207 | — | Submódulo bioscanner de la tienda |
-| persistence.lua | systems/ | 820 | persistenceMod | Atomic write `.tmp`+`.bak` + `schema_version=2` (P09) + canonical resolution & filter persistence |
+| persistence.lua | systems/ | 484 | persistenceMod | Facade AUD-3: delega codec a persistenceCodec y CRUD a persistenceProfiles; `schema_version=3` con talents/codex/bounties/modo/skin |
+| persistenceCodec.lua | systems/ | 100 | — | Codec lua_encode/decode + atomicWrite tmp/rename/bak (AUD-3) |
+| persistenceProfiles.lua | systems/ | 230 | — | CRUD perfiles via attach(P, deps), max 3, migracion schema 3 (AUD-1/AUD-3) |
+| persistenceSettings.lua | systems/ | 60 | — | Defaults/deep_merge/diffs de ajustes (AUD-3) |
+| profileSchema.lua | systems/ | 70 | — | Defaults talents[8]/stats/codex/bounties/dailyHistory/modo/skin/shrineCoins + sanitize/migrate (AUD-1, Shrine MVP) |
+| shrine.lua | systems/ | 70 | — | Efectos puros: rank/magnetBase/comboWindow/dragon/fire/freeze/buff/revive/heritage/ironBody (Shrine MVP) |
+| shrineDefs.lua | systems/ | 20 | — | Catalogo 8 talentos, ramas, rangos, costes via SHRINE_TALENTS (Shrine MVP) |
+| shrineShop.lua | systems/ | 45 | — | Compra con billetera shrineCoins + talentsDirty (Shrine MVP) |
+| shrineDraw.lua | systems/ | 70 | — | Rejilla 8 talentos + balance + cierre (Shrine MVP) |
+| shrineUI.lua | systems/ | 70 | — | Panel visible/open/close/draw/mousepressed/keypressed (Shrine MVP) |
+| bounty.lua | systems/ | 110 | — | 2 contratos por run, progreso, pago 30/40+cofre/50, archivo a historial (Bounty MVP) |
+| modes.lua | systems/ | 70 | — | 4 modos, desbloqueos GDD, applyOnStart, updateRush, scaleStage 6+ (Endgame MVP) |
+| codex.lua | systems/ | 95 | — | Bestiario 9 + 8 sinergias GDD, see/check/count (Codex MVP) |
+| codexUI.lua | systems/ | 72 | — | Album solo lectura + cardLinks perfiles (Codex MVP) |
 | profiles.lua | systems/ | 301 | profilesMod | Facade: profile state, input, delega draw a profilesDraw (split 17:08:2026) |
 | profilesDraw.lua | systems/ | 449 | — | Profile UI rendering (select/input/confirm/achievements) (split 17:08:2026) |
 | achievements.lua | systems/ | 257 | achievementsMod | Achievement tracking (11 logros) |
 | settings.lua | systems/ | 535 | settingsMod | Facade: audio/graphics/accessibility dat + state, canonical resolution schema `{w,h}`, delega draw a settingsDraw |
-| settingsDraw.lua | systems/ | 610 | — | Settings tabs/controls/toasts rendering |
-| player.lua | systems/ | 573 | playerMod | Cálculo velocidad/items del jugador, uso de ítems |
+| settingsDraw.lua | systems/ | 318 | — | Tabs ajustes, delega widgets a settingsWidgets (AUD-3) |
+| settingsWidgets.lua | systems/ | 261 | — | Widgets checkbox/slider/dropdown/button + paleta (AUD-3) |
+| settingsInput.lua | systems/ | 236 | — | Input mousepressed ajustes via attach (TD-5.1) |
+| player.lua | systems/ | 402 | playerMod | Facade items/comida, delega velocidad a playerSpeed y timers a playerTimers (AUD-3) |
+| playerSpeed.lua | systems/ | 60 | — | calcSpeed/itemColor puros (AUD-3) |
+| playerTimers.lua | systems/ | 100 | — | Timers pooled addOrRefresh/get/clear + multipliers (AUD-3) |
 | gameflow.lua | systems/ | 292 | — | Runs/rooms: init run, reset sala, banners mutador/misterio |
 | gamestates.lua | systems/ | 203 | — | Fachada P03 (updateCommon + overlaysOpen/flushPendingAchievements + dispatch, delega a 3 submódulos) |
 | gamestates/playing.lua | systems/gamestates/ | 936 | — | P03 + fase 8: updatePlaying (economía, boss, tarot, mutadores, misterio) |
@@ -173,7 +196,9 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | toastsUI.lua | ui/ | 79 | — | Toasts |
 | popupsUI.lua | ui/ | 45 | — | Popups |
 | overlaysUI.lua | ui/ | 186 | — | Pausa/minimapa/dungeon debug |
-| shaders.lua | render/ | 600 | shadersMod | Bloom/CRT/shadow/heat + dynamic filtering + virtual pixelScale pipeline + backbuffer scaling |
+| shaders.lua | render/ | 469 | shadersMod | Facade pipeline, fuentes en shaderSources (AUD-3) |
+| shaderSources.lua | render/ | 160 | — | Fuentes GLSL colorblind/blur/shadow/heat/voronoi/balatro (AUD-3) |
+| shaderFx.lua | render/ | 20 | — | Estado damage/shake + trigger/update/get (AUD-3) |
 | particles.lua | render/ | 316 | particlesMod | Particle effects (textura 4x4 procedural) |
 | renderMain.lua | render/ | 423 | — | drawScene (juego, mutadores, misterio), dibujo menú/glow/shadow |
 | enemiesDraw.lua | render/ | 461 | — | Draw enemigos + Chaser estrella de espinas + minibosses |
@@ -205,7 +230,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | HIGH_SCORE | 3 | Record celebration |
 | SHOP | 4 | Item shop |
 | PAUSED | 5 | Game paused |
-| TRANSITION | 6 | Room transition |
+| TRANSITION | 6 | Intermisión y transición de etapa (actualmente transición de sala en código) |
 
 ## 4. Data Flow
 
@@ -737,33 +762,19 @@ config.SKIN_REGISTRY = {
 * **Mapeo de Teclas en `core/config.lua`**:
   - Tabla de asignación dinámica `config.KEYBINDS = { up = {"w", "up"}, down = {"s", "down"}, item1 = {"1", "kp1"}, autotomy = {"q", "triggerleft"} }`.
 
-### 10.22 Held-Key Tactical Slither Engine (Pipeline de Movimiento Sostenido)
+### 10.22 Classic Continuous Slither Engine (Pipeline de Movimiento Continuo Clásico)
 
-* **Estructura en `entities/snake.lua` y `systems/gamestates.lua`**:
-```lua
-function snake.isDirectionHeld()
-    if settings.get("movementMode") == "classic" then
-        return true -- Avance automático continuo
-    end
-    for _, key in ipairs(config.KEYBINDS.up)    do if love.keyboard.isDown(key) then return true,  0, -1 end end
-    for _, key in ipairs(config.KEYBINDS.down)  do if love.keyboard.isDown(key) then return true,  0,  1 end end
-    for _, key in ipairs(config.KEYBINDS.left)  do if love.keyboard.isDown(key) then return true, -1,  0 end end
-    for _, key in ipairs(config.KEYBINDS.right) do if love.keyboard.isDown(key) then return true,  1,  0 end end
-    return touch.isDragging()
-end
-```
-* **Integración en `snake.update(dt)`**:
-  - El temporizador de avance de cuadrícula `stepTimer` acumula `dt` **únicamente si `isDirectionHeld()` retorna `true`**.
-  - Si no hay dirección sostenida:
-    - La serpiente no ejecuta `snake.mover()`.
-    - Las entidades enemigas (`enemies.update(dt)`), proyectiles (`bossAttacks.update(dt)`), partículas y shaders continúan su ciclo de actualización en tiempo real con normalidad.
+* **Paradigma Único Fijo**: La serpiente avanza ininterrumpidamente paso a paso según el intervalo `velocidadActual`. No existen estados de detención estática en juego normal; la dirección se actualiza mediante eventos de entrada o la cola de giros (`inputQueue`).
+* **Integración en `snake.mover()` y `systems/gamestates/playing.lua`**:
+  - En cada tick de movimiento, la serpiente toma el comando frontal de `s.inputQueue` (si existe) y se traslada en la cuadrícula.
+  - El temporizador de cuadrícula (`st.cronometro`) avanza con `dt` de forma continua.
+  - Al recibir una entrada que cumple con el umbral de esquina (`st.cronometro >= st.velocidadActual * 0.75`), se ejecuta *Corner Buffering*, acelerando el paso inmediato para eliminar latencia visual.
 
 ### 10.23 Core Engine & Optimization Pipeline (Input, AABB Pre-Filter & Determinism)
 
 #### 1. Input Intelligent Buffer & Corner Buffering (`entities/snake.lua` & `systems/gamestates.lua`)
 * **Cola de Entrada con Reemplazo Dinámico**: `snake.encolarDireccion(s, tx, ty)` valida giros ortogonales contra la dirección real de avance (`lastMovedDirX/Y`) en vez de comandos encolados intermedios. Si el jugador rectifica una curva antes del tick, la cola sobrescribe el comando pendiente (`qLen == 1 → inputQueue[1] = nuevo`, `qLen == 2 → inputQueue[2] = nuevo`), eliminando falsos descartes anti-180° y descartes rígidos por cola llena.
 * **Corner Buffering Acelerado**: `gamestates.lua` evalúa si `cronometro >= velocidadActual * 0.75` al encolar un nuevo input durante movimiento continuo. Si se cumple, completa el paso inmediatamente (`cronometro = velocidadActual`), reduciendo la latencia de giro en esquinas a 0 ms.
-* **Respuesta desde Reposo (Tactical Slither)**: En modo táctico con `standstill = true`, cualquier tecla direccional o toque táctil dispara instantáneamente `cronometro = velocidadActual` sin retraso de arranque.
 
 #### 2. Ray Casting AABB Pre-Filter (`entities/snake.lua`)
 ```lua
@@ -882,6 +893,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 ### 10.27 Room Mutators Engine ✅ Completed (2026-09-07 `feature/phase8-room-modifiers`)
 
+**Nota de migración**: el código actual asigna mutadores por sala. El diseño objetivo de GDD §19 los asigna una vez al comenzar la etapa y los mantiene durante sus encuentros; esta migración está pendiente.
+
 * **Módulo**: `systems/roomMutators.lua` (264L, data-driven; suite scope_24 22 tests).
 * **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(sala, room)` — 35% (`ROOM_MUTATOR_CHANCE`) por sala, excluye boss (`template`/sala 5) y élite (`isElite`); `apply()` en `gameflow.iniciarSala` antes de `populateRoom` (Dual duplica spawns); estado en `world.state.roomMutator` + `roomMutatorData`.
@@ -892,6 +905,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
 
 ### 10.28 Special Mystery Rooms Engine ✅ Completed (2026-09-07 `feature/phase8-mystery-rooms`)
+
+**Nota de migración**: el flujo activo selecciona encuentros con `mystery.assignStage()` durante supervivencia y los finaliza sin transición de sala; también los cierra antes del mini-jefe. La probabilidad heredada del 6% y el balance requieren revisión. Las reglas de salas descritas debajo se conservan como referencia histórica.
 * **Módulo**: `systems/mystery.lua` (336L, data-driven; suite scope_25 24 tests).
 * **Catálogo**: `MYSTERY_DEFS` 4 salas (GDD §15) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(room, idx)` 6% (`ROOM_MYSTERY_CHANCE`), excluye boss/elite/sala 1; `assign(dungeon)` en `world.init/avanzarEtapa` fija `room.mystery`; runtime por sala en `World.state.mysteryData` (renovado en `iniciarSala`).
@@ -930,6 +945,100 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Venom (GDD §16.3)**: trigger al pisar `slime` (`VENOM_SPORE_CHANCE=0.30`, 1.8s); `movement` invierte mapeo held (up<->down, left<->right) antes del filtro anti-180°; viñeta verde pulsante en `renderMain` (primitivas, sin shader nuevo); tinte verde.
 * **Cryo (GDD §16.4)**: trigger al pisar `ice` (`CRYO_ICE_CHANCE=0.15`) + aura `checkGolemAura` (Chebyshev ≤4 del Golem de Escarcha vivo) en tick `playing`; ×1.43 intervalo; inmune a proyectiles; tinte hielo.
 * **Notas de implementación**: loseta rúnica≈`trap`, esporas≈`slime`, esquirlas≈`ice`+golem (decisión 2026-09-10: reutilizar tiles, cero entidades nuevas); Medusa conserva velocidad (solo bloqueo); proyectiles no se destruyen (seguridad de pools).
+
+### 10.26 Stage Survival & Encounter Progression (implementación inicial)
+
+* **Propósito**: reemplazar el ciclo de salas por una expedición de cinco etapas. Cada etapa mantiene una arena continua y progresa por supervivencia, un mini-jefe y un jefe de etapa. El jefe de la etapa 5 cierra la expedición.
+* **Flujo objetivo**: `stageStart` → secuencia de oleadas de supervivencia → mini-jefe de etapa → jefe de etapa → intermisión de tienda en etapas 1–4, o resumen final en etapa 5. La muerte conserva el flujo actual de revive/aceptar muerte.
+* **Condiciones de avance**:
+  - `waveTimer` solo marca el tiempo hasta el siguiente refuerzo; al expirar inicia la siguiente oleada y no declara la etapa completada.
+  - La etapa no termina por puntos ni por expirar un contador global. Se supera al derrotar al jefe de etapa.
+  - Cada etapa incluye un mini-jefe; el jugador debe derrotarlo para continuar a la fase de jefe.
+  - Tras derrotar al jefe de las etapas 1–4 se abre la tienda y luego inicia la etapa siguiente; derrotar al jefe de la etapa 5 termina la expedición y muestra el resumen final.
+  - La comida conserva puntuación, monedas, combos y habilidades; no reduce el contador de oleada.
+* **Estado de etapa**: `worldMod.etapa`, `stagePhase` (`survival`, `miniboss`, `boss`, `intermission`), `stageEncounterSpawned`, `waveCurrent`, `waveTotal`, `waveTimer` y `waveMaxTimer`. `systems/stageFlow.lua` coordina las fases y `world/stageArena.lua` genera una arena por etapa.
+* **Responsabilidades a migrar**:
+  - `world/world.lua` y `world/stageArena.lua`: ya generan una arena por bioma; retirar las interfaces de sala que aún consumen otros módulos.
+  - `world/populate.lua`: preparar la arena, generar oleadas seguras e introducir los encuentros de mini-jefe/jefe.
+  - `systems/gameflow.lua` y `systems/gamestates/transition.lua`: avanzar de etapa y abrir la tienda entre etapas.
+  - `ui/hudUI.lua`: mostrar etapa, bioma, fase, oleada y objetivo de encuentro.
+  - `systems/roomMutators.lua`, `systems/mystery.lua` y eventos: migrar las mecánicas que se conserven a alcance de etapa/encuentro o retirarlas del flujo principal.
+* **Balance pendiente**: cantidad y duración de oleadas por etapa, orden temático de los cinco mini-jefes, roster/vida de cada jefe, recompensas y frecuencia de modificadores/eventos.
+* **Mejora de IA de mini-jefes (diseño aprobado; pendiente de implementación)**:
+  - Triturador: alternar embestida por línea y corte de ruta hacia la cabeza; aturdimiento breve tras el choque y límite a obstáculos destruidos.
+  - Gólem: alternar abanico y descarga de franja con telegrafiados distintos; hielo temporal con ruta de salida y aviso propio para la nova reactiva.
+  - Sierpe: sustituir el circuito continuo por tramos anunciados, carga sobre el tramo y pausa de recuperación; conserva estela temporal de lava.
+  - Reina: larvas desde ángulos distintos con cap activo bajo; la red anticipa ruta y no aparece directamente bajo la cabeza.
+  - Espectro: singularidad fuera del centro con zona segura; teletransporte que corta la ruta, telegrafiado visible y recuperación. Evitar encadenar ambos ataques sin escapatoria.
+  - Los ataques deben adaptarse a la posición del jugador y conservar una ventana legible de respuesta; dificultad creciente basada primero en coordinación/agresividad, no solo en reducir temporizadores.
+* **Migración y validación pendientes**: actualizar estados y persistencia; eliminar los resets y la victoria por sala; probar las cinco etapas, derrotas, revive, jefes y tienda entre etapas.
+
+#### Comportamiento actual heredado
+
+Las interfaces de sala y el generador anterior permanecen como compatibilidad para consumidores y pruebas heredados. El flujo activo de etapas no avanza por ellos; la retirada o adaptación completa de esos consumidores sigue pendiente.
+
+### 10.27 Motor de Eventos Aleatorios Mixtos por Bioma (`systems/eventsEngine.lua`)
+
+**Nota de migración**: las reglas por oleada siguen siendo útiles dentro de las arenas de etapa; los vetos por tipo de sala y las asignaciones entre salas pertenecen al flujo anterior y deben traducirse a fases de supervivencia, mini-jefe y jefe.
+
+* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
+  - `activeEvent`: (string/nil) Identificador del evento activo (E-01 a E-10 para combate; D-01 a D-10 para dilemas).
+  - `activeEventTimer`: (número) Tiempo restante en segundos del evento dinámico.
+  - `activeEventData`: (tabla) Datos dinámicos de runtime (coordenadas de escombros, baldosas incandescentes, vainas de esporas o singularidades).
+* **Integración en el Frame Loop (`systems/gamestates/playing.lua`)**:
+  - En salas ordinarias no-boss y no-élite, al inicio de una oleada intermedia (`waveCurrent > 1`), se ejecuta un roll (15% base) filtrado por el bioma actual de la etapa (`worldMod.etapa`).
+  - El tick de `eventsEngine.update(dt, worldMod, enemiesMod)` gestiona el telegrafiado de amenazas ambientales, la física de singularidades y el decaimiento del temporizador.
+* **Seguridad y Cero-GC**:
+  - Los marcadores de derrumbes, erupciones y rayos utilizan pools estáticos indexados numéricamente sin creación de tablas volátiles por tick.
+  - Las balizas de peligro utilizan `enemyAttackRegistry.addTelegraph(gx, gy, 1.0, "hazard")` con un aviso previo estricto de $\ge 1.0\text{s}$. Durante el telegrafiado, la celda no es letal.
+* **Micro-Eventos de Decisión Táctica (D-01 a D-10)**:
+  - Generados en pedestales rúnicos o entre-salas mediante popups interactivos de dos opciones en `ui/popupsUI.lua` (opción de sacrificio/riesgo vs conservadora).
+* **Feedback Multisensorial**:
+  - Acorde de alarma grave (`sound.play("event_hazard")`) para amenazas dinámicas y arpegio brillante (`sound.play("event_bonus")`) para bonificaciones, acompañado de banner superior en el HUD.
+
+### 10.31 Eventos Aleatorios de Sala (`systems/roomEvents.lua`, GDD §22)
+
+**Nota de migración**: `roomEvents` se selecciona como máximo una vez al iniciar supervivencia y se cancela antes del mini-jefe. Se conserva el nombre y campos heredados de sala; las reglas históricas siguientes requieren revisión de balance.
+
+* **Propósito**: Sucesos intra-sala de 8–15s (E1–E7) complementarios al motor mixto §10.27, ligados al asedio por oleadas (GDD §6). Máximo 1 evento por sala; excluye élite/boss/misterio y asedio con mutador Contrarreloj.
+* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
+  - `roomEvent`: (string/nil) Id del evento activo (`gold_rain`, `big_hunt`, `merchant`, `eclipse`, `duel`, `void_echo`, `blood_offer`).
+  - `roomEventTimer`: (número) Tiempo restante del evento.
+  - `roomEventData`: (tabla reutilizada, sin alloc por tick) Datos de runtime (monedas restantes, eco de inputs).
+* **Tabla Data-Driven `roomEvents.DEFS`** (roll/puedeActivar/iniciar/actualizar/finalizar por evento):
+  - Roll único al iniciar la oleada 1: `love.math.random() < EVENT_CHANCE (0.25)` con veto por tipo de sala y mutador; E2 solo si `waveTotal >= 2`, E5 solo en salas 1–2, E6 solo en etapa ≥4.
+  - E1 reutiliza la física rebotante de Fiebre del Oro con 6 monedas y `tileFree` de `world/populate.lua`; E2 marca un spawn con `eliteDrop × 3`; E3/E7 usan entidades estáticas de 1 celda con radio de interacción 1; E4 aplica overlay de radio 8 + `timeScale`; E5 congela `pendingRespawns` y spawners 12s; E6 mantiene buffer circular de inputs de 72 entradas (1.2s a 60Hz).
+* **Seguridad y Cero-GC**:
+  - Entidades y timers del pool existente (`enemyAttackRegistry` 32/64/32, `core/timers.lua`); el buffer del eco E6 es circular preasignado; chequeo de salida $O(1)$, actualización $O(n)$ sobre listas ya iteradas.
+* **Interfaz en `ui/hudUI.lua` + `ui/toastsUI.lua`**:
+  - Banner `EVENTO: <TAG>` al activar + badge con cuenta atrás (`roomEventTimer`) con el mismo layout que badges de mutador/misterio.
+* **Tests `scope_41`** (compartido con asedio E+B): roll/vetos por sala, ciclo completo de cada evento, expiración sin premio, exclusión élite/boss/misterio, 1 evento máximo por sala, HUD sin tablas por frame.
+
+### 10.32 Segunda tanda E8–E14 y refinamiento (GDD §22.3–§22.5)
+
+* **Nuevos IDs en `roomEvents.DEFS`**: `blood_roulette` (E8), `hunter_fever` (E9), `shadow_pact` (E10), `cursed_chest` (E11), `void_debt` (E12), `split_heart` (E13), `total_eclipse` (E14).
+* **Vetos por fase del asedio**: E4/E9/E14 solo con `getObjectiveType() == "siege"`; E3/E7 solo en `rest`; E2/E5/E13 solo en `waves`; E1/E8/E11/E12 en cualquier fase.
+* **Vetos por mutador/misterio**: E9⊘`midas`, E14⊘`tunnel`, E12⊘`silent_veil`; exclusión mutua con `room.mystery ~= nil` y E6⊘Doppelgänger; E10 vetado sin `shieldActive` ni armadura; E5/E13 vetados en salas ≥3.
+* **Casos técnicos**: E12 admite `st.monedas` negativo (piso inexistente; `shop.abrir` debe rechazar compra con saldo <0 y mostrar "DEUDA"); E14 setea `fenixBypassed = true` en la ventana; E9 aplica `enemySpeedMult × 1.15` + `dropMult × 2` solo a kills con `eventId` marcado; E6 reutiliza el buffer circular de Espejo (§15.2) a 72 entradas.
+* **Refinamiento E1–E7 aplicado**: E1 8 monedas/9s, E2 timer 20s propio, E3 30%/4 segmentos, E4 radio 7 (E1–E2), E5 +sala 4, E6 8s/combo +3, E7 umbral racha ≥1.4x.
+### 10.33 Modo Boss Rush y Magma Wyrm Segmentado
+
+* **Modo Boss Rush (`systems/modes.lua` y `systems/gameflow.lua`)**:
+  - `world.state.modo = "boss_rush"`.
+  - Array estático de secuencia: `BOSS_RUSH_SEQUENCE = {1, 2, 3, 4, 5, "final"}`.
+  - En cada paso, se carga directamente la arena de combate del mini-jefe respectivo, intercalando visitas al estado `SHOP`.
+* **Magma Wyrm Multi-Segmento (`entities/minibossWyrm.lua`)**:
+  - Mini-jefe de etapa 3 desacoplado para mantener `entities/enemyMiniBoss.lua` $\le 500$ líneas.
+  - Array interno prealocado de 6 segmentos con posición `x, y` y `alive = true`.
+  - Detección de colisión individual: cada cabezazo combo x2+ o bomba destruye el segmento posterior, emitiendo partículas de lava y reduciendo su longitud.
+  - Al caer la cabeza (último segmento), emite el drop y activa la victoria de sala.
+
+### 10.34 Gamefeel y Defensa Perceptual (Propuestas #2, #5, #6, #7)
+
+* **Highlight de Lazo Constrictor (#5)**: Pulso aditivo instantáneo con `love.graphics.polygon` en blanco brillante antes de detonar `shockwave`.
+* **Distinción Cromática de Capas (#6)**: Renderizado diferenciado en `render/renderMain.lua`: Escudo en cian (`0, 1, 1`), Armadura en cobalto (`0.16, 0.32, 0.75`) y Ghost en blanco puro (`1, 1, 1`).
+* **Campana de Última Defensa (#7)**: Disparo de SFX procedural grave `sound.play("last_defense")` y flash rojo en bordes cuando `armorCharges == 0` y `shieldActive == false`.
+* **Previsualizador de Autotomía (#2)**: Dibujo de línea discontinua proyectando la celda del señuelo al sostener `Q`.
 
 ## 11. Love2D Gotchas
 

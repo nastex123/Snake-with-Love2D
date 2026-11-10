@@ -13,6 +13,8 @@ local obstaclesMod = require("entities.obstacles")
 local worldMod = require("world.world")
 local uiMod = require("ui.ui")
 local sound = require("audio.sound")
+local shadersMod = require("render.shaders")
+local achievements = require("systems.achievements")
 local mutatorsMod = require("systems.roomMutators")
 local mysteryMod = require("systems.mystery")
 
@@ -28,6 +30,8 @@ function gameflow.applyActiveProfile()
     end
     st.monedas = profile.monedas or 0
     st.highScore = profile.highScore or 0
+    st.modo = profile.modo or "estandar"
+    st.skin = profile.skin or "classic"
     if profile.stats and profile.stats.highestStreak then
         st.highestStreak = profile.stats.highestStreak
     else
@@ -66,7 +70,8 @@ function gameflow.resetGame(keepShopInventory)
     st.roomDamaged = false
     st.deathAnimTimer = 0
     st.lastObstacleScore = 0
-    st.magnetRange = 0
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    st.magnetRange = (okShrine and shrineMod.magnetBase()) or 0
     -- P05: cancelar handles pooled antes de limpiar (evitar onEnd tardío)
     if st.activeTimers then
         local timers = require("core.timers")
@@ -121,6 +126,8 @@ function gameflow.resetGame(keepShopInventory)
     st.batteryUsed = false
     st.pendingDeathTimer = nil
     st._wasSlimeSlowed = false
+    st.roomUsedBomb = false
+    st.roomUsedShield = false
 end
 
 function gameflow.iniciarSala(keepInventory)
@@ -128,14 +135,24 @@ function gameflow.iniciarSala(keepInventory)
     if not st.anchoGrilla or st.anchoGrilla == 0 or not st.altoGrilla or st.altoGrilla == 0 then
         gameflow.recalcularGrilla()
     end
+    local previousScore = keepInventory and st.puntuacion or 0
     gameflow.resetGame(keepInventory)
+    require("systems.stageFlow").start(st)
     worldMod.puntajeSala = 0
-    st.puntuacion = 0
+    st.puntuacion = previousScore
+    local waveConfig = constants.STAGE_WAVES[worldMod.etapa] or constants.STAGE_WAVES[5]
+    st.waveTotal = waveConfig.count
+    st.waveMaxTimer = waveConfig.interval
+    st.waveCurrent = 1
+    st.waveTimer = st.waveMaxTimer
+    mysteryMod.assignStage(worldMod)
     -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
     mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
     -- Velo Silencioso: registra monedas al entrar para duplicar al superar
     mutatorsMod.silentMarkCoins(st.monedas or 0)
     worldMod.populateRoom(st.player.body, st.anchoGrilla, st.altoGrilla, obstaclesMod.pos, foodMod, enemiesMod, obstaclesMod)
+    local okRev, roomEvents = pcall(require, "systems.roomEvents")
+    if okRev and roomEvents then roomEvents.roll(worldMod, st, enemiesMod) end
     if worldMod.sala == 1 then
         local bName = worldMod.getBiomeName()
         uiMod.addPopup("ETAPA " .. worldMod.etapa .. ": " .. string.upper(bName), math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 3)
@@ -158,7 +175,7 @@ function gameflow.iniciarSala(keepInventory)
     local mysDef = mysteryMod.currentDef(worldMod)
     if mysDef then
         mysteryMod.begin()
-        uiMod.addPopup("SALA ESPECIAL: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
+        uiMod.addPopup("EVENTO: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
         sound.play("highScore")
     end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
@@ -176,7 +193,7 @@ function gameflow.iniciarSala(keepInventory)
     end
     -- Fiebre del Oro (GDD §15.3): sala sin enemigos + 20 monedas 12s
     if mysteryMod.goldRushActive(worldMod) then
-        enemiesMod.init()
+        if not st.stagePhase then enemiesMod.init() end
         mysteryMod.beginGoldRush(st.anchoGrilla, st.altoGrilla)
     end
     -- Espejo (GDD §15.2): espectro del mismo largo al lado opuesto
@@ -201,16 +218,110 @@ function gameflow.iniciarSala(keepInventory)
     end
 end
 
+function gameflow.flushPendingAchievements()
+    local st = world.state
+    if not st.pendingAchievements or #st.pendingAchievements == 0 then return end
+    for _, aid in ipairs(st.pendingAchievements) do
+        local reg = achievements and achievements.registry and achievements.registry[aid]
+        if reg then
+            uiMod.showToast({id=aid, title=reg.title, subtitle=reg.desc, reward=reg.reward})
+        end
+    end
+    st.pendingAchievements = {}
+end
+
+function gameflow.triggerDeathAnimation()
+    local st = world.state
+    st.deathModalOpen = false
+    st.roomDamaged = true
+    st.shakeTimer = constants.SHAKE_DURATION or 0.3
+    st.hitPause = 0.08
+    shadersMod.triggerDamage(1.0, 0.9)
+    st.fadeDir = 1
+    st.deathAnimTimer = 0
+    local head = st.player and st.player.body and st.player.body[1]
+    if head then
+        st.lastDeathHead = {x = head.x, y = head.y}
+    end
+    st.gameState = constants.GAME_STATE_DEATH_ANIMATION
+end
+
+function gameflow.acceptDeath()
+    local st = world.state
+    st.deathModalOpen = false
+    st.survivalStreak = 1.0
+    st.fadeDir = -1
+    local oldHighScore = st.highScore or 0
+    st.highScore = persistence.guardar(st.puntuacion, st.highScore)
+    if persistence.closeRunToShrine then persistence.closeRunToShrine() end
+    local okBoA, bountyArc = pcall(require, "systems.bounty")
+    if okBoA and bountyArc then pcall(function() bountyArc.archive() end) end
+    if st.modo == "daily" or st.modo == "diario" or st.dailySeed ~= nil then
+        local okDaily, dailyMod = pcall(require, "systems.daily")
+        local activeProf = persistence.getActiveProfile and persistence.getActiveProfile()
+        if okDaily and dailyMod and activeProf then
+            local stagesCleared = st.stagePhase and math.max(0, (worldMod.etapa or 1) - 1) or nil
+            local entry = dailyMod.recordRun(activeProf, st.puntuacion or 0, worldMod.etapa or 1,
+                st.stagePhase and 0 or (worldMod.sala or 1) - 1, nil, stagesCleared)
+            persistence.syncDailyHistory(entry)
+            st.lastDailyResult = entry
+            st.dailyModalOpen = true
+        end
+        if gameflow.recordDailyAttempt then
+            gameflow.recordDailyAttempt(st.puntuacion or 0)
+        end
+    end
+    persistence.syncActiveProfile()
+    achievements.check("scoreReached", {score = st.highScore})
+    st.nuevoHighScore = st.highScore > oldHighScore
+    st.dailySeed = nil
+    worldMod.init()
+
+    if st.nuevoHighScore then
+        st.celebrationTimer = constants.HIGH_SCORE_CELEBRATION_DURATION
+        st.gameState = constants.GAME_STATE_HIGH_SCORE
+    else
+        gameflow.flushPendingAchievements()
+        gameflow.applyActiveProfile()
+        st.gameState = constants.GAME_STATE_SHOP
+        sound:playSegment("intro")
+        shop.abrir(st.monedas, true)
+    end
+end
+
 function gameflow.revivePlayer()
     local st = world.state
-    local cost = constants.REVIVE_COIN_COST or 30
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    local cost = (okShrine and shrineMod.reviveCost()) or constants.REVIVE_COIN_COST or constants.REVIVE_COST or 30
     if (st.monedas or 0) < cost then return false end
 
     st.monedas = st.monedas - cost
     persistence.syncActiveProfile()
 
     st.deathModalOpen = false
-    st.player = st.player or snakeMod.reset()
+    if not st.player or not st.player.body or #st.player.body == 0 then
+        st.player = snakeMod.reset()
+    end
+
+    if st.lastDeathHead then
+        local w = st.anchoGrilla or 40
+        local h = st.altoGrilla or 28
+        local dx = math.max(3, math.min(w - 4, st.lastDeathHead.x))
+        local dy = math.max(3, math.min(h - 4, st.lastDeathHead.y))
+        st.player.body = {
+            {x = dx, y = dy},
+            {x = dx - 1, y = dy},
+            {x = dx - 2, y = dy}
+        }
+        st.player.prevBody = {
+            {x = dx, y = dy},
+            {x = dx - 1, y = dy},
+            {x = dx - 2, y = dy}
+        }
+        st.player.dirX = 1
+        st.player.dirY = 0
+    end
+
     st.player.ghost = true
     st.player.ghostTimer = constants.REVIVE_GHOST_DURATION or 3.0
     st.player.flashTimer = constants.REVIVE_GHOST_DURATION or 3.0
@@ -246,16 +357,20 @@ function gameflow.recalcularGrilla()
         local ww, wh = love.window.getMode()
         if ww and wh then w, h = ww, wh end
     end
-    local rawCols = math.floor(w / constants.TAMANIO_BLOQUE)
-    local rawRows = math.floor((h - constants.GRID_OFFSET_Y) / constants.TAMANIO_BLOQUE)
-    st.anchoGrilla = math.max(10, math.min(rawCols, constants.MAX_GRID_COLS))
-    st.altoGrilla  = math.max(10, math.min(rawRows, constants.MAX_GRID_ROWS))
-    local gridW = st.anchoGrilla * constants.TAMANIO_BLOQUE
-    local gridH = st.altoGrilla * constants.TAMANIO_BLOQUE
-    local gameH = constants.GRID_OFFSET_Y + gridH
+    local blockSize = (constants and constants.TAMANIO_BLOQUE) or 20
+    local gridOffsetY = (constants and constants.GRID_OFFSET_Y) or 30
+    local maxCols = (constants and constants.MAX_GRID_COLS) or 40
+    local maxRows = (constants and constants.MAX_GRID_ROWS) or 28
+    local rawCols = math.floor(w / blockSize)
+    local rawRows = math.floor((h - gridOffsetY) / blockSize)
+    st.anchoGrilla = math.max(10, math.min(rawCols, maxCols))
+    st.altoGrilla  = math.max(10, math.min(rawRows, maxRows))
+    local gridW = st.anchoGrilla * blockSize
+    local gridH = st.altoGrilla * blockSize
+    local gameH = gridOffsetY + gridH
     -- Centrado horizontal perfecto (floor para pixel-perfect)
     st.gridOffsetX = math.floor((w - gridW) / 2)
-    st.gridOffsetY = constants.GRID_OFFSET_Y
+    st.gridOffsetY = gridOffsetY
     -- Centrado vertical del bloque completo (HUD+grid) en ventana
     st.gameOffsetY = math.floor(math.max(0, h - gameH) / 2)
     -- Clamp para evitar offsets negativos si ventana muy pequeña
@@ -263,14 +378,75 @@ function gameflow.recalcularGrilla()
     if st.gameOffsetY < 0 then st.gameOffsetY = 0 end
 end
 
+function gameflow.recordDailyAttempt(score)
+    local okP, persistence = pcall(require, "systems.persistence")
+    if not okP or not persistence then return end
+    local prof = persistence.getActiveProfile()
+    if not prof then return end
+    prof.dailyHistory = prof.dailyHistory or {}
+    local key = tostring(os.date("%Y%m%d"))
+    local entry = prof.dailyHistory[key] or {date = key, score = 0, timestamp = os.time()}
+    if score and type(score) == "number" then
+        entry.score = math.max(entry.score or 0, score)
+    end
+    prof.dailyHistory[key] = entry
+    persistence.saveProfiles()
+end
+
 function gameflow.startRun()
     local st = world.state
+    st.stageVictorySummary = nil
+    if st.modo == "diario" or st.modo == "daily" then
+        st.dailySeed = gameflow.getDailySeed()
+    end
     worldMod.init()
     st.mundoCompletado = false
+    st.ironBodyUsed = false
     gameflow.iniciarSala(false)
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    if okShrine and shrineMod then st.monedas = (st.monedas or 0) + shrineMod.heritageCoins() end
+    local okBo0, bountyRoll = pcall(require, "systems.bounty")
+    if okBo0 and bountyRoll then pcall(function() bountyRoll.roll() end) end
+    local okModes, modesMod = pcall(require, "systems.modes")
+    if okModes and modesMod then pcall(function() modesMod.applyOnStart(st) end) end
+    if st.modo == "diario" then
+        gameflow.recordDailyAttempt(0)
+    end
     st.fadeAlpha = 0
     st.fadeDir = 0
     st.gameState = constants.GAME_STATE_PLAYING
+end
+function gameflow.getDailySeed(dateTbl, salt)
+    local okRng, RNG = pcall(require, "core.rng")
+    local okCfg, cfg = pcall(require, "core.config")
+    local s = salt or (okCfg and cfg.DAILY_SEED_SALT) or 7919
+    local d = dateTbl or (os and os.date and os.date("*t")) or {year = 2026, month = 9, day = 20}
+    if okRng and RNG and RNG.dailySeed then
+        return RNG.dailySeed(d.year, d.month, d.day, s)
+    end
+    return (d.year * 10000 + d.month * 100 + d.day) * 31 + (s % 100000)
+end
+function gameflow.startDailyRun(dateTbl)
+    local st = world.state
+    st.stageVictorySummary = nil
+    st.modo = "diario"
+    local seed = gameflow.getDailySeed(dateTbl)
+    st.dailySeed = seed
+    worldMod.init()
+    st.mundoCompletado = false
+    st.ironBodyUsed = false
+    gameflow.iniciarSala(false)
+    local okShrine, shrineMod = pcall(require, "systems.shrine")
+    if okShrine and shrineMod then st.monedas = (st.monedas or 0) + shrineMod.heritageCoins() end
+    local okBo0d, bountyRollD = pcall(require, "systems.bounty")
+    if okBo0d and bountyRollD then pcall(function() bountyRollD.roll() end) end
+    local okModesD, modesModD = pcall(require, "systems.modes")
+    if okModesD and modesModD then pcall(function() modesModD.applyOnStart(st) end) end
+    gameflow.recordDailyAttempt(0)
+    st.fadeAlpha = 0
+    st.fadeDir = 0
+    st.gameState = constants.GAME_STATE_PLAYING
+    return seed
 end
 
 function gameflow.transitionToShop()
@@ -283,11 +459,16 @@ end
 
 function gameflow.returnToMenu()
     local st = world.state
+    if persistence.closeRunToShrine then persistence.closeRunToShrine() end
+    local okBoR, bountyArcR = pcall(require, "systems.bounty")
+    if okBoR and bountyArcR then pcall(function() bountyArcR.archive() end) end
+    if persistence.syncModeSkin then pcall(function() persistence.syncModeSkin(st.modo, st.skin) end) end
     persistence.syncActiveProfile()
     shop.reset()
+    st.dailySeed = nil
     st.fadeDir = -1
     st.gameState = constants.GAME_STATE_MENU
-    st.introTimer = 0
+    st.introTimer = st.introPlayed and (constants.INTRO_READY or 4.5) or 0
     st.pendingAchievements = {}
 end
 

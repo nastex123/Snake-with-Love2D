@@ -97,18 +97,7 @@ function profilesDraw.drawSelect(profilesMod, w, h)
             local statY = (cardH >= 90) and (cy + 46) or (cy + cardH - 28)
             love.graphics.print("Logros: " .. aCount .. "  Desbloqueos: " .. uCount, innerX + 56, statY)
 
-            local achY2 = math.min(cy + cardH - 18, statY + ((cardH >= 90) and 14 or 0))
-            local achX = innerX + 56
-            local achW = 70
-            local achH = 14
-            if profilesMod.buttonHover(achX, achY2, achW, achH, mx, my) then
-                love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], 0.7)
-            else
-                love.graphics.setColor(0.4, 0.4, 0.6, 0.4)
-            end
-            love.graphics.setFont(ui.fontSmall)
-            love.graphics.print("Ver Logros", achX, achY2)
-            profilesMod.buttonRects[#profilesMod.buttonRects + 1] = {x = achX, y = achY2, w = achW, h = achH, action = "achievements", index = i}
+            pcall(function() require("systems.codexUI").cardLinks(profilesMod, innerX, cy, cardH, statY, mx, my, i) end)
 
             -- Right-side action buttons
             local bw = 82
@@ -507,5 +496,4 @@ function profilesDraw.drawAchievements(profilesMod)
     love.graphics.printf("CERRAR", bxx, byy + 6, bww, "center")
     profilesMod.buttonRects[#profilesMod.buttonRects + 1] = {x = bxx, y = byy, w = bww, h = bhh, action = "close_achievements"}
 end
-
 return profilesDraw

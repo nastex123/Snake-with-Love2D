@@ -125,8 +125,8 @@ function overlays.drawDeathModal(ui)
     love.graphics.setColor(0, 0, 0, 0.78)
     love.graphics.rectangle("fill", 0, 0, w, h)
 
-    local pw = 420
-    local ph = 230
+    local pw = 440
+    local ph = 245
     local px = math.floor((w - pw) / 2)
     local py = math.floor((h - ph) / 2)
 
@@ -144,18 +144,25 @@ function overlays.drawDeathModal(ui)
 
     love.graphics.setFont(ui.fontLarge)
     love.graphics.setColor(1.0, 0.2, 0.2, 1.0)
-    love.graphics.printf("[ CRITICO: HAS CAIDO ]", px, py + 14, pw, "center")
+    love.graphics.printf("[ CRITICO: HAS CAIDO ]", px, py + 12, pw, "center")
 
     love.graphics.setFont(ui.fontNormal)
     love.graphics.setColor(1, 1, 1, 0.85)
     local ptsText = "Puntaje: " .. (st.puntuacion or 0)
     local streakText = string.format("Racha: %.1fx", st.survivalStreak or 1.0)
     local coinsText = "Oro: " .. (st.monedas or 0) .. "$"
-    love.graphics.printf(ptsText .. "  |  " .. streakText .. "  |  " .. coinsText, px, py + 46, pw, "center")
+    love.graphics.printf(ptsText .. "  |  " .. streakText .. "  |  " .. coinsText, px, py + 40, pw, "center")
 
-    local canRevive = (st.monedas or 0) >= (constants.REVIVE_COIN_COST or 30)
+    local cause = st.deathCause or "CAUSA: Daño letal no mitigado"
+    love.graphics.setFont(ui.fontSmall or ui.fontNormal)
+    love.graphics.setColor(1.0, 0.45, 0.45, 0.95)
+    love.graphics.printf(cause, px + 10, py + 62, pw - 20, "center")
+
+    local okShrineOv, shrineOv = pcall(require, "systems.shrine")
+    local reviveCostOv = (okShrineOv and shrineOv.reviveCost()) or constants.REVIVE_COIN_COST or constants.REVIVE_COST or 30
+    local canRevive = (st.monedas or 0) >= reviveCostOv
     local btn1X = px + 24
-    local btn1Y = py + 78
+    local btn1Y = py + 88
     local btn1W = pw - 48
     local btn1H = 46
 
@@ -168,7 +175,7 @@ function overlays.drawDeathModal(ui)
         love.graphics.setColor(0.0, 0.94, 1.0, hover1 and 1.0 or 0.7)
         love.graphics.rectangle("line", btn1X, btn1Y, btn1W, btn1H, 3)
         love.graphics.setColor(1, 1, 1)
-        love.graphics.printf("[1 / ENTER] CONTINUAR / REVIVIR (-30$)", btn1X, btn1Y + 8, btn1W, "center")
+        love.graphics.printf("[1 / ENTER] CONTINUAR / REVIVIR (-" .. tostring(reviveCostOv) .. "$)", btn1X, btn1Y + 8, btn1W, "center")
         love.graphics.setFont(ui.fontSmall)
         love.graphics.setColor(0.0, 0.94, 1.0, 0.8)
         love.graphics.printf("Otorga 3s de invulnerabilidad y despeja el area", btn1X, btn1Y + 26, btn1W, "center")
@@ -178,12 +185,12 @@ function overlays.drawDeathModal(ui)
         love.graphics.setColor(0.4, 0.2, 0.2, 0.4)
         love.graphics.rectangle("line", btn1X, btn1Y, btn1W, btn1H, 3)
         love.graphics.setColor(0.6, 0.4, 0.4, 0.6)
-        love.graphics.printf("[1 / ENTER] REVIVIR (Requiere 30$)", btn1X, btn1Y + 14, btn1W, "center")
+        love.graphics.printf("[1 / ENTER] REVIVIR (Requiere " .. tostring(reviveCostOv) .. "$)", btn1X, btn1Y + 14, btn1W, "center")
     end
 
     love.graphics.setFont(ui.fontNormal)
     local btn2X = px + 24
-    local btn2Y = py + 140
+    local btn2Y = py + 148
     local btn2W = pw - 48
     local btn2H = 40
 

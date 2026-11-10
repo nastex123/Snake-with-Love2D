@@ -1,6 +1,7 @@
 local world = {}
 local coreWorld = require("core.world")
-local dungeonGen = require("world.dungeonGen")
+local templates = require("world.dungeonTemplates")
+local stageArena = require("world.stageArena")
 local populate = require("world.populate")
 local constants = require("constants")
 local tarotMod = require("systems.tarot")
@@ -13,7 +14,7 @@ world.sala = 1
 world.puntajeSala = 0
 world.objetivoSala = 50
 world.dungeon = nil
-world.roomTemplates = dungeonGen.roomTemplates
+world.roomTemplates = templates.roomTemplates
 
 -- Objective types mapping by room template
 local templateObjectiveMap = {
@@ -24,6 +25,9 @@ local templateObjectiveMap = {
     treasure = "collect_food",
     spawner = "clear_enemies",
     boss = "defeat_boss",
+    cruz = "clear_enemies",
+    espiral = "collect_food",
+    laberinto = "clear_enemies",
 }
 
 function world.calcularObjetivo()
@@ -36,11 +40,25 @@ end
 
 function world.getStageMod(stage)
     local s = stage or world.etapa or 1
-    return dungeonGen.stageMod[s] or dungeonGen.stageMod[5]
+    if s > 5 then
+        local okM, modesMod = pcall(require, "systems.modes")
+        if okM and modesMod and modesMod.current and modesMod.current() == "endless" then
+            return modesMod.scaleStage(s)
+        end
+    end
+    return templates.stageMod[s] or templates.stageMod[5]
 end
 
 function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
-    dungeonGen.generar(world, anchoVirtual, altoVirtual, targetRooms)
+    local seed = nil
+    if coreWorld and coreWorld.state and coreWorld.state.dailySeed then
+        local stage = world.etapa or 1
+        seed = (coreWorld.state.dailySeed + stage * 10007) % 2147483647
+    end
+    world.dungeon = stageArena.generate(anchoVirtual, altoVirtual, seed, world.etapa)
+    world.sala = 1
+    world.puntajeSala = 0
+    world.objetivoSala = world.calcularObjetivo()
 end
 
 function world.getCurrentRoom()
@@ -54,11 +72,16 @@ function world.getRoom(index)
 end
 
 function world.getRoomCount()
+    if coreWorld.state.stagePhase then return 1 end
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return 6
+    end
     if not world.dungeon or not world.dungeon.rooms then return 5 end
     return #world.dungeon.rooms
 end
 
 function world.init()
+    coreWorld.state.stagePhase = nil
     world.etapa = 1
     world.sala = 1
     world.puntajeSala = 0
@@ -73,7 +96,13 @@ end
 
 function world.getModifier(stage)
     local s = stage or world.etapa or 1
-    return dungeonGen.stageModifiers[s] or dungeonGen.stageModifiers[5]
+    if s > 5 then
+        local okM, modesMod = pcall(require, "systems.modes")
+        if okM and modesMod and modesMod.current and modesMod.current() == "endless" then
+            return modesMod.scaleStage(s)
+        end
+    end
+    return templates.stageModifiers[s] or templates.stageModifiers[5]
 end
 
 function world.getBiomeData(stage)
@@ -98,8 +127,21 @@ function world.hasWallWrap(stage)
 end
 
 function world.esJefe()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "boss" end
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) >= 6
+    end
     local room = world.getCurrentRoom()
     return (room and room.template == "boss") or false
+end
+
+function world.isMiniBossRoom()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "miniboss" end
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) <= 5
+    end
+    local room = world.getCurrentRoom()
+    return (world.sala == 3) or (room and room.isElite == true) or false
 end
 
 function world.getObjectiveType()
@@ -211,9 +253,11 @@ end
 
 function world.avanzarEtapa()
     world.etapa = world.etapa + 1
+    world.sala = 1
     world.generarMazmorra()
     tarotMod.reset()
     mutatorsMod.resetStage()
+    coreWorld.state.ironBodyUsed = false
     mysteryMod.assign(world.dungeon)
     world.puntajeSala = 0
     world.objetivoSala = world.calcularObjetivo()
@@ -224,6 +268,10 @@ function world.etapaCompletada()
 end
 
 function world.isLastRoom()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "boss" end
+    if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
+        return (world.sala or 1) >= 6
+    end
     if not world.dungeon or not world.dungeon.rooms then return world.sala >= 5 end
     return world.sala >= #world.dungeon.rooms
 end

@@ -40,10 +40,11 @@ end
 
 local function releaseToFree(freeList, entry)
     entry.active = false
+    entry.onExpire = nil
     table.insert(freeList, entry)
 end
 
-function registry.addTelegraph(gx, gy, timer, attackType)
+function registry.addTelegraph(gx, gy, timer, attackType, onExpire)
     local e = acquireFree(freeTelegraphs)
     if not e then
         if Log and Log.warn then Log.warn("telegraph pool exhausted") end
@@ -55,6 +56,7 @@ function registry.addTelegraph(gx, gy, timer, attackType)
     e.timer = timer or 0.8
     e.maxTimer = timer or 0.8
     e.attackType = attackType or "default"
+    e.onExpire = onExpire
     table.insert(activeTelegraphs, e)
     return e
 end
@@ -238,8 +240,10 @@ function registry.updateTelegraphs(dt, isFrozen)
         local t = activeTelegraphs[i]
         t.timer = t.timer - dt
         if t.timer <= 0 then
+            local cb = t.onExpire
             table.remove(activeTelegraphs, i)
             releaseToFree(freeTelegraphs, t)
+            if cb then pcall(cb, t) end
         end
     end
 end

@@ -467,10 +467,10 @@ harness.describe("Enemies Subsystem - Patroller & Spawner AI Behaviors", functio
         harness.assert_equal(6, p.x, "Patroller advanced 1 cell right")
         harness.assert_equal(5, p.y)
 
-        -- Place obstacle directly ahead at (7, 5)
-        local obstaclesMod = {pos = {{x = 7, y = 5}}}
+        -- Place obstacle directly ahead at (7, 5) and corridor side walls at (6, 4) and (6, 6)
+        local obstaclesMod = {pos = {{x = 7, y = 5}, {x = 6, y = 4}, {x = 6, y = 6}}}
         enemies.update(0.25, snakeBody, 30, 20, obstaclesMod, 1, nil)
-        -- Patroller hits obstacle, reverses dirX to -1 and steps back to 5
+        -- Patroller hits obstacle in corridor, reverses dirX to -1 and steps back to 5
         harness.assert_equal(-1, p.dirX, "Direction reversed on obstacle collision")
         harness.assert_equal(5, p.x, "Patroller stepped backwards after collision")
     end)

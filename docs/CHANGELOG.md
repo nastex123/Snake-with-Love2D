@@ -8,6 +8,130 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-11-09 (Migracion inicial a etapas)
+
+- Arena unica por etapa con oleadas, mini-jefe, jefe y tienda entre etapas.
+- Boss Rush, modo infinito y registro diario adaptados al nuevo flujo.
+- Los encuentros de misterio se resuelven dentro de la supervivencia.
+- Verificacion: 840 pruebas aprobadas con backends simulados y arranque de Love2D.
+- Pendiente: retirar interfaces heredadas de salas, completar eventos y balance jugable.
+
+## 2026-09-22 (Eventos aleatorios de sala E1–E7, solo spec)
+
+- **docs** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — `docs/GDD.md` nueva §22**: 7 eventos intra-sala de 8–15s (E1 lluvia de oro, E2 caza mayor, E3 mercader, E4 eclipse, E5 duelo, E6 réplica, E7 ofrenda) con reglas transversales (vetos élite/boss/misterio, `EVENT_CHANCE = 0.25`, 1 por sala, faseo E1–E3/Sprint 2/Phase 9).
+  2. **QUE — `docs/TDD.md` nueva §10.31**: motor `systems/roomEvents.lua` data-driven (estado `roomEvent/roomEventTimer/roomEventData`, reutilización de pools 32/64/32 y buffer circular E6, tests `scope_41`).
+  3. **QUE — `docs/TODO.md`**: ítem de implementación E1–E7 en Sprint 2 y test renombrado a `scope_41_sprint2` (scope_40 ocupado por harness R-5).
+  4. **QUE — Segunda tanda E8–E14 (GDD §22.3, TDD §10.32)**: 7 eventos riesgo-recompensa con vetos por fase/mutador, saldo negativo E12 y bypass Fénix E14; refinamiento E1–E7 (§22.4) y matriz de interacciones (§22.5).
+  5. **Verificación**: Sin cambios de código Lua.
+
+## 2026-09-22 (Rediseño y Refinamiento: Survival Waves Escalation Engine & Eventos Aleatorios)
+
+- **docs** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — Especificación en `docs/GDD.md` y `docs/TDD.md`**: Actualizadas las secciones 1, 2 y 6 del GDD para plasmar el nuevo paradigma de Arena de Supervivencia por Oleadas Escalonadas (2 a 4 oleadas por sala según la etapa con duraciones fijas de $10\text{s} \dots 13\text{s}$). Se desacopla la superación de la sala respecto a la puntuación acumulada y se preserva el rol clásico de los pickups (economía, récords, combo y poderes especiales). En el TDD se redactó la sección 10.26 definiendo el esquema de datos en `World.SCHEMA` (`waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer`), el pipeline del bucle de frame en `playing.lua`, el telegrafiado de refuerzos seguros de $0.8\text{s}$ con distancia Manhattan $\ge 4$ celdas en `populate.lua` y el componente visual del HUD.
+  2. **QUE — Sistema de Eventos Aleatorios Mixtos por Bioma (`GDD §19.2` y `TDD §10.27`)**: Ampliado el catálogo a 20 eventos temáticos clasificados por los 5 biomas de etapa: 10 eventos dinámicos en combate (E-01 a E-10: Derrumbe Sísmico, Frenesí de Cosecha, Ventisca Ártica, Fragmentación de Cristal, Erupción de Géiseres, Sobrecarga Térmica, Niebla Miasmática, Eclosión de Esporas, Singularidad Gravitatoria, Tormenta de Antimateria) con telegrafiado inviolable de $1.0\text{s}$ y bonos de maestría ($+5\$$ a $+10\$$); y 10 micro-eventos de decisión táctica y riesgo (D-01 a D-10: Altar de Sangre, Sarcófago Sellado, Ídolo de Hielo Negro, Viajero Congelado, Yunque del Herrero, Pacto Ígneo, Cofre de Pandora Corrupto, Larva Reina Huérfana, Pacto de las Sombras, Fruta del Vacío Infinito). Se definió el módulo `systems/eventsEngine.lua` con pools Zero-GC y aislamiento estricto de salas de jefes.
+  3. **QUE — Boss Rush, Magma Wyrm Segmentado y Gamefeel (`GDD §2, §5, §11` / `TDD §10.33, §10.34`)**: Especificado el modo Boss Rush con secuencia cerrada de los 5 mini-jefes + boss y tienda intermedia; el mini-jefe Magma Wyrm modular de 6 vértebras destructibles de 1 HP en `entities/minibossWyrm.lua`; y el paquete de gamefeel y defensa (highlight de lazo constrictor #5, diferenciación cromática de defensas #6, campana de última defensa #7 y previsualizador de autotomía #2).
+  4. **QUE — Sincronización en `docs/ROADMAP.md` y `docs/TODO.md`**: Incorporado el hito en la Fase 8 del Roadmap y desglosado en el Sprint Activo 2 del Backlog Unificado junto con la bonificación de "Limpieza Total" (+20$) y el motor de 20 eventos por bioma.
+  5. **Verificación**: Sin cambios de código Lua; validación estática de integridad con 813/813 tests PASS y `error.log` en 0 bytes.
+
+## 2026-09-22 (Consolidación y Saneamiento Documental)
+
+- **docs** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — Creación de `docs/archive/` y archivado de notas transitorias**: Movidos a `docs/archive/` los documentos satélite completados e históricos (`AGY-TASK-SPLIT.md`, `AUDIT-FASE8-PENDIENTE.md`, `AUDIT-SETTINGS-DISPLAY.md`, `CHASER-DESIGN-NOTE.md`, `PATROLLER-DESIGN-NOTE.md`, `TECH-DEBT-PLAN.md` y `las-100-propuestas-para-revision.md`).
+  2. **QUE — Eliminación de archivo huérfano**: Suprimido el archivo redundante en la raíz `las 100 propuestas para revision.md`.
+  3. **QUE — Unificación integral de `docs/TODO.md`**: Convertido en la fuente única viva de la verdad. Estructura redefinida en: 1) Sprint Activo (Sprint 2: Boss Rush, Sinergias del Códice, Magma Wyrm segmentado y Lazo Constrictor); 2) Matriz Maestra de las 100 Propuestas con trazabilidad explícita de implementadas vs pendientes; 3) Resumen histórico de fases previas.
+  4. **QUE — Sincronización de referencias cruzadas**: Actualizados los enlaces en `docs/GDD.md` y comentarios en `core/config.lua`.
+  5. **Verificación**: `lovec.exe tests` 813/813 PASS, `error.log` 0 bytes.
+
+## 2026-09-22 (Sprint 1: Cierre de Experiencia Fase 8)
+
+- **feature** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — Causa de muerte explícita con contexto de sala**: Funciones `setDeathCause`, `setHazardDeath`, `setAttackDeath`, `setEnemyDeath` añadidas en `entities/snake/core.lua`. Integradas en todas las ramas letales de `entities/snake/movement.lua` y `entities/snake/collisions.lua`. Se agregó `deathCause = "string"` en `core/world.lua` (`World.SCHEMA`) y se rediseñó el modal de muerte en `ui/overlaysUI.lua` con renderizado centrado de causa y número de sala.
+  2. **QUE — Micro-barra segmentada Ghost Frame con décimas Zero-GC**: Buffer numérico prealocado `TENTHS_STR[0..60]` en `entities/snake.lua`. Renderizado sobre la cabeza de la serpiente de una barra segmentada de 5 bloques con cuenta regresiva numérica de décimas de segundo durante el estado fantasma, eliminando totalmente la instanciación de strings por frame.
+  3. **QUE — Catálogo de Skins Zero-GC (`systems/skinRegistry.lua`)**: Registro de 4 apariencias desbloqueables (`neon`, `cyber`, `volcanic`, `void`) condicionadas a los logros `first_kill`, `boss_kill` y `stage_3`. Mapeo retrocompatible `classic -> neon`. Interpolación estática de colores Zero-GC `computeBaseColor()`. Integración interactiva de selector y previsualización de 3 nodos en el Santuario (`systems/shrineDraw.lua` y `systems/shrineUI.lua`).
+  4. **QUE — Mazmorra Diaria con Bloqueo Estricto**: Integración del modo `"diario"` en `systems/modes.lua` con registro `profile.stats.dailyPlayedDate`, validación estricta de una sola partida por día calendario, tag visual `[00:00]` de bloqueo en el Santuario y descarte de reintentos en `systems/gameflow.lua`.
+  5. **test**: Creada suite `tests/test_scope_39_sprint1.lua` (11 tests unitarios cubriendo schema, causa de muerte, catálogo de skins y bloqueo diario). Ejecución validada con 811/811 tests pasando al 100% y `error.log` en 0 bytes.
+
+## 2026-09-22 (review deuda residual)
+
+- **test** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — `tests/test_scope_13_worldFacade.lua`**: mapa de objetivos sincronizado con plantillas TD-2 (`cruz=clear_enemies`, `espiral=collect_food`, `laberinto=clear_enemies`); corrige 1 fallo (799/800 a 800/800 PASS).
+  2. **POR QUE**: El codigo (`world/world.lua:19-30`) era correcto; el contrato del test conservaba el mapa antiguo de 7 plantillas.
+- **fix** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — `systems/combatRam.lua:11`**: fallback `or 4` alineado a `or 5` con `HEADBUTT_MAX_DMG=5`.
+  2. **QUE — `core/config.lua`**: keys canonicas `REVIVE_COST=30` (alias) y `DEATH_COIN_PENALTY=0.3` agregadas; elimina divergencia GDD/TDD solo-docs.
+  3. **Verificacion**: `love tests` 800/800 PASS, `error.log` 0 bytes.
+
+- **fix** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — R-2 costo revive unificado**: `ui/overlaysUI.lua` etiqueta `Requiere 30$` hardcodeada reemplazada por costo dinamico `reviveCostOv`; cadenas de fallback en `gameflow.revivePlayer`, `overlaysUI` y `shrine.reviveCost` aceptan `REVIVE_COST` alias.
+  2. **POR QUE**: El descuento `mercy_pact` (25$/20$) ya se aplicaba al cobro pero la UI mostraba 30$ fijo al no poder pagar, y `DEATH_COIN_PENALTY` no tenia key canonica.
+- **balance** (validated - 2026-09-22 America/Bogota):
+  1. **QUE — R-4 simulacion EV**: tabla `scope_28` (15pts/comida, killRate 0.25, EV 1.3$) — E1 51.3$ vs canasta 40, E5 105.0$ vs 60. Todas las etapas cubren la canasta mult-ajustada; sin cambios de precios.
+- **test** (completed - 2026-09-22 America/Bogota):
+  1. **QUE — R-5 harness Zero-GC 60s (`tests/test_scope_40_zerogc_stress.lua`, registrado en `tests/main.lua`)**: nivel A pooled+draws 3600 ticks delta 0.2KB; nivel B `enemies.update` full con boss 3600 ticks delta 0.4KB. Mide crecimiento neto (no churn por tick).
+  2. **HALLAZGO — degradacion de `constants` entre suites**: la VM compartida pierde hasta 240 keys de config (suites de render ejecutan `love.load` real); el setup de scope_40 restaura keys faltantes desde disco via `package.searchpath`+`loadfile`.
+  3. **Verificacion**: 813/813 PASS, `error.log` 0 bytes.
+
+## 2026-09-20 (intro GSAP gallery prototype)
+
+- **docs** (prototype - 2026-09-20 America/Bogota):
+  1. **QUE — `prototypes/intro-gsap-gallery.html` (nuevo)**: galería navegable con las 20 propuestas de animación de intro en 4 bloques (fondo, diamante, logo, transición), cada una con canvas 2D + timeline GSAP, replay, scrubber de tiempo y medidor FPS, con descripción y port a Love2D documentados y respeto a `prefers-reduced-motion`.
+  2. **POR QUE**: Evaluar visualmente las 20 propuestas antes de portar la selección a la cinemática de 4.5s.
+
+- **fix** (completed - 2026-09-20 America/Bogota):
+  1. **QUE — Galería intro estática**: `onUpdate` a nivel de `timeline` usaba `this.targets()` (solo existe en tweens) y congelaba `t`; progreso one-shot derivado de `state.t`, loops 17/18 con closure y limpieza en `killTL`.
+  2. **Verificación**: `node --check` limpio + harness Node con stubs (20/20 sin errores, movimiento confirmado por varianza de frames).
+
+## 2026-09-20 (verificacion suite con Love2D 11.5)
+
+- **test** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE**: Instalado Love2D 11.5 (`winget Love2d.Love2d`) y ejecutada la suite completa: **783/783 PASS, 0 FAIL** (incluye scope_32 DailySeed, scope_33 ZeroGC, scope_34 Shrine, scope_35 Bounty, scope_36 Modes). Corregidos 2 fallos detectados (fallback etapa 5 solo fuera de endless; `require core.world` en `playingPickups`). Boot `love .` 45s sin errores Lua y `error.log` en 0 bytes.
+  2. **POR QUE**: Cerrar la verificación pendiente de AUD-1..4, Shrine MVP, Bounty MVP y Endgame MVP sobre la misma rama sin commit.
+
+## 2026-09-20 (fase 8 pendiente audit)
+
+- **docs** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE**: Creacion de `docs/AUDIT-FASE8-PENDIENTE.md` con diagnostico 0% codigo en Shrine, Daily/Codex/Bounty, Endgame y Skins; deuda bloqueante medida (persistence 874L, shaders 681L, settingsDraw 647L, player 632L, dungeonGen 530L); 9 recomendaciones CRITICO/RECOMENDADO/OPCIONAL/FUTURO con tablas Big-O y roadmap 6.1-6.8; sincronizacion de `docs/TODO.md`.
+  2. **POR QUE**: Fijar decisiones vinculantes previas a codificar (billetera Shrine, MVP 4 modos y 5 skins, RNG determinista aislado) y secuenciar Fase 8 sin friccion estructural.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — AUD-1 schema 3**: `systems/profileSchema.lua` (talents[8]/codex/bounties/dailyHistory/modo/skin + sanitize/migrate); `persistence.syncTalents/syncModeSkin` + eventos `talentsDirty/modeSkinDirty`; `World.SCHEMA` extendido; `config.SHRINE_TALENTS/BOUNTY_POOL/MODES/SKINS/RUSH_TIME_LIMIT`; `gameflow.getDailySeed/startDailyRun`.
+  2. **QUE — AUD-2 RNG aislado**: `core/rng.lua` (new/dailySeed/choice/shuffle con fallback LCG) + `tests/test_scope_32_dailySeed.lua` (4 tests).
+  3. **QUE — AUD-3 splits <500L**: `persistence` 484L via `persistenceCodec`+`persistenceProfiles`; `player` 402L via `playerSpeed`+`playerTimers`; `settingsDraw` 318L via `settingsWidgets`; `shaders` 469L via `shaderSources`; `dungeonGen` 392L via `dungeonTemplates`.
+  4. **QUE — AUD-4 Zero-GC**: `entities/snake.lua` buffers `posBuf/colBuf` 512 reutilizados + `tests/test_scope_33_zerogc.lua` (3600 draws delta <64KB).
+  5. **POR QUE**: Desbloquear Fase 8 (Shrine/Bounty/Endgame/Skins) sobre base sin deuda estructural y sin asignacion por frame.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Shrine MVP (billetera shrineCoins + botón SANTUARIO)**: `systems/shrineDefs.lua` (8 talentos), `systems/shrine.lua` (efectos puros con composicion max/aditiva), `systems/shrineShop.lua` (compra + `talentsDirty`), `systems/shrineDraw.lua` (rejilla + balance), `systems/shrineUI.lua` (panel + input); 4º botón en `ui/menuUI.lua` + dispatch en `main.lua`; hooks en `gameflow` (heritage/magnet/revive/closeRun 20%), `playing` (magnet max), `playingPickups` (combo max), `player` (dragon/thick/slow), `movement` (iron 1/etapa), `overlaysUI` (costo revive); `profileSchema.shrineCoins` + `config.SHRINE_COIN_RATE=0.2`; `tests/test_scope_34_shrine.lua` (9 tests).
+  2. **POR QUE**: Meta-progresion permanente sin farmeo (billetera separada de run) y sin suplantar Tarot/tienda.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Bounty MVP (cofre + 40$, solo arena)**: `systems/bounty.lua` (roll 2 de `BOUNTY_POOL`, progreso por `cerco 4 kills`/`furioso 3 salas x3+`/`pacifista arena sin bomba ni escudo`, pago 30/40+cofre escudo/50 con popup dorado + toast, archive a `profile.bounties.history`); `syncBounties` + evento `bountiesDirty`; instrumentación aditiva (payload constrictor, umbral combo x3, flags `roomUsedBomb/Shield`, racha furioso a cierre de sala); roll en `startRun/startDailyRun`, archive en `acceptDeath/returnToMenu`; `tests/test_scope_35_bounty.lua` (8 tests).
+  2. **POR QUE**: Contratos por run con telemetría reutilizable por Endgame, sin `atomicWrite` por kill y sin romper logros existentes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — HUD cleanup + intro única**: eliminado minimapa (`renderMain`), botón de pausa táctil (draw + tap-toggle; helpers, swipes y `ESPACIO`/`ESC` intactos), textos ALMAS del navbar (bioma/nivel intactos, firma `drawTopBar` preservada) y `touchOffset=0` para extender INTEGRIDAD; flag `introPlayed` (intro 4.5s solo al arrancar, skip a `INTRO_READY` en los 3 retornos a menú); test scope_05 actualizado al nuevo contrato.
+  2. **POR QUE**: HUD despejado con contador inferior como referencia única e intro no repetitiva al volver al menú.
+  3. **Verificación**: 783/783 PASS, boot `love .` 45s sin errores Lua, `error.log` 0 bytes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Templates Cruz/Espiral/Laberinto (TD-2)**: `world/wallPatterns.lua` + 3 plantillas data-driven con `wallPattern` y reglas de spawn + ponderación por tamaño (sala 1/3 y pequeñas clásicas) + `objectiveMap` + estampado con `tileFree` en `populate`; `tests/test_scope_38_templates.lua` (10 tests: registro, patrones, selección, smoke con semilla).
+  2. **POR QUE**: Variedad arquitectónica sin reescribir el motor BSP (muros sobre grilla, geometría intacta).
+  3. **Verificación**: 800/800 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Endgame MVP (desbloqueos GDD, pacifista lite, selector Santuario)**: `systems/modes.lua` (desbloqueos Endless-E5/Rush-3000/Pacifista-E3, `applyOnStart`, `updateRush`, `scaleStage`); ruta JUGAR unificada por `startRun` (cierra bypass de heritage/bounties); selector de modo en Santuario con `syncModeSkin`; rush 180s x3 con timeout a `acceptDeath` + HUD; pacifista lite (niega bomba/escudo, cofre/corazón a +10$, insignia al vencer E5); endless sin tope con unlock E5; `tests/test_scope_36_modes.lua` (8 tests).
+  2. **POR QUE**: 4 modos jugables con progresión persistente y dificultad escalada sin tope, reutilizando telemetría de Bounty y flags pacifistas.
+
+- **feat** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Codex MVP (álbum solo lectura en perfiles)**: `systems/codex.lua` (bestiario 3+1+5 y 8 sinergias GDD con `see/check/count`) + `systems/codexUI.lua` (álbum con `???` + `cardLinks` Ver Logros/Codice); estado `codex` en perfiles + botón y dispatch; hooks en `killEnemy`, `spawnMiniBoss`, `procesarCompra` y boss derrotado; `syncCodex/codexDirty`; `profilesDraw` 511→499 vía extracción de links; `tests/test_scope_37_codex.lua` (7 tests).
+  2. **POR QUE**: Colección persistente de bajo riesgo que da valor al bestiario y documenta sinergias sin motor de efectos.
+  3. **Verificación**: 790/790 PASS, boot `love .` 45s sin errores Lua, `error.log` 0 bytes.
+
+- **refactor** (completed - 2026-09-20 America/Bogota, rama `refactor/test-suite-and-playing-split`):
+  1. **QUE — Higiene TD-5 (cero-deuda estructural)**: `settings` 574→336 (`settingsInput` attach verbatim), `main` 550→384 (`main_keypressed` attach con env), `timers` 543→339 (`core/easings` 30 funciones idénticas).
+  2. **Verificación**: 790/790 PASS, boot 45s sin errores, `error.log` 0 bytes.
+
 ## 2026-09-18 (100 proposals master review document)
 
 - **docs** (completed - 2026-09-18 12:25 America/Bogota):

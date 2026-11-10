@@ -43,11 +43,24 @@ if pcall(require, "tests.test_scope_28_shop_economy") then end
 if pcall(require, "tests.test_scope_29_status_fx") then end
 if pcall(require, "tests.test_scope_30_combat_ram") then end
 if pcall(require, "tests.test_scope_31_livecoding") then end
+if pcall(require, "tests.test_scope_32_dailySeed") then end
+if pcall(require, "tests.test_scope_33_zerogc") then end
+if pcall(require, "tests.test_scope_34_shrine") then end
+if pcall(require, "tests.test_scope_35_bounty") then end
+if pcall(require, "tests.test_scope_36_modes") then end
+if pcall(require, "tests.test_scope_37_codex") then end
+if pcall(require, "tests.test_scope_38_templates") then end
+if pcall(require, "tests.test_scope_39_sprint1") then end
+if pcall(require, "tests.test_scope_40_zerogc_stress") then end
+require("tests.test_scope_41_sprint2")
+require("tests.test_stage_flow")
 
 -- Source files for full coverage reporting
 local source_files = {
     "constants.lua",
     "main.lua",
+    "main_keypressed.lua",
+    "core/easings.lua",
     "core/config.lua",
     "core/helpers.lua",
     "core/logger.lua",
@@ -58,6 +71,7 @@ local source_files = {
     "core/input.lua",
     "core/assets.lua",
     "core/livecoding.lua",
+    "core/rng.lua",
     "entities/bossAttacks.lua",
     "entities/chaserAI.lua",
     "entities/patrollerAI.lua",
@@ -76,6 +90,8 @@ local source_files = {
     "entities/snake/movement.lua",
     "world/world.lua",
     "world/dungeonGen.lua",
+    "world/dungeonTemplates.lua",
+    "world/wallPatterns.lua",
     "world/populate.lua",
     "world/biomeHazards.lua",
     "systems/achievements.lua",
@@ -91,24 +107,48 @@ local source_files = {
     "systems/tarotArt.lua",
     "systems/miniBossArt.lua",
     "systems/roomMutators.lua",
+    "systems/roomEvents.lua",
     "systems/mystery.lua",
+    "systems/shrine.lua",
+    "systems/shrineDefs.lua",
+    "systems/shrineShop.lua",
+    "systems/shrineDraw.lua",
+    "systems/shrineUI.lua",
+    "systems/bounty.lua",
+    "systems/modes.lua",
+    "systems/skinRegistry.lua",
+    "systems/codex.lua",
+    "systems/codexUI.lua",
+    "systems/daily.lua",
     "systems/persistence.lua",
+    "systems/persistenceCodec.lua",
+    "systems/persistenceProfiles.lua",
+    "systems/persistenceSettings.lua",
+    "systems/profileSchema.lua",
     "systems/player.lua",
+    "systems/playerSpeed.lua",
+    "systems/playerTimers.lua",
     "systems/profiles.lua",
     "systems/profilesDraw.lua",
     "systems/settings.lua",
     "systems/settingsDraw.lua",
+    "systems/settingsWidgets.lua",
+    "systems/settingsInput.lua",
     "systems/shop.lua",
     "ui/ui.lua",
     "ui/introUI.lua",
     "ui/menuUI.lua",
     "ui/menuLogo.lua",
     "ui/menuCard.lua",
+    "ui/playModalUI.lua",
+    "ui/dailyResultUI.lua",
     "ui/hudUI.lua",
     "ui/toastsUI.lua",
     "ui/popupsUI.lua",
     "ui/overlaysUI.lua",
     "render/shaders.lua",
+    "render/shaderSources.lua",
+    "render/shaderFx.lua",
     "render/particles.lua",
     "render/renderMain.lua",
     "render/enemiesDraw.lua",

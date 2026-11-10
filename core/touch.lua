@@ -201,13 +201,9 @@ function touch.touchreleased(id, x, y)
     local totalDistSq = (vx - t.startX) * (vx - t.startX) + (vy - t.startY) * (vy - t.startY)
     local isTap = (totalDistSq <= TAP_DEADZONE * TAP_DEADZONE) or (startInBtn and releaseInBtn)
 
-    -- Botón de pausa: toque en esquina inferior derecha (requiere tap completo dentro)
+    -- Botón de pausa eliminado de la UI: el tap en esquina ya no pausa
+    -- (pausa por ESPACIO/ESC + helpers getPauseButtonRect/isInsidePauseButton intactos)
     if isTap and startInBtn and releaseInBtn then
-        if st.gameState == constants.GAME_STATE_PLAYING then
-            st.gameState = constants.GAME_STATE_PAUSED
-        elseif st.gameState == constants.GAME_STATE_PAUSED then
-            st.gameState = constants.GAME_STATE_PLAYING
-        end
         return
     end
 

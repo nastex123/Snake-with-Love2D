@@ -1,9 +1,11 @@
-﻿-- ui/popupsUI.lua - Popups de puntos flotantes
+-- ui/popupsUI.lua - Popups de puntos flotantes
 local popupsMod = {}
 local constants = require("constants")
 
 function popupsMod.add(ui, text, gridX, gridY)
-    local tam = constants.TAMANIO_BLOQUE
+    local tam = (constants and constants.TAMANIO_BLOQUE) or 20
+    gridX = gridX or 10
+    gridY = gridY or 10
     table.insert(ui.popups, {
         text = text,
         x = gridX * tam + tam / 2,

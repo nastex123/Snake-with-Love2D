@@ -401,6 +401,7 @@ function sound.load()
     sources.boss_defeated = createStatic(makeSweep(440, 1320, 0.4, 0.3))
     sources.buttonHover = createStatic(makeSine(660, 0.04, 0.15))
     sources.buttonClick = createStatic(makeSweep(440, 880, 0.08, 0.25))
+    sources.last_defense = createStatic(makeSweep(160, 60, 0.45, 0.45))
 end
 
 function sound.play(name)

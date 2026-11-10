@@ -7,24 +7,18 @@
 | **Genre** | Snake / Dungeon Crawler |
 | **Platform** | Windows (Love2D 11.4+) |
 | **Language** | Lua |
-| **Objective** | Survive 25 rooms across 5 stages, defeat the boss |
-| **Core loops** | Fase 8: survival streak, comidas especiales, biomas con peligros, salas élite, modos endgame, skins |
+| **Objective** | Sobrevivir cinco etapas de combate, superar sus encuentros de mini-jefe y derrotar al jefe de cada etapa para completar la expedición |
+| **Core loops** | Arena continua por etapa y bioma → oleadas de supervivencia → mini-jefe → jefe de etapa → intermisión y tienda; el jefe final cierra la expedición |
 
 ## 2. Core Mechanics
 
-### Movement Paradigm: Held-Key Tactical Slither (Movimiento Táctico Sostenido)
-- **Nuevo Paradigma por Tecla Sostenida**: A diferencia de la serpiente retro tradicional que avanza automáticamente de forma continua, **la serpiente solo avanza mientras el jugador mantenga presionada una tecla de dirección** (`WASD`, Flechas o Stick/D-pad).
-- **Detención Inmediata**: Al soltar las teclas direccionales, la serpiente se detiene en su celda actual, manteniendo su orientación y postura de guardia.
-- **Entorno en Tiempo Real**: Mientras la serpiente está detenida, el mundo (enemigos, proyectiles, trampas y temporizadores) **sigue corriendo en tiempo real**. Esto transforma el juego en una experiencia de precisión y cálculo táctico donde el jugador puede:
-  - Sincronizar el paso sobre *Pinchos de Presión* (esperar a que se retraigan).
-  - Esperar el momento exacto para cruzar entre los rayos de la *Jaula Láser* del Boss.
-  - Resolver salas de puzle y mystery rooms (*La Prueba de los Tres Sellos*) sin ser forzado a chocar contra paredes.
-  - Coordinar la emboscada perfecta para ejecutar el *Constrictor Loop*.
-- **Opción de Conmutación en Ajustes**: Los puristas del género pueden alternar en Ajustes entre `Modo Táctico Sostenido (Por defecto)` y `Modo Clásico Automático (Auto-Slither)`.
+### Movement Paradigm: Classic Slither (Movimiento Clásico Continuo)
+- **Avance Automático Continuo**: La serpiente se desplaza continuamente hacia adelante a la velocidad establecida, siguiendo la tradición del arcade clásico. El jugador utiliza `WASD` o las teclas de dirección para orientar el rumbo ortogonal de la serpiente en la cuadrícula.
+- **Entorno Dinámico en Tiempo Real**: El mundo, enemigos, proyectiles, trampas y temporizadores se ejecutan en tiempo real a 60 FPS coordinados con el avance constante de la serpiente.
 - **Input Buffer Inteligente (2-step queue con reemplazo dinámico)**: Permite registrar giros de esquinas rápidas (giros en "L") y rectificar intenciones al instante. Si el jugador presiona una nueva tecla ortogonal antes de ejecutarse el paso, se sobrescribe el comando previo en lugar de descartarlo rígidamente.
 - **Corner Buffering Acelerado (`CORNER_BUFFER_RATIO = 0.75`)**: Si se registra un giro cuando el paso actual ha superado el 75% del intervalo, el paso se completa de inmediato, eliminando la latencia perceptual en esquinas.
 - **Protección Anti-180° Contextual**: Descarta giros opuestos directos hacia el propio cuello basados en el avance real, sin bloquear secuencias ortogonales rápidas ni giros en "U" de dos tiempos (necesarios para el *Tail Snap*).
-- **Touch / Mobile**: En dispositivos táctiles, mantener el dedo arrastrado en la dirección deseada mantiene el avance continuo; levantar el dedo detiene a la serpiente.
+- **Touch / Mobile**: En dispositivos táctiles, los deslizamientos (*swipes*) o toques direccionales reorientan inmediatamente el rumbo de avance continuo.
 
 ### Input & Controls
 
@@ -37,7 +31,7 @@
 | `Space` / `Esc` | Playing ↔ Paused | Pausar / reanudar |
 | `Tab` | Cualquier estado | Toggle menú debug |
 | `L` | Playing | Debug: +10 monedas |
-| `K` | Playing | Debug: saltar sala actual |
+| `K` | Playing | Debug: saltar fase de la etapa |
 | `Enter` | Menu | Iniciar partida |
 | `1`–`3` | Shop | Comprar puesto 1-3 |
 | `R` | Shop | Reroll de puestos (5$ +2$/uso) |
@@ -50,18 +44,20 @@ Order: Body → Obstacles → Boss → Projectiles → Enemies
 
 Returns 6 values: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 
-### Scoring & Survival Streak
-- Points from food and enemy kills
-- Combo system for consecutive kills (ventana `COMBO_WINDOW = 8.0s`, multiplicador `COMBO_MULTIPLIER = 0.5`)
-- **Survival Streak**: Multiplicador progresivo (+0.1x por sala consecutiva completada sin morir: x1.0, x1.1, x1.2... x2.0). Aumenta la ganancia de monedas y puntos de expedición.
-- Estado: `world.state.survivalStreak` (flotante, inicia 1.0). Se incrementa en `worldMod.avanzarSala()` tras completar la sala; cap `2.0` (config propuesto: `SURVIVAL_STREAK_STEP = 0.1`, `SURVIVAL_STREAK_MAX = 2.0`, `SURVIVAL_STREAK_START = 1.0`).
+### Scoring, Survival Streak & Stage Progression
+- **Puntuación desacoplada de la progresión**: el puntaje alimenta el récord, los logros y la economía; no completa una etapa.
+- **Progresión por etapas**: cada etapa exige sobrevivir a su secuencia de oleadas, derrotar a su mini-jefe y vencer al jefe de etapa. El contador de oleada solo activa los siguientes refuerzos.
+- **Rol estratégico de la comida**: ingerir fruta otorga puntos, monedas y combo, además de activar habilidades tácticas. La comida no altera el temporizador de oleada.
+- **Combo System**: Multiplicador por ingestas consecutivas (ventana `COMBO_WINDOW = 8.0s`, multiplicador `COMBO_MULTIPLIER = 0.5`).
+- **Survival Streak**: multiplicador progresivo (+0.1x por etapa consecutiva completada sin morir: x1.0, x1.1, x1.2... x2.0). Aumenta la ganancia de monedas y puntos de expedición.
+- Estado: `world.state.survivalStreak` (flotante, inicia 1.0). Se incrementa al completar una etapa; cap `2.0` (config propuesto: `SURVIVAL_STREAK_STEP = 0.1`, `SURVIVAL_STREAK_MAX = 2.0`, `SURVIVAL_STREAK_START = 1.0`).
 - **Hook de multiplicador**: producción (`puntuacion` y `monedas`) se multiplica por `survivalStreak` tanto en comida como en kills de enemigos y drops del boss, aplicado en `systems/gamestates.lua`.
-- **Riesgo de Muerte**: Al morir, el jugador puede pagar 30$ para *Continuar* en la sala actual con 3s de intangibilidad y mantener su racha, o *Aceptar Muerte* perdiendo el 30% de monedas acumuladas en la expedición y reseteando la racha a x1.0.
+- **Riesgo de Muerte**: Al morir, el jugador puede pagar 30$ para *Continuar* en la etapa y fase de encuentro actuales con 3s de intangibilidad y mantener su racha, o *Aceptar Muerte* perdiendo el 30% de monedas acumuladas en la expedición y reseteando la racha a x1.0.
 - **Flujo del modal de muerte (interactivo)**:
   1. `snake.mover()` retorna `vivo = false` con muerte letal (sin shield/armor/ghost y sin `debugImmune`).
-  2. Pausa el despiece actual (`updateDeath`): en vez de degradar segmentos, se abre **modal** sobre la sala congelada (estado `DEATH_ANIMATION` en espera).
+  2. Pausa el despiece actual (`updateDeath`): en vez de degradar segmentos, se abre **modal** sobre la arena congelada (estado `DEATH_ANIMATION` en espera).
   3. Botón **CONTINUAR (30$)** — solo si `monedas >= 30` (config propuesto: `REVIVE_COST = 30`, `REVIVE_INTANGIBLE_TIME = 3.0`).
-     - Resta 30$ · resetea posición del body a celda libre central (o spawn) · 3s de intangibilidad (sin colisiones letales) · conserva `survivalStreak` · reinicia el tiempo de sala tal cual.
+     - Resta 30$ · reaparece en una celda segura de la arena · 3s de intangibilidad (sin colisiones letales) · conserva `survivalStreak` y el progreso de la fase/oleada actual.
   4. Botón **ACEPTAR MUERTE** — resta 30% de monedas (`-0.3 * monedas`, config propuesto: `DEATH_COIN_PENALTY = 0.3`), resetea `survivalStreak` a 1.0, y procede al flujo clásico: despiece → `HIGH_SCORE`/`SHOP` → `MENU`.
   5. En ambos botones, registra en `profile.stats.highestStreak` el máximo alcanzado (sync vía `persistence`).
 - High score y racha máxima de supervivencia (`highestStreak`) persistentes por perfil.
@@ -88,29 +84,35 @@ Returns 6 values: `vivo, comio, enemyKilled, bossResult, attackHit, comioTwin`
 
 **Comidas Especiales** — aparecen como variantes del dotador de comida (`entities/food.lua`) con `type` dedicado y ventana de duración de efecto temporizado:
   - *Guindilla Picante (Fire Pepper)*: 3.5s de rastro de fuego tras la cola que quema Chasers. Config propuesto: `FIRE_PEPPER_DURATION = 3.5`.
-  - *Fruta Helada (Frost Berry)*: 2.5s de congelación de enemigos en toda la sala (enemigos se detienen; efecto aplicado a `enemies.list` y `boss`). Config propuesto: `FROST_BERRY_DURATION = 2.5`.
+  - *Fruta Helada (Frost Berry)*: 2.5s de congelación de enemigos en toda la arena de etapa (enemigos se detienen; efecto aplicado a `enemies.list` y `boss`). Config propuesto: `FROST_BERRY_DURATION = 2.5`.
   - *Baya Constrictora (Constrictor Berry)*: 5s de bucle letal de encierro. Config propuesto: `CONSTRICTOR_DURATION = 5.0`.
   - *Baya de Poda (Slimming Berry)*: Reduce la longitud del cuerpo a la mitad si mide ≥12 segmentos. Config propuesto: `SLIMMING_MIN_LENGTH = 12`, `SLIMMING_FACTOR = 0.5`.
-- **Spawn rate**: cada comida especial reemplaza con probabilidad baja una comida normal al generarse en salas no-boss (propuesto: `SPECIAL_FOOD_CHANCE = 0.12` por spawn); no aplican en sala boss (el food-target del boss solo cuenta comidas no-moneda y las especiales sí cuentan como comida no-moneda).
+- **Spawn rate**: cada comida especial reemplaza con probabilidad baja una comida normal durante supervivencia (propuesto: `SPECIAL_FOOD_CHANCE = 0.12` por spawn); no aparece durante la fase de jefe, cuyo food-target solo cuenta comidas no-moneda.
 
 **Frutas Dinámicas Avanzadas**:
 - *Comida Imantada Errante (Repelling Orbit)*: Se mueve 1 casilla cada 1.5s alejándose de la cabeza pero es atraída hacia la cola. Otorga +35 pts y +3$.
 - *Comida Bomba de Relojería (Countdown Bomb)*: Parpadea con contador de 5s; si se come a tiempo otorga +50 pts y onda destructora en radio 3; si expira, explota y crea un obstáculo permanente.
 - *Comida Camaleónica (Prismatic Shifter)*: Cambia cada 1.8s alternando entre Oro (+25 pts / +2$), Escudo (+1 carga) y Monedas (+5$).
 - *Comida Gemela (Twin Apples)*: Comer una genera instantáneamente su contraparte en el punto simétrico opuesto; comer ambas en <4s activa Combo x2 instantáneo.
-- *Gema de Diamante (Streak Diamond)*: 1.5% de probabilidad (5% en salas de tesoro); incrementa el multiplicador de `survivalStreak` en +0.3x de golpe.
+- *Gema de Diamante (Streak Diamond)*: 1.5% de probabilidad (5% durante un evento de tesoro); incrementa el multiplicador de `survivalStreak` en +0.3x de golpe.
 
 **Mecánicas Tácticas del Cuerpo y Movimiento**:
 - *Desprendimiento de Cola (Autotomía - Tecla Q / L2)*: Corta los últimos 4 segmentos del cuerpo (mínimo 7 segmentos). La cola desprendida distrae a los Chasers durante 3.0s antes de desintegrarse.
 - *Inversión de Avance (Reverse Slither)*: Durante 3.0s, la cabeza y la cola intercambian roles, avanzando en sentido inverso sin colisión con el cuello.
 - *Onda de Expulsión (Tail Snap)*: Al ejecutar un giro en "U" de 180° en dos ticks consecutivos, la punta de la cola emite una micro-onda que empuja a los enemigos adyacentes 1 celda hacia atrás y los aturde 0.8s.
 
-**The Constrictor Loop**:
+**The Constrictor Loop & Highlight Visual (Propuesta #5)**:
 - Al consumir la *Baya Constrictora*: `constrictTimer = 5.0s` (poder de constricción activo).
 - Mientras `constrictTimer > 0`, en cada paso la serpiente **cierra lazo** si su cabeza y cola son adyacentes en la grilla (contacto posterior propio); se evalúa vía *point-in-polygon* (Ray Casting) sobre las celdas del área encerrada.
+- **Highlight de Lazo Cerrado**: En el tick exacto de conexión, se proyecta un pulso lumínico aditivo instantáneo sobre el polígono cerrado antes de emitir la onda de estrangulamiento.
 - Todo enemigo (chasers/patrollers/spawners) cuya celda caiga dentro del polígono es **aplastado instantáneamente**: bonus de monedas (drop normal) y de combo (+1), con shockwave visual (`particles.lua`) y SFX `enemyKill`.
 - Caso especial: si el encierro atrapa al boss (solo si este es vulnerable al bucle) se descarta al no poder derrotarlo por lazo (regla: el bucle no aplica sobre `invulnerable = true`).
 - Detección solo en salas con wall-wrap clásico (etapas 1-4, ver biomas); en bioma sin wall-wrap (etapa 5) el lazo solo cuenta si el encierro es cerrado por las paredes.
+
+**Gamefeel y Defensa Perceptual (Propuestas #2, #6, #7)**:
+- *Previsualizador de Autotomía (#2)*: Al mantener pulsada la tecla `Q`, se proyecta una línea punteada que señala la celda exacta del señuelo antes de ejecutar el desprendimiento.
+- *Distinción Cromática de Defensas (#6)*: Halos emisivos diferenciados en la cabeza y cuerpo: Escudo en cian neón (`#00FFFF`), Armadura en cobalto brillante (`#2A52BE`) y Ghost Frame en blanco etéreo (`#FFFFFF`).
+- *Campana de Última Defensa (#7)*: Al romperse la última protección activa (sin más capas restantes), suena un golpe sordo de campana antigua (`sound.play("last_defense")`) y los bordes de la pantalla destellan brevemente en rojo de alerta.
 
 ## 3. Enemies
 
@@ -221,7 +223,7 @@ El patrullero. Dron táctico de reconocimiento militar dotado de blindaje cobalt
 - **Seccionamiento Quirúrgico de Cola (*Guillotine Slice*)**:
   - A diferencia del Chaser (letal directo a la cabeza), el Patroller corta la serpiente si impacta del segmento 4 en adelante (cuerpo/cola) siempre que esta mida $\ge 5$ segmentos. Los segmentos se desintegran en chispas, el dron atraviesa a velocidad normal sin frenarse y la serpiente recibe 1.0s de intangibilidad de gracia (resetea combo a x1 sin tocar la racha de supervivencia). Si la serpiente mide $\le 4$ o el golpe es en segmentos 1-3, es letal.
 - **Sincronización en Parejas**: Al generarse dos Patrollers, coordinan sentidos opuestos o carriles paralelos creando compuertas rítmicas de paso.
-- **Documentación completa**: Véase [`docs/PATROLLER-DESIGN-NOTE.md`](PATROLLER-DESIGN-NOTE.md).
+- **Documentación histórica de diseño**: Véase [`docs/archive/PATROLLER-DESIGN-NOTE.md`](archive/PATROLLER-DESIGN-NOTE.md).
 
 ### Spawner (Purple)
 
@@ -363,7 +365,7 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 |---|---|---|
 | **Altar de Carne** | Sacrificar **5 segmentos del cuerpo** | Otorga 1 carga de *Escudo* o revive un escudo roto. |
 | **Altar de la Avaricia** | Sacrificar **el 50% de las monedas actuales** | Duplica el multiplicador de `survivalStreak` (+0.5x instantáneo). |
-| **Altar del Vacío** | Perder **3 segundos de tiempo de sala / Racha a x1.0** | Entrega un ítem activo legendario aleatorio de la tienda sin costo. |
+| **Altar del Vacío** | Perder **3 segundos del temporizador de oleada / Racha a x1.0** | Entrega un ítem activo legendario aleatorio de la tienda sin costo. |
 | **Altar de la Calma** | Sacrificar **20 monedas** | Reduce la velocidad base del juego (`baseSpeed += 0.03`) permanentemente en la run. |
 
 ## 5. Boss & Mini-Boss Mechanics (rework cabezazos 2026-09-10)
@@ -385,7 +387,7 @@ En salas especiales de tipo `treasure` o `hub`, puede aparecer un **Altar de Sac
 ### Arrollamiento del Triturador (2026-09-11 ✅)
 - Charge de **2 líneas** (filas `y/y+1` o columnas `x/x+1`, ancho del cuerpo 2x2) con telegraph visible.
 - Daño parcial **escalado**: corte `min(2 + arrollamientos previos, 4)` en la cola, piso de 3 segmentos (si mide ≤3, solo shake).
-- Racha **progresiva**: `roomDamaged` + `-0.1x * arrollamientos` a `survivalStreak` (piso x1.0).
+- Racha **progresiva**: daño en encuentro + `-0.1x * arrollamientos` a `survivalStreak` (piso x1.0).
 - Defensas: fantasma/debug inmune; escudo se consume y bloquea; armadura -1 y bloquea. Solo el corte real avanza el contador.
 
 ### Sprite Perforador de Plasma (completado 2026-09-14 ✅)
@@ -429,69 +431,64 @@ Los 5 ataques viven en `entities/bossAttacks.lua` con `telegraphTime` (markers v
 
 ---
 
-### Mini-Bosses por Etapa (Encuentros Élite en Sala 3)
+### Mini-Bosses por Etapa (Hitos de Combate)
 
-En la Sala 3 de cada etapa, el encuentro es custodiado por un **Mini-Jefe Temático** con barra de vida propia, tamaño aumentado (2x2 casillas en grid) y ataques únicos. Se lo derrota **a cabezazos con combo x2+** (daño = combo − 1); la Bomba pega 2 como válvula táctica. Sin mini muerto no hay salida de la sala.
+En cada etapa, un **Mini-Jefe Temático** aparece como fase de combate dentro de la arena continua. Tiene barra de vida propia, tamaño aumentado (2x2 casillas en grid) y ataques únicos. Se lo derrota **a cabezazos con combo x2+** (daño = combo − 1); la Bomba pega 2 como válvula táctica. Sin derrotarlo no se puede avanzar a la fase siguiente. El orden temático y el balance siguen pendientes de revisión.
 
 #### 1. Mini-Jefe Etapa 1: El Triturador de Muros (Wall-Crusher)
 * **Apariencia**: Un enorme bloque de piedra acorazado con púas de hierro (`COLOR = {0.6, 0.6, 0.7}`).
 * **Vida / Resistencia**: 3 HP a cabezazos (x2→1, x3→2) o 2 bombas.
-* **Ataque Principal — *Embestida Sísmica***: Telegrafía una línea roja en cruz de 1 casilla de ancho durante 1.2s y embiste a toda velocidad hasta el borde de la sala, destruyendo cualquier obstáculo en su camino y aturdiendo a la serpiente si está cerca.
+* **Ataque Principal — *Embestida Sísmica***: Telegrafía una línea roja de dos casillas de ancho durante 1.2s y embiste hasta el borde, destruyendo obstáculos en ambas líneas. En el diseño objetivo alterna entre embestir por su línea actual y cerrar una ruta hacia la cabeza. Tras chocar queda aturdido brevemente, creando una ventana de contraataque; limita la destrucción de obstáculos para conservar rutas en arenas pequeñas.
 * **Recompensa al morir**: 15 monedas + cofre dorado con ítem activo garantizado + `survivalStreak +0.2`.
 
 #### 2. Mini-Jefe Etapa 2: El Gólem de Escarcha (Frost Golem)
 * **Apariencia**: Gólem de cristal azul cian brillante con halo de escarcha (`COLOR = {0.2, 0.8, 1.0}`).
 * **Vida / Resistencia**: 4 HP a cabezazos o 2 bombas.
-* **Ataque Principal — *Aliento Gélido***: Dispara un cono de 3 proyectiles de hielo que congelan las baldosas impactadas durante 5 segundos, convirtiéndolas en suelo ultra-resbaladizo.
-* **Ataque Secundario — *Nova de Hielo***: Al recibir daño, expulsa esquirlas en 4 direcciones diagonales.
+* **Ataque Principal — *Aliento Gélido***: Dispara un cono de 3 proyectiles hacia la cabeza y deja hielo delante. En el diseño objetivo alterna con una descarga corta que cubre una franja; el aviso visual debe indicar cuál viene. El hielo limita rutas durante unos segundos, pero deja una salida legible.
+* **Ataque Secundario — *Nova de Hielo***: Al recibir daño, expulsa esquirlas en 4 direcciones diagonales. La nova tendrá un telegrafiado propio para que el daño reactivo no parezca arbitrario.
 * **Recompensa al morir**: 20 monedas + Baya Helada garantizada + cofre de ítems.
 
 #### 3. Mini-Jefe Etapa 3: La Sierpe de Magma (Magma Wyrm)
-* **Apariencia**: Una serpiente enemiga independiente de 6 segmentos incandescentes (`COLOR = {1.0, 0.3, 0.0}`).
-* **Vida / Resistencia**: 6 HP a cabezazos o 3 bombas (1 entidad, sin segmentos).
-* **Ataque Principal — *Rastro de Ceniza***: Se mueve en bucle por el perímetro de la sala dejando una estela de lava ardiente que dura 4 segundos.
-* **Recompensa al morir**: 25 monedas + Guindilla Picante garantizada + cofre dorado.
+* **Apariencia**: Una sierpe de magma compacta que recorre la arena dejando una estela incandescente (`COLOR = {1.0, 0.3, 0.0}`).
+* **Vida / Resistencia**: 6 HP; la implementación actual usa una entidad, no seis segmentos físicos.
+* **Ataque Principal — *Rastro de Ceniza***: Actualmente recorre un circuito interior cada 0.45s y deja lava durante 4 segundos por celda. En el diseño objetivo, avanza por tramos: anuncia el segmento, carga por él y deja lava. Al completar la carga se detiene brevemente, dando una oportunidad legible para contraatacar o recoger comida.
+* **Recompensa al morir**: 25 monedas + Guindilla Picante garantizada + cofre dorado + `survivalStreak +0.2`.
 
 #### 4. Mini-Jefe Etapa 4: La Reina Larva (Brood Queen)
 * **Apariencia**: Nido arácnido gigante púrpura y verde que pulsa rítmicamente (`COLOR = {0.7, 0.1, 0.8}`).
 * **Vida / Resistencia**: 5 HP a cabezazos o 3 bombas (2+1).
-* **Ataque Principal — *Enjambre Efervescente***: Invoca 3 larvas suicidas que corren hacia la serpiente y explotan en una nube de baba ralentizante tras 2 segundos.
-* **Ataque Secundario — *Red Pegajosa***: Dispara una telaraña que cubre un área de 3x3 celdas, bloqueando los giros rápidos.
+* **Ataque Principal — *Enjambre Efervescente***: Invoca larvas suicidas que corren hacia la serpiente y explotan tras 2 segundos. En el diseño objetivo aparecen desde distintos lados para forzar cambios de ruta, con un límite reducido de larvas activas.
+* **Ataque Secundario — *Red Pegajosa***: Cubre un área de 3x3 con baba que ralentiza. La marca anticipa una ruta de escape, pero no aparece directamente bajo la cabeza, para que el jugador pueda responder.
 * **Recompensa al morir**: 30 monedas + Baya Constrictora garantizada + cofre dorado.
 
 #### 5. Mini-Jefe Etapa 5: El Espectro del Vacío (Void Phantom)
 * **Apariencia**: Figura estelar con halo de distorsión gravitatoria y ojos dorados (`COLOR = {0.1, 0.0, 0.3}`).
 * **Vida / Resistencia**: 6 HP a cabezazos o 3 bombas.
-* **Ataque Principal — *Colapso Dimensional***: Abre una singularidad en el centro de la sala que atrae gravitatoriamente a la serpiente y los enemigos hacia el centro durante 3 segundos.
-* **Ataque Secundario — *Desfase Cuántico***: Se teletransporta instantáneamente detrás de la cola de la serpiente, obligando a reaccionar con giros rápidos.
+* **Ataque Principal — *Colapso Dimensional***: Abre una singularidad durante 3 segundos que atrae a la serpiente y los enemigos. En el diseño objetivo aparece fuera del centro y señala una zona segura.
+* **Ataque Secundario — *Desfase Cuántico***: Actualmente se teletransporta cerca de la cola. En el diseño objetivo busca cortar la ruta de la serpiente, con aviso visible y recuperación después del salto. Singularidad y teletransporte no deben encadenarse sin una oportunidad de escape.
 * **Recompensa al morir**: 40 monedas + cofre legendario + `survivalStreak +0.3`.
 
-## 6. Progression
+## 6. Stage Progression: Survival, Mini-Bosses & Bosses
 
-```
-5 Stages × 5 Rooms = 25 Rooms Total
-```
+La expedición se organiza en **cinco etapas**, una por bioma. Cada etapa es una arena continua: no hay una secuencia de cinco salas ni una transición entre salas. La geometría puede variar dentro de la arena, pero no cambia el flujo de progresión.
 
-### Room Types
+### Estructura de una etapa
+1. **Supervivencia**: el jugador atraviesa una secuencia de oleadas escalonadas. El contador marca cuánto falta para el siguiente refuerzo; superar el tiempo por sí solo no completa la etapa.
+2. **Mini-jefe**: cada etapa incluye un encuentro de mini-jefe después de la supervivencia. Al derrotarlo, entrega una recompensa y permite continuar al jefe de etapa.
+3. **Jefe de etapa**: cierra cada etapa. La etapa 5 termina con el jefe final de la expedición. Derrotar al jefe es la condición para avanzar.
+4. **Intermisión**: tras vencer a los jefes de las etapas 1–4, el jugador cobra recompensas y accede a la tienda antes del siguiente bioma. Vencer al jefe de la etapa 5 cierra la expedición y lleva al resumen final.
 
-| Tipo | Comportamiento | Ocurrencia |
-|------|----------------|------------|
-| **Corridor** | Pasillo con enemigos patrullando a lo largo del eje despejado | Aleatoria |
-| **Arena** | Sala abierta con chasers múltiples | Aleatoria |
-| **Choke** | Paso estrecho con obstáculos | Aleatoria |
-| **Hub** | Sala central con comida abundante | Aleatoria |
-| **Treasure** | Sala de cofre/recompensa | Aleatoria |
-| **Spawner** | Contiene uno o más Spawners (púrpura) | Aleatoria |
-| **Elite** | Encuentro reforzado (sala 3 de cada etapa) | Fija: sala 3 |
-| **Boss** | Encuentro con boss (derrota por comida, 15) | Fija: sala 5 |
+La cantidad y duración de las oleadas, las recompensas y el roster/HP/patrones de los jefes de etapa quedan pendientes de balance. Los cinco mini-jefes existentes forman el elenco, uno por etapa; su orden temático debe coincidir con el bioma. El combate conserva los cabezazos con combo x2+, las bombas, los ataques telegrafiados y las defensas existentes.
 
-**Encuentros de Élite (sala 3 de cada etapa)**:
-- La sala 3 se marca con `isElite = true` en `world/dungeonGen.lua` (template override).
-- Un enemigo élite con multiplicadores (`ELITE_HP_MULT = 2.0`, `ELITE_SPEED_MULT = 1.3`, `ELITE_DROP_MULT = 3.0` — propuestos):
-  - HP x2, velocidad x1.3, monedas al morir x3 (ej. chaser élite = 9$).
-  - Visual: halo/brillo especial en `render/enemiesDraw.lua` + aro dorado.
-- **Cofre dorado garantizado** al vencer la sala: drop de monedas adicional (`goldenChest`) equivalente al doble del drop élite + bonus `survivalStreak +0.2` (además del +0.1 por sala).
-- Spawn: el tipo élite es el de mayor `*Weight` de la etapa (chasers en etapas 1/2/4, spawners en 3/5).
+### Reglas de supervivencia
+- El HUD muestra la etapa, el bioma, la fase del encuentro y la oleada activa.
+- Al terminar el contador de una oleada se anuncia y telegrafía la siguiente. Los refuerzos deben aparecer en celdas seguras, con aviso visual de 0.8 segundos.
+- La comida conserva su función de economía, puntuación, combo y habilidades; no reduce el contador de oleada.
+- La limpieza completa de una oleada puede dar una recompensa adicional, pero no sustituye el objetivo principal.
+- La transición de etapa ocurre únicamente al derrotar al jefe de esa etapa; no se avanza por acumular puntos ni por dejar que expire un contador global.
+
+### Geometría de las arenas
+Los diseños Corridor, Arena, Choke, Hub, Treasure, Spawner, Cruz, Espiral y Laberinto pasan a ser **arquetipos o zonas geométricas dentro de una etapa**, no salas consecutivas. El Santuario del Vacío conserva su arena de jefe con jaula láser y ataques telegrafiados.
 
 ### Stage Biomes & Environmental Hazards
 | Stage | Biome Name | Visual Theme | Environmental Hazard / Mechanic |
@@ -504,16 +501,17 @@ En la Sala 3 de cada etapa, el encuentro es custodiado por un **Mini-Jefe Temát
 
 **Notas de implementación por bioma**:
 - **Catacumbas (1)**: sin mecánica especial; es el bioma de aprendizaje.
-- **Cripta Helada (2)**: loseta con `isIce=true` (campo `room.biome` en `stageModifiers`, inyectado por `dungeonGen.lua`); momento inercial aplicado en `entities/snake.lua` al girar (deslizamiento de +1 celda).
+- **Cripta Helada (2)**: loseta con `isIce=true` (el campo de bioma se aplicará a la arena de etapa); momento inercial aplicado en `entities/snake.lua` al girar (deslizamiento de +1 celda).
 - **Caverna Volcánica (3)**: `hazardGrid` con timers térmicos evaluados en `systems/gamestates.lua` (ciclo caliente/arden); la loseta caliente daña si se pisa en fase ardiente.
 - **Colmena Tóxica (4)**: `isSlime=true` → -20% velocidad de paso en losetas viscosas; además spawns de larvas rápidas (patrollers mini).
 - **Santuario del Vacío (5)**: `wallWrap=false` → salir del borde es muerte instantánea; **balance**: se reducen caps de enemigos en este bioma (chasers 2 / patrollers 3, propuesta) para compensar el menor espacio usable.
 
 **Ajuste de dificultad global por bioma**: los `stageModifiers` (spawnRate, enemySpeed, weights) ya escalan por etapa (ver `world/dungeonGen.lua`); los biomas aportan la mecánica extra, no el balance base.
 
-### Flow
+### Flujo de expedición
 ```
-MENU → PLAYING → TRANSITION → SHOP → PLAYING → ...
+MENU → STAGE 1 (oleadas → mini-jefe → jefe) → INTERMISIÓN / SHOP
+     → STAGE 2 → ... → STAGE 5 → JEFE FINAL → RESUMEN / MENU
 PLAYING → DEATH_ANIMATION → HIGH_SCORE/SHOP → MENU
 ```
 
@@ -580,8 +578,8 @@ Modos de juego adicionales desbloqueables. Estado en `world.state.modo` (string)
 
 | Modo | Desbloqueo | Reglas Especiales |
 |---|---|---|
-| **Aventura Estándar** | Por defecto | 5 etapas x 5 salas con progresión clásica, tienda y Boss. |
-| **Abismo Sin Fin (Endless Abyss)** | Vencer Etapa 5 | Salas infinitas más allá de la 5-5 con dificultad, velocidad y densidad escalando sin límite. |
+| **Aventura Estándar** | Por defecto | 5 arenas continuas por bioma; cada etapa culmina en mini-jefe y jefe, con tienda entre etapas. |
+| **Abismo Sin Fin (Endless Abyss)** | Vencer Etapa 5 | Etapas infinitas más allá de la 5, con dificultad, velocidad y densidad escalando sin límite. |
 | **A Contrarreloj (Time Attack / Rush)** | Récord 3000 pts | 3 minutos continuos para maximizar puntos con multiplicadores triples y comida frenética. |
 | **Pacifista (Ghost Runner)** | Logro `stage_3` | Sin ítems ofensivos ni muerte a enemigos; la supervivencia depende exclusivamente de la evasión y el cuerpo. |
 | **Boss Rush (Guantelete de Jefes)** | Vencer Etapa 5 | Combate consecutivo contra los 5 Mini-Jefes y el Boss final sin salas intermedias. |
@@ -590,13 +588,15 @@ Modos de juego adicionales desbloqueables. Estado en `world.state.modo` (string)
 | **Desafío Semanal Temático** | Modo Online/Local | Semilla fija con 3 mutadores únicos que rota cada lunes. |
 | **Modo Draft de Salida** | Comprar en Santuario | Elección inicial de 1 de 3 paquetes de Skin + Ítem Activo + Ítem Pasivo. |
 | **Muerte Súbita (Sudden Death)** | Superar racha 15 | Sin escudos ni armaduras (un toque = muerte), pero todas las monedas y puntos valen el triple (x3). |
-| **Laberinto Procedural (Maze Runner)** | Logro `stage_3` | Salas generadas mediante laberintos perfectos sin áreas abiertas. |
+| **Laberinto Procedural (Maze Runner)** | Logro `stage_3` | Arenas de etapa generadas como laberintos perfectos sin áreas abiertas. |
 | **Carrera contra el Fantasma** | Por defecto | Silueta translúcida de tu mejor récord compitiendo en paralelo en tiempo real. |
 
 **Detalle por modo (hooks de implementación)**:
-- **Endless**: `worldMod.avanzarSala()` no se detiene en la sala 5 de la etapa 5; `stageModifiers` escalan por índice de sala (`etapa = 1 + floor(sala/10)`). Objetivo de sala sigue creciendo (`targetMult` acumulado).
+- **Nota de migración**: los hooks descritos abajo reflejan el código actual, que aún usa avance por sala; adaptarlos al ciclo de etapas forma parte del rediseño.
+- **Endless**: el modo objetivo no se detiene en la etapa 5; `stageModifiers` escalan por etapa y las fases de supervivencia continúan aumentando.
 - **Rush**: `world.state.timeLimit = 180s` (config propuesto `RUSH_TIME_LIMIT = 180`); `scoreMultiplier` fijo x3 durante el modo; spawn de comida acelerado (`SPECIAL_FOOD_CHANCE` más alto o intervalo de comida menor). Al agotar el tiempo → fin de run → `HIGH_SCORE`/`SHOP` → `MENU`.
-- **Pacifista**: `world.state.pacifist = true`; `systems/player.lua` desactiva la BOMBA y el ítem Hunger queda neutro (no suma kills); `gamestates.lua` ignora `enemyKilled` (sin monedas/combo por matar); los enemigos persisten (no se eliminan al tocarlos). Ganar sala solo por objetivo de puntos de comida.
+- **Pacifista**: `world.state.pacifist = true`; `systems/player.lua` desactiva la BOMBA y el ítem Hunger queda neutro (no suma kills); `gamestates.lua` ignora `enemyKilled` (sin monedas/combo por matar); los enemigos persisten (no se eliminan al tocarlos). La condición de avance por etapas y la resolución de jefes en este modo quedan pendientes de diseño.
+- **Boss Rush (Guantelete de Jefes)**: `world.state.modo = "boss_rush"`. Secuencia cerrada de 6 encuentros encadenados en `systems/gameflow.lua`: Sala 1 (Triturador de Muros) → Tienda → Sala 2 (Gólem de Escarcha) → Tienda → Sala 3 (Sierpe de Magma 6 segmentos) → Tienda → Sala 4 (Reina Larva) → Tienda → Sala 5 (Espectro del Vacío) → Tienda → Sala 6 (Gran Boss Quimera del Vacío HP 16). Al superar el guantelete se desbloquea el logro especial `boss_rush_master` y la skin legendaria `wyrm_gold`.
 
 ## 12. Snake Customization & Master Skin Catalog
 
@@ -911,7 +911,7 @@ $$S_{\text{total}} = \lfloor P_{\text{base}} \times (1 + C \times M_{\text{combo
 * $C$: Contador de combo actual (`comboCount`), activo dentro de una ventana de tiempo $t \le 8.0\,\text{s}$.
 * $M_{\text{combo}} = 0.5$ (`COMBO_MULTIPLIER`).
 * $M_{\text{score}}$: Multiplicadores de ítems activos (Duplicador: 2.0, Estrella: 3.0).
-* $M_{\text{streak}}$: Multiplicador de racha de supervivencia ($1.0 \le M_{\text{streak}} \le 2.0$, con paso $+0.1$ por sala).
+* $M_{\text{streak}}$: Multiplicador de racha de supervivencia ($1.0 \le M_{\text{streak}} \le 2.0$, con paso $+0.1$ por etapa).
 
 ### 13.3 Economía de Monedas y Drop Rate
 Monedas generadas por evento ($G_{\text{monedas}}$):
@@ -949,43 +949,45 @@ $$I_{\text{chaser}}(E) = \max\left(0.15\,\text{s}, \frac{0.30}{S_{\text{mult}}} 
 | **VI. Sangre de Dragón** | Ofensivo | Las comidas Picantes aumentan la duración de su rastro de fuego a 6.0 segundos (base 3.5s). | Llamas más altas y con partículas de brasas densas. |
 | **VII. Cero Absoluto** | Control | La Fruta Helada congela a los enemigos durante 4.0 segundos y los vuelve frágiles (mueren al chocar con ellos). | Los enemigos congelados se cubren de un bloque de hielo cúbico. |
 | **VIII. El Círculo Mágico**| Constricción| El radio de atracción del bucle de constricción aumenta +1 casilla alrededor del cuerpo. | Anillo rúnico concéntrico visible durante la constricción. |
-| **IX. Espejo Astral** | Evasión | La serpiente puede atravesar las paredes exteriores 1 vez por sala sin morir incluso en biomas sin *wall-wrap*. | Resplandor holográfico en los bordes del nivel. |
-| **X. La Bolsa de Midas** | Economía | Al iniciar cada sala, caen 3 monedas en celdas aleatorias de la cuadrícula. | Lluvia inicial de monedas con sonido de tintineo. |
-| **XI. Corazón de Hierro** | Supervivencia| Sobrevivir a una sala con menos de 5 segmentos otorga automáticamente 1 carga de Escudo gratis. | Aura blanca pulsante en el corazón de la cabeza. |
+| **IX. Espejo Astral** | Evasión | La serpiente puede atravesar las paredes exteriores 1 vez por etapa sin morir incluso en biomas sin *wall-wrap*. | Resplandor holográfico en los bordes de la arena. |
+| **X. La Bolsa de Midas** | Economía | Al iniciar cada etapa, caen 3 monedas en celdas aleatorias de la cuadrícula. | Lluvia inicial de monedas con sonido de tintineo. |
+| **XI. Corazón de Hierro** | Supervivencia| Sobrevivir una etapa con menos de 5 segmentos otorga automáticamente 1 carga de Escudo gratis. | Aura blanca pulsante en el corazón de la cabeza. |
 | **XII. El Segador** | Ofensivo | Cada enemigo eliminado extiende la duración de los buffs de comida activos en +0.5 segundos. | Destello morado en el cronómetro de buff. |
 
-## 15. Special Mystery Rooms (Salas de Eventos Especiales)
+## 15. Stage Events (Encuentros Especiales de Etapa)
 
-Aparecen con una probabilidad del 6% en lugar de una sala estándar, introduciendo mecánicas de juego alternativas:
+Los encuentros de misterio dejan de reemplazar una sala. En el diseño por etapas aparecen como eventos opcionales dentro de la arena continua, durante una fase de supervivencia. La frecuencia, el momento de aparición y la convivencia con mini-jefes quedan pendientes de balance.
 
-### 15.0 Asignación (implementado 2026-09-07 `feature/phase8-mystery-rooms`)
-* **Roll**: 6% por sala candidata al generar la mazmorra (`ROOM_MYSTERY_CHANCE`), flag persistente `room.mystery`.
-* **Exclusiones**: salas boss, élite y sala 1 nunca son misterio.
-* **Feedback**: banner `SALA ESPECIAL: <nombre>` al entrar + badge permanente en el HUD.
+**Estado de implementación**: `systems/mystery.lua` selecciona como máximo un encuentro al iniciar la supervivencia, con la probabilidad heredada del 6% pendiente de balance. El encuentro se cierra al resolverse o al empezar el mini-jefe, sin transición de sala. La estructura interna de compatibilidad todavía usa el campo `mystery` de la arena.
+
+### 15.0 Asignación objetivo
+* La etapa puede activar un encuentro especial durante supervivencia; no se crea una arena separada ni se reinicia el estado de la serpiente.
+* El evento termina con su recompensa o riesgo y la supervivencia continúa en la misma arena.
+* El HUD presenta el nombre del encuentro y su condición de cierre.
 
 ### 15.1 La Guarida del Apostador (Gambler's Den)
-* **Mecánica**: En el centro de la sala hay una loseta con una Ruleta de la Fortuna. Al pasar la cabeza por encima, se abre una apuesta rápida de 10 monedas.
-* **Desafío**: La sala genera 3 comidas doradas y un temporizador de 15 segundos.
+ * **Mecánica**: En la arena aparece una loseta con una Ruleta de la Fortuna. Al pasar la cabeza por encima, se abre una apuesta rápida de 10 monedas.
+ * **Desafío**: El evento genera 3 comidas doradas y un temporizador de 15 segundos mientras continúa el asedio.
   * **Victoria (recoger las 3 antes de 0s)**: Otorga 40 monedas, un ítem aleatorio de la tienda y `survivalStreak +0.3`.
-  * **Derrota (tiempo agotado)**: Pierdes las 10 monedas apostadas y se generan 2 Chasers adicionales antes de abrir la puerta.
+  * **Derrota (tiempo agotado)**: Pierdes las 10 monedas apostadas y se generan 2 Chasers adicionales.
 
-### 15.2 La Sala de la Sombra Espejo (Doppelgänger Mirror)
-* **Mecánica**: Una serpiente espectral de color amatista oscuro (`{0.5, 0.1, 0.8, 0.7}`) nace del lado opuesto de la sala con la misma longitud que el jugador y replica sus giros con 1.2 segundos de retraso.
+### 15.2 La Sombra Espejo (Doppelgänger Mirror)
+* **Mecánica**: Una serpiente espectral de color amatista oscuro (`{0.5, 0.1, 0.8, 0.7}`) aparece al lado opuesto de la arena con la misma longitud que el jugador y replica sus giros con 1.2 segundos de retraso.
 * **Objetivo**: La sombra no te ataca activamente pero su cuerpo es un obstáculo móvil letal. Si logras encerrarla con el *Constrictor Loop* o alimentarla con 3 frutas normales, se disuelve en una supernova de 30 monedas y un cofre dorado.
 
 ### 15.3 Fiebre del Oro (Gold Rush Chamber)
-* **Mecánica**: Una sala de bonificación sin enemigos letales. Durante 12 segundos, 20 monedas rebotan a toda velocidad por la cuadrícula como pelotas de pinball.
-* **Objetivo**: Recoger tantas monedas como sea posible antes de que expire el tiempo y se desbloquee la puerta de salida.
+* **Mecánica**: Un evento de bonificación sin enemigos letales nuevos. Durante 12 segundos, 20 monedas rebotan a toda velocidad por la cuadrícula como pelotas de pinball.
+* **Objetivo**: Recoger tantas monedas como sea posible antes de que expire el tiempo; luego continúa la fase de supervivencia.
 
 ### 15.4 La Prueba de los Tres Sellos (Trial of Triads)
-* **Mecánica**: Tres baldosas rúnicas numeradas (1, 2, 3) aparecen en tres esquinas. El jugador debe pisarlas en orden secuencial en menos de 10 segundos mientras evita patrulleros en cruz. Completar el sello abre una cámara secreta con un Altar legendario.
+* **Mecánica**: Tres baldosas rúnicas numeradas (1, 2, 3) aparecen en distintas zonas de la arena. El jugador debe pisarlas en orden secuencial en menos de 10 segundos mientras evita patrulleros. Completar el sello activa un Altar legendario como recompensa.
 
 ## 16. Status Effects Engine (Motor de Estados Alterados)
 
 Sistema de micro-estados temporales que modifican el comportamiento de la serpiente:
 
 ### 16.1 Estado de Frenesí (Overdrive)
-* **Activación**: Alcanzar una racha de Combo x6 en cualquier sala.
+* **Activación**: Alcanzar una racha de Combo x6 durante cualquier encuentro de etapa.
 * **Duración**: 4.0 segundos.
 * **Efectos**: Velocidad +25%, glow dorado cegador, y la cabeza destruye cualquier obstáculo de piedra o Chaser menor al chocar contra ellos sin sufrir daño.
 
@@ -1014,7 +1016,7 @@ Ubicado en el Menú Principal bajo el botón "SANTUARIO". Permite gastar las mon
 | **Fortuna** | **Imán Residual** | II | 150$ / 350$ | La cabeza de la serpiente atrae monedas a **radio 1 / radio 2** pasivamente. |
 | **Alquimia** | **Estómago de Dragón**| II | 200$ / 450$ | Aumenta la duración de todos los buffs de comida especial en **+1.0s / +2.0s**. |
 | **Alquimia** | **Pociones Espesas** | I | 300$ | Los efectos de ralentización del tiempo duran **1.5s extra**. |
-| **Misticismo**| **Sexto Sentido** | I | 250$ | Muestra un icono sobre la puerta indicando el tipo de la siguiente sala (Élite, Tesoro, Normal). |
+| **Misticismo**| **Sexto Sentido** | I | 250$ | Muestra un indicador anticipado de la siguiente fase de etapa (oleada, mini-jefe o jefe). |
 | **Misticismo**| **Pacto de Piedad** | II | 180$ / 400$ | Reduce el coste de revivir en el modal de muerte de 30$ a **25$ / 20$**. |
 | **Combate** | **Cuerpo Temple** | I | 500$ | La serpiente puede resistir **1 impacto accidental contra su propia cola** por etapa sin morir. |
 | **Combate** | **Foco del Cazador** | II | 220$ / 480$ | La ventana de combo se amplía permanentemente a **9.0s / 10.0s** (base 8.0s). |
@@ -1022,7 +1024,7 @@ Ubicado en el Menú Principal bajo el botón "SANTUARIO". Permite gastar las mon
 ## 18. Daily Challenges, Codex & Bounties (Desafíos Diarios y Códice)
 
 ### 18.1 Mazmorra Diaria (Daily Challenge)
-* **Semilla Determinista**: Generada mediante el hash numérico del día (`año * 10000 + mes * 100 + día`), garantizando que todos los jugadores jueguen exactamente la misma disposición de salas, enemigos y comida.
+* **Semilla Determinista**: Generada mediante el hash numérico del día (`año * 10000 + mes * 100 + día`), garantizando que todos los jugadores jueguen la misma secuencia de etapas, arenas, enemigos y comida.
 * **Reglas**: 1 único intento diario por perfil, mutadores diarios aleatorios (ej. *"Lunes de Fuego"*: todas las comidas son Guindillas Picantes, velocidad base +30%), tabla de clasificación local.
 
 ### 18.2 Códice de la Serpiente Antigua (Lore & Bestiary)
@@ -1030,30 +1032,71 @@ Ubicado en el Menú Principal bajo el botón "SANTUARIO". Permite gastar las mon
 * **Matriz de Sinergias Descubiertas**: Panel estilo álbum que registra las 8 sinergias de ítems a medida que el jugador las descubre en sus partidas.
 
 ### 18.3 Tablón de Cazarrecompensas (Bounty Board)
-En cada expedición se activan 2 contratos secundarios con recompensas inmediatas:
+En cada expedición se activan contratos secundarios con recompensas inmediatas:
 * *Contrato 1: "El Cerco Maestro"*: Destruye 4 enemigos mediante el *Constrictor Loop* en una sola run (Recompensa: +30$).
-* *Contrato 2: "Rápido y Furioso"*: Supera 3 salas consecutivas manteniendo un combo ≥ x3 (Recompensa: Cofre de ítems).
-* *Contrato 3: "Pacifista Táctico"*: Completa una sala de tipo Arena sin usar bombas ni escudo (Recompensa: +50$).
+* *Contrato 2: "Rápido y Furioso"*: Supera 3 oleadas consecutivas manteniendo un combo ≥ x3 (Recompensa: Cofre de ítems).
+* *Contrato 3: "Pacifista Táctico"*: Completa una fase de supervivencia sin usar bombas ni escudo (Recompensa: +50$).
 
-## 19. Room Modifiers, Curses & Blessings (Maldiciones y Bendiciones de Sala)
+## 19. Stage Modifiers, Curses & Blessings (Modificadores de Etapa)
 
 | # | Modificador | Tipo | Regla Mecánica | Impacto Jugable |
 |---|---|:---:|---|---|
-| **61** | **Sala de Gravedad Cero** | Entorno | La serpiente mantiene su inercia de avance sin fricción; solo altera su rumbo al pulsar un nuevo giro. | Sensación de deslizamiento espacial / reflejos rápidos. |
-| **62** | **Maldición de Midas Avaro**| Maldición | Todas las frutas otorgan +2 monedas extra, pero cada segundo en la sala descuenta -1 punto de la puntuación. | Empuja a resolver la sala con máxima velocidad. |
-| **63** | **Bendición de la Pluma** | Bendición | La masa del cuerpo no penaliza la inercia de giro; responde con la agilidad de 3 segmentos. | Alivio absoluto para salas con colas muy largas. |
-| **64** | **Sala del Velo Silencioso**| Desafío | El uso de ítems activos de inventario queda sellado; superarla otorga el doble de monedas. | Prueba de habilidad pura sin ayudas de inventario. |
+| **61** | **Gravedad Cero** | Entorno | La serpiente mantiene su inercia de avance sin fricción; solo altera su rumbo al pulsar un nuevo giro. | Sensación de deslizamiento espacial / reflejos rápidos. |
+| **62** | **Maldición de Midas Avaro**| Maldición | Todas las frutas otorgan +2 monedas extra, pero cada segundo de la etapa descuenta -1 punto de la puntuación. | Empuja a resolver los encuentros con máxima velocidad. |
+| **63** | **Bendición de la Pluma** | Bendición | La masa del cuerpo no penaliza la inercia de giro; responde con la agilidad de 3 segmentos. | Alivio absoluto para runs con colas muy largas. |
+| **64** | **Velo Silencioso**| Desafío | El uso de ítems activos de inventario queda sellado; superar la etapa otorga el doble de monedas. | Prueba de habilidad pura sin ayudas de inventario. |
 | **65** | **Sombra Acechante** | Maldición | Un espectro invulnerable avanza a velocidad lenta persiguiendo a la serpiente durante toda la etapa. | Elimina cualquier posibilidad de juego pasivo o campeo. |
-| **66** | **Desafío Contrarreloj** | Desafío | Temporizador de 10.0s; si se cumple el objetivo a tiempo otorga un ítem pasivo legendario gratis. | Tensión frenética y recompensa de alto valor. |
+| **66** | **Desafío Contrarreloj** | Desafío | Temporizador de 10.0s; si se cumple el objetivo del evento a tiempo otorga un ítem pasivo legendario gratis. | Tensión frenética y recompensa de alto valor. |
 | **67** | **Bendición del Fénix** | Bendición | Si la serpiente muere en la etapa, revive 1 vez gratis con 3 segmentos y 3s de invulnerabilidad. | Red de seguridad para runs de racha alta. |
-| **68** | **Visión de Túnel** | Maldición | Máscara de oscuridad que cubre todo el mapa excepto un radio de 5 celdas de la cabeza. | Juego tenso de memoria espacial y reflejos. |
-| **69** | **Sala de la Dualidad** | Entorno | Todos los spawns de enemigos y frutas se generan en pares simétricos duplicados. | Gran densidad de amenazas y abundancia de recursos. |
+| **68** | **Visión de Túnel** | Maldición | Máscara de oscuridad que cubre la arena excepto un radio de 5 celdas de la cabeza. | Juego tenso de memoria espacial y reflejos. |
+| **69** | **Dualidad** | Entorno | Todos los spawns de enemigos y frutas se generan en pares simétricos duplicados. | Gran densidad de amenazas y abundancia de recursos. |
 | **70** | **Pacto del Titán** | Pacto | Cuerpo ocupa grosor de 1.5x, pero cada fruta ingerida suma +50 puntos base. | Riesgo extremo de colisión a cambio de récords masivos. |
 
-### 19.1 Asignación (implementado 2026-09-07 `feature/phase8-room-modifiers`)
-* **Roll**: 35% por sala al entrar (`ROOM_MUTATOR_CHANCE`), máximo 1 mutador activo por sala.
-* **Exclusiones**: salas boss y élite nunca tienen mutador.
-* **Feedback**: banner `MUTADOR: <TAG>` al entrar + badge permanente en el HUD.
+### 19.1 Asignación objetivo
+* Se activa como máximo un modificador al iniciar la etapa y permanece hasta derrotar al jefe de etapa.
+* Los modificadores también afectan los encuentros de mini-jefe y jefe; se balancean para no invalidar sus patrones.
+* **Estado de implementación**: `systems/roomMutators.lua` todavía aplica un roll por sala. Migrar el ciclo y el estado al alcance de etapa es trabajo pendiente.
+
+### 19.2 Sistema de Eventos Aleatorios Mixtos por Bioma (20 Eventos)
+
+Sistema procedural distribuido en los 5 biomas que equilibra eventos dinámicos en combate (In-Game Surges) y micro-eventos de decisión rúnica (Tactical Dilemmas). En el diseño por etapas, se activan durante la fase de supervivencia de la arena; se suspenden durante mini-jefes y jefes. La frecuencia y el máximo de eventos por etapa quedan pendientes de balance.
+
+#### Categoría A: 10 Eventos Dinámicos en Combate (In-Game Surges)
+La propuesta conserva el disparador en una oleada intermedia (`waveCurrent > 1`) durante supervivencia. Todos los peligros cuentan con telegrafiado de $1.0\text{s}$ para garantizar Cero-Telefragging. El 15% descrito en las reglas heredadas requiere balance para la duración completa de una etapa.
+
+| Bioma / Etapa | ID | Evento Dinámico | Duración | Mecánica en el Tablero | Telegrafiado & Feedback | Bono |
+|---|---|---|:---:|---|---|:---:|
+| **Etapa 1: Catacumbas** | **E-01** | **Derrumbe Sísmico** | 6.0s | Caen 3 escombros en celdas aleatorias; aplastan enemigos y destruyen obstáculos. | Sombras de polvo oscilantes ($1.0\text{s}$ previo). | $+5\$$ |
+| **Etapa 1: Catacumbas** | **E-02** | **Frenesí de Cosecha** | 5.5s | Las frutas otorgan doble puntuación base y las monedas normales valen 2$. | Partículas doradas con pulso verde suave. | $+5\$$ |
+| **Etapa 2: Cripta Helada** | **E-03** | **Ventisca Ártica** | 6.0s | El suelo pierde fricción (deslizamiento +1 celda); cazadores ralentizados un 30%. | Escarcha en esquinas y copos de nieve veloces. | $+6\$$ |
+| **Etapa 2: Cripta Helada** | **E-04** | **Fragmentación de Cristal** | 5.0s | Púas de hielo emergen en un carril cruzado vertical y horizontal. | Glifos cian pulsantes durante $1.2\text{s}$ antes del pincho. | $+6\$$ |
+| **Etapa 3: Forja Volcánica** | **E-05** | **Erupción de Géiseres** | 6.0s | 4 baldosas de lava entran en erupción cíclica quemando a quien las pise. | Baldosas teñidas de naranja incandescente $1.0\text{s}$. | $+7\$$ |
+| **Etapa 3: Forja Volcánica** | **E-06** | **Sobrecarga Térmica** | 4.5s | La serpiente deja estela de brasas que daña cazadores; velocidad +15%. | Estela de chispas rojas tras cada segmento. | $+7\$$ |
+| **Etapa 4: Colmena Tóxica** | **E-07** | **Niebla Miasmática** | 7.0s | Visibilidad reducida a radio 5; proyectiles enemigos ralentizados un 40%. | Viñeta con degradado esmeralda y desenfoque. | $+8\$$ |
+| **Etapa 4: Colmena Tóxica** | **E-08** | **Eclosión de Esporas** | 5.0s | 2 vainas de esporas explotan en una nube de baba ácida que ralentiza celdas contiguas. | Vainas hinchándose con burbujas verdes durante $1.2\text{s}$. | $+8\$$ |
+| **Etapa 5: Vacío Cósmico** | **E-09** | **Singularidad Gravitatoria**| 5.0s | Micro-vórtice central atrae enemigos y comida hacia el centro (serpiente inmune). | Vórtice púrpura con distorsión espiral en centro. | $+10\$$ |
+| **Etapa 5: Vacío Cósmico** | **E-10** | **Tormenta de Antimateria** | 5.5s | Rayos estelares cruzan 2 columnas en secuencia barriendo entidades. | Líneas telegrafiadas en magenta $1.0\text{s}$ previo. | $+10\$$ |
+
+#### Categoría B: 10 Micro-Eventos de Decisión Táctica (Dilemas de Riesgo)
+Se manifiestan en pedestales rúnicos dentro de las arenas de etapa o durante la intermisión:
+
+| Bioma / Etapa | ID | Nombre del Evento | Tipo | Opción A (Riesgo / Sacrificio) | Opción B (Conservadora) |
+|---|---|---|---|---|---|
+| **Etapa 1: Catacumbas** | **D-01** | **Altar de Sangre** | Sacrificio | **Pagar 3 segmentos de cola**: Obtienes un Escudo de Alma (+1 vida permanente para toda la run). | **Rechazar**: Mantener longitud intacta. |
+| **Etapa 1: Catacumbas** | **D-02** | **Sarcófago Sellado** | Curiosidad | **Forzar Sarcófago**: +35 monedas inmediatas, pero genera un Cazador élite al instante. | **Ignorar Sarcófago**: continuar la fase de supervivencia sin activar el combate adicional. |
+| **Etapa 2: Cripta Helada** | **D-03** | **Ídolo de Hielo Negro** | Fragilidad | **Rezar al Ídolo**: Ventana de combo ampliada permanentemente a 12.0s; chocar muros causa daño. | **Purificar Ídolo**: +10 monedas sin alterar reglas. |
+| **Etapa 2: Cripta Helada** | **D-04** | **El Viajero Congelado** | Caridad | **Descongelar con 15$**: El viajero otorga un ítem activo de nivel 2 garantizado. | **Seguir de largo**: Conservar las 15 monedas. |
+| **Etapa 3: Forja Volcánica** | **D-05** | **Yunque del Herrero Caído** | Forja | **Fundir 50% de tus monedas**: Mejora un ítem de tu inventario al nivel Maestro (+50% efecto). | **No usar el Yunque**: Conservar monedas. |
+| **Etapa 3: Forja Volcánica** | **D-06** | **Pacto Ígneo** | Masa | **Aceptar la Llama**: El cuerpo se fija en 4 segmentos; la velocidad aumenta un 20% permanentemente. | **Rechazar**: Mantener atributos actuales. |
+| **Etapa 4: Colmena Tóxica** | **D-07** | **Cofre de Pandora Corrupto** | Avaricia | **Abrir Cofre**: +60 monedas y 1 Carta de Tarot gratis; próximas 2 oleadas tendrán +1 refuerzo. | **Romper Candado**: Recibir solo +12 monedas limpias. |
+| **Etapa 4: Colmena Tóxica** | **D-08** | **La Larva Reina Huérfana** | Compañero | **Adoptar Larva**: Come enemigos congelados; si la serpiente recibe daño, la larva perece. | **Dejar en el nido**: Obtener +15 monedas. |
+| **Etapa 5: Vacío Cósmico** | **D-09** | **Pacto de las Sombras** | Duelo | **Firmar Pacto**: Duelo 1v1 contra la Sombra Espejo; derrotarla otorga un Ítem Legendario del Códice. | **Rechazar**: Cruzar la puerta sin combate. |
+| **Etapa 5: Vacío Cósmico** | **D-10** | **Fruta del Vacío Infinito** | Trascendencia | **Consumir Fruta**: Creces +10 segmentos de golpe; la racha de supervivencia salta directo a x2.0. | **Destruir Fruta**: Recibir +30 monedas purificadas. |
+
+#### Reglas de Integridad y Aislamiento
+* **Aislamiento de Jefes**: Los eventos dinámicos quedan deshabilitados durante las fases de mini-jefe y jefe.
+* **Telegrafiado Obligatorio**: Ningún evento letal puede generar daño sin al menos $1.0\text{s}$ de advertencia en el grid.
+* **Bonificación de Superación**: Superar una oleada bajo un evento adverso acredita un bono de maestría de $+5\$$ a $+10\$$ según la etapa.
 
 ## 20. Visual Style & Rendering Evolution (100 Propuestas de Arte y Renderizado)
 
@@ -1179,6 +1222,8 @@ En cada expedición se activan 2 contratos secundarios con recompensas inmediata
 
 ## 21. Experiencia, Variedad, Meta y Arquitectura (80 Propuestas del Socio Técnico)
 
+**Nota de alcance**: este catálogo contiene propuestas redactadas bajo el flujo anterior por salas. Las que mencionen salas, puertas o transiciones no forman parte del nuevo ciclo hasta que se reformulen para las arenas y fases de etapa.
+
 Conjunto de 4 bloques × 20 propuestas para evolución del juego. Marcador: **[NUEVA]** = sin análogo previo; **[solapa → ref]** = reutiliza/refina especificación existente conservando la fuente canónica.
 
 ### 21.1 Bloque 1: Feedback & Game Feel (1–20)
@@ -1268,4 +1313,62 @@ Conjunto de 4 bloques × 20 propuestas para evolución del juego. Marcador: **[N
 78. **i18n con fallback** — Diccionarios `locales/es.lua`, `en.lua`, `pt.lua`; fallback a inglés si falta clave. **[NUEVA]**
 79. **Input centralizado** — `core/input.lua` 89L + `KEYBINDS` + gamepad (P07 ✅ PR #11). **[IMPLEMENTADO]**
 80. **Guía DX de extensión** — Checklist de 10 pasos + scaffolding para agregar un enemigo/ítem nuevo, en docs/. **[NUEVA]**
+
+## 22. Eventos Aleatorios de Etapa (Sucesos Intra-Etapa)
+
+Sucesos de 8–15s que interrumpen el asedio sin cambiar el objetivo de etapa. Ocurren dentro de la arena durante supervivencia, junto a los modificadores de etapa (§19) y los encuentros especiales (§15); nunca crean una sala aparte. La propuesta conserva un máximo de un evento por etapa y deja su probabilidad pendiente de balance. Los eventos son optativos o neutros, salvo cuando el jugador acepta explícitamente una apuesta.
+
+### 22.1 Tabla de eventos
+
+| # | Evento | Disparador | Regla | Recompensa / riesgo |
+|---|---|---|---|---|
+| **E1** | **Lluvia de oro** | 8% al iniciar oleada | 6 monedas cinemáticas rebotando 10s (Fiebre del Oro a escala) | Las atrapadas suman; las expiradas desaparecen |
+| **E2** | **Caza mayor** | 10% en oleadas ≥2 | 1 enemigo marcado dorado (HP x1, sin respawn); matarlo da drop ×3 + racha +0.1 | Si sobrevive a la oleada, se retira sin premio |
+| **E3** | **Intercambio del mercader** | 6% en respiro | Mercader 6s: vende 1 ítem aleatorio con 20% descuento a cambio de 5 segmentos de cola | Decisión longitud vs equipo |
+| **E4** | **Eclipse / sobrecarga** | 7% en asedio | 8s de oscuridad parcial (radio 8) o velocidad ×1.2 global; superarlo da cofre-buff menor | Capa temporal de dificultad |
+| **E5** | **Duelo de honor** | 5% en salas 1–2 | Congela spawns 12s y suelta 1 chaser élite 1v1; victoria = escudo gratis | La derrota no penaliza (el duelo expira) |
+| **E6** | **Réplica del vacío** | 5% en E4+ | Eco translúcido que replica giros con 1.2s de retardo durante 10s; esquivarlo otorga combo +2 | Mini-Doppelgänger sin premio de espejo |
+| **E7** | **Ofrenda de sangre** | 6% con racha alta | Altar 8s: sacrificar 30% monedas → +0.2 racha, o 3 segmentos → ítem aleatorio | Solo rentable si la run va bien |
+
+### 22.2 Reglas transversales
+
+- **Exclusiones**: no se activan durante encuentros de mini-jefe ni jefe.
+- **Probabilidad**: un roll al iniciar la supervivencia de cada etapa; `EVENT_CHANCE = 0.25` queda como referencia por recalibrar.
+- **Feedback**: banner `EVENTO: <TAG>` al activar + badge con cuenta atrás en el HUD (igual que mutadores).
+- **Faseo recomendado**: E1+E2+E3 con el asedio E+B; E4+E5 con Sprint 2; E6+E7 en Phase 9.
+
+### 22.3 Segunda tanda riesgo-recompensa (E8–E14)
+
+Apuestas explícitas con coste hundido: el jugador paga antes de saber el desenlace.
+
+| # | Evento | Apuesta explícita | Premio | Fracaso |
+|---|---|---|---|---|
+| **E8** | **Ruleta de sangre** | −3 segmentos o −25% monedas (a elegir) | Ítem activo aleatorio + racha +0.1 | La apuesta se pierde igual |
+| **E9** | **Fiebre del cazador** | 12s con spawns ×2 y velocidad enemiga +15% | Cada kill en ventana paga ×2 monedas | Sin kills: oleada densa 10s más |
+| **E10** | **Pacto de la sombra** | Ceder escudo/armadura actual (veto si no hay) | Fantasma 5s + magnetismo total 5s | Sin defensas no se activa |
+| **E11** | **Cofre maldito** | Abrirlo: 50% trampa (2 chasers) / 50% botín | Botín doble (30$ + cofre-buff) si racha ≥1.5x | Trampa con cola larga = muerte probable |
+| **E12** | **Deuda del vacío** | +40$ inmediatas | — | −60$ al terminar la sala (puede dejar saldo negativo y bloquear la tienda) |
+| **E13** | **Corazón dividido** | Duelo 2v1 contra 2 chasers élite, 15s | Corazón de Hierro + cofre dorado menor | Expira sin premio; el daño es real |
+| **E14** | **Eclipse total** | 10s de túnel radio 3 (Fénix no cubre) | Supervivencia = tarot gratis del pool de tienda | Muerte habitual sin red |
+
+### 22.4 Refinamiento E1–E7 (balance 22:09:2026)
+
+| Evento | Cambio | Motivo |
+|---|---|---|
+| E1 Lluvia | 6→8 monedas, 10→9s | EV ~2.0$/evento, alineado con R-4 |
+| E2 Caza | Marca visible + timer 20s propio | Distinguir del spawn normal |
+| E3 Mercader | Descuento 20→30%, coste 5→4 segmentos | El coste alto bloqueaba la decisión |
+| E4 Eclipse | Radio 8→7 en E1–E2, 8 en E3+ | Escalado por etapa |
+| E5 Duelo | También en sala 4 | Más ventanas de aparición |
+| E6 Réplica | 10→8s, combo +2→+3 | Compensa dificultad E4+ |
+| E7 Ofrenda | Umbral "racha alta" = ≥1.4x explícito | Sin ambigüedad de activación |
+
+### 22.5 Matriz de interacciones
+
+| Cruce | Regla |
+|---|---|
+| Evento × mutador | Vetos: E9⊘Midas, E14⊘Túnel, E12⊘Velo; sinergias: E1×Midas (+2$/moneda), E5×Fénix (duelo sin red) |
+| Evento × misterio | Exclusión mutua total; Espejo⊘E6 (doble eco ilegible) |
+| Evento × asedio E+B | E4/E9/E14 solo durante asedio; E3/E7 solo en respiro entre oleadas; E2/E5/E13 solo durante oleadas; E1/E8/E11/E12 en supervivencia |
+| Evento × evento | Máximo 1 por etapa; no se encolan. El roll se cancela si el modificador Contrarreloj ya está activo |
 

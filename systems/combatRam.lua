@@ -8,7 +8,7 @@ function combatRam.damageFor(comboDisplay)
     local minC = constants.HEADBUTT_MIN_COMBO or 2
     if (comboDisplay or 0) < minC then return 0 end
     local dmg = (comboDisplay or 0) - 1
-    local cap = constants.HEADBUTT_MAX_DMG or 4
+    local cap = constants.HEADBUTT_MAX_DMG or 5
     if dmg > cap then dmg = cap end
     if dmg < 1 then dmg = 1 end
     return dmg

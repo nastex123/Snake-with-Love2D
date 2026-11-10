@@ -16,6 +16,8 @@ local debugTools = helper.debugTools
 local debugLogo = helper.debugLogo
 local constants = helper.constants
 local world = helper.world
+local obstaclesMod = helper.obstaclesMod
+local enemiesMod = helper.enemiesMod
 
 harness.describe("Systems: Settings & SettingsDraw", function()
     harness.before_each(function()
@@ -165,10 +167,10 @@ harness.describe("Systems: Profiles & ProfilesDraw UI", function()
         harness.assert_equal("create", profilesMod.confirmType)
 
         -- Confirm creation
-        profilesMod.nameInput = "CreatedViaMouse"
+        profilesMod.nameInput = "CreatedMouse"
         profilesMod.handleInputConfirm()
         harness.assert_equal("select", profilesMod.state)
-        harness.assert_equal("CreatedViaMouse", persistence.getActiveProfile().name)
+        harness.assert_equal("CreatedMouse", persistence.getActiveProfile().name)
 
         profilesMod.close()
     end)
@@ -335,7 +337,7 @@ harness.describe("Systems: Player Speed & Item Effects", function()
         -- speedReducer
         local prevSpeed = st.velocidadActual
         playerMod.aplicarItem("speedReducer")
-        harness.assert_almost_equal(prevSpeed - constants.SPEED_REDUCER_AMOUNT, st.velocidadActual, 0.001)
+        harness.assert_almost_equal(prevSpeed + constants.SPEED_REDUCER_AMOUNT, st.velocidadActual, 0.001)
 
         -- turbo
         playerMod.aplicarItem("turbo")

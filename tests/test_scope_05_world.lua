@@ -236,16 +236,14 @@ harness.describe("Core Touch: Virtual Coordinates, Deadzones, and Gestures", fun
         harness.assert_true(touch.isInsidePauseButton(insideX, insideY), "Center of pause button must be inside")
         harness.assert_false(touch.isInsidePauseButton(10, 10), "Top-left point must not be inside pause button")
 
-        -- Tap pause button while PLAYING -> PAUSED
+        -- Boton de pausa eliminado de la UI: el tap en esquina ya no pausa
         world.state.gameState = constants.GAME_STATE_PLAYING
         touch.touchpressed(1, insideX, insideY)
         touch.touchreleased(1, insideX, insideY)
-        harness.assert_equal(constants.GAME_STATE_PAUSED, world.state.gameState, "Tap inside button should toggle PLAYING to PAUSED")
+        harness.assert_equal(constants.GAME_STATE_PLAYING, world.state.gameState, "Tap inside corner must not pause (button removed)")
 
-        -- Tap pause button while PAUSED -> PLAYING
-        touch.touchpressed(1, insideX, insideY)
-        touch.touchreleased(1, insideX, insideY)
-        harness.assert_equal(constants.GAME_STATE_PLAYING, world.state.gameState, "Tap inside button should toggle PAUSED to PLAYING")
+        -- Helpers geometricos conservados para compatibilidad
+        harness.assert_true(touch.isInsidePauseButton(insideX, insideY), "Corner helper still resolves")
     end)
 
     harness.it("Horizontal swipe right enqueues (1, 0)", function()

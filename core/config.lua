@@ -217,7 +217,7 @@ config.CHASER_IDLE_SPIN = 0.7
 config.CHASER_CLOSE_SPIN = 10
 config.CHASER_ROT_LERP = 7
 
--- Patroller AI tactico (GDD seccion 3 & PATROLLER-DESIGN-NOTE.md)
+-- Patroller AI tactico (GDD seccion 3 & docs/archive/PATROLLER-DESIGN-NOTE.md)
 config.PATROLLER_LOS_RANGE       = 6      -- Rango maximo de linea de vision para intercepcion
 config.PATROLLER_ALERT_TIME      = 0.25   -- Tiempo de telegrafiado alert antes de dash (s)
 config.PATROLLER_DASH_TILES      = 3      -- Celdas recorridas a velocidad turbo
@@ -277,6 +277,8 @@ config.AUTOTOMY_GHOST_DURATION = 1.5
 config.AUTOTOMY_DECOY_DURATION = 4.0
 config.CONSTRICTOR_BUFF_DURATION = 5.0
 config.REVIVE_COIN_COST = 30
+config.REVIVE_COST = 30
+config.DEATH_COIN_PENALTY = 0.3
 config.REVIVE_GHOST_DURATION = 3.0
 config.SURVIVAL_STREAK_INCREMENT = 0.1
 
@@ -410,5 +412,39 @@ config.BIOMES = {
 config.ENABLE_VORONOI = false
 config.VORONOI_SCALE = 8.0
 config.REFLECTION_SCALE = 0.5
+config.SHRINE_TALENTS = {
+    heritage_pouch = {maxRank = 3, costs = {100, 250, 500}},
+    residual_magnet = {maxRank = 2, costs = {150, 350}},
+    dragon_stomach = {maxRank = 2, costs = {200, 450}},
+    thick_potions = {maxRank = 1, costs = {300}},
+    sixth_sense = {maxRank = 1, costs = {250}},
+    mercy_pact = {maxRank = 2, costs = {180, 400}},
+    iron_body = {maxRank = 1, costs = {500}},
+    hunter_focus = {maxRank = 2, costs = {220, 480}},
+}
+config.BOUNTY_POOL = {
+    {id = "cerco_maestro", name = "Cerco Maestro", desc = "4 kills por lazo constrictor", reward = 30},
+    {id = "rapido_furioso", name = "Rapido y Furioso", desc = "3 salas con combo x3+", reward = 40},
+    {id = "pacifista_tactico", name = "Pacifista Tactico", desc = "Arena sin bomba ni escudo", reward = 50},
+}
+config.DAILY_SEED_SALT = 7919
+config.RUSH_TIME_LIMIT = 180
+config.SHRINE_COIN_RATE = 0.2
+config.MODES = {"estandar", "endless", "rush", "pacifista"}
+config.SKINS = {
+    classic = {name = "Clasica", primitive = "classic"},
+    neon = {name = "Neon", primitive = "shard"},
+    midas = {name = "Midas", primitive = "dot_matrix"},
+    fire = {name = "Fuego", primitive = "wireframe"},
+    ghost = {name = "Fantasma", primitive = "hex"},
+}
+-- Valores heredados por sala; base central para la futura progresion por etapas.
+config.STAGE_WAVES = {
+    [1] = {count = 2, interval = 12.0},
+    [2] = {count = 3, interval = 12.0},
+    [3] = {count = 3, interval = 12.0},
+    [4] = {count = 3, interval = 12.0},
+    [5] = {count = 4, interval = 12.0},
+}
 
 return config

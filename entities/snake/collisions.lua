@@ -13,6 +13,7 @@ local tarotMod = require("systems.tarot")
 local hasRam, combatRam = pcall(require, "systems.combatRam")
 if not hasRam or type(combatRam) ~= "table" then combatRam = nil end
 local statusFx = require("systems.statusFx")
+local snakeCore = require("entities.snake.core")
 
 local function immune()
     return world.get("debugImmune") or false
@@ -70,6 +71,7 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                     local res = enemies.killEnemy(idx)
                     return {type = "armor_block", result = res}
                 else
+                    snakeCore.setEnemyDeath(e)
                     return {type = "death"}
                 end
             end
@@ -98,6 +100,7 @@ function collisions.checkEnemyCollisions(s, enemiesList)
                             local res = enemies.killEnemy(idx)
                             return {type = "armor_block", result = res}
                         else
+                            snakeCore.setEnemyDeath(e)
                             return {type = "death"}
                         end
                     else

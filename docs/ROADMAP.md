@@ -75,22 +75,30 @@
 **Goal**: Deepen combat mechanics, survival tension, stage biomes, and replayability
 
 - [x] Asymmetric Main Menu UI Redesign & Procedural Cyan Isometric Title 2.5D (Left vertical panel 40% with Dot Matrix #14 procedural background and rotating novice pixel art Alchemy Sigil #17, 4 centered Cyber-Step #03 buttons, central diamond emblem at w/2,h/2, right procedural cyan neon logo 2.5D #00F0FF via ui/menuLogo.lua with real-time F2 calibrator systems/debugLogo.lua, and Chunky Profile & High Score #11 card via ui/menuCard.lua).
-- [x] Combat & Survival Package (Held-Key Tactical Slither paradigm, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
+- [x] Combat & Survival Package (Classic continuous slither movement, survival streak multiplier, interactive revive/death, Constrictor loop, Autotomy, Reverse Slither, Tail Snap, 4 special foods + 5 dynamic fruits)
 - [x] Stage Biomes & Hazards (Catacombs, Frozen Crypt ice floor, Volcanic lava fissures, Toxic Hive slime, Void Sanctuary, Pressure Spikes)
 - [x] Enemy Pixel-Art Sprite Identity (Patroller 5x5 Delta Interceptor, Chaser 7x7 Plasma Hyper Shuriken with decoupled gyroscopic eye tracking)
 - [x] Patroller Tactical AI Evolution (Modular patrollerAI.lua, 4 contextual patrol modes, 90-degree corner turns, Line-of-Sight Dash, and Guillotine Slice tail-cutting mechanic)
 - [x] Extended Items Arsenal (Items 51-60: Tail Spike, Hourglass, Orbital Beam, Decoy, Light Boots, Golden Tooth, Emergency Battery, Double Harvest, Lottery, Refractor Prism — 22 items, scope_21)
-- [x] Elite Encounters & 5 Mini-Bosses (sala 3 `isElite` + `enemyMiniBoss.lua` ~400L: Triturador/Gólem/Sierpe/Reina/Espectro con telegraphs y cofre-buff dorado, scope_22 14 tests)
+- [x] Elite Encounters & 5 Mini-Bosses (implementación actual en sala 3; migrar a un encuentro por etapa durante el rediseño)
 - [x] Boss Enrage Phase & Laser Perimeter Attack (3-food enrage threshold and dividing laser beam attacks — 5 ataques, scope_11)
-- [x] Room Modifiers, Curses & Blessings (10 mutators: Zero Gravity, Midas Curse, Phoenix Blessing, Tunnel Vision, etc. — `systems/roomMutators.lua`, scope_24 22 tests)
+- [x] Room Modifiers, Curses & Blessings (implemented per room in `systems/roomMutators.lua`; migrate to stage scope during the redesign, scope_24 22 tests)
 - [x] Stage Tarot System (12 fate cards comprables en tienda, sin draft ni estado TAROT desde 2026-09-10 — `systems/tarot.lua` 139L + `tarotArt.lua`, 12 hooks, scope_23 21 tests)
 - [x] Tienda v2 (3 puestos mixtos 60/40 + reroll escalado + tarots comprables S60/A45/B30/C20 — `systems/shop.lua` 581L, scope_15 reescrita + scope_26 8 tests)
-- [x] Special Mystery Rooms (Gambler's Den, Doppelgänger Mirror, Gold Rush, Trial of Triads — `systems/mystery.lua`, scope_25 24 tests)
+- [x] Special Mystery Rooms (eventos opcionales durante supervivencia en `systems/mystery.lua`; frecuencia y balance pendientes, scope_25 24 tests)
 - [x] Display Pipeline & Settings Overhaul (Boot heavy resolution apply, canonical resolution schema `{w,h}`, global texture filtering via setDefaultFilter, virtual canvas downsampling with `pixelScale > 1`, backbuffer upscale in composite, physical screen resolution to CRT shader, and mouse input projection — scope_27 5 tests)
 - [x] Status Effects Engine (Overdrive on combo x6, Medusa Tail, Venom Spore, Cryo-Stasis — `systems/statusFx.lua`, scope_29 18 tests, 2026-09-10)
 - [x] Combate por cabezazos mini/boss (daño display-1 min x2 cap 5 + rebote/fantasma 0.8s, boss HP 12, gating elite — `systems/combatRam.lua`, scope_30, 2026-09-10)
+- [x] Survival Waves Escalation Engine del flujo anterior (oleadas cronometradas por sala; código existente)
+- [ ] **Rediseño de progresión por etapas** (GDD §6 / TDD §10.26): una arena continua por bioma, supervivencia por oleadas, un mini-jefe y un jefe al final de cada etapa, con intermisión de tienda. Implementación parcial; compatibilidad y balance pendientes.
+  - [x] Implementar y simular el ciclo principal de etapas y Boss Rush con arena única; adaptar infinito y registro diario.
+  - [ ] Mejorar la IA de los cinco mini-jefes con ataques adaptativos/coordinados, telegrafiados legibles y ventanas de recuperación (GDD §5 / TDD §10.26).
+  - [ ] Definir oleadas/duración y orden temático de los cinco mini-jefes.
+  - [ ] Migrar generación, estado, HUD, tienda y transiciones del ciclo sala→etapa.
+  - [ ] Migrar o retirar sistemas dependientes de salas (mutadores, misterio y eventos).
+  - [ ] Verificar victoria, muerte/revive y finalización de las cinco etapas.
 - [ ] Meta-Progression Shrine (8 permanent talents with 3 tiers in Menu/Profiles)
-- [ ] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts)
+- [x] Daily Challenges, Lore Codex & Bounty Board (Deterministic daily runs & bounty contracts, 1-attempt daily history)
 - [ ] Master Snake Skin Catalog (200+ variants, 5 primitive render engines, Zero-GC vertex buffers)
 - [ ] 10 Unlockable Game Modes (Endless, Rush, Pacifist, Boss Rush, Colossal Arena, Micro-Snake, Weekly Seed, Draft, Sudden Death, Maze Runner)
 - [ ] 80 Engineering & Gameplay Improvements Suite (Input ramp-up, corner buffering, AABB ray-cast pre-filter, half-res FBO reflections, Voronoi fracture, fixed timestep)

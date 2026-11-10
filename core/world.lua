@@ -326,6 +326,20 @@ World.SCHEMA = {
     ["enemies.list"] = "table",
     ["enemies.boss"] = "table",
     stageCards = "table",
+    modo = "string",
+    skin = "string",
+    dailySeed = "number",
+    bounties = "table",
+    deathCause = "string",
+    waveCurrent = "number",
+    waveTotal = "number",
+    waveTimer = "number",
+    waveMaxTimer = "number",
+    stagePhase = "string",
+    stageEncounterSpawned = "boolean",
+    roomEvent = "string",
+    roomEventTimer = "number",
+    constrictorPulse = "number",
 }
 
 function World.enableDebug()

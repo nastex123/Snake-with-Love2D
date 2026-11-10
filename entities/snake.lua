@@ -16,10 +16,18 @@ local collisions = require("entities.snake.collisions")
 local movement = require("entities.snake.movement")
 local hasStatus, statusFx = pcall(require, "systems.statusFx")
 if not hasStatus or type(statusFx) ~= "table" then statusFx = nil end
+local hasSkins, skinRegistry = pcall(require, "systems.skinRegistry")
+if not hasSkins or type(skinRegistry) ~= "table" then skinRegistry = nil end
+local TENTHS_STR = {}
+for idx = 0, 60 do TENTHS_STR[idx] = string.format("%.1fs", idx / 10) end
 
 -- ---------------------------------------------------------------------------
 -- Helpers de render (solo usado en draw)
 -- ---------------------------------------------------------------------------
+local MAX_BUF = 512
+local posBuf = {}
+local colBuf = {}
+for i = 1, MAX_BUF do posBuf[i] = {x = 0, y = 0}; colBuf[i] = {0, 0, 0, 1} end
 local function hsv2rgb(h, s, v)
     local i = math.floor(h * 6)
     local f = h * 6 - i
@@ -86,10 +94,11 @@ function snake.draw(s, alpha)
     end
 
     local easedAlpha = alpha * alpha * (3 - 2 * alpha)
-
-    local positions = {}
-    local colors = {}
+    local now = time
+    local positions = posBuf
+    local colors = colBuf
     for i, segmento in ipairs(s.body) do
+        if i > MAX_BUF then break end
         local dx, dy
         if s.prevBody[i] then
             local rawDx = segmento.x - s.prevBody[i].x
@@ -105,12 +114,18 @@ function snake.draw(s, alpha)
             dx = segmento.x
             dy = segmento.y
         end
-        positions[i] = {x = dx, y = dy}
+        local pp = positions[i]
+        pp.x = dx
+        pp.y = dy
         local t = numSegments > 1 and (i - 1) / (numSegments - 1) or 0
-        local hue = ((love.timer.getTime() * 30 + i * 20) % 360) / 360
+        local hue = ((now * 30 + i * 20) % 360) / 360
         local sat = 0.7 + t * 0.3
         local val = 0.5 + (1 - t) * 0.4
         local r, g, b = hsv2rgb(hue, sat, val)
+        if skinRegistry then
+            local activeSkin = skinRegistry.getActiveSkin()
+            r, g, b = skinRegistry.computeBaseColor(activeSkin, i, numSegments, now, t, r, g, b)
+        end
         if s.firePepperTimer and s.firePepperTimer > 0 then
             r, g, b = 1.0, 0.3 + t * 0.4, 0.1
         elseif statusFx and statusFx.has("overdrive") then
@@ -126,7 +141,11 @@ function snake.draw(s, alpha)
         elseif s.reverseSlitherTimer and s.reverseSlitherTimer > 0 then
             r, g, b = 0.0, 0.94, 0.8 + t * 0.2
         end
-        colors[i] = {r, g, b, 1.0 - t * 0.4}
+        local cc = colors[i]
+        cc[1] = r
+        cc[2] = g
+        cc[3] = b
+        cc[4] = 1.0 - t * 0.4
     end
 
     for i = 1, numSegments - 1 do
@@ -226,22 +245,53 @@ function snake.draw(s, alpha)
                     local ey = py + eyeOff.y + e * eyeGap.y
                     love.graphics.setColor(1, 1, 1)
                     love.graphics.rectangle("fill", ex, ey, 3, 3)
-                    local pupilCol = s.standstill and {0.0, 0.94, 1.0} or {0, 0, 0}
-                    love.graphics.setColor(pupilCol[1], pupilCol[2], pupilCol[3])
+                    if s.standstill then love.graphics.setColor(0.0, 0.94, 1.0) else love.graphics.setColor(0, 0, 0) end
                     love.graphics.rectangle("fill", ex + 1, ey + 1, 1, 1)
                 end
 
-                if s.ghost then
+                local ghostTime = s.ghostTimer or 0
+                if s.ghost or ghostTime > 0 then
                     local ghostPulse = math.sin(time * 6) * 0.3 + 0.7
-                    love.graphics.setColor(0.6, 0.4, 1, ghostPulse * 0.3)
+                    love.graphics.setColor(1.0, 1.0, 1.0, ghostPulse * 0.45)
                     love.graphics.setLineWidth(2)
                     love.graphics.rectangle("line", px - 2, py - 2, segSize + 4, segSize + 4, 4, 4)
+                    love.graphics.setLineWidth(1)
+
+                    if ghostTime > 0 then
+                        local totalGhost = constants.REVIVE_GHOST_DURATION or 3.0
+                        local rem = math.max(0, math.min(totalGhost, ghostTime))
+                        local frac = rem / totalGhost
+                        local barW = 26
+                        local barH = 3
+                        local bx = px + math.floor((segSize - barW) / 2)
+                        local by = py - 7
+                        love.graphics.setColor(0.04, 0.05, 0.08, 0.85)
+                        love.graphics.rectangle("fill", bx, by, barW, barH, 1, 1)
+                        local fillW = math.floor(barW * frac)
+                        if fillW > 0 then
+                            love.graphics.setColor(0.0, 0.94, 1.0, 0.95)
+                            love.graphics.rectangle("fill", bx + 1, by + 1, math.max(1, fillW - 2), barH - 2)
+                        end
+                        love.graphics.setColor(0.0, 0.94, 1.0, 0.6)
+                        love.graphics.rectangle("line", bx, by, barW, barH, 1, 1)
+                        local tenthIdx = math.min(60, math.max(0, math.floor(rem * 10 + 0.5)))
+                        local txt = TENTHS_STR[tenthIdx] or "0.0s"
+                        love.graphics.setColor(1, 1, 1, 0.9)
+                        love.graphics.print(txt, bx + barW + 2, by - 3, 0, 0.55, 0.55)
+                    end
+                end
+
+                if s.armor and s.armor > 0 then
+                    local aPulse = math.sin(time * 4) * 0.25 + 0.75
+                    love.graphics.setColor(0.16, 0.32, 0.75, aPulse * 0.75)
+                    love.graphics.setLineWidth(2)
+                    love.graphics.rectangle("line", px - 3, py - 3, segSize + 6, segSize + 6, 5, 5)
                     love.graphics.setLineWidth(1)
                 end
 
                 if shop.shieldActive then
                     local pulse = math.sin(time * 5) * 0.3 + 0.7
-                    love.graphics.setColor(constants.COLOR_ACCENT[1], constants.COLOR_ACCENT[2], constants.COLOR_ACCENT[3], pulse * 0.6)
+                    love.graphics.setColor(0.0, 0.94, 1.0, pulse * 0.65)
                     love.graphics.setLineWidth(2)
                     love.graphics.rectangle("line", px - 1, py - 1, segSize + 2, segSize + 2, 4, 4)
                     love.graphics.setLineWidth(1)

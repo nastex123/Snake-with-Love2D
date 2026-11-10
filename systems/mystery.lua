@@ -52,6 +52,24 @@ function mystery.assign(dungeon)
     return n
 end
 
+-- Un encuentro opcional por etapa, usando la probabilidad heredada hasta balancearlo.
+function mystery.assignStage(worldMod)
+    local arena = worldMod and worldMod.getCurrentRoom and worldMod.getCurrentRoom()
+    if not arena then return nil end
+    arena.mystery = nil
+    if world.state.stagePhase ~= "survival" then return nil end
+    if love.math.random() > (constants.ROOM_MYSTERY_CHANCE or 0.06) then return nil end
+    arena.mystery = mystery.MYSTERY_DEFS[love.math.random(#mystery.MYSTERY_DEFS)].id
+    return arena.mystery
+end
+
+function mystery.finishStageEvent(worldMod)
+    if not world.state.stagePhase then return end
+    local arena = worldMod and worldMod.getCurrentRoom and worldMod.getCurrentRoom()
+    if arena then arena.mystery = nil end
+    world.state.mysteryData = {}
+end
+
 -- Misterio de la sala actual (o nil en sala normal).
 function mystery.current(worldMod)
     local room = worldMod and worldMod.getCurrentRoom and worldMod.getCurrentRoom()

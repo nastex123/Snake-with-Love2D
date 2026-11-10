@@ -14,6 +14,7 @@ local Input = require("core.input")
 local tarotMod = require("systems.tarot")
 local mutatorsMod = require("systems.roomMutators")
 local statusFx = require("systems.statusFx")
+local snakeCore = require("entities.snake.core")
 local hasRam, combatRam = pcall(require, "systems.combatRam")
 if not hasRam or type(combatRam) ~= "table" then combatRam = nil end
 
@@ -52,23 +53,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
     -- Medusa (GDD §16.2): direccion bloqueada, la serpiente sigue recto
     if statusFx.has("medusa") then s.inputQueue = {} end
 
-    local controlMode = world.get("controlMode") or "tactical"
-    if controlMode == "tactical" then
-        local isHeld = Input.isAnyHeld() or Input.hasActiveTouch()
-        if #s.inputQueue > 0 then isHeld = true end
-        -- Gravedad Cero (GDD §19.61): deriva con inercia, sin reposo tactico
-        if mutatorsMod.zeroGDrift() then isHeld = true end
-
-        if not isHeld then
-            s.standstill = true
-            s.prevBody = {}
-            for i, segment in ipairs(s.body) do
-                s.prevBody[i] = {x = segment.x, y = segment.y}
-            end
-            return true, false
-        end
-        s.standstill = false
-    end
+    s.standstill = false
 
     if #s.inputQueue == 0 and (Input.isHeld("up") or Input.isHeld("down") or Input.isHeld("left") or Input.isHeld("right")) then
         local refY = s.lastMovedDirY or s.dirY
@@ -135,6 +120,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                     s.armor = s.armor - 1
                     return true, false
                 else
+                    snakeCore.setDeathCause("Caída al abismo del Santuario del Vacío")
                     return false, false
                 end
             else
@@ -156,6 +142,18 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
         end
         if hit then
             if s.ghost or immune() then
+            else
+                local okIron, shrineIron = pcall(require, "systems.shrine")
+                if okIron and shrineIron.consumeIronBody(world.state) then
+                    local okUi, uiIron = pcall(require, "ui.ui")
+                    if okUi and uiIron and uiIron.addPopup then
+                        pcall(function() uiIron.addPopup("CUERPO TEMPLE!", nuevaCabezaX, nuevaCabezaY) end)
+                    end
+                    s.sliceGraceTimer = 1.0
+                    return true, false
+                end
+            end
+            if s.ghost or immune() then
             elseif world.get("shop.shieldActive", false) then
                 shop.shieldActive = false
                 return true, false
@@ -163,6 +161,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 s.armor = s.armor - 1
                 return true, false
             else
+                snakeCore.setDeathCause("Autocolisión letal contra el propio cuerpo")
                 return false, false
             end
         end
@@ -185,6 +184,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                 s.armor = s.armor - 1
                 return true, false
             else
+                snakeCore.setHazardDeath(hazardObs)
                 return false, false
             end
         end
@@ -229,6 +229,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         s.armor = s.armor - 1
                         return true, false
                     else
+                        snakeCore.setDeathCause("Colisión frontal contra monolito de piedra")
                         return false, false
                     end
                 end
@@ -283,6 +284,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         s.prismRefract = true
                     end
                 else
+                    snakeCore.setAttackDeath(ao)
                     return false, false, nil, nil, {hit = true, damage = ao.damage or 1}
                 end
             end
@@ -304,6 +306,7 @@ function movement.mover(s, foodPos, anchoGrilla, altoGrilla, obstaclePos, magnet
                         local result = enemies.killEnemy(i)
                         return true, false, result
                     else
+                        snakeCore.setEnemyDeath(e)
                         return false, false, nil
                     end
                 end

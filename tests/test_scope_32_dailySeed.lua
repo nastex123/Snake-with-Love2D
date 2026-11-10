@@ -1,0 +1,31 @@
+local harness = require("tests.test_harness")
+local RNG = require("core.rng")
+local gameflow = require("systems.gameflow")
+harness.describe("DailySeed: determinismo aislado", function()
+    harness.it("misma fecha produce misma semilla", function()
+        local a = gameflow.getDailySeed({year = 2026, month = 9, day = 20}, 7919)
+        local b = gameflow.getDailySeed({year = 2026, month = 9, day = 20}, 7919)
+        harness.assert_equal(a, b, "Semilla diaria estable")
+    end)
+    harness.it("fechas distintas producen semillas distintas", function()
+        local a = gameflow.getDailySeed({year = 2026, month = 9, day = 20}, 7919)
+        local b = gameflow.getDailySeed({year = 2026, month = 9, day = 21}, 7919)
+        harness.assert_true(a ~= b, "Semilla cambia por dia")
+    end)
+    harness.it("generador aislado es determinista", function()
+        local r1 = RNG.new(12345)
+        local r2 = RNG.new(12345)
+        for i = 1, 20 do
+            harness.assert_equal(r1.next(1, 100), r2.next(1, 100), "Secuencia igual en paso " .. i)
+        end
+    end)
+    harness.it("shuffle con misma semilla conserva snapshot", function()
+        local r1 = RNG.new(777)
+        local r2 = RNG.new(777)
+        local a = {1, 2, 3, 4, 5, 6, 7, 8}
+        local b = {1, 2, 3, 4, 5, 6, 7, 8}
+        r1.shuffle(a)
+        r2.shuffle(b)
+        for i = 1, #a do harness.assert_equal(a[i], b[i], "Shuffle igual en " .. i) end
+    end)
+end)

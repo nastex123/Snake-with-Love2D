@@ -222,7 +222,7 @@ harness.describe("MiniBoss - Elite Room 3 Integration", function()
         local obstaclesMod = require("entities.obstacles")
         worldMod.init()
         worldMod.etapa = 2
-        worldMod.generarMazmorra(800, 600, 5)
+        require("world.dungeonGen").generar(worldMod, 800, 600, 5, 12345)
         worldMod.sala = 3
         local snakeBody = {{x = 2, y = 2}, {x = 1, y = 2}}
         obstaclesMod.init()
