@@ -438,4 +438,13 @@ config.SKINS = {
     fire = {name = "Fuego", primitive = "wireframe"},
     ghost = {name = "Fantasma", primitive = "hex"},
 }
+-- Valores heredados por sala; base central para la futura progresion por etapas.
+config.STAGE_WAVES = {
+    [1] = {count = 2, interval = 12.0},
+    [2] = {count = 3, interval = 12.0},
+    [3] = {count = 3, interval = 12.0},
+    [4] = {count = 3, interval = 12.0},
+    [5] = {count = 4, interval = 12.0},
+}
+
 return config

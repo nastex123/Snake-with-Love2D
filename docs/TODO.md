@@ -12,17 +12,31 @@
 - [x] Shader pipeline (bloom, CRT, shadow, heat)
 - [x] Sound system with segmented music
 
-**Última actualización**: 24:09:2026 (America/Bogota)  
-**Estado general**: 825 tests aprobados (100% PASS), `error.log` 0 bytes, Cero-Deuda Estructural (<500L/archivo).  
+**Última actualización**: 09:11:2026 (America/Bogota)
+**Último resultado de pruebas registrado (2026-11-09)**: 840 PASS, 0 FAIL en la suite con backends simulados y sin seguimiento de cobertura; `love .` arrancó y `error.log` estaba vacío.
 **Fuente canónica de backlog unificado**: Este documento consolida el plan de sprints activos y la matriz maestra de las 100 propuestas técnicas.  
 **Archivo histórico de planes y notas transitorias**: Consultar [`docs/archive/`](archive/).
 
 ---
 
+## Rediseño aprobado: progresión por etapas (implementación parcial)
+Estado parcial (2026-11-09): arena única y fases por etapa implementadas; Boss Rush, infinito, diario y eventos de misterio adaptados. Las simulaciones de cinco etapas y Boss Rush superan las pruebas específicas. Quedan pendientes la retirada de interfaces de sala y la revisión jugable y de balance de eventos y oleadas.
+- [x] GDD §6 define cinco arenas continuas por bioma: supervivencia, un mini-jefe y un jefe por etapa, e intermisión de tienda.
+- [x] TDD §10.26 distingue el diseño objetivo del flujo por salas que aún existe en el código.
+- [ ] Definir número/duración de oleadas, orden temático de los cinco mini-jefes y balance de jefes/recompensas.
+- [ ] Migrar la progresión y el estado de `room` a `stage` en `core/world.lua`, `world/world.lua` y `systems/gameflow.lua`.
+- [ ] Adaptar arenas, oleadas y encuentros en `world/dungeonGen.lua`, `world/populate.lua` y `entities/enemies.lua`.
+- [ ] Actualizar HUD, tienda e intermisiones para avanzar entre etapas.
+- [ ] Migrar a alcance de etapa o retirar misterio, mutadores, eventos y contratos que dependan del ciclo de salas.
+- [ ] Añadir pruebas de progresión y completar una run con las cinco etapas; actualizar `error.log` y registros de pruebas.
+- [ ] Implementar patrones adaptativos de los cinco mini-jefes según TDD §10.26; añadir telegrafiado, ventana de respuesta y límites seguros por ataque.
+
 ## 1. Sprint Activo en Desarrollo
 
 ### 🔄 Sprint 2: Modo Boss Rush, Survival Waves, Eventos de Sala y Gamefeel
-- [x] **Rediseño de Progresión: Survival Waves Escalation Engine (GDD §6 / TDD §10.26)**:
+
+Nota: los ítems marcados como completados describen la implementación existente bajo el flujo anterior por salas. El rediseño por etapas y su migración están registrados en el backlog superior.
+- [x] **Implementación heredada: Survival Waves Escalation Engine por sala (GDD §6 / TDD §10.26)**:
   - [x] Implementar campos `waveCurrent`, `waveTotal`, `waveTimer`, `waveMaxTimer` en `core/world.lua` (`World.SCHEMA`).
   - [x] Reemplazar la condición por puntaje por el control de tiempo y oleadas en `systems/gamestates/playing.lua`.
   - [x] Preservar el rol de la comida para economía, combo y habilidades especiales (sin reducción de tiempo).

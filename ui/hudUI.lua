@@ -168,7 +168,7 @@ function hud.drawHUD(ui, puntuacion, highScore, monedas, shieldActive, magnetTim
     local cy = math.floor((hh - fontH) / 2)
     local barY = math.floor(hh / 2) - 3 * s
     local worldMod = package.loaded["world.world"]
-    local isBoss = (sala == 5)
+    local isBoss = worldMod and worldMod.esJefe and worldMod.esJefe() or false
     local enemiesMod = package.loaded["entities.enemies"]
     local boss = enemiesMod and enemiesMod.boss
 
@@ -353,7 +353,7 @@ function hud.drawSlots(ui, slotDisplay)
     local mbGate2 = enemiesMod and enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     local isMini2 = (worldMod and worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mbGate2 and mbGate2.alive)
     local wc2 = okWm2 and worldState2 and worldState2.get("waveCurrent")
-    if not isMini2 and wc2 then
+    if not isBoss and not isMini2 and wc2 then
         local wt2 = worldState2.get("waveTotal") or 3
         local wTimer2 = worldState2.get("waveTimer") or 0
         local wMax2 = worldState2.get("waveMaxTimer") or 12.0

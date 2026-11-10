@@ -1,6 +1,7 @@
 local world = {}
 local coreWorld = require("core.world")
-local dungeonGen = require("world.dungeonGen")
+local templates = require("world.dungeonTemplates")
+local stageArena = require("world.stageArena")
 local populate = require("world.populate")
 local constants = require("constants")
 local tarotMod = require("systems.tarot")
@@ -13,7 +14,7 @@ world.sala = 1
 world.puntajeSala = 0
 world.objetivoSala = 50
 world.dungeon = nil
-world.roomTemplates = dungeonGen.roomTemplates
+world.roomTemplates = templates.roomTemplates
 
 -- Objective types mapping by room template
 local templateObjectiveMap = {
@@ -45,7 +46,7 @@ function world.getStageMod(stage)
             return modesMod.scaleStage(s)
         end
     end
-    return dungeonGen.stageMod[s] or dungeonGen.stageMod[5]
+    return templates.stageMod[s] or templates.stageMod[5]
 end
 
 function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
@@ -54,7 +55,10 @@ function world.generarMazmorra(anchoVirtual, altoVirtual, targetRooms)
         local stage = world.etapa or 1
         seed = (coreWorld.state.dailySeed + stage * 10007) % 2147483647
     end
-    dungeonGen.generar(world, anchoVirtual, altoVirtual, targetRooms, seed)
+    world.dungeon = stageArena.generate(anchoVirtual, altoVirtual, seed, world.etapa)
+    world.sala = 1
+    world.puntajeSala = 0
+    world.objetivoSala = world.calcularObjetivo()
 end
 
 function world.getCurrentRoom()
@@ -68,6 +72,7 @@ function world.getRoom(index)
 end
 
 function world.getRoomCount()
+    if coreWorld.state.stagePhase then return 1 end
     if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
         return 6
     end
@@ -76,6 +81,7 @@ function world.getRoomCount()
 end
 
 function world.init()
+    coreWorld.state.stagePhase = nil
     world.etapa = 1
     world.sala = 1
     world.puntajeSala = 0
@@ -96,7 +102,7 @@ function world.getModifier(stage)
             return modesMod.scaleStage(s)
         end
     end
-    return dungeonGen.stageModifiers[s] or dungeonGen.stageModifiers[5]
+    return templates.stageModifiers[s] or templates.stageModifiers[5]
 end
 
 function world.getBiomeData(stage)
@@ -121,6 +127,7 @@ function world.hasWallWrap(stage)
 end
 
 function world.esJefe()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "boss" end
     if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
         return (world.sala or 1) >= 6
     end
@@ -129,6 +136,7 @@ function world.esJefe()
 end
 
 function world.isMiniBossRoom()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "miniboss" end
     if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
         return (world.sala or 1) <= 5
     end
@@ -245,6 +253,7 @@ end
 
 function world.avanzarEtapa()
     world.etapa = world.etapa + 1
+    world.sala = 1
     world.generarMazmorra()
     tarotMod.reset()
     mutatorsMod.resetStage()
@@ -259,6 +268,7 @@ function world.etapaCompletada()
 end
 
 function world.isLastRoom()
+    if coreWorld.state.stagePhase then return coreWorld.state.stagePhase == "boss" end
     if coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush" then
         return (world.sala or 1) >= 6
     end

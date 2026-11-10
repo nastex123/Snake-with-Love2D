@@ -117,6 +117,9 @@ function Handlers.attach(env)
                 return
             end
             if tecla == "k" and not world.state.transitionTarget then
+                if world.state.stagePhase and require("systems.stageFlow").skipPhase(world.state) then
+                    return
+                end
                 if worldMod.esJefe() then
                     world.state.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
                 else

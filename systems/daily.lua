@@ -19,7 +19,7 @@ function daily.getTodayRecord(profile, dateTbl)
     return profile.dailyHistory[ds]
 end
 
-function daily.recordRun(profile, score, stage, roomsCleared, dateTbl)
+function daily.recordRun(profile, score, stage, roomsCleared, dateTbl, stagesCleared)
     if not profile then return false end
     profile.dailyHistory = profile.dailyHistory or {}
     local ds = daily.getDateString(dateTbl)
@@ -30,6 +30,9 @@ function daily.recordRun(profile, score, stage, roomsCleared, dateTbl)
         roomsCleared = math.max(0, math.floor(roomsCleared or 0)),
         completedAt = os.time(),
     }
+    if stagesCleared ~= nil then
+        entry.stagesCleared = math.max(0, math.floor(stagesCleared))
+    end
     profile.dailyHistory[ds] = entry
     return entry
 end
@@ -44,6 +47,7 @@ function daily.getHistoryList(profile, maxEntries)
                 score = entry.score or 0,
                 stage = entry.stage or 1,
                 roomsCleared = entry.roomsCleared or 0,
+                stagesCleared = entry.stagesCleared,
                 completedAt = entry.completedAt or 0,
             }
         end
@@ -61,7 +65,7 @@ end
 
 function daily.isDailyActive()
     local st = world.state
-    return st and (st.modo == "daily" or st.dailySeed ~= nil)
+    return st and (st.modo == "daily" or st.modo == "diario" or st.dailySeed ~= nil)
 end
 
 return daily

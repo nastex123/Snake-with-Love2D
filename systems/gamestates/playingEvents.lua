@@ -50,6 +50,7 @@ function playingEvents.awardDoppel(st)
         if pick then uiMod.addPopup("PREMIO: " .. string.upper(pick), head.x, head.y) end
     end
     sound.play("highScore")
+    if st.stagePhase then mysteryMod.finishStageEvent(worldMod) end
 end
 
 -- Bendicion del Fenix (GDD §19.67): revive gratis 1 vez por etapa (3 segmentos + 3s fantasma)
@@ -118,6 +119,7 @@ function playingEvents.updateRoomEvents(st, dt)
             end
             if head0 then uiMod.addPopup("APUESTA PERDIDA", head0.x, head0.y) end
             sound.play("death")
+            if st.stagePhase then mysteryMod.finishStageEvent(worldMod) end
         end
     end
 
@@ -128,13 +130,15 @@ function playingEvents.updateRoomEvents(st, dt)
             st.monedas = (st.monedas or 0) + got
             sound.play("buttonClick")
         end
-        if done and not st.transitionTarget then
+        if done and not st.transitionTarget and not st.stagePhase then
             st.transitionTarget = "siguienteSala"
             st.transitionPhase = 1
             st.fadeDir = 1
             st.gameState = constants.GAME_STATE_TRANSITION
             sound:playSegment("intro")
             return true
+        elseif done and st.stagePhase then
+            mysteryMod.finishStageEvent(worldMod)
         end
     end
 
@@ -169,9 +173,11 @@ function playingEvents.updateRoomEvents(st, dt)
                 playingEvents.grantRandomItem(st)
                 if head0 then uiMod.addPopup("ALTAR LEGENDARIO", head0.x, head0.y) end
                 sound.play("highScore")
+                if st.stagePhase then mysteryMod.finishStageEvent(worldMod) end
             elseif tr.timer <= 0 then
                 tr.done = true
                 if head0 then uiMod.addPopup("SELLOS APAGADOS", head0.x, head0.y) end
+                if st.stagePhase then mysteryMod.finishStageEvent(worldMod) end
             end
         end
     end

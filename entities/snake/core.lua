@@ -109,7 +109,10 @@ function core.setDeathCause(reason)
         roomNum = worldMod.sala or (type(worldMod.getCurrentRoom) == "function" and worldMod.getCurrentRoom() and worldMod.getCurrentRoom().id) or 1
     end
     if type(roomNum) ~= "number" then roomNum = tonumber(roomNum) or 1 end
-    local causeStr = string.format("CAUSA: %s en Sala %d", reason or "Desconocida", roomNum)
+    local st = world.state
+    local place = st.stagePhase and string.format("Etapa %d", (worldMod and worldMod.etapa) or 1)
+        or string.format("Sala %d", roomNum)
+    local causeStr = string.format("CAUSA: %s en %s", reason or "Desconocida", place)
     world.set("deathCause", causeStr)
 end
 

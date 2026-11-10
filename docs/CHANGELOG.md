@@ -8,6 +8,14 @@ Categories: feature, fix, refactor, docs, balance, polish
 
 ---
 
+## 2026-11-09 (Migracion inicial a etapas)
+
+- Arena unica por etapa con oleadas, mini-jefe, jefe y tienda entre etapas.
+- Boss Rush, modo infinito y registro diario adaptados al nuevo flujo.
+- Los encuentros de misterio se resuelven dentro de la supervivencia.
+- Verificacion: 840 pruebas aprobadas con backends simulados y arranque de Love2D.
+- Pendiente: retirar interfaces heredadas de salas, completar eventos y balance jugable.
+
 ## 2026-09-22 (Eventos aleatorios de sala E1–E7, solo spec)
 
 - **docs** (completed - 2026-09-22 America/Bogota):

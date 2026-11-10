@@ -67,6 +67,16 @@ function renderMain.drawMenu(dt)
     love.graphics.setCanvas()
 
     shadersMod.composite(st.time, 0.85, st.introTimer >= 3.0)
+    if st.stageVictorySummary then
+        local summary = st.stageVictorySummary
+        local w, h = love.graphics.getDimensions()
+        love.graphics.push("all")
+        love.graphics.setColor(0, 0, 0, 0.8)
+        love.graphics.rectangle("fill", 0, h - 52, w, 52)
+        love.graphics.setColor(1, 0.85, 0.35, 1)
+        love.graphics.printf("EXPEDICION COMPLETADA  |  PUNTOS: " .. summary.score .. "  |  MONEDAS: " .. summary.coins, 0, h - 33, w, "center")
+        love.graphics.pop()
+    end
 end
 
 function renderMain.drawGame(dt)

@@ -359,9 +359,7 @@ function playing.update(dt)
 
         if comio then
             playingPickups.handleFoodPickup(st, comioTwin)
-            if playingPickups.checkRoomObjective(st) then
-                return true
-            end
+            if not st.stagePhase and playingPickups.checkRoomObjective(st) then return true end
         end
     end
 
@@ -386,7 +384,9 @@ function playing.update(dt)
     local isBoss = worldMod.esJefe and worldMod.esJefe()
     local mb = enemiesMod.getMiniBoss and enemiesMod.getMiniBoss()
     local isMini = (worldMod.isMiniBossRoom and worldMod.isMiniBossRoom()) or (mb and mb.alive)
-    if not isBoss and not isMini and st.gameState == constants.GAME_STATE_PLAYING and not st.transitionTarget and st.waveTimer then
+    if st.stagePhase then
+        require("systems.stageFlow").update(st, dt)
+    elseif not isBoss and not isMini and st.gameState == constants.GAME_STATE_PLAYING and not st.transitionTarget and st.waveTimer then
         st.waveTimer = math.max(0, st.waveTimer - dt)
         if st.waveTimer <= 0 then
             if (st.waveCurrent or 1) < (st.waveTotal or 3) then

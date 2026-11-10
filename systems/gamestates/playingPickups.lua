@@ -124,6 +124,7 @@ function playingPickups.handleFoodPickup(st, comioTwin)
             local head = st.player.body and st.player.body[1]
             if head then uiMod.addPopup("APUESTA +40$", head.x, head.y) end
             sound.play("highScore")
+            if st.stagePhase then mysteryMod.finishStageEvent(worldMod) end
         end
         -- Dualidad (GDD §19.69): la fruta espejo se consume sin bonus extra
         if comioTwin then foodMod.twinPos = nil; foodMod.dualTwin = nil end

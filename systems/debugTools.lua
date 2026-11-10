@@ -78,7 +78,7 @@ function debugTools.dibujarDebugMenu()
         love.graphics.setFont(fontS)
         love.graphics.print(label, x + 6, y + (bh - fontS:getHeight()) / 2)
     end
-    addBtn("[K] Skip Room", "skip", px + pad, bw)
+    addBtn(st.stagePhase and "[K] Skip Phase" or "[K] Skip Room", "skip", px + pad, bw)
     y = y + bh + gap
     addBtn("Skip Stage", "skipStage", px + pad, bw)
     y = y + bh + gap
@@ -157,7 +157,8 @@ function debugTools.mousepressed(x, y, button)
         for _, btn in ipairs(st.debugButtons or {}) do
             if x >= btn.x and x <= btn.x + btn.w and y >= btn.y and y <= btn.y + btn.h then
                 if btn.action == "skip" then
-                    if not st.transitionTarget then
+                    if st.stagePhase and require("systems.stageFlow").skipPhase(st) then
+                    elseif not st.transitionTarget then
                         if worldMod.esJefe() then
                             st.transitionTarget = worldMod.etapa >= 5 and "completado" or "siguienteEtapa"
                         else

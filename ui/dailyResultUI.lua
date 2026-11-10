@@ -56,7 +56,7 @@ function dailyResultUI.draw(ui)
         local dateStr = entry.date or "Hoy"
         local score = entry.score or 0
         local stage = entry.stage or 1
-        local rooms = entry.roomsCleared or 0
+        local completed = entry.stagesCleared ~= nil and entry.stagesCleared or (entry.roomsCleared or 0)
         
         love.graphics.setColor(0.7, 0.8, 0.9, 0.9)
         if ui and ui.fontSmall then love.graphics.setFont(ui.fontSmall) end
@@ -85,9 +85,9 @@ function dailyResultUI.draw(ui)
         love.graphics.printf("Etapa " .. tostring(stage), cx + 20, cy + 54, cardW - 40, "right")
         
         love.graphics.setColor(1, 1, 1, 0.9)
-        love.graphics.printf("SALAS COMPLETADAS:", cx + 20, cy + 88, cardW - 40, "left")
+        love.graphics.printf(entry.stagesCleared ~= nil and "ETAPAS COMPLETADAS:" or "SALAS COMPLETADAS:", cx + 20, cy + 88, cardW - 40, "left")
         love.graphics.setColor(1, 1, 1, 1)
-        love.graphics.printf(tostring(rooms), cx + 20, cy + 88, cardW - 40, "right")
+        love.graphics.printf(tostring(completed), cx + 20, cy + 88, cardW - 40, "right")
         
         if ui and ui.fontSmall then love.graphics.setFont(ui.fontSmall) end
         love.graphics.setColor(0.6, 0.7, 0.8, 0.8)
@@ -112,7 +112,7 @@ function dailyResultUI.draw(ui)
             love.graphics.printf("FECHA", mx + 30, my + 46, 120, "left")
             love.graphics.printf("PUNTOS", mx + 160, my + 46, 100, "center")
             love.graphics.printf("ETAPA", mx + 270, my + 46, 80, "center")
-            love.graphics.printf("SALAS", mx + 360, my + 46, 70, "center")
+            love.graphics.printf("E / S", mx + 360, my + 46, 70, "center")
             love.graphics.setColor(0.3, 0.4, 0.5, 0.6)
             love.graphics.line(mx + 26, my + 62, mx + mw - 26, my + 62)
             
@@ -125,7 +125,8 @@ function dailyResultUI.draw(ui)
                 love.graphics.setColor(CYAN[1], CYAN[2], CYAN[3], 1)
                 love.graphics.printf("E" .. tostring(item.stage), mx + 270, yOff, 80, "center")
                 love.graphics.setColor(1, 1, 1, 0.9)
-                love.graphics.printf(tostring(item.roomsCleared), mx + 360, yOff, 70, "center")
+                local completed = item.stagesCleared ~= nil and ("E" .. item.stagesCleared) or ("S" .. item.roomsCleared)
+                love.graphics.printf(completed, mx + 360, yOff, 70, "center")
                 yOff = yOff + 28
             end
         end

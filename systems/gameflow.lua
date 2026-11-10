@@ -135,13 +135,17 @@ function gameflow.iniciarSala(keepInventory)
     if not st.anchoGrilla or st.anchoGrilla == 0 or not st.altoGrilla or st.altoGrilla == 0 then
         gameflow.recalcularGrilla()
     end
+    local previousScore = keepInventory and st.puntuacion or 0
     gameflow.resetGame(keepInventory)
+    require("systems.stageFlow").start(st)
     worldMod.puntajeSala = 0
-    st.puntuacion = 0
-    st.waveTotal = (worldMod.etapa == 1 and 2) or (worldMod.etapa == 5 and 4) or 3
-    st.waveMaxTimer = 12.0
+    st.puntuacion = previousScore
+    local waveConfig = constants.STAGE_WAVES[worldMod.etapa] or constants.STAGE_WAVES[5]
+    st.waveTotal = waveConfig.count
+    st.waveMaxTimer = waveConfig.interval
     st.waveCurrent = 1
-    st.waveTimer = 12.0
+    st.waveTimer = st.waveMaxTimer
+    mysteryMod.assignStage(worldMod)
     -- Room Mutators (GDD §19): roll antes de poblar (Dual duplica spawns)
     mutatorsMod.apply(worldMod.sala, worldMod.getCurrentRoom())
     -- Velo Silencioso: registra monedas al entrar para duplicar al superar
@@ -171,7 +175,7 @@ function gameflow.iniciarSala(keepInventory)
     local mysDef = mysteryMod.currentDef(worldMod)
     if mysDef then
         mysteryMod.begin()
-        uiMod.addPopup("SALA ESPECIAL: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
+        uiMod.addPopup("EVENTO: " .. mysDef.name, math.floor(st.anchoGrilla / 2), math.floor(st.altoGrilla / 2) - 5)
         sound.play("highScore")
     end
     -- Tarot X. Bolsa de Midas: 3 monedas al iniciar cada sala (GDD §14)
@@ -189,7 +193,7 @@ function gameflow.iniciarSala(keepInventory)
     end
     -- Fiebre del Oro (GDD §15.3): sala sin enemigos + 20 monedas 12s
     if mysteryMod.goldRushActive(worldMod) then
-        enemiesMod.init()
+        if not st.stagePhase then enemiesMod.init() end
         mysteryMod.beginGoldRush(st.anchoGrilla, st.altoGrilla)
     end
     -- Espejo (GDD §15.2): espectro del mismo largo al lado opuesto
@@ -256,7 +260,9 @@ function gameflow.acceptDeath()
         local okDaily, dailyMod = pcall(require, "systems.daily")
         local activeProf = persistence.getActiveProfile and persistence.getActiveProfile()
         if okDaily and dailyMod and activeProf then
-            local entry = dailyMod.recordRun(activeProf, st.puntuacion or 0, worldMod.etapa or 1, (worldMod.sala or 1) - 1)
+            local stagesCleared = st.stagePhase and math.max(0, (worldMod.etapa or 1) - 1) or nil
+            local entry = dailyMod.recordRun(activeProf, st.puntuacion or 0, worldMod.etapa or 1,
+                st.stagePhase and 0 or (worldMod.sala or 1) - 1, nil, stagesCleared)
             persistence.syncDailyHistory(entry)
             st.lastDailyResult = entry
             st.dailyModalOpen = true
@@ -389,6 +395,10 @@ end
 
 function gameflow.startRun()
     local st = world.state
+    st.stageVictorySummary = nil
+    if st.modo == "diario" or st.modo == "daily" then
+        st.dailySeed = gameflow.getDailySeed()
+    end
     worldMod.init()
     st.mundoCompletado = false
     st.ironBodyUsed = false
@@ -418,6 +428,7 @@ function gameflow.getDailySeed(dateTbl, salt)
 end
 function gameflow.startDailyRun(dateTbl)
     local st = world.state
+    st.stageVictorySummary = nil
     st.modo = "diario"
     local seed = gameflow.getDailySeed(dateTbl)
     st.dailySeed = seed

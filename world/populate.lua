@@ -305,7 +305,9 @@ function populate.populateRoom(worldOrSnake, snakeOrW, wOrH, hOrObs, obsOrFood, 
     -- 5. Boss room spawn (GDD §5 rework: HP de cabezazos, no comidas)
     local okCore, coreWorld = pcall(require, "core.world")
     local isBossRush = okCore and coreWorld and coreWorld.state and coreWorld.state.modo == "boss_rush"
-    if isBossRush then
+    if okCore and coreWorld.state and coreWorld.state.stagePhase then
+        -- El controlador de etapas crea los encuentros cuando corresponde.
+    elseif isBossRush then
         if (world.sala or 1) >= 6 and enemiesMod and enemiesMod.spawnBoss then
             enemiesMod.spawnBoss(5, anchoGrilla, altoGrilla, 12, 15)
         elseif (world.sala or 1) <= 5 and enemiesMod and enemiesMod.spawnMiniBoss then

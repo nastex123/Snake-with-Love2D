@@ -151,6 +151,7 @@ end
 
 function roomEvents.canTrigger(worldMod, st)
     if not worldMod then return false end
+    if st and st.stagePhase and st.stagePhase ~= "survival" then return false end
     if worldMod.esJefe and worldMod.esJefe() then return false end
     if (worldMod.sala or 0) == 3 then return false end
     local room = worldMod.getCurrentRoom and worldMod.getCurrentRoom()
@@ -161,7 +162,7 @@ function roomEvents.canTrigger(worldMod, st)
 end
 
 function roomEvents.roll(worldMod, st, enemiesMod)
-    roomEvents.reset()
+    roomEvents.reset(st)
     if not roomEvents.canTrigger(worldMod, st) then return nil end
     if love.math.random() > roomEvents.EVENT_CHANCE then return nil end
 
@@ -204,10 +205,14 @@ function roomEvents.update(dt, st, enemiesMod, uiMod, sound)
     return false
 end
 
-function roomEvents.reset()
+function roomEvents.reset(st)
     activeEventId = nil
     activeEventTimer = 0
     activeEventData = {}
+    if st then
+        st.roomEvent = nil
+        st.roomEventTimer = nil
+    end
 end
 
 return roomEvents

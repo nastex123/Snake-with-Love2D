@@ -2,6 +2,8 @@
 
 ## 1. Architecture Overview
 
+**Estado de esta especificación (2026-11-09)**: el flujo principal utiliza una arena por etapa y fases de supervivencia, mini-jefe y jefe. Persisten interfaces y componentes heredados de salas para compatibilidad; su migración y el balance final siguen pendientes.
+
 **Pattern**: Procedural module-based with global state management
 **Entry Point**: `main.lua` (504L fixed timestep `FIXED_DT=1/60`)
 **Total Modules**: 66 juego (69 con `conf.lua`+`constants.lua`+`scratch_test_debug.lua`, 106 con 39 tests) — P01 +3, P02 +4, P03 +3, P06-P08 +3 (`events`/`input`/`assets`), P12 +1 (`biomeHazards`), minibosses +1 (`enemyMiniBoss`), fase 8 +4 (`tarot`/`tarotArt`/`roomMutators`/`mystery`), livecoding +1 (`core/livecoding.lua`), tests 34→39 (scope_24/25/26/27/31)
@@ -228,7 +230,7 @@ main.lua (raíz) ──→ core/*, entities/*, systems/*, ui/ui.lua, render/*, a
 | HIGH_SCORE | 3 | Record celebration |
 | SHOP | 4 | Item shop |
 | PAUSED | 5 | Game paused |
-| TRANSITION | 6 | Room transition |
+| TRANSITION | 6 | Intermisión y transición de etapa (actualmente transición de sala en código) |
 
 ## 4. Data Flow
 
@@ -891,6 +893,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 
 ### 10.27 Room Mutators Engine ✅ Completed (2026-09-07 `feature/phase8-room-modifiers`)
 
+**Nota de migración**: el código actual asigna mutadores por sala. El diseño objetivo de GDD §19 los asigna una vez al comenzar la etapa y los mantiene durante sus encuentros; esta migración está pendiente.
+
 * **Módulo**: `systems/roomMutators.lua` (264L, data-driven; suite scope_24 22 tests).
 * **Catálogo**: `MUTATOR_DEFS` 10 entradas 61-70 (GDD §19) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(sala, room)` — 35% (`ROOM_MUTATOR_CHANCE`) por sala, excluye boss (`template`/sala 5) y élite (`isElite`); `apply()` en `gameflow.iniciarSala` antes de `populateRoom` (Dual duplica spawns); estado en `world.state.roomMutator` + `roomMutatorData`.
@@ -901,6 +905,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **P4 Pesados ✅**: `shadowStep/spawnShadowPos/shadowTick` (Chebyshev 0.9s, spawn esquina lejana, `ROOM_SHADOW_INTERVAL`, kill al contacto con cabeza; respawn por sala en `iniciarSala` + draw en `renderMain`), `phoenixAvailable/phoenixConsume/resetStage` (revive 3 segmentos + fantasma 3s en `playing`, reseteado en `init/avanzarEtapa`), `tunnelActive` (mascara 4 rects radio `ROOM_TUNNEL_RADIUS=5` en `renderMain` + badges de etapa en HUD).
 
 ### 10.28 Special Mystery Rooms Engine ✅ Completed (2026-09-07 `feature/phase8-mystery-rooms`)
+
+**Nota de migración**: el flujo activo selecciona encuentros con `mystery.assignStage()` durante supervivencia y los finaliza sin transición de sala; también los cierra antes del mini-jefe. La probabilidad heredada del 6% y el balance requieren revisión. Las reglas de salas descritas debajo se conservan como referencia histórica.
 * **Módulo**: `systems/mystery.lua` (336L, data-driven; suite scope_25 24 tests).
 * **Catálogo**: `MYSTERY_DEFS` 4 salas (GDD §15) con `id/name/tag/type/color/desc`.
 * **Asignación**: `roll(room, idx)` 6% (`ROOM_MYSTERY_CHANCE`), excluye boss/elite/sala 1; `assign(dungeon)` en `world.init/avanzarEtapa` fija `room.mystery`; runtime por sala en `World.state.mysteryData` (renovado en `iniciarSala`).
@@ -940,43 +946,40 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
 * **Cryo (GDD §16.4)**: trigger al pisar `ice` (`CRYO_ICE_CHANCE=0.15`) + aura `checkGolemAura` (Chebyshev ≤4 del Golem de Escarcha vivo) en tick `playing`; ×1.43 intervalo; inmune a proyectiles; tinte hielo.
 * **Notas de implementación**: loseta rúnica≈`trap`, esporas≈`slime`, esquirlas≈`ice`+golem (decisión 2026-09-10: reutilizar tiles, cero entidades nuevas); Medusa conserva velocidad (solo bloqueo); proyectiles no se destruyen (seguridad de pools).
 
-### 10.26 Survival Waves Escalation Engine (Arquitectura de Supervivencia por Oleadas)
+### 10.26 Stage Survival & Encounter Progression (implementación inicial)
 
-* **Propósito**: Desacoplar la progresión de salas de la acumulación de puntos (`puntuacion >= objetivoSala`), estableciendo un bucle de supervivencia cronometrada por oleadas consecutivas con dificultad escalada.
-* **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
-  - `waveCurrent`: (número) Índice de oleada activa ($1 \dots \text{waveTotal}$).
-  - `waveTotal`: (número) Cantidad total de oleadas en la sala actual ($2$ en Etapa 1, $3$ en Etapa 2–4, $4$ en Etapa 5).
-  - `waveTimer`: (número) Temporizador en segundos restantes de la oleada activa.
-  - `waveMaxTimer`: (número) Duración base de la oleada activa ($12.0\text{s} \dots 15.0\text{s}$).
-* **Pipeline de Actualización en `systems/gamestates/playing.lua`**:
-  ```lua
-  -- Descenso continuo de tiempo en salas ordinarias (excluye sala 3 mini-jefe y sala 5 boss)
-  if not isBossRoom and not isMiniBossRoom then
-      st.waveTimer = math.max(0, st.waveTimer - dt)
-      if st.waveTimer <= 0 then
-          if st.waveCurrent < st.waveTotal then
-              st.waveCurrent = st.waveCurrent + 1
-              st.waveTimer = st.waveMaxTimer
-              populate.spawnWave(st.waveCurrent, worldMod.etapa, currentRoom)
-              uiMod.addPopup("OLEADA " .. st.waveCurrent .. "/" .. st.waveTotal .. ": REFUERZOS!", cx, cy)
-              sound.play("alert")
-          else
-              -- Sala superada con éxito tras agotar todas las oleadas
-              gameflow.triggerRoomVictory(st)
-          end
-      end
-  end
-  ```
-* **Rol de Comida en `systems/gamestates/playingPickups.lua`**:
-  - Al ejecutarse `handleFoodPickup(st, comioTwin)`, se incrementa la puntuación, monedas y combo habituales para economía y récords.
-  - La comida **no** descuenta tiempo del `st.waveTimer`, manteniendo el reto arcade íntegro de supervivencia por oleadas.
-* **Telegrafiado de Refuerzos en `world/populate.lua`**:
-  - `spawnWave(waveIndex, etapa, room)` determina las nuevas coordenadas mediante `sampleFreeTile` con distancia mínima de 4 celdas Manhattan respecto a la serpiente.
-  - Los enemigos se materializan con un estado preliminar de advertencia de $0.8\text{s}$ mediante `addTelegraph`, garantizando que el jugador anticipe el spawn sin colisiones sorpresa.
-* **Componente de Interfaz en `ui/hudSouls.lua`**:
-  - En la cabecera superior, se sustituye el texto de puntos por el contador `OLEADA X/Y` y una micro-barra estática Zero-GC con el porcentaje `waveTimer / waveMaxTimer`.
+* **Propósito**: reemplazar el ciclo de salas por una expedición de cinco etapas. Cada etapa mantiene una arena continua y progresa por supervivencia, un mini-jefe y un jefe de etapa. El jefe de la etapa 5 cierra la expedición.
+* **Flujo objetivo**: `stageStart` → secuencia de oleadas de supervivencia → mini-jefe de etapa → jefe de etapa → intermisión de tienda en etapas 1–4, o resumen final en etapa 5. La muerte conserva el flujo actual de revive/aceptar muerte.
+* **Condiciones de avance**:
+  - `waveTimer` solo marca el tiempo hasta el siguiente refuerzo; al expirar inicia la siguiente oleada y no declara la etapa completada.
+  - La etapa no termina por puntos ni por expirar un contador global. Se supera al derrotar al jefe de etapa.
+  - Cada etapa incluye un mini-jefe; el jugador debe derrotarlo para continuar a la fase de jefe.
+  - Tras derrotar al jefe de las etapas 1–4 se abre la tienda y luego inicia la etapa siguiente; derrotar al jefe de la etapa 5 termina la expedición y muestra el resumen final.
+  - La comida conserva puntuación, monedas, combos y habilidades; no reduce el contador de oleada.
+* **Estado de etapa**: `worldMod.etapa`, `stagePhase` (`survival`, `miniboss`, `boss`, `intermission`), `stageEncounterSpawned`, `waveCurrent`, `waveTotal`, `waveTimer` y `waveMaxTimer`. `systems/stageFlow.lua` coordina las fases y `world/stageArena.lua` genera una arena por etapa.
+* **Responsabilidades a migrar**:
+  - `world/world.lua` y `world/stageArena.lua`: ya generan una arena por bioma; retirar las interfaces de sala que aún consumen otros módulos.
+  - `world/populate.lua`: preparar la arena, generar oleadas seguras e introducir los encuentros de mini-jefe/jefe.
+  - `systems/gameflow.lua` y `systems/gamestates/transition.lua`: avanzar de etapa y abrir la tienda entre etapas.
+  - `ui/hudUI.lua`: mostrar etapa, bioma, fase, oleada y objetivo de encuentro.
+  - `systems/roomMutators.lua`, `systems/mystery.lua` y eventos: migrar las mecánicas que se conserven a alcance de etapa/encuentro o retirarlas del flujo principal.
+* **Balance pendiente**: cantidad y duración de oleadas por etapa, orden temático de los cinco mini-jefes, roster/vida de cada jefe, recompensas y frecuencia de modificadores/eventos.
+* **Mejora de IA de mini-jefes (diseño aprobado; pendiente de implementación)**:
+  - Triturador: alternar embestida por línea y corte de ruta hacia la cabeza; aturdimiento breve tras el choque y límite a obstáculos destruidos.
+  - Gólem: alternar abanico y descarga de franja con telegrafiados distintos; hielo temporal con ruta de salida y aviso propio para la nova reactiva.
+  - Sierpe: sustituir el circuito continuo por tramos anunciados, carga sobre el tramo y pausa de recuperación; conserva estela temporal de lava.
+  - Reina: larvas desde ángulos distintos con cap activo bajo; la red anticipa ruta y no aparece directamente bajo la cabeza.
+  - Espectro: singularidad fuera del centro con zona segura; teletransporte que corta la ruta, telegrafiado visible y recuperación. Evitar encadenar ambos ataques sin escapatoria.
+  - Los ataques deben adaptarse a la posición del jugador y conservar una ventana legible de respuesta; dificultad creciente basada primero en coordinación/agresividad, no solo en reducir temporizadores.
+* **Migración y validación pendientes**: actualizar estados y persistencia; eliminar los resets y la victoria por sala; probar las cinco etapas, derrotas, revive, jefes y tienda entre etapas.
+
+#### Comportamiento actual heredado
+
+Las interfaces de sala y el generador anterior permanecen como compatibilidad para consumidores y pruebas heredados. El flujo activo de etapas no avanza por ellos; la retirada o adaptación completa de esos consumidores sigue pendiente.
 
 ### 10.27 Motor de Eventos Aleatorios Mixtos por Bioma (`systems/eventsEngine.lua`)
+
+**Nota de migración**: las reglas por oleada siguen siendo útiles dentro de las arenas de etapa; los vetos por tipo de sala y las asignaciones entre salas pertenecen al flujo anterior y deben traducirse a fases de supervivencia, mini-jefe y jefe.
 
 * **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:
   - `activeEvent`: (string/nil) Identificador del evento activo (E-01 a E-10 para combate; D-01 a D-10 para dilemas).
@@ -994,6 +997,8 @@ Plan formal en `docs/TECH-DEBT-PLAN.md` v2.0 — 15 propuestas cerradas en `dev@
   - Acorde de alarma grave (`sound.play("event_hazard")`) para amenazas dinámicas y arpegio brillante (`sound.play("event_bonus")`) para bonificaciones, acompañado de banner superior en el HUD.
 
 ### 10.31 Eventos Aleatorios de Sala (`systems/roomEvents.lua`, GDD §22)
+
+**Nota de migración**: `roomEvents` se selecciona como máximo una vez al iniciar supervivencia y se cancela antes del mini-jefe. Se conserva el nombre y campos heredados de sala; las reglas históricas siguientes requieren revisión de balance.
 
 * **Propósito**: Sucesos intra-sala de 8–15s (E1–E7) complementarios al motor mixto §10.27, ligados al asedio por oleadas (GDD §6). Máximo 1 evento por sala; excluye élite/boss/misterio y asedio con mutador Contrarreloj.
 * **Modelo de Estado en `core/world.lua` (`World.SCHEMA`)**:

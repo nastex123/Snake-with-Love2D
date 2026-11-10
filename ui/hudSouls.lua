@@ -4,6 +4,7 @@ local hudSouls = {}
 
 local constants = require("constants")
 local Assets = require("core.assets")
+local phaseNames = {survival = "OLEADAS", miniboss = "MINI-JEFE", boss = "JEFE"}
 
 -- ============================================================================
 -- PALETA CROMATICA CANONICA ZERO-GC (Preasignada a nivel de módulo)
@@ -248,7 +249,9 @@ function hudSouls.drawTopBar(w, hh, s, font, etapa, sala, monedas, puntuacion, o
         love.graphics.print(bName, x, cy)
         x = x + font:getWidth(bName) + 6 * s
 
-        local levelStr = "// " .. etapa .. "-" .. sala
+        local st = require("core.world").state
+        local levelStr = st.stagePhase and ("// ETAPA " .. etapa .. " " .. (phaseNames[st.stagePhase] or ""))
+            or ("// " .. etapa .. "-" .. sala)
         love.graphics.setColor(COLOR_BONE[1], COLOR_BONE[2], COLOR_BONE[3], 0.8)
         love.graphics.print(levelStr, x, cy)
         x = x + font:getWidth(levelStr) + 14 * s

@@ -38,7 +38,9 @@ function transition.update(dt)
         st.roomDamaged = false
 
         -- Tarot XI. Corazón de Hierro: sala superada con <5 segmentos = Escudo gratis
-        if st.transitionTarget == "siguienteSala" and tarotMod.has("iron_heart")
+        local completedEncounter = st.transitionTarget == "siguienteSala"
+            or (st.stagePhase and (st.transitionTarget == "siguienteEtapa" or st.transitionTarget == "completado"))
+        if completedEncounter and tarotMod.has("iron_heart")
             and st.player and st.player.body and #st.player.body < 5
             and not world.get("shop.shieldActive", false) then
             if st.modo == "pacifista" then
@@ -53,7 +55,7 @@ function transition.update(dt)
         end
 
         -- Velo Silencioso (GDD §19.64): duplica las monedas ganadas en la sala
-        if st.transitionTarget == "siguienteSala" and mutatorsMod.has("silent_veil") then
+        if completedEncounter and mutatorsMod.has("silent_veil") then
             local bonus = mutatorsMod.silentClearBonus(st.monedas or 0)
             if bonus > 0 then
                 st.monedas = st.monedas + bonus
@@ -66,7 +68,7 @@ function transition.update(dt)
             worldMod.avanzarSala()
         elseif st.transitionTarget == "siguienteEtapa" then
             worldMod.avanzarEtapa()
-            achievementsMod.check("stageChanged", {stage = worldMod.etapa})
+            if st.modo ~= "boss_rush" then achievementsMod.check("stageChanged", {stage = worldMod.etapa}) end
         elseif st.transitionTarget == "completado" then
             local okM, modesMod = pcall(require, "systems.modes")
             local endless = okM and modesMod and modesMod.current() == "endless"
@@ -90,6 +92,12 @@ function transition.update(dt)
                 achievementsMod.check("stageChanged", {stage = worldMod.etapa})
             else
                 st.mundoCompletado = true
+                if prof and (st.modo == "daily" or st.modo == "diario" or st.dailySeed ~= nil) then
+                    local daily = require("systems.daily")
+                    local result = daily.recordRun(prof, st.puntuacion or 0, worldMod.etapa or 5, 0, nil, worldMod.etapa or 5)
+                    persistence.syncDailyHistory(result)
+                    st.lastDailyResult = result
+                end
                 if st.modo == "pacifista" and st.runNoBomb ~= false and st.runNoShield ~= false then
                     local okUiP, uiP = pcall(require, "ui.ui")
                     if okUiP and uiP then
@@ -110,6 +118,11 @@ function transition.update(dt)
     elseif st.transitionPhase == 2 and st.fadeAlpha <= 0 then
         st.transitionTarget = nil
         st.transitionPhase = nil
+        if st.mundoCompletado then
+            st.stageVictorySummary = {score = st.puntuacion or 0, coins = st.monedas or 0}
+            require("systems.gameflow").returnToMenu()
+            return
+        end
         st.gameState = constants.GAME_STATE_SHOP
         sound:playSegment("intro")
         shop.abrir(st.monedas, true)

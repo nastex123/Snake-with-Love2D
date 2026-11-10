@@ -53,6 +53,7 @@ if pcall(require, "tests.test_scope_38_templates") then end
 if pcall(require, "tests.test_scope_39_sprint1") then end
 if pcall(require, "tests.test_scope_40_zerogc_stress") then end
 require("tests.test_scope_41_sprint2")
+require("tests.test_stage_flow")
 
 -- Source files for full coverage reporting
 local source_files = {
